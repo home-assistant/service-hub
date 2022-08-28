@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '14'
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3.0.2
+
+      - name: Run JQ lint
+        uses: home-assistant/actions/helpers/jq@master
+
+      - name: Use Node.js ${{ env.node-NODE_VERSION }}
+        uses: actions/setup-node@v3.4.1
+        with:
+          node-version: ${{ env.node-NODE_VERSION }}
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+      - name: Check yarn cache
+        uses: actions/cache@v3.0.7
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install dependencies
+        run: yarn install  --immutable
+
+      - name: Run yarn lint
+        run: yarn lint
+
+  build-container:
+    name: Build container
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3.0.2
+
+      - name: Use Node.js ${{ env.node-NODE_VERSION }}
+        uses: actions/setup-node@v3.4.1
+        with:
+          node-version: ${{ env.node-NODE_VERSION }}
+
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
+
+      - name: Check yarn cache
+        uses: actions/cache@v3.0.7
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
+      - name: Install dependencies
+        run: yarn install  --immutable
+
+      - name: Build container
+        run: docker build . -t home-assistant/service-hub

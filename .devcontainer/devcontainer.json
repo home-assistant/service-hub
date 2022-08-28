@@ -1,0 +1,28 @@
+{
+  "name": "service-hub",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "yarn install",
+  "runArgs": [
+    "-e",
+    "GIT_EDITOR=\"code --wait\""
+  ],
+  "extensions": [
+    "dbaeumer.vscode-eslint",
+    "ms-vscode.vscode-typescript-tslint-plugin",
+    "esbenp.prettier-vscode",
+    "attilabuti.vscode-mjml",
+    "visualstudioexptteam.vscodeintellicode"
+  ],
+  "settings": {
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "files.trimTrailingWhitespace": true
+  }
+}

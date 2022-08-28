@@ -1,0 +1,90 @@
+{
+  "name": "service-hub",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "engineStrict": true,
+  "engines": {
+    "node": ">=16.13.2"
+  },
+  "scripts": {
+    "build:example": "nest build example",
+    "start:example:dev": "nest start example --watch --debug 5495",
+    "start:example:prod": "node dist/services/example/main",
+    "start:example": "nest start example --watch",
+    "format": "prettier --write \"services/**/*.ts\" \"libs/**/*.ts\"",
+    "lint": "eslint \"{src,services,libs,test}/**/*.ts\" --fix",
+    "prebuild": "rimraf dist"
+  },
+  "dependencies": {
+    "@nestjs/common": "^8.4.4",
+    "@nestjs/config": "^2.0.0",
+    "@nestjs/core": "^8.4.4",
+    "@nestjs/event-emitter": "^1.1.0",
+    "@nestjs/graphql": "^10.0.10",
+    "@nestjs/passport": "^8.2.1",
+    "@nestjs/platform-express": "^8.4.4",
+    "@nestjs/platform-ws": "^8.4.4",
+    "@nestjs/schedule": "^1.1.0",
+    "@nestjs/websockets": "^8.4.4",
+    "@sentry/integrations": "^6.19.7",
+    "@sentry/node": "^6.19.7",
+    "apollo-server-express": "^3.6.7",
+    "convict": "^6.2.3",
+    "find-up": "^4.0.0",
+    "graphql": "^16.6.0",
+    "nestjs-pino": "^2.5.2",
+    "pino": "^8.4.2",
+    "pino-http": "^7.0.0",
+    "pino-pretty": "^7.6.1",
+    "reflect-metadata": "^0.1.13",
+    "rimraf": "^3.0.2",
+    "rxjs": "^7.5.5",
+    "ts-morph": "^15.1.0",
+    "tslib": "^2.4.0"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^8.2.5",
+    "@nestjs/schematics": "^8.0.10",
+    "@nestjs/testing": "^8.4.4",
+    "@typescript-eslint/eslint-plugin": "5.21.0",
+    "@typescript-eslint/parser": "^5.21.0",
+    "eslint": "8.14.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-import": "^2.26.0",
+    "prettier": "^2.6.2",
+    "source-map-support": "^0.5.21",
+    "ts-jest": "27.1.4",
+    "ts-loader": "^9.3.0",
+    "ts-node": "^10.7.0",
+    "tsconfig-paths": "^3.14.1",
+    "typescript": "^4.6.4"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": ".",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "transformIgnorePatterns": [
+      "<rootDir>/node_modules/(?!p-timeout).+\\.(t|j)s$"
+    ],
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/services/",
+      "<rootDir>/libs/"
+    ],
+    "moduleNameMapper": {
+      "@lib/common/(.*)": "<rootDir>/libs/common/src/$1",
+      "@lib/common": "<rootDir>/libs/common/src",
+      "@lib/sentry/(.*)": "<rootDir>/libs/sentry/src/$1",
+      "@lib/sentry": "<rootDir>/libs/sentry/src"
+    }
+  }
+}
