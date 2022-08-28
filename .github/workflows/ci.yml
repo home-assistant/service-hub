@@ -48,7 +48,7 @@ jobs:
 
   build-container:
     name: Build container
-    needs: test
+    needs: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the repository
