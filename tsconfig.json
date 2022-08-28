@@ -24,7 +24,7 @@
       ],
       "@lib/sentry/*": [
         "libs/sentry/src/*"
-      ],
+      ]
     },
     "importHelpers": true,
     "noEmitHelpers": true
