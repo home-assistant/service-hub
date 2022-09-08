@@ -5,7 +5,7 @@ ENV NODE_ENV production
 RUN \
     yarn install \
     && yarn prebuild \
-    && yarn build:example
+    && yarn build:bots
 
 
 FROM node:16.14.2-slim
