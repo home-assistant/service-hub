@@ -43,6 +43,25 @@ const conf = convict({
       format: String,
     },
   },
+  dynamodb: {
+    cla: {
+      region: {
+        default: 'us-east-2',
+        env: 'DYNAMODB_CLA_REGION',
+        format: String,
+      },
+      signersTable: {
+        default: '',
+        env: 'DYNAMODB_CLA_SIGNERS_TABLE',
+        format: String,
+      },
+      pendingSignersTable: {
+        default: 'hihi',
+        env: 'DYNAMODB_CLA_PENDING_SIGNERS_TABLE',
+        format: String,
+      },
+    },
+  },
 });
 
 conf.validate({ allowed: 'strict' });
