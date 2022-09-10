@@ -1,6 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { BaseWebhookHandler } from './base';
 
+import { EventPayloadMap } from '@octokit/webhooks-types';
+
 import { DynamoDB } from 'aws-sdk';
 
 const ignoredAuthors: Set<string> = new Set([
@@ -37,18 +39,24 @@ export class ValidateCla extends BaseWebhookHandler {
     this.pendingSignersTableName = configService.get('dynamodb.cla.pendingSignersTable');
   }
 
-  async handle(eventType: string, eventData: Record<string, any>) {
-    if (!eventType.startsWith('pull_request')) {
+  async handle(eventType: string, payload: Record<string, any>) {
+    if (
+      ![
+        'pull_request.labeled',
+        'pull_request.opened',
+        'pull_request.reopened',
+        'pull_request.synchronize',
+      ].includes(eventType)
+    ) {
       return;
     }
+
+    const eventData = payload as EventPayloadMap['pull_request'];
 
     if (ignoredRepositories.has(eventData.repository.full_name)) {
       return;
     }
 
-    if (!['synchronize', 'opened', 'labeled'].includes(eventData.action)) {
-      return;
-    }
     if (eventData.action === 'labeled') {
       if (eventData.label.name !== IssueLabel.CLA_RECHECK) {
         return;

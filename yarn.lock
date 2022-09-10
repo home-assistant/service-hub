@@ -1004,7 +1004,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/webhooks-types@npm:6.3.6":
+"@octokit/webhooks-types@npm:6.3.6, @octokit/webhooks-types@npm:^6.3.6":
   version: 6.3.6
   resolution: "@octokit/webhooks-types@npm:6.3.6"
   checksum: 974db34258cbdb0d02f3bed202595822c1799804cbd46e3375571537e0ba879350f30a3e27b156480a0be4eaa924bbb353a578ae86cb58e495c524478f052f6b
@@ -6015,6 +6015,7 @@ __metadata:
     "@nestjs/websockets": ^8.4.4
     "@octokit/rest": ^19.0.4
     "@octokit/webhooks": ^10.1.5
+    "@octokit/webhooks-types": ^6.3.6
     "@sentry/integrations": ^6.19.7
     "@sentry/node": ^6.19.7
     "@typescript-eslint/eslint-plugin": 5.21.0

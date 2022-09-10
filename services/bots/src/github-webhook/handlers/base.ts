@@ -12,5 +12,5 @@ export class BaseWebhookHandler {
     WEBHOOK_HANDLERS.push(this);
   }
 
-  async handle(eventType: string, eventData: Record<string, any>) {}
+  async handle(eventType: string, payload: Record<string, any>) {}
 }
