@@ -46,7 +46,7 @@ const conf = convict({
   dynamodb: {
     cla: {
       region: {
-        default: 'us-east-2',
+        default: 'us-east-1',
         env: 'DYNAMODB_CLA_REGION',
         format: String,
       },
