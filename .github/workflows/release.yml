@@ -23,6 +23,11 @@ jobs:
           version=$(echo "${{ github.ref }}" | awk -F"/" '{print $NF}' )
           echo "::set-output name=version::$version"
 
+      - name: Populate version.json
+        run: |
+          hash=$(git rev-parse HEAD)
+          echo "{\"version\": {\"hash\": \"$hash\", \"version\": \"${{ steps.version.outputs.tag }}\"}}" > ./version.json
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2.0.0
         with:
