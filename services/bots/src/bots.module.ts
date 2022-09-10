@@ -4,8 +4,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 
+import { DiscordModule } from '@discord-nestjs/core';
+import { GatewayIntentBits } from 'discord.js';
+
 import Config, { AppConfig } from './config';
 import { GithubWebhookModule } from './github-webhook/github-webhook.module';
+import { DiscordBotModule } from './discord/discord.module';
 
 const version = getVersionInfo(__dirname);
 
@@ -36,6 +40,24 @@ const version = getVersionInfo(__dirname);
         },
       }),
     }),
+    DiscordModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        token: configService.get('discord.token'),
+        discordClientOptions: {
+          intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+        },
+        registerCommandOptions: [
+          {
+            forGuild: configService.get('discord.guildId'),
+            removeCommandsBefore: true,
+          },
+        ],
+        failOnLogin: true,
+      }),
+      inject: [ConfigService],
+    }),
+    DiscordBotModule,
   ],
 })
 export class BotsModule {}
