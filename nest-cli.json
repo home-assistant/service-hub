@@ -16,6 +16,15 @@
       "compilerOptions": {
         "tsConfigPath": "services/example/tsconfig.app.json"
       }
+    },
+    "bots": {
+      "type": "application",
+      "root": "services/bots",
+      "entryFile": "main",
+      "sourceRoot": "services/bots/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/bots/tsconfig.app.json"
+      }
     }
   }
 }
