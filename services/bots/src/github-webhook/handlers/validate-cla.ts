@@ -14,8 +14,20 @@ const ignoredAuthors: Set<string> = new Set([
 
 const ignoredRepositories: Set<string> = new Set([
   // Ignore repositories that do not contain code
-  'home-assistant/home-assistant.io',
+  'home-assistant/.github',
+  'home-assistant/1password-teams-open-source',
+  'home-assistant/architecture',
   'home-assistant/assets',
+  'home-assistant/brands',
+  'home-assistant/bthome.io',
+  'home-assistant/companion.home-assistant',
+  'home-assistant/data.home-assistant',
+  'home-assistant/developers.home-assistant',
+  'home-assistant/home-assistant.io',
+  'home-assistant/organization',
+  'home-assistant/partner.home-assistant',
+  'home-assistant/people',
+  'home-assistant/version',
 ]);
 
 const botContextName = 'cla-bot';
