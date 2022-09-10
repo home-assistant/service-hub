@@ -20,7 +20,7 @@ jobs:
       - name: Get version number
         id: version
         run: |
-          version=${{ github.ref }}
+          version=$(echo "${{ github.ref }}" | awk -F"/" '{print $NF}' )
           echo "::set-output name=version::$version"
 
       - name: Login to GitHub Container Registry
