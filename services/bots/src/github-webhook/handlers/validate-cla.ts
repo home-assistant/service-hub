@@ -1,9 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 import { BaseWebhookHandler } from './base';
 
-import { EventPayloadMap } from '@octokit/webhooks-types';
-
 import { DynamoDB } from 'aws-sdk';
+import { ListCommitResponse, PullRequestEventData } from '../github-webhook.const';
 
 const ignoredAuthors: Set<string> = new Set([
   // Ignore bot accounts that are not masked as bots
@@ -63,7 +62,7 @@ export class ValidateCla extends BaseWebhookHandler {
       return;
     }
 
-    const eventData = payload as EventPayloadMap['pull_request'];
+    const eventData = payload as PullRequestEventData;
 
     if (ignoredRepositories.has(eventData.repository.full_name)) {
       return;
@@ -85,7 +84,7 @@ export class ValidateCla extends BaseWebhookHandler {
     await this.checkAuthors(eventData, commits.data);
   }
 
-  getCommits(eventData: Record<string, any>) {
+  getCommits(eventData: PullRequestEventData): Promise<ListCommitResponse> {
     return this.githubApiClient.pulls.listCommits({
       owner: eventData.repository.owner.login,
       repo: eventData.repository.name,
@@ -94,7 +93,7 @@ export class ValidateCla extends BaseWebhookHandler {
     });
   }
 
-  async checkAuthors(eventData: Record<string, any>, commits: any[]) {
+  async checkAuthors(eventData: PullRequestEventData, commits: ListCommitResponse['data']) {
     const authorsWithSignedCLA: Set<string> = new Set();
     const authorsNeedingCLA: { sha: string; login: string }[] = [];
     const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];
@@ -117,11 +116,11 @@ export class ValidateCla extends BaseWebhookHandler {
         const ddbEntry = await this.ddbClient
           .getItem({
             TableName: this.signersTableName,
-            Key: { github_username: commit.author.login },
+            Key: { github_username: { S: commit.author.login } },
           })
           .promise();
 
-        if (ddbEntry.$response.error) {
+        if (!ddbEntry.Item || ddbEntry.$response.error) {
           authorsNeedingCLA.push({ login: commit.author.login, sha: commit.sha });
         } else {
           authorsWithSignedCLA.add(commit.author.login);
@@ -206,7 +205,7 @@ export class ValidateCla extends BaseWebhookHandler {
                 pr: { S: `${eventData.repository.full_name}#${eventData.number}` },
                 repository_owner: { S: eventData.repository.owner.login },
                 repository: { S: eventData.repository.name },
-                pr_number: { S: eventData.number },
+                pr_number: { S: String(eventData.number) },
                 signatureRequestedAt: { S: new Date().toISOString() },
               },
             })
@@ -224,19 +223,23 @@ export class ValidateCla extends BaseWebhookHandler {
       issue_number: eventData.number,
       labels: [IssueLabel.CLA_SIGNED],
     });
-    await this.githubApiClient.issues.removeLabel({
-      owner: eventData.repository.owner.login,
-      repo: eventData.repository.name,
-      issue_number: eventData.number,
-      name: IssueLabel.CLA_NEEDED,
-    });
+    try {
+      await this.githubApiClient.issues.removeLabel({
+        owner: eventData.repository.owner.login,
+        repo: eventData.repository.name,
+        issue_number: eventData.number,
+        name: IssueLabel.CLA_NEEDED,
+      });
+    } catch {
+      // ignroe missing label
+    }
 
     commits.forEach((commit) => {
       this.githubApiClient.repos.createCommitStatus({
         owner: eventData.repository.owner.login,
         repo: eventData.repository.name,
         sha: commit.sha,
-        state: 'failure',
+        state: 'success',
         description: 'Everyone involved has signed the CLA',
         context: botContextName,
       });
