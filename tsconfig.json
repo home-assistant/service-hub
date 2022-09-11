@@ -19,6 +19,12 @@
       "@lib/common/*": [
         "libs/common/src/*"
       ],
+      "@lib/health": [
+        "libs/health/src"
+      ],
+      "@lib/health/*": [
+        "libs/health/src/*"
+      ],
       "@lib/sentry": [
         "libs/sentry/src"
       ],
