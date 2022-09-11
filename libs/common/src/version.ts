@@ -40,7 +40,6 @@ function getValue(cwd: string, name: string, command?: string): string | undefin
 
 export interface Version {
   commit: string;
-  source: string;
   version: string;
 }
 
@@ -60,7 +59,6 @@ export interface Version {
  */
 export function getVersionInfo(cwd: string): Version {
   const commit = getValue(cwd, 'hash', 'git rev-parse HEAD');
-  const source = getValue(cwd, 'source', 'git config --get remote.origin.url');
   let version = getValue(cwd, 'version');
 
   if (!version) {
@@ -70,7 +68,6 @@ export function getVersionInfo(cwd: string): Version {
 
   return {
     commit,
-    source,
     version,
   };
 }
