@@ -1,2 +1,2 @@
 export { ServiceError } from './error';
-export { getVersionInfo } from './version';
+export { getVersionInfo, Version } from './version';

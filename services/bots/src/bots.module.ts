@@ -1,5 +1,6 @@
 import { getVersionInfo } from '@lib/common';
 import { SentryModule } from '@lib/sentry';
+import { HealthModule } from '@lib/health';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
@@ -24,6 +25,7 @@ const version = getVersionInfo(__dirname);
         release: version.version,
       }),
     }),
+    HealthModule.register({ version }),
     GithubWebhookModule,
     LoggerModule.forRootAsync({
       imports: [ConfigModule],
