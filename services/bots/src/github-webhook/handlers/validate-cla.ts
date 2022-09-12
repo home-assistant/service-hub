@@ -6,6 +6,8 @@ import {
   WebhookHandlerParams,
   ListCommitResponse,
   PullRequestEventData,
+  scheduleIssueComment,
+  scheduleIssueLabel,
 } from '../github-webhook.const';
 
 const ignoredAuthors: Set<string> = new Set([
@@ -85,7 +87,7 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     const commits = await this.getCommits(eventData);
-    await this.checkAuthors(eventData, commits.data);
+    await this.checkAuthors(params, eventData, commits.data);
   }
 
   getCommits(eventData: PullRequestEventData): Promise<ListCommitResponse> {
@@ -97,7 +99,11 @@ export class ValidateCla extends BaseWebhookHandler {
     });
   }
 
-  async checkAuthors(eventData: PullRequestEventData, commits: ListCommitResponse['data']) {
+  async checkAuthors(
+    params: WebhookHandlerParams,
+    eventData: PullRequestEventData,
+    commits: ListCommitResponse['data'],
+  ) {
     const authorsWithSignedCLA: Set<string> = new Set();
     const authorsNeedingCLA: { sha: string; login: string }[] = [];
     const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];
@@ -133,23 +139,16 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (commitsWithoutLogins.length) {
-      await this.githubApiClient.issues.createComment({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
-        body: noLoginOnShaComment(
+      scheduleIssueComment(
+        params.deliveryId,
+        botContextName,
+        noLoginOnShaComment(
           commitsWithoutLogins,
           eventData.pull_request.user.login,
           `https://github.com/${eventData.repository.full_name}/pull/${eventData.number}/commits/`,
         ),
-      });
-
-      await this.githubApiClient.issues.addLabels({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
-        labels: [IssueLabel.CLA_ERROR],
-      });
+      );
+      scheduleIssueLabel(params.deliveryId, IssueLabel.CLA_ERROR);
 
       commitsWithoutLogins.forEach((commit) => {
         this.githubApiClient.repos.createCommitStatus({
@@ -165,18 +164,13 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (authorsNeedingCLA.length) {
-      await this.githubApiClient.issues.createComment({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
-        body: pullRequestComment(authorsNeedingCLA, eventData.number),
-      });
-      await this.githubApiClient.issues.addLabels({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
-        labels: [IssueLabel.CLA_NEEDED],
-      });
+      scheduleIssueComment(
+        params.deliveryId,
+        botContextName,
+        pullRequestComment(authorsNeedingCLA, eventData.number),
+      );
+
+      scheduleIssueLabel(params.deliveryId, IssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
         this.githubApiClient.repos.createCommitStatus({
@@ -221,12 +215,7 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     // If we get here, all is good :+1:
-    await this.githubApiClient.issues.addLabels({
-      owner: eventData.repository.owner.login,
-      repo: eventData.repository.name,
-      issue_number: eventData.number,
-      labels: [IssueLabel.CLA_SIGNED],
-    });
+    scheduleIssueLabel(params.deliveryId, IssueLabel.CLA_SIGNED);
     try {
       await this.githubApiClient.issues.removeLabel({
         owner: eventData.repository.owner.login,
