@@ -3,7 +3,11 @@ import { BaseWebhookHandler } from './base';
 
 import { DynamoDB } from 'aws-sdk';
 import { ClaIssueLabel } from '@lib/common/github';
-import { ListCommitResponse, PullRequestEventData } from '../github-webhook.const';
+import {
+  WebhookHandlerParams,
+  ListCommitResponse,
+  PullRequestEventData,
+} from '../github-webhook.const';
 
 const ignoredAuthors: Set<string> = new Set([
   // Ignore bot accounts that are not masked as bots
@@ -44,19 +48,19 @@ export class ValidateCla extends BaseWebhookHandler {
     this.pendingSignersTableName = configService.get('dynamodb.cla.pendingSignersTable');
   }
 
-  async handle(eventType: string, payload: Record<string, any>) {
+  async handle(params: WebhookHandlerParams) {
     if (
       ![
         'pull_request.labeled',
         'pull_request.opened',
         'pull_request.reopened',
         'pull_request.synchronize',
-      ].includes(eventType)
+      ].includes(params.eventType)
     ) {
       return;
     }
 
-    const eventData = payload as PullRequestEventData;
+    const eventData = params.payload as PullRequestEventData;
 
     if (ignoredRepositories.has(eventData.repository.full_name)) {
       return;
