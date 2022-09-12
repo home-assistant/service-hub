@@ -217,12 +217,17 @@ export class ValidateCla extends BaseWebhookHandler {
       issue_number: eventData.number,
       labels: [ClaIssueLabel.CLA_SIGNED],
     });
-    await this.githubApiClient.issues.removeLabel({
-      owner: eventData.repository.owner.login,
-      repo: eventData.repository.name,
-      issue_number: eventData.number,
-      name: ClaIssueLabel.CLA_NEEDED,
-    });
+
+    try {
+      await this.githubApiClient.issues.removeLabel({
+        owner: eventData.repository.owner.login,
+        repo: eventData.repository.name,
+        issue_number: eventData.number,
+        name: ClaIssueLabel.CLA_NEEDED,
+      });
+    } catch {
+      // ignroe missing label
+    }
 
     commits.forEach((commit) => {
       this.githubApiClient.repos.createCommitStatus({
