@@ -277,7 +277,7 @@ Here are your options:
       \`\`\`
       git commit --amend --author="Author Name <email@address.com>"
       \`\`\`
-      (substituting Author Name and email@address.com for your actual information) to set the authorship information.
+      (substituting "Author Name" and "\`email@address.com\`" for your actual information) to set the authorship information.
    * If you made more than one commit and the commit with the missing authorship information is not the most recent one you have two options:
        1. You can re-create all commits missing authorship information. This is going to be the easiest solution for developers that aren't extremely confident in their Git and command line skills.
        2. You can use [this script](https://help.github.com/articles/changing-author-info/) that GitHub provides to rewrite history. **Please note:** this should be used only if you are very confident in your abilities and understand its impacts.
