@@ -96,6 +96,8 @@
     "moduleNameMapper": {
       "@lib/common/(.*)": "<rootDir>/libs/common/src/$1",
       "@lib/common": "<rootDir>/libs/common/src",
+      "@lib/health/(.*)": "<rootDir>/libs/health/src/$1",
+      "@lib/health": "<rootDir>/libs/health/src",
       "@lib/sentry/(.*)": "<rootDir>/libs/sentry/src/$1",
       "@lib/sentry": "<rootDir>/libs/sentry/src"
     }

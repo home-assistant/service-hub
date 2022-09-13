@@ -10,10 +10,14 @@ export class GithubWebhookController {
 
   @Post()
   @GithubWebhookEvents([])
-  async webhook(@Headers() headers, @Body() payload: Record<string, any>): Promise<void> {
-    await this.GithubWebhookService.handleWebhook(
-      `${headers['x-github-event']}.${payload.action}`,
+  async webhook(
+    @Headers() headers: Record<string, any>,
+    @Body() payload: Record<string, any>,
+  ): Promise<void> {
+    await this.GithubWebhookService.handleWebhook({
+      eventType: `${headers['x-github-event']}.${payload.action}`,
+      deliveryId: headers['x-github-delivery'],
       payload,
-    );
+    });
   }
 }

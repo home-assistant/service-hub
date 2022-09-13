@@ -1,5 +1,6 @@
 import { getVersionInfo } from '@lib/common';
 import { SentryModule } from '@lib/sentry';
+import { HealthModule } from '@lib/health';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
@@ -10,6 +11,7 @@ import { GatewayIntentBits } from 'discord.js';
 import Config, { AppConfig } from './config';
 import { GithubWebhookModule } from './github-webhook/github-webhook.module';
 import { DiscordBotModule } from './discord/discord.module';
+import { ClaSignModule } from './cla-sign/cla-sign.module';
 
 const version = getVersionInfo(__dirname);
 
@@ -28,7 +30,7 @@ const version = getVersionInfo(__dirname);
         release: version.version,
       }),
     }),
-    GithubWebhookModule,
+    HealthModule.register({ version }),
     LoggerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -58,6 +60,8 @@ const version = getVersionInfo(__dirname);
       inject: [ConfigService],
     }),
     DiscordBotModule,
+    ClaSignModule,
+    GithubWebhookModule,
   ],
 })
 export class BotsModule {}
