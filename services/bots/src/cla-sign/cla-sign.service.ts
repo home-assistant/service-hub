@@ -31,8 +31,6 @@ export class ClaSignService {
       user_agent: headers['user-agent'],
     };
 
-    console.log(signData);
-
     // Check signData
     if (!signData.github_username) {
       throw new ServiceError('Missing required data in payload', { data: { signData } });
