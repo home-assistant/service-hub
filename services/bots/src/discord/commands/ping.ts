@@ -1,7 +1,9 @@
 import { TransformPipe } from '@discord-nestjs/common';
-import { Command, DiscordTransformedCommand, UsePipes } from '@discord-nestjs/core';
+import { DiscordTransformedCommand, UsePipes } from '@discord-nestjs/core';
+import { PermissionFlagsBits } from 'discord.js';
+import { DiscordCommand } from '../discord.decorator';
 
-@Command({
+@DiscordCommand({
   name: 'ping',
   description: 'Returns pong',
 })

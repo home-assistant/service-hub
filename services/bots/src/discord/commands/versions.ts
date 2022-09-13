@@ -1,13 +1,14 @@
 import { TransformPipe } from '@discord-nestjs/common';
-import { Command, DiscordTransformedCommand, UsePipes } from '@discord-nestjs/core';
+import { DiscordTransformedCommand, UsePipes } from '@discord-nestjs/core';
 import fetch from 'node-fetch';
 
 import { getVersionInfo } from '@lib/common';
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
+import { DiscordCommand } from '../discord.decorator';
 
 const version = getVersionInfo(__dirname);
 
-@Command({
+@DiscordCommand({
   name: 'versions',
   description: 'Returns version information',
 })
