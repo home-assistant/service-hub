@@ -7,6 +7,7 @@ import { LoggerModule } from 'nestjs-pino';
 
 import Config, { AppConfig } from './config';
 import { GithubWebhookModule } from './github-webhook/github-webhook.module';
+import { ClaSignModule } from './cla-sign/cla-sign.module';
 
 const version = getVersionInfo(__dirname);
 
@@ -26,7 +27,6 @@ const version = getVersionInfo(__dirname);
       }),
     }),
     HealthModule.register({ version }),
-    GithubWebhookModule,
     LoggerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -38,6 +38,8 @@ const version = getVersionInfo(__dirname);
         },
       }),
     }),
+    ClaSignModule,
+    GithubWebhookModule,
   ],
 })
 export class BotsModule {}

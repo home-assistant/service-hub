@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { BaseWebhookHandler } from './base';
 
 import { DynamoDB } from 'aws-sdk';
+import { ClaIssueLabel } from '@lib/common/github';
 import {
   WebhookHandlerParams,
   ListCommitResponse,
@@ -35,13 +36,6 @@ const ignoredRepositories: Set<string> = new Set([
 
 const botContextName = 'cla-bot';
 
-enum IssueLabel {
-  CLA_ERROR = 'cla-error',
-  CLA_NEEDED = 'cla-needed',
-  CLA_RECHECK = 'cla-recheck',
-  CLA_SIGNED = 'cla-signed',
-}
-
 export class ValidateCla extends BaseWebhookHandler {
   private ddbClient: DynamoDB;
   private signersTableName: string;
@@ -73,14 +67,14 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (eventData.action === 'labeled') {
-      if (eventData.label.name !== IssueLabel.CLA_RECHECK) {
+      if (eventData.label.name !== ClaIssueLabel.CLA_RECHECK) {
         return;
       }
       await this.githubApiClient.issues.removeLabel({
         owner: eventData.repository.owner.login,
         repo: eventData.repository.name,
         issue_number: eventData.number,
-        name: IssueLabel.CLA_RECHECK,
+        name: ClaIssueLabel.CLA_RECHECK,
       });
     }
 
@@ -148,7 +142,7 @@ export class ValidateCla extends BaseWebhookHandler {
         owner: eventData.repository.owner.login,
         repo: eventData.repository.name,
         issue_number: eventData.number,
-        labels: [IssueLabel.CLA_ERROR],
+        labels: [ClaIssueLabel.CLA_ERROR],
       });
 
       commitsWithoutLogins.forEach((commit) => {
@@ -175,7 +169,7 @@ export class ValidateCla extends BaseWebhookHandler {
         owner: eventData.repository.owner.login,
         repo: eventData.repository.name,
         issue_number: eventData.number,
-        labels: [IssueLabel.CLA_NEEDED],
+        labels: [ClaIssueLabel.CLA_NEEDED],
       });
 
       authorsNeedingCLA.forEach((entry) =>
@@ -225,14 +219,15 @@ export class ValidateCla extends BaseWebhookHandler {
       owner: eventData.repository.owner.login,
       repo: eventData.repository.name,
       issue_number: eventData.number,
-      labels: [IssueLabel.CLA_SIGNED],
+      labels: [ClaIssueLabel.CLA_SIGNED],
     });
+
     try {
       await this.githubApiClient.issues.removeLabel({
         owner: eventData.repository.owner.login,
         repo: eventData.repository.name,
         issue_number: eventData.number,
-        name: IssueLabel.CLA_NEEDED,
+        name: ClaIssueLabel.CLA_NEEDED,
       });
     } catch {
       // ignroe missing label
