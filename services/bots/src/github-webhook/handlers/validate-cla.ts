@@ -2,6 +2,7 @@ import { ConfigService } from '@nestjs/config';
 import { BaseWebhookHandler } from './base';
 
 import { DynamoDB } from 'aws-sdk';
+import { ClaIssueLabel } from '@lib/common/github';
 import {
   WebhookHandlerParams,
   ListCommitResponse,
@@ -37,13 +38,6 @@ const ignoredRepositories: Set<string> = new Set([
 
 const botContextName = 'cla-bot';
 
-enum IssueLabel {
-  CLA_ERROR = 'cla-error',
-  CLA_NEEDED = 'cla-needed',
-  CLA_RECHECK = 'cla-recheck',
-  CLA_SIGNED = 'cla-signed',
-}
-
 export class ValidateCla extends BaseWebhookHandler {
   private ddbClient: DynamoDB;
   private signersTableName: string;
@@ -75,14 +69,14 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (eventData.action === 'labeled') {
-      if (eventData.label.name !== IssueLabel.CLA_RECHECK) {
+      if (eventData.label.name !== ClaIssueLabel.CLA_RECHECK) {
         return;
       }
       await this.githubApiClient.issues.removeLabel({
         owner: eventData.repository.owner.login,
         repo: eventData.repository.name,
         issue_number: eventData.number,
-        name: IssueLabel.CLA_RECHECK,
+        name: ClaIssueLabel.CLA_RECHECK,
       });
     }
 
@@ -148,7 +142,8 @@ export class ValidateCla extends BaseWebhookHandler {
           `https://github.com/${eventData.repository.full_name}/pull/${eventData.number}/commits/`,
         ),
       );
-      scheduleIssueLabel(params.deliveryId, IssueLabel.CLA_ERROR);
+
+      scheduleIssueLabel(params.deliveryId, ClaIssueLabel.CLA_ERROR);
 
       commitsWithoutLogins.forEach((commit) => {
         this.githubApiClient.repos.createCommitStatus({
@@ -164,13 +159,13 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (authorsNeedingCLA.length) {
-      scheduleIssueComment(
-        params.deliveryId,
-        botContextName,
-        pullRequestComment(authorsNeedingCLA, eventData.number),
-      );
-
-      scheduleIssueLabel(params.deliveryId, IssueLabel.CLA_NEEDED);
+      await this.githubApiClient.issues.createComment({
+        owner: eventData.repository.owner.login,
+        repo: eventData.repository.name,
+        issue_number: eventData.number,
+        body: pullRequestComment(authorsNeedingCLA, eventData.number),
+      });
+      scheduleIssueLabel(params.deliveryId, ClaIssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
         this.githubApiClient.repos.createCommitStatus({
@@ -215,13 +210,13 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     // If we get here, all is good :+1:
-    scheduleIssueLabel(params.deliveryId, IssueLabel.CLA_SIGNED);
+    scheduleIssueLabel(params.deliveryId, ClaIssueLabel.CLA_SIGNED);
     try {
       await this.githubApiClient.issues.removeLabel({
         owner: eventData.repository.owner.login,
         repo: eventData.repository.name,
         issue_number: eventData.number,
-        name: IssueLabel.CLA_NEEDED,
+        name: ClaIssueLabel.CLA_NEEDED,
       });
     } catch {
       // ignroe missing label
