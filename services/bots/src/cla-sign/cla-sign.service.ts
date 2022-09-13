@@ -50,25 +50,32 @@ export class ClaSignService {
     }
 
     // Store signData
-    await this.ddbClient
-      .putItem({
-        TableName: this.signersTableName,
-        Item: {
-          github_username: { S: signData.github_username },
-          company_name: { S: signData.company_name || null },
-          country: { S: signData.country },
-          email: { S: signData.email },
-          github_user_id: { S: signData.github_user_id },
-          i_agree: { B: signData.i_agree },
-          ip_address: { S: signData.ip_address },
-          name: { S: signData.name },
-          received_at: { S: signData.received_at },
-          region: { S: signData.region },
-          signing_for: { S: signData.signing_for },
-          user_agent: { S: signData.user_agent },
-        },
-      })
-      .promise();
+    try {
+      await this.ddbClient
+        .putItem({
+          TableName: this.signersTableName,
+          Item: {
+            github_username: { S: signData.github_username },
+            company_name: { S: signData.company_name || '' },
+            country: { S: signData.country },
+            email: { S: signData.email },
+            github_user_id: { S: signData.github_user_id },
+            i_agree: { S: signData.i_agree },
+            ip_address: { S: signData.ip_address || '' },
+            name: { S: signData.name },
+            received_at: { S: signData.received_at },
+            region: { S: signData.region },
+            signing_for: { S: signData.signing_for },
+            user_agent: { S: signData.user_agent },
+          },
+        })
+        .promise();
+    } catch (err) {
+      throw new ServiceError(`Could not store signed data (${err?.message})`, {
+        cause: err,
+        data: { pendingRequest, signData, payload, headers },
+      });
+    }
 
     // Cleanup DDB Table
     await this.ddbClient
