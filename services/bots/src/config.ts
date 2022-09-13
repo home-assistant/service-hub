@@ -31,6 +31,18 @@ const conf = convict({
       format: String,
     },
   },
+  discord: {
+    token: {
+      default: '',
+      env: 'DISCORD_TOKEN',
+      format: String,
+    },
+    guildId: {
+      default: '',
+      env: 'DISCORD_GUILD_ID',
+      format: String,
+    },
+  },
   logging: {
     name: {
       default: 'bots',
