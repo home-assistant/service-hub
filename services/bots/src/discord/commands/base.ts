@@ -7,21 +7,23 @@ import {
 import { ServiceError } from '@lib/common';
 import { InteractionReplyOptions, MessagePayload } from 'discord.js';
 
+type HandlerOutputs = string | MessagePayload | InteractionReplyOptions | void;
+
 @UsePipes(TransformPipe)
 export class BaseDiscordCommand<DTOType> implements DiscordTransformedCommand<DTOType> {
-  public async handler(
+  public handler(
     dto: DTOType,
     executionContext: TransformedCommandExecutionContext,
-  ): Promise<string | MessagePayload | InteractionReplyOptions | void> {
+  ): Promise<HandlerOutputs> | HandlerOutputs {
     try {
-      return await this.handleCommand(dto, executionContext);
+      return this.handleCommand(dto, executionContext);
     } catch (err) {
       throw new ServiceError(err?.message, { cause: err, data: { dto, executionContext } });
     }
   }
 
-  async handleCommand(
+  handleCommand(
     dto: DTOType,
     executionContext: TransformedCommandExecutionContext,
-  ): Promise<string | MessagePayload | InteractionReplyOptions | void> {}
+  ): Promise<HandlerOutputs> | HandlerOutputs {}
 }

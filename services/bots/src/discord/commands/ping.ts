@@ -6,7 +6,7 @@ import { BaseDiscordCommand } from './base';
   description: 'Returns pong',
 })
 export class PingCommand extends BaseDiscordCommand<any> {
-  async handleCommand(): Promise<string> {
+  handleCommand(): string {
     return 'pong';
   }
 }
