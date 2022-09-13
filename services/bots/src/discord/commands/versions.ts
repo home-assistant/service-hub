@@ -1,10 +1,9 @@
-import { TransformPipe } from '@discord-nestjs/common';
-import { DiscordTransformedCommand, UsePipes } from '@discord-nestjs/core';
 import fetch from 'node-fetch';
 
 import { getVersionInfo } from '@lib/common';
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { DiscordCommand } from '../discord.decorator';
+import { BaseDiscordCommand } from './base';
 
 const version = getVersionInfo(__dirname);
 
@@ -12,9 +11,8 @@ const version = getVersionInfo(__dirname);
   name: 'versions',
   description: 'Returns version information',
 })
-@UsePipes(TransformPipe)
-export class VersionsCommand implements DiscordTransformedCommand<any> {
-  async handler(interaction: ChatInputCommandInteraction): Promise<void> {
+export class VersionsCommand extends BaseDiscordCommand<any> {
+  async handleCommand(interaction: ChatInputCommandInteraction): Promise<void> {
     const [betaResponse, stableResponse] = await Promise.all([
       fetch('https://version.home-assistant.io/beta.json'),
       fetch('https://version.home-assistant.io/stable.json'),
