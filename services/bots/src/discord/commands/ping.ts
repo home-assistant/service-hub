@@ -1,12 +1,13 @@
-import { DiscordCommand } from '../discord.decorator';
-import { BaseDiscordCommand } from './base';
+import { DiscordTransformedCommand } from '@discord-nestjs/core';
+import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
 
-@DiscordCommand({
+@DiscordCommandClass({
   name: 'ping',
   description: 'Returns pong',
 })
-export class PingCommand extends BaseDiscordCommand<any> {
-  handleCommand(): string {
+export class PingCommand implements DiscordTransformedCommand<any> {
+  @CommandHandler()
+  handler(): string {
     return 'pong';
   }
 }
