@@ -1,4 +1,9 @@
-import { DiscordTransformedCommand } from '@discord-nestjs/core';
+import {
+  DiscordTransformedCommand,
+  Payload,
+  TransformedCommandExecutionContext,
+} from '@discord-nestjs/core';
+import { BlankDto } from '../discord.const';
 import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
 
 @DiscordCommandClass({
@@ -7,7 +12,10 @@ import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
 })
 export class PingCommand implements DiscordTransformedCommand<any> {
   @CommandHandler()
-  handler(): string {
-    return 'pong';
+  async handler(
+    @Payload() handlerDto: BlankDto,
+    { interaction }: TransformedCommandExecutionContext,
+  ): Promise<void> {
+    await interaction.reply('pong');
   }
 }
