@@ -1,6 +1,10 @@
-import { CommandOptions, COMMAND_DECORATOR } from '@discord-nestjs/core';
+import {
+  CommandOptions,
+  COMMAND_DECORATOR,
+  TransformedCommandExecutionContext,
+} from '@discord-nestjs/core';
 import { reportException } from '@lib/sentry/reporting';
-import { PermissionFlagsBits, ChatInputCommandInteraction } from 'discord.js';
+import { PermissionFlagsBits } from 'discord.js';
 
 interface CommandHandlerDecoratorOptions {
   allowChannels?: string[];
@@ -29,9 +33,12 @@ export const CommandHandler = (options?: CommandHandlerDecoratorOptions): Method
   ): PropertyDescriptor => {
     const originalMethod = descriptor.value;
     descriptor.value = async function (...params: any[]) {
-      const interaction: ChatInputCommandInteraction = params[params.length - 1];
+      const { interaction }: TransformedCommandExecutionContext = params[params.length - 1];
 
-      if (options?.allowChannels && !options.allowChannels.includes(interaction.channel.id)) {
+      if (
+        options?.allowChannels?.length &&
+        !options.allowChannels.includes(interaction.channel.id)
+      ) {
         return;
       }
 
