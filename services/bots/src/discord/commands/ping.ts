@@ -1,15 +1,21 @@
-import { TransformPipe } from '@discord-nestjs/common';
-import { DiscordTransformedCommand, UsePipes } from '@discord-nestjs/core';
-import { PermissionFlagsBits } from 'discord.js';
-import { DiscordCommand } from '../discord.decorator';
+import {
+  DiscordTransformedCommand,
+  Payload,
+  TransformedCommandExecutionContext,
+} from '@discord-nestjs/core';
+import { BlankDto } from '../discord.const';
+import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
 
-@DiscordCommand({
+@DiscordCommandClass({
   name: 'ping',
   description: 'Returns pong',
 })
-@UsePipes(TransformPipe)
 export class PingCommand implements DiscordTransformedCommand<any> {
-  handler(): string {
-    return 'pong';
+  @CommandHandler()
+  async handler(
+    @Payload() handlerDto: BlankDto,
+    { interaction }: TransformedCommandExecutionContext,
+  ): Promise<void> {
+    await interaction.reply('pong');
   }
 }
