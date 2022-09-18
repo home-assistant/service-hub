@@ -12,6 +12,15 @@ import {
 import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
 import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
+import { Emoji } from '../discord.const';
+
+const QualityScale = {
+  no_score: 'No score',
+  silver: `${Emoji.SECOND_PLACE} Silver`,
+  gold: `${Emoji.FIRST_PLACE} Gold`,
+  platinum: `${Emoji.TROPHY} Platinum`,
+  internal: `${Emoji.HOUSE} Internal`,
+};
 
 class IntegrationDto {
   @Param({
@@ -73,7 +82,8 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
           fields: [
             {
               name: 'Quality scale',
-              value: this.integrationData[domain].quality_scale || 'No score',
+              value:
+                QualityScale[this.integrationData[domain].quality_scale] || QualityScale.no_score,
               inline: true,
             },
             {
