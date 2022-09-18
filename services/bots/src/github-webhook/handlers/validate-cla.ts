@@ -3,11 +3,8 @@ import { BaseWebhookHandler } from './base';
 
 import { DynamoDB } from 'aws-sdk';
 import { ClaIssueLabel } from '@lib/common/github';
-import {
-  WebhookHandlerParams,
-  ListCommitResponse,
-  PullRequestEventData,
-} from '../github-webhook.const';
+import { PullRequestEventData } from '../github-webhook.const';
+import { WebhookContext } from '../github-webhook.model';
 
 const ignoredAuthors: Set<string> = new Set([
   // Ignore bot accounts that are not masked as bots
@@ -48,19 +45,22 @@ export class ValidateCla extends BaseWebhookHandler {
     this.pendingSignersTableName = configService.get('dynamodb.cla.pendingSignersTable');
   }
 
-  async handle(params: WebhookHandlerParams) {
+  async handle(context: WebhookContext) {
     if (
       ![
         'pull_request.labeled',
         'pull_request.opened',
         'pull_request.reopened',
         'pull_request.synchronize',
-      ].includes(params.eventType)
+      ].includes(context.eventType)
     ) {
       return;
     }
 
-    const eventData = params.payload as PullRequestEventData;
+    const eventData = context.payload as PullRequestEventData;
+    const authorsWithSignedCLA: Set<string> = new Set();
+    const authorsNeedingCLA: { sha: string; login: string }[] = [];
+    const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];
 
     if (ignoredRepositories.has(eventData.repository.full_name)) {
       return;
@@ -71,32 +71,17 @@ export class ValidateCla extends BaseWebhookHandler {
         return;
       }
       await this.githubApiClient.issues.removeLabel({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
+        ...context.issueContext,
         name: ClaIssueLabel.CLA_RECHECK,
       });
     }
 
-    const commits = await this.getCommits(eventData);
-    await this.checkAuthors(eventData, commits.data);
-  }
-
-  getCommits(eventData: PullRequestEventData): Promise<ListCommitResponse> {
-    return this.githubApiClient.pulls.listCommits({
-      owner: eventData.repository.owner.login,
-      repo: eventData.repository.name,
-      pull_number: eventData.number,
+    const commits = await this.githubApiClient.pulls.listCommits({
+      ...context.issueContext,
       per_page: 100,
     });
-  }
 
-  async checkAuthors(eventData: PullRequestEventData, commits: ListCommitResponse['data']) {
-    const authorsWithSignedCLA: Set<string> = new Set();
-    const authorsNeedingCLA: { sha: string; login: string }[] = [];
-    const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];
-
-    for await (const commit of commits) {
+    for await (const commit of commits.data) {
       if (commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email)) {
         continue;
       }
@@ -127,28 +112,20 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (commitsWithoutLogins.length) {
-      await this.githubApiClient.issues.createComment({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
-        body: noLoginOnShaComment(
+      context.scheduleIssueComment(
+        botContextName,
+        noLoginOnShaComment(
           commitsWithoutLogins,
           eventData.pull_request.user.login,
           `https://github.com/${eventData.repository.full_name}/pull/${eventData.number}/commits/`,
         ),
-      });
+      );
 
-      await this.githubApiClient.issues.addLabels({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
-        labels: [ClaIssueLabel.CLA_ERROR],
-      });
+      context.scheduleIssueLabel(ClaIssueLabel.CLA_ERROR);
 
       commitsWithoutLogins.forEach((commit) => {
         this.githubApiClient.repos.createCommitStatus({
-          owner: eventData.repository.owner.login,
-          repo: eventData.repository.name,
+          ...context.issueContext,
           sha: commit.sha,
           state: 'failure',
           description: 'Commit(s) are missing a linked GitHub user.',
@@ -159,23 +136,15 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (authorsNeedingCLA.length) {
-      await this.githubApiClient.issues.createComment({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
-        body: pullRequestComment(authorsNeedingCLA, eventData.number),
-      });
-      await this.githubApiClient.issues.addLabels({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
-        labels: [ClaIssueLabel.CLA_NEEDED],
-      });
+      context.scheduleIssueComment(
+        botContextName,
+        pullRequestComment(authorsNeedingCLA, eventData.number),
+      );
+      context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
         this.githubApiClient.repos.createCommitStatus({
-          owner: eventData.repository.owner.login,
-          repo: eventData.repository.name,
+          ...context.issueContext,
           sha: entry.sha,
           state: 'failure',
           description: 'At least one contributor needs to sign the CLA',
@@ -215,28 +184,19 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     // If we get here, all is good :+1:
-    await this.githubApiClient.issues.addLabels({
-      owner: eventData.repository.owner.login,
-      repo: eventData.repository.name,
-      issue_number: eventData.number,
-      labels: [ClaIssueLabel.CLA_SIGNED],
-    });
-
+    context.scheduleIssueLabel(ClaIssueLabel.CLA_SIGNED);
     try {
       await this.githubApiClient.issues.removeLabel({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
-        issue_number: eventData.number,
+        ...context.issueContext,
         name: ClaIssueLabel.CLA_NEEDED,
       });
     } catch {
       // ignroe missing label
     }
 
-    commits.forEach((commit) => {
+    commits.data.forEach((commit) => {
       this.githubApiClient.repos.createCommitStatus({
-        owner: eventData.repository.owner.login,
-        repo: eventData.repository.name,
+        ...context.issueContext,
         sha: commit.sha,
         state: 'success',
         description: 'Everyone involved has signed the CLA',

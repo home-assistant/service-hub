@@ -2,12 +2,6 @@ import { RestEndpointMethodTypes } from '@octokit/rest';
 import { EventPayloadMap } from '@octokit/webhooks-types';
 import { BaseWebhookHandler } from './handlers/base';
 
-export interface WebhookHandlerParams {
-  eventType: string;
-  deliveryId: string;
-  payload: Record<string, any>;
-}
-
 export const WEBHOOK_HANDLERS: BaseWebhookHandler[] = [];
 
 export type PullRequestEventData = EventPayloadMap['pull_request'];

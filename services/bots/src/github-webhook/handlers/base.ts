@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Octokit } from '@octokit/rest';
-import { WebhookHandlerParams, WEBHOOK_HANDLERS } from '../github-webhook.const';
+import { WEBHOOK_HANDLERS } from '../github-webhook.const';
+import { WebhookContext } from '../github-webhook.model';
 
 @Injectable()
 export class BaseWebhookHandler {
@@ -12,5 +13,5 @@ export class BaseWebhookHandler {
     WEBHOOK_HANDLERS.push(this);
   }
 
-  async handle(params: WebhookHandlerParams) {}
+  async handle(context: WebhookContext) {}
 }
