@@ -10,7 +10,7 @@ import {
   On,
 } from '@discord-nestjs/core';
 import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
-import { AutocompleteInteraction, EmbedBuilder, EmojiResolvable } from 'discord.js';
+import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
 import { Emoji } from '../discord.const';
 
