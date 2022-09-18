@@ -57,7 +57,7 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
 
     if (!this.integrationData[domain]) {
       await interaction.reply({
-        content: `Could not find information for ${domain}`,
+        content: 'Could not find information',
         ephemeral: true,
       });
       return;
