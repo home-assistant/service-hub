@@ -45,7 +45,7 @@ export const CommandHandler = (options?: CommandHandlerDecoratorOptions): Method
       try {
         await originalMethod.apply(this, params);
         if (!interaction.replied) {
-          await interaction.reply({ content: 'Command completed' });
+          await interaction.reply({ content: 'Command completed', ephemeral: true });
         }
       } catch (err) {
         reportException(err, {
@@ -59,7 +59,7 @@ export const CommandHandler = (options?: CommandHandlerDecoratorOptions): Method
           },
         });
         if (!interaction.replied) {
-          await interaction.reply({ content: err?.message || 'Unknown error, check Sentry' });
+          await interaction.reply({ content: err?.message || 'Unknown error', ephemeral: true });
         }
       }
     };
