@@ -71,7 +71,7 @@ export class ClaSignService {
         })
         .promise();
     } catch (err) {
-      throw new ServiceError(`Could not store signed data (${err?.message})`, {
+      throw new ServiceError('Could not store signed data', {
         cause: err,
         data: { pendingRequest, signData, payload, headers },
       });
