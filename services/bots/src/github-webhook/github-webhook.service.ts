@@ -34,7 +34,7 @@ export class GithubWebhookService {
         body: context.scheduledComments
           .map(
             (entry) =>
-              `${entry.context}${
+              `${entry.comment}${
                 context.scheduledComments.length >= 2
                   ? `\n<sub><sup>(message by ${entry.context})</sup></sub>`
                   : ''

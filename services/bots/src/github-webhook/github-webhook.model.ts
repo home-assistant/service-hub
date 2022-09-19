@@ -14,12 +14,24 @@ export class WebhookContext {
     this.payload = params.payload;
   }
 
-  public get issueContext() {
+  public get baseContext() {
     return {
-      issue_number: this.payload.number,
-      pull_number: this.payload.number,
       owner: this.payload.repository.owner.login,
       repo: this.payload.repository.name,
+    };
+  }
+
+  public get issueContext() {
+    return {
+      ...this.baseContext,
+      issue_number: this.payload.number,
+    };
+  }
+
+  public get pullContext() {
+    return {
+      ...this.baseContext,
+      pull_number: this.payload.number,
     };
   }
 
