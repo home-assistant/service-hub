@@ -7,7 +7,7 @@ import { Logger } from 'nestjs-pino';
 import { BotsModule } from './bots.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(BotsModule, { bufferLogs: true });
+  const app = await NestFactory.create(BotsModule, { bufferLogs: true, cors: true });
   app.useLogger(app.get(Logger));
   app.useGlobalInterceptors(new SentryInterceptor());
 
