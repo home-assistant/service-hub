@@ -72,7 +72,9 @@ export class ValidateCla extends BaseWebhookHandler {
         return;
       }
       try {
-        await this.githubApiClient.issues.removeLabel(context.issue({ name: 'dsf' }));
+        await this.githubApiClient.issues.removeLabel(
+          context.issue({ name: ClaIssueLabel.CLA_RECHECK }),
+        );
       } catch {
         // ignroe missing label
       }
