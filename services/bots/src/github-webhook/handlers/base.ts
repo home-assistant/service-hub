@@ -8,5 +8,5 @@ export class BaseWebhookHandler {
     WEBHOOK_HANDLERS.push(this);
   }
 
-  async handle(context: WebhookContext) {}
+  async handle(context: WebhookContext<any>) {}
 }

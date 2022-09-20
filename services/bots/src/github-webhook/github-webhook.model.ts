@@ -1,19 +1,19 @@
 import { Octokit } from '@octokit/rest';
 
-interface WebhookContextParams {
+interface WebhookContextParams<E> {
   github: Octokit;
-  payload: Record<string, any>;
+  payload: E;
   eventType: string;
 }
 
-export class WebhookContext {
+export class WebhookContext<E> {
   public github: Octokit;
   public eventType: string;
-  public payload: Record<string, any>;
+  public payload: E;
   public scheduledComments: { context: string; comment: string }[] = [];
   public scheduledlabels: string[] = [];
 
-  constructor(params: WebhookContextParams) {
+  constructor(params: WebhookContextParams<E>) {
     this.github = params.github;
     this.eventType = params.eventType;
     this.payload = params.payload;
@@ -21,22 +21,30 @@ export class WebhookContext {
 
   public repo<T>(data?: T): { owner: string; repo: string } & T {
     return {
-      owner: this.payload.repository.owner.login,
-      repo: this.payload.repository.name,
+      owner: (this.payload as any).repository.owner.login,
+      repo: (this.payload as any).name,
       ...data,
     };
   }
 
   public issue<T>(data?: T) {
     return {
-      issue_number: (this.payload.issue || this.payload.pull_request || this.payload).number,
+      issue_number: (
+        (this.payload as any).issue ||
+        (this.payload as any).pull_request ||
+        this.payload
+      ).number as number,
       ...this.repo(data),
     };
   }
 
   public pullRequest<T>(data?: T) {
     return {
-      pull_number: (this.payload.issue || this.payload.pull_request || this.payload).number,
+      pull_number: (
+        (this.payload as any).issue ||
+        (this.payload as any).pull_request ||
+        this.payload
+      ).number as number,
       ...this.repo(data),
     };
   }

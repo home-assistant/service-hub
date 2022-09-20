@@ -7,21 +7,20 @@ import { BaseWebhookHandler } from './base';
 import { CodeOwnersEntry, matchFile } from 'codeowners-utils';
 
 export class CodeOwnersMention extends BaseWebhookHandler {
-  async handle(context: WebhookContext) {
-    const eventData = context.payload as IssuesLabeledEvent | PullRequestLabeledEvent;
+  async handle(context: WebhookContext<IssuesLabeledEvent | PullRequestLabeledEvent>) {
     if (
       !['issues.labeled', 'pull_request.labeled'].includes(context.eventType) ||
       ![Repository.CORE, Repository.HOME_ASSISTANT_IO].includes(
         context.repo().repo as Repository,
       ) ||
-      !eventData.label ||
-      !eventData.label.name.startsWith('integration: ')
+      !context.payload.label ||
+      !context.payload.label.name.startsWith('integration: ')
     ) {
       return;
     }
 
-    const triggerIssue = issueFromPayload(eventData);
-    const integrationName = eventData.label.name.split('integration: ')[1];
+    const triggerIssue = issueFromPayload(context.payload);
+    const integrationName = context.payload.label.name.split('integration: ')[1];
     const path =
       context.repo().repo === Repository.CORE
         ? `homeassistant/components/${integrationName}/*`

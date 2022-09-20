@@ -40,13 +40,13 @@ export class ValidateCla extends BaseWebhookHandler {
   private pendingSignersTableName: string;
 
   constructor(configService: ConfigService) {
-    super(configService);
+    super();
     this.ddbClient = new DynamoDB({ region: configService.get('dynamodb.cla.region') });
     this.signersTableName = configService.get('dynamodb.cla.signersTable');
     this.pendingSignersTableName = configService.get('dynamodb.cla.pendingSignersTable');
   }
 
-  async handle(context: WebhookContext) {
+  async handle(context: WebhookContext<PullRequestEventData>) {
     if (
       ![
         'pull_request.labeled',
@@ -58,17 +58,16 @@ export class ValidateCla extends BaseWebhookHandler {
       return;
     }
 
-    const eventData = context.payload as PullRequestEventData;
     const authorsWithSignedCLA: Set<string> = new Set();
     const authorsNeedingCLA: { sha: string; login: string }[] = [];
     const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];
 
-    if (ignoredRepositories.has(eventData.repository.full_name)) {
+    if (ignoredRepositories.has(context.payload.repository.full_name)) {
       return;
     }
 
-    if (eventData.action === 'labeled') {
-      if (eventData.label.name !== ClaIssueLabel.CLA_RECHECK) {
+    if (context.payload.action === 'labeled') {
+      if (context.payload.label.name !== ClaIssueLabel.CLA_RECHECK) {
         return;
       }
       try {
@@ -115,8 +114,8 @@ export class ValidateCla extends BaseWebhookHandler {
         botContextName,
         noLoginOnShaComment(
           commitsWithoutLogins,
-          eventData.pull_request.user.login,
-          `https://github.com/${eventData.repository.full_name}/pull/${eventData.number}/commits/`,
+          context.payload.pull_request.user.login,
+          `https://github.com/${context.payload.repository.full_name}/pull/${context.payload.number}/commits/`,
         ),
       );
 
@@ -138,7 +137,7 @@ export class ValidateCla extends BaseWebhookHandler {
     if (authorsNeedingCLA.length) {
       context.scheduleIssueComment(
         botContextName,
-        pullRequestComment(authorsNeedingCLA, eventData.number),
+        pullRequestComment(authorsNeedingCLA, context.payload.number),
       );
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
@@ -171,10 +170,10 @@ export class ValidateCla extends BaseWebhookHandler {
                 Item: {
                   github_username: { S: author },
                   commits: { L: missingSign[author].map((entry) => ({ S: entry })) },
-                  pr: { S: `${eventData.repository.full_name}#${eventData.number}` },
-                  repository_owner: { S: eventData.repository.owner.login },
-                  repository: { S: eventData.repository.name },
-                  pr_number: { S: String(eventData.number) },
+                  pr: { S: `${context.payload.repository.full_name}#${context.payload.number}` },
+                  repository_owner: { S: context.payload.repository.owner.login },
+                  repository: { S: context.payload.repository.name },
+                  pr_number: { S: String(context.payload.number) },
                   signatureRequestedAt: { S: new Date().toISOString() },
                 },
               })

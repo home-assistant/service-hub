@@ -5,7 +5,7 @@ import { BaseWebhookHandler } from './base';
 export const isHacktoberfestLive = () => new Date().getMonth() === 9;
 
 export class Hacktoberfest extends BaseWebhookHandler {
-  async handle(context: WebhookContext) {
+  async handle(context: WebhookContext<any>) {
     if (isHacktoberfestLive && context.eventType === 'pull_request.opened') {
       await this.handlePullRequestOpened(context);
     } else if (context.eventType === 'pull_request.closed') {
@@ -13,11 +13,11 @@ export class Hacktoberfest extends BaseWebhookHandler {
     }
   }
 
-  async handlePullRequestOpened(context: WebhookContext) {
+  async handlePullRequestOpened(context: WebhookContext<any>) {
     context.scheduleIssueLabel('Hacktoberfest');
   }
-  async handlePullRequestClosed(context: WebhookContext) {
-    const pullRequest = (context.payload as PullRequestClosedEvent).pull_request;
+  async handlePullRequestClosed(context: WebhookContext<PullRequestClosedEvent>) {
+    const pullRequest = context.payload.pull_request;
 
     // Don't do something if the PR got merged or if it had no Hacktoberfest label.
     if (

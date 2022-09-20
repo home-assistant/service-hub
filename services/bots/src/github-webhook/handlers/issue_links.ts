@@ -4,18 +4,17 @@ import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
 export class IssueLinks extends BaseWebhookHandler {
-  async handle(context: WebhookContext) {
-    const eventData = context.payload as IssuesLabeledEvent;
+  async handle(context: WebhookContext<IssuesLabeledEvent>) {
     if (
       context.eventType !== 'issues.labeled' ||
       context.repo().repo !== Repository.CORE ||
-      !eventData.label ||
-      !eventData.label.name.startsWith('integration: ')
+      !context.payload.label ||
+      !context.payload.label.name.startsWith('integration: ')
     ) {
       return;
     }
 
-    const domain = eventData.label.name.split('integration: ')[1];
+    const domain = context.payload.label.name.split('integration: ')[1];
     const docLink = `https://www.home-assistant.io/integrations/${domain}`;
     const codeLink = `https://github.com/home-assistant/core/tree/dev/homeassistant/components/${domain}`;
     context.scheduleIssueComment(
