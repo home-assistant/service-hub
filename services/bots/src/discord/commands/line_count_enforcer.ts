@@ -8,7 +8,7 @@ export class LineCountEnforcer {
   async handler(message: Message): Promise<void> {
     if (message.content.split('\n').length > MAX_LINE_LENGTH) {
       const attachment = new AttachmentBuilder(Buffer.from(message.content, 'utf-8'), {
-        name: 'message',
+        name: 'message.txt',
       });
       await message.channel.send({
         content: "I converted your message into a file since it's above 15 lines :+1:",
