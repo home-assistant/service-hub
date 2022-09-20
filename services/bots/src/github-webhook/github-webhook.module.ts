@@ -15,6 +15,7 @@ import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { ReviewEnforcer } from './handlers/review_enforcer';
 import { DocsMissing } from './handlers/docs_missing';
 import { BranchLabels } from './handlers/branch_labels';
+import { LabelBot } from './handlers/label_bot/handler';
 
 @Module({
   providers: [
@@ -24,6 +25,7 @@ import { BranchLabels } from './handlers/branch_labels';
     Hacktoberfest,
     IssueLinks,
     SetIntegration,
+    LabelBot,
     ReviewEnforcer,
     BranchLabels,
     DocsMissing,
