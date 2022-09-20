@@ -10,10 +10,12 @@ import { Hacktoberfest } from './handlers/hacktoberfest';
 import { IssueLinks } from './handlers/issue_links';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
+import { DependencyBump } from './handlers/dependency_bump';
 
 @Module({
   providers: [
     CodeOwnersMention,
+    DependencyBump,
     GithubWebhookService,
     Hacktoberfest,
     IssueLinks,

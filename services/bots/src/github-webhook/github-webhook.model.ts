@@ -1,4 +1,5 @@
 import { Octokit } from '@octokit/rest';
+import { ListPullRequestFiles } from './github-webhook.const';
 
 interface WebhookContextParams<E> {
   github: Octokit;
@@ -12,6 +13,8 @@ export class WebhookContext<E> {
   public payload: E;
   public scheduledComments: { handler: string; comment: string }[] = [];
   public scheduledlabels: string[] = [];
+
+  public _prFiles?: ListPullRequestFiles;
 
   constructor(params: WebhookContextParams<E>) {
     this.github = params.github;

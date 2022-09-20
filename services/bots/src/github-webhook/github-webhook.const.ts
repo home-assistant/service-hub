@@ -6,7 +6,8 @@ export const WEBHOOK_HANDLERS: BaseWebhookHandler[] = [];
 
 export type PullRequestEventData = EventPayloadMap['pull_request'];
 export type IssuesEventData = EventPayloadMap['issues'];
-export type ListCommitResponse = RestEndpointMethodTypes['pulls']['listCommits']['response'];
+export type ListPullRequestFiles =
+  RestEndpointMethodTypes['pulls']['listFiles']['response']['data'];
 
 export enum Repository {
   CORE = 'core',
