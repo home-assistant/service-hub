@@ -72,19 +72,15 @@ export class ValidateCla extends BaseWebhookHandler {
         return;
       }
       try {
-        await this.githubApiClient.issues.removeLabel({
-          ...context.issueContext,
-          name: ClaIssueLabel.CLA_RECHECK,
-        });
+        await this.githubApiClient.issues.removeLabel(context.issue({ name: 'dsf' }));
       } catch {
         // ignroe missing label
       }
     }
 
-    const commits = await this.githubApiClient.pulls.listCommits({
-      ...context.pullContext,
-      per_page: 100,
-    });
+    const commits = await this.githubApiClient.pulls.listCommits(
+      context.pullRequest({ per_page: 100 }),
+    );
 
     for await (const commit of commits.data) {
       if (commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email)) {
@@ -129,13 +125,14 @@ export class ValidateCla extends BaseWebhookHandler {
       context.scheduleIssueLabel(ClaIssueLabel.CLA_ERROR);
 
       commitsWithoutLogins.forEach((commit) => {
-        this.githubApiClient.repos.createCommitStatus({
-          ...context.baseContext,
-          sha: commit.sha,
-          state: 'failure',
-          description: 'Commit(s) are missing a linked GitHub user.',
-          context: botContextName,
-        });
+        this.githubApiClient.repos.createCommitStatus(
+          context.repo({
+            sha: commit.sha,
+            state: 'failure',
+            description: 'Commit(s) are missing a linked GitHub user.',
+            context: botContextName,
+          }),
+        );
       });
       return;
     }
@@ -148,13 +145,14 @@ export class ValidateCla extends BaseWebhookHandler {
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
-        this.githubApiClient.repos.createCommitStatus({
-          ...context.baseContext,
-          sha: entry.sha,
-          state: 'failure',
-          description: 'At least one contributor needs to sign the CLA',
-          context: botContextName,
-        }),
+        this.githubApiClient.repos.createCommitStatus(
+          context.repo({
+            sha: entry.sha,
+            state: 'failure',
+            description: 'At least one contributor needs to sign the CLA',
+            context: botContextName,
+          }),
+        ),
       );
 
       const missingSign: { [key: string]: string[] } = {};
@@ -198,22 +196,24 @@ export class ValidateCla extends BaseWebhookHandler {
     // If we get here, all is good :+1:
     context.scheduleIssueLabel(ClaIssueLabel.CLA_SIGNED);
     try {
-      await this.githubApiClient.issues.removeLabel({
-        ...context.issueContext,
-        name: ClaIssueLabel.CLA_NEEDED,
-      });
+      await this.githubApiClient.issues.removeLabel(
+        context.issue({
+          name: ClaIssueLabel.CLA_NEEDED,
+        }),
+      );
     } catch {
       // ignroe missing label
     }
 
     commits.data.forEach((commit) => {
-      this.githubApiClient.repos.createCommitStatus({
-        ...context.baseContext,
-        sha: commit.sha,
-        state: 'success',
-        description: 'Everyone involved has signed the CLA',
-        context: botContextName,
-      });
+      this.githubApiClient.repos.createCommitStatus(
+        context.repo({
+          sha: commit.sha,
+          state: 'success',
+          description: 'Everyone involved has signed the CLA',
+          context: botContextName,
+        }),
+      );
     });
   }
 }

@@ -14,24 +14,25 @@ export class WebhookContext {
     this.payload = params.payload;
   }
 
-  public get baseContext() {
+  public repo<T>(data?: T) {
     return {
       owner: this.payload.repository.owner.login,
       repo: this.payload.repository.name,
+      ...data,
     };
   }
 
-  public get issueContext() {
+  public issue<T>(data?: T) {
     return {
-      ...this.baseContext,
-      issue_number: this.payload.number,
+      issue_number: (this.payload.issue || this.payload.pull_request || this.payload).number,
+      ...this.repo(data),
     };
   }
 
-  public get pullContext() {
+  public pullRequest<T>(data?: T) {
     return {
-      ...this.baseContext,
-      pull_number: this.payload.number,
+      pull_number: (this.payload.issue || this.payload.pull_request || this.payload).number,
+      ...this.repo(data),
     };
   }
 
