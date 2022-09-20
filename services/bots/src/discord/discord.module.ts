@@ -3,9 +3,10 @@ import { DiscordModule } from '@discord-nestjs/core';
 import { PingCommand } from './commands/ping';
 import { VersionsCommand } from './commands/versions';
 import { IntegrationCommand } from './commands/integration';
+import { LineCountEnforcer } from './commands/line_count_enforcer';
 
 @Module({
   imports: [DiscordModule.forFeature()],
-  providers: [PingCommand, VersionsCommand, IntegrationCommand],
+  providers: [PingCommand, VersionsCommand, IntegrationCommand, LineCountEnforcer],
 })
 export class DiscordBotModule {}

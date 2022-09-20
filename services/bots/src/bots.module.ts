@@ -47,7 +47,11 @@ const version = getVersionInfo(__dirname);
       useFactory: (configService: ConfigService) => ({
         token: configService.get('discord.token'),
         discordClientOptions: {
-          intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+          intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.MessageContent,
+          ],
         },
         registerCommandOptions: [
           {
