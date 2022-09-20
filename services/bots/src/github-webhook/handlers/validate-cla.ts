@@ -6,6 +6,7 @@ import { ClaIssueLabel } from '@lib/common/github';
 import { DynamoDB } from 'aws-sdk';
 import { PullRequestEventData } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
+import { Injectable } from '@nestjs/common';
 
 const ignoredAuthors: Set<string> = new Set([
   // Ignore bot accounts that are not masked as bots
@@ -34,12 +35,13 @@ const ignoredRepositories: Set<string> = new Set([
 
 const botContextName = 'cla-bot';
 
+@Injectable()
 export class ValidateCla extends BaseWebhookHandler {
   private ddbClient: DynamoDB;
   private signersTableName: string;
   private pendingSignersTableName: string;
 
-  constructor(configService: ConfigService) {
+  constructor(private configService: ConfigService) {
     super();
     this.ddbClient = new DynamoDB({ region: configService.get('dynamodb.cla.region') });
     this.signersTableName = configService.get('dynamodb.cla.signersTable');
