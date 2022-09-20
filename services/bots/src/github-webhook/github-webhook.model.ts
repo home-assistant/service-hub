@@ -10,7 +10,7 @@ export class WebhookContext<E> {
   public github: Octokit;
   public eventType: string;
   public payload: E;
-  public scheduledComments: { context: string; comment: string }[] = [];
+  public scheduledComments: { handler: string; comment: string }[] = [];
   public scheduledlabels: string[] = [];
 
   constructor(params: WebhookContextParams<E>) {
@@ -49,8 +49,8 @@ export class WebhookContext<E> {
     };
   }
 
-  public scheduleIssueComment(context: string, comment: string): void {
-    this.scheduledComments.push({ context, comment });
+  public scheduleIssueComment(handler: string, comment: string): void {
+    this.scheduledComments.push({ handler, comment });
   }
 
   public scheduleIssueLabel(label: string): void {

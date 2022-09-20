@@ -42,7 +42,7 @@ export class GithubWebhookService {
               (entry) =>
                 `${entry.comment}${
                   context.scheduledComments.length >= 2
-                    ? `\n<sub><sup>(message by ${entry.context})</sup></sub>`
+                    ? `\n<sub><sup>(message by ${entry.handler})</sup></sub>`
                     : ''
                 }`,
             )
