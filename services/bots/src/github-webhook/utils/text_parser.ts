@@ -42,3 +42,19 @@ export const extractTasks = (body: string) => {
   });
   return tasks;
 };
+
+export const extractDocumentationSectionsLinks = (body: string): string[] => {
+  const re = /https:\/\/(www.|rc.|next.|)home-assistant.io\/(.*)\//g;
+  let match;
+  let results: string[] = [];
+
+  do {
+    match = re.exec(body);
+    if (match) {
+      const sections = match[2].split('/');
+      results = results.concat(sections);
+    }
+  } while (match);
+
+  return [...new Set(results)];
+};

@@ -11,6 +11,7 @@ import { IssueLinks } from './handlers/issue_links';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
 import { DependencyBump } from './handlers/dependency_bump';
+import { SetDocumentationSection } from './handlers/set_documentation_section';
 
 @Module({
   providers: [
@@ -21,6 +22,7 @@ import { DependencyBump } from './handlers/dependency_bump';
     IssueLinks,
     SetIntegration,
     ValidateCla,
+    SetDocumentationSection,
   ],
   imports: [
     GithubWebhooksModule.forRootAsync({
