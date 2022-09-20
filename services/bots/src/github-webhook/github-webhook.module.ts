@@ -5,36 +5,38 @@ import { GithubWebhooksModule } from '@dev-thought/nestjs-github-webhooks';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config';
 import { GithubWebhookController } from './github-webhook.controller';
+import { BranchLabels } from './handlers/branch_labels';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
+import { DependencyBump } from './handlers/dependency_bump';
+import { DocsMissing } from './handlers/docs_missing';
+import { DocsParenting } from './handlers/docs_parenting';
+import { DocsTargetBranch } from './handlers/docs_target_branch';
 import { Hacktoberfest } from './handlers/hacktoberfest';
 import { IssueLinks } from './handlers/issue_links';
-import { SetIntegration } from './handlers/set_integration';
-import { ValidateCla } from './handlers/validate-cla';
-import { DependencyBump } from './handlers/dependency_bump';
-import { SetDocumentationSection } from './handlers/set_documentation_section';
-import { ReviewEnforcer } from './handlers/review_enforcer';
-import { DocsMissing } from './handlers/docs_missing';
-import { BranchLabels } from './handlers/branch_labels';
 import { LabelBot } from './handlers/label_bot/handler';
 import { LabelCleaner } from './handlers/label_cleaner';
-import { DocsTargetBranch } from './handlers/docs_target_branch';
+import { ReviewEnforcer } from './handlers/review_enforcer';
+import { SetDocumentationSection } from './handlers/set_documentation_section';
+import { SetIntegration } from './handlers/set_integration';
+import { ValidateCla } from './handlers/validate-cla';
 
 @Module({
   providers: [
+    BranchLabels,
     CodeOwnersMention,
     DependencyBump,
-    GithubWebhookService,
+    DocsMissing,
+    DocsParenting,
     DocsTargetBranch,
+    GithubWebhookService,
     Hacktoberfest,
     IssueLinks,
-    SetIntegration,
-    LabelCleaner,
     LabelBot,
+    LabelCleaner,
     ReviewEnforcer,
-    BranchLabels,
-    DocsMissing,
-    ValidateCla,
     SetDocumentationSection,
+    SetIntegration,
+    ValidateCla,
   ],
   imports: [
     GithubWebhooksModule.forRootAsync({
