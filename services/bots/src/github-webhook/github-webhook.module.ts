@@ -16,6 +16,7 @@ import { ReviewEnforcer } from './handlers/review_enforcer';
 import { DocsMissing } from './handlers/docs_missing';
 import { BranchLabels } from './handlers/branch_labels';
 import { LabelBot } from './handlers/label_bot/handler';
+import { LabelCleaner } from './handlers/label_cleaner';
 
 @Module({
   providers: [
@@ -25,6 +26,7 @@ import { LabelBot } from './handlers/label_bot/handler';
     Hacktoberfest,
     IssueLinks,
     SetIntegration,
+    LabelCleaner,
     LabelBot,
     ReviewEnforcer,
     BranchLabels,
