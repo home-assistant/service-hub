@@ -7,9 +7,10 @@ import { AppConfig } from '../config';
 import { GithubWebhookController } from './github-webhook.controller';
 import { IssueLinks } from './handlers/issue_links';
 import { ValidateCla } from './handlers/validate-cla';
+import { CodeOwnersMention } from './handlers/code_owners_mention';
 
 @Module({
-  providers: [GithubWebhookService, ValidateCla, IssueLinks],
+  providers: [GithubWebhookService, ValidateCla, IssueLinks, CodeOwnersMention],
   imports: [
     GithubWebhooksModule.forRootAsync({
       imports: [ConfigModule],
