@@ -11,7 +11,9 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     const eventData = context.payload as IssuesLabeledEvent | PullRequestLabeledEvent;
     if (
       !['issues.labeled', 'pull_request.labeled'].includes(context.eventType) ||
-      ![Repository.CORE, Repository.HOME_ASSISTANT_IO].includes(context.issueContext.repo) ||
+      ![Repository.CORE, Repository.HOME_ASSISTANT_IO].includes(
+        context.repo().repo as Repository,
+      ) ||
       !eventData.label ||
       !eventData.label.name.startsWith('integration: ')
     ) {
@@ -21,15 +23,13 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     const triggerIssue = issueFromPayload(eventData);
     const integrationName = eventData.label.name.split('integration: ')[1];
     const path =
-      context.issueContext.repo === Repository.CORE
+      context.repo().repo === Repository.CORE
         ? `homeassistant/components/${integrationName}/*`
         : `source/_integrations/${integrationName}.markdown`;
 
-    const codeownersData = await this.githubApiClient.repos.getContent({
-      owner: context.issueContext.owner,
-      repo: context.issueContext.repo,
-      path: 'CODEOWNERS',
-    });
+    const codeownersData = await this.githubApiClient.repos.getContent(
+      context.repo({ path: 'CODEOWNERS' }),
+    );
 
     const codeownersContent = Buffer.from(
       // @ts-ignore
@@ -54,19 +54,14 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     }#L${match.line}`;
 
     const assignees = triggerIssue.assignees.map((assignee) => assignee.login.toLowerCase());
-    const commentersData = await this.githubApiClient.issues.listComments({
-      ...context.issueContext,
-      per_page: 100,
-    });
+    const commentersData = await this.githubApiClient.issues.listComments(
+      context.issue({ per_page: 100 }),
+    );
     const commenters = commentersData.data.map((commenter) => commenter.user.login.toLowerCase());
     const payloadUsername = triggerIssue.user.login.toLowerCase();
     const ownersMinusAuthor = owners.filter((usr) => usr !== payloadUsername);
 
-    await this.githubApiClient.issues.addAssignees({
-      ...context.issueContext,
-      per_page: 100,
-      assignees: ownersMinusAuthor,
-    });
+    await this.githubApiClient.issues.addAssignees(context.issue({ assignees: ownersMinusAuthor }));
 
     const mentions = ownersMinusAuthor
       .filter((usr) => !assignees.includes(usr) && !commenters.includes(usr))
@@ -75,7 +70,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
 
     if (mentions.length > 0) {
       const triggerLabel =
-        context.issueContext.repo === Repository.CORE
+        context.repo().repo === Repository.CORE
           ? context.eventType.startsWith('issues')
             ? 'issue'
             : 'pull request'
@@ -100,10 +95,9 @@ interface CodeOwnerEntry extends CodeOwnersEntry {
 
 function parse(str: string) {
   const entries: Array<CodeOwnerEntry> = [];
-  let lines = str.split('\n');
 
-  lines.forEach((entry, idx) => {
-    let [content, comment] = entry.split('#');
+  str.split('\n').forEach((entry, idx) => {
+    let [content, _] = entry.split('#');
     let trimmed = content.trim();
     if (trimmed === '') return;
     let [pattern, ...owners] = trimmed.split(/\s+/);
