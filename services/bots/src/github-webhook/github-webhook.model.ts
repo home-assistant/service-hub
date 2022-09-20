@@ -29,7 +29,7 @@ export class GithubClient extends Octokit {
   }
 }
 
-interface WebhookContextParams<E> {
+export interface WebhookContextParams<E> {
   github: GithubClient;
   payload: E;
   eventType: string;

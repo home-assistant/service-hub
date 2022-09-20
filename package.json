@@ -19,7 +19,9 @@
     "start:bots": "nest start bots --watch",
     "format": "prettier --write \"services/**/*.ts\" \"libs/**/*.ts\"",
     "lint": "eslint \"{src,services,libs,test}/**/*.ts\" --fix",
-    "prebuild": "rimraf dist"
+    "prebuild": "rimraf dist",
+    "test": "ts-mocha --recursive --timeout 10000 tests/**/*.spec.ts",
+    "test-watch": "ts-mocha --recursive --timeout 10000 --watch tests/**/*.spec.ts"
   },
   "dependencies": {
     "@dev-thought/nestjs-github-webhooks": "^1.0.0",
@@ -67,10 +69,12 @@
     "eslint": "8.14.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
+    "mocha": "^10.0.0",
     "prettier": "^2.6.2",
     "source-map-support": "^0.5.21",
     "ts-jest": "27.1.4",
     "ts-loader": "^9.3.0",
+    "ts-mocha": "^10.0.0",
     "ts-node": "^10.7.0",
     "tsconfig-paths": "^3.14.1",
     "typescript": "^4.6.4"
