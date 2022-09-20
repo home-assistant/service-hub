@@ -8,9 +8,10 @@ import { GithubWebhookController } from './github-webhook.controller';
 import { IssueLinks } from './handlers/issue_links';
 import { ValidateCla } from './handlers/validate-cla';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
+import { Hacktoberfest } from './handlers/hacktoberfest';
 
 @Module({
-  providers: [GithubWebhookService, ValidateCla, IssueLinks, CodeOwnersMention],
+  providers: [GithubWebhookService, ValidateCla, IssueLinks, CodeOwnersMention, Hacktoberfest],
   imports: [
     GithubWebhooksModule.forRootAsync({
       imports: [ConfigModule],

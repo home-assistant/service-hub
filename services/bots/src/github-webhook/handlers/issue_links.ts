@@ -8,7 +8,7 @@ export class IssueLinks extends BaseWebhookHandler {
     const eventData = context.payload as IssuesLabeledEvent;
     if (
       context.eventType !== 'issues.labeled' ||
-      context.issueContext.repo !== Repository.CORE ||
+      context.repo().repo !== Repository.CORE ||
       !eventData.label ||
       !eventData.label.name.startsWith('integration: ')
     ) {
