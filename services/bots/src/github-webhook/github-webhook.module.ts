@@ -17,12 +17,14 @@ import { DocsMissing } from './handlers/docs_missing';
 import { BranchLabels } from './handlers/branch_labels';
 import { LabelBot } from './handlers/label_bot/handler';
 import { LabelCleaner } from './handlers/label_cleaner';
+import { DocsTargetBranch } from './handlers/docs_target_branch';
 
 @Module({
   providers: [
     CodeOwnersMention,
     DependencyBump,
     GithubWebhookService,
+    DocsTargetBranch,
     Hacktoberfest,
     IssueLinks,
     SetIntegration,

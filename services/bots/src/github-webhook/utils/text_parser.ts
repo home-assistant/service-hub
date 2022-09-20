@@ -1,3 +1,5 @@
+import { WebhookContext } from '../github-webhook.model';
+
 interface IntegrationDocumentationLink {
   link: string;
   integration: string;
@@ -6,6 +8,12 @@ interface IntegrationDocumentationLink {
 interface Task {
   checked: boolean;
   description: string;
+}
+
+interface IssuePullInfo {
+  owner: string;
+  repo: string;
+  number: number;
 }
 
 export const extractIntegrationDocumentationLinks = (
@@ -57,4 +65,34 @@ export const extractDocumentationSectionsLinks = (body: string): string[] => {
   } while (match);
 
   return [...new Set(results)];
+};
+
+export const extractIssuesOrPullRequestMarkdownLinks = (body: string) => {
+  const re = /([\w-\.]+)\/([\w-\.]+)#(\d+)/g;
+  let match;
+  const results: IssuePullInfo[] = [];
+
+  do {
+    match = re.exec(body);
+    if (match) {
+      results.push({ owner: match[1], repo: match[2], number: Number(match[3]) });
+    }
+  } while (match);
+
+  return results;
+};
+
+export const extractPullRequestURLLinks = (body: string) => {
+  const re = /https:\/\/github.com\/([\w-\.]+)\/([\w-\.]+)\/pull\/(\d+)/g;
+  let match;
+  const results: IssuePullInfo[] = [];
+
+  do {
+    match = re.exec(body);
+    if (match) {
+      results.push({ owner: match[1], repo: match[2], number: Number(match[3]) });
+    }
+  } while (match);
+
+  return results;
 };

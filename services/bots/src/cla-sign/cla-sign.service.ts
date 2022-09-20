@@ -2,18 +2,18 @@ import { ServiceError } from '@lib/common';
 import { ClaIssueLabel } from '@lib/common/github';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Octokit } from '@octokit/rest';
 import { DynamoDB } from 'aws-sdk';
+import { GithubClient } from '../github-webhook/github-webhook.model';
 
 @Injectable()
 export class ClaSignService {
-  private githubApiClient: Octokit;
+  private githubApiClient: GithubClient;
   private ddbClient: DynamoDB;
   private signersTableName: string;
   private pendingSignersTableName: string;
 
   constructor(configService: ConfigService) {
-    this.githubApiClient = new Octokit({ auth: configService.get('github.token') });
+    this.githubApiClient = new GithubClient({ auth: configService.get('github.token') });
     this.ddbClient = new DynamoDB({ region: configService.get('dynamodb.cla.region') });
 
     this.signersTableName = configService.get('dynamodb.cla.signersTable');

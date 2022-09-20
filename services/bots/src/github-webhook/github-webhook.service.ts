@@ -2,16 +2,15 @@ import { ServiceError } from '@lib/common';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { Octokit } from '@octokit/rest';
 import { WEBHOOK_HANDLERS } from './github-webhook.const';
-import { WebhookContext } from './github-webhook.model';
+import { GithubClient, WebhookContext } from './github-webhook.model';
 
 @Injectable()
 export class GithubWebhookService {
-  private githubClient: Octokit;
+  private githubClient: GithubClient;
 
   constructor(configService: ConfigService) {
-    this.githubClient = new Octokit({ auth: configService.get('github.token') });
+    this.githubClient = new GithubClient({ auth: configService.get('github.token') });
   }
 
   async handleWebhook(headers: Record<string, any>, payload: Record<string, any>): Promise<void> {

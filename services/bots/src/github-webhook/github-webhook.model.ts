@@ -1,14 +1,42 @@
 import { Octokit } from '@octokit/rest';
-import { ListPullRequestFiles } from './github-webhook.const';
+import {
+  GetIssueParams,
+  GetIssueResponse,
+  GetPullRequestParams,
+  GetPullRequestResponse,
+  ListPullRequestFiles,
+} from './github-webhook.const';
+
+export class GithubClient extends Octokit {
+  private _issueRequestCache: { [key: string]: GetIssueResponse } = {};
+  private _pullRequestCache: { [key: string]: GetPullRequestResponse } = {};
+
+  public async fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {
+    const key = `${params.owner}/${params.repo}/${params.pull_number}`;
+    if (!(key in this._issueRequestCache)) {
+      this._issueRequestCache[key] = (await this.issues.get(params)).data;
+    }
+    return this._issueRequestCache[key];
+  }
+  public async fetchPullRequestWithCache(
+    params: GetPullRequestParams,
+  ): Promise<GetPullRequestResponse> {
+    const key = `${params.owner}/${params.repo}/${params.pull_number}`;
+    if (!(key in this._pullRequestCache)) {
+      this._pullRequestCache[key] = (await this.pulls.get(params)).data;
+    }
+    return this._pullRequestCache[key];
+  }
+}
 
 interface WebhookContextParams<E> {
-  github: Octokit;
+  github: GithubClient;
   payload: E;
   eventType: string;
 }
 
 export class WebhookContext<E> {
-  public github: Octokit;
+  public github: GithubClient;
   public eventType: string;
   public payload: E;
   public scheduledComments: { handler: string; comment: string }[] = [];

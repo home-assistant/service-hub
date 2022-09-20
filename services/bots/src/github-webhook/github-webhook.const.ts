@@ -2,15 +2,23 @@ import { RestEndpointMethodTypes } from '@octokit/rest';
 import { EventPayloadMap } from '@octokit/webhooks-types';
 import { BaseWebhookHandler } from './handlers/base';
 
+export const HOME_ASSISTANT_ORG = 'home-assistant';
+
 export const WEBHOOK_HANDLERS: BaseWebhookHandler[] = [];
 
 export type PullRequestEventData = EventPayloadMap['pull_request'];
 export type IssuesEventData = EventPayloadMap['issues'];
 export type ListPullRequestFiles =
   RestEndpointMethodTypes['pulls']['listFiles']['response']['data'];
+export type GetPullRequestParams = RestEndpointMethodTypes['pulls']['get']['parameters'];
+export type GetPullRequestResponse = RestEndpointMethodTypes['pulls']['get']['response']['data'];
+export type GetIssueParams = RestEndpointMethodTypes['issues']['get']['parameters'];
+export type GetIssueResponse = RestEndpointMethodTypes['issues']['get']['response']['data'];
 
 export enum Repository {
+  BRANDS = 'brands',
   CORE = 'core',
+  DEVELOPERS_HOME_ASSISTANT = 'developers.home-assistant',
   HOME_ASSISTANT_IO = 'home-assistant.io',
 }
 
