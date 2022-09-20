@@ -5,13 +5,21 @@ import { GithubWebhooksModule } from '@dev-thought/nestjs-github-webhooks';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config';
 import { GithubWebhookController } from './github-webhook.controller';
-import { IssueLinks } from './handlers/issue_links';
-import { ValidateCla } from './handlers/validate-cla';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
 import { Hacktoberfest } from './handlers/hacktoberfest';
+import { IssueLinks } from './handlers/issue_links';
+import { SetIntegration } from './handlers/set_integration';
+import { ValidateCla } from './handlers/validate-cla';
 
 @Module({
-  providers: [GithubWebhookService, ValidateCla, IssueLinks, CodeOwnersMention, Hacktoberfest],
+  providers: [
+    CodeOwnersMention,
+    GithubWebhookService,
+    Hacktoberfest,
+    IssueLinks,
+    SetIntegration,
+    ValidateCla,
+  ],
   imports: [
     GithubWebhooksModule.forRootAsync({
       imports: [ConfigModule],
