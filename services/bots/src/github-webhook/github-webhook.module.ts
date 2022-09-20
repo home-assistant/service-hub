@@ -12,6 +12,7 @@ import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
 import { DependencyBump } from './handlers/dependency_bump';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
+import { ReviewEnforcer } from './handlers/review_enforcer';
 
 @Module({
   providers: [
@@ -21,6 +22,7 @@ import { SetDocumentationSection } from './handlers/set_documentation_section';
     Hacktoberfest,
     IssueLinks,
     SetIntegration,
+    ReviewEnforcer,
     ValidateCla,
     SetDocumentationSection,
   ],
