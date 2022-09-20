@@ -13,6 +13,7 @@ import { ValidateCla } from './handlers/validate-cla';
 import { DependencyBump } from './handlers/dependency_bump';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { ReviewEnforcer } from './handlers/review_enforcer';
+import { DocsMissing } from './handlers/docs_missing';
 
 @Module({
   providers: [
@@ -23,6 +24,7 @@ import { ReviewEnforcer } from './handlers/review_enforcer';
     IssueLinks,
     SetIntegration,
     ReviewEnforcer,
+    DocsMissing,
     ValidateCla,
     SetDocumentationSection,
   ],
