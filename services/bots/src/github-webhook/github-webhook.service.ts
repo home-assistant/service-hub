@@ -22,26 +22,28 @@ export class GithubWebhookService {
     }
 
     if (context.scheduledlabels.length) {
-      await this.githubApiClient.issues.addLabels({
-        ...context.issueContext,
-        labels: context.scheduledlabels,
-      });
+      await this.githubApiClient.issues.addLabels(
+        context.issue({
+          labels: context.scheduledlabels,
+        }),
+      );
     }
 
     if (context.scheduledComments.length) {
-      await this.githubApiClient.issues.createComment({
-        ...context.issueContext,
-        body: context.scheduledComments
-          .map(
-            (entry) =>
-              `${entry.context}${
-                context.scheduledComments.length >= 2
-                  ? `\n<sub><sup>(message by ${entry.context})</sup></sub>`
-                  : ''
-              }`,
-          )
-          .join('\n\n---\n\n'),
-      });
+      await this.githubApiClient.issues.createComment(
+        context.issue({
+          body: context.scheduledComments
+            .map(
+              (entry) =>
+                `${entry.comment}${
+                  context.scheduledComments.length >= 2
+                    ? `\n<sub><sup>(message by ${entry.context})</sup></sub>`
+                    : ''
+                }`,
+            )
+            .join('\n\n---\n\n'),
+        }),
+      );
     }
   }
 }
