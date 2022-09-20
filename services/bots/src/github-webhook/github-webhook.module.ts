@@ -5,10 +5,11 @@ import { GithubWebhooksModule } from '@dev-thought/nestjs-github-webhooks';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config';
 import { GithubWebhookController } from './github-webhook.controller';
+import { IssueLinks } from './handlers/issue_links';
 import { ValidateCla } from './handlers/validate-cla';
 
 @Module({
-  providers: [GithubWebhookService, ValidateCla],
+  providers: [GithubWebhookService, ValidateCla, IssueLinks],
   imports: [
     GithubWebhooksModule.forRootAsync({
       imports: [ConfigModule],
