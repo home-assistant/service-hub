@@ -19,10 +19,17 @@ export class WebhookContext<E> {
     this.payload = params.payload;
   }
 
+  public get senderIsBot(): boolean {
+    return (
+      (this.payload as any).sender.type === 'Bot' ||
+      (this.payload as any).sender.login === 'homeassistant'
+    );
+  }
+
   public repo<T>(data?: T): { owner: string; repo: string } & T {
     return {
       owner: (this.payload as any).repository.owner.login,
-      repo: (this.payload as any).name,
+      repo: (this.payload as any).repository.name,
       ...data,
     };
   }
