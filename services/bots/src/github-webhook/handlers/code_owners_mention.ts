@@ -27,7 +27,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
         ? `homeassistant/components/${integrationName}/*`
         : `source/_integrations/${integrationName}.markdown`;
 
-    const codeownersData = await this.githubApiClient.repos.getContent(
+    const codeownersData = await context.github.repos.getContent(
       context.repo({ path: 'CODEOWNERS' }),
     );
 
@@ -54,14 +54,14 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     }#L${match.line}`;
 
     const assignees = triggerIssue.assignees.map((assignee) => assignee.login.toLowerCase());
-    const commentersData = await this.githubApiClient.issues.listComments(
+    const commentersData = await context.github.issues.listComments(
       context.issue({ per_page: 100 }),
     );
     const commenters = commentersData.data.map((commenter) => commenter.user.login.toLowerCase());
     const payloadUsername = triggerIssue.user.login.toLowerCase();
     const ownersMinusAuthor = owners.filter((usr) => usr !== payloadUsername);
 
-    await this.githubApiClient.issues.addAssignees(context.issue({ assignees: ownersMinusAuthor }));
+    await context.github.issues.addAssignees(context.issue({ assignees: ownersMinusAuthor }));
 
     const mentions = ownersMinusAuthor
       .filter((usr) => !assignees.includes(usr) && !commenters.includes(usr))

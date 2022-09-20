@@ -72,15 +72,13 @@ export class ValidateCla extends BaseWebhookHandler {
         return;
       }
       try {
-        await this.githubApiClient.issues.removeLabel(context.issue({ name: 'dsf' }));
+        await context.github.issues.removeLabel(context.issue({ name: ClaIssueLabel.CLA_RECHECK }));
       } catch {
         // ignroe missing label
       }
     }
 
-    const commits = await this.githubApiClient.pulls.listCommits(
-      context.pullRequest({ per_page: 100 }),
-    );
+    const commits = await context.github.pulls.listCommits(context.pullRequest({ per_page: 100 }));
 
     for await (const commit of commits.data) {
       if (commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email)) {
@@ -125,7 +123,7 @@ export class ValidateCla extends BaseWebhookHandler {
       context.scheduleIssueLabel(ClaIssueLabel.CLA_ERROR);
 
       commitsWithoutLogins.forEach((commit) => {
-        this.githubApiClient.repos.createCommitStatus(
+        context.github.repos.createCommitStatus(
           context.repo({
             sha: commit.sha,
             state: 'failure',
@@ -145,7 +143,7 @@ export class ValidateCla extends BaseWebhookHandler {
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
-        this.githubApiClient.repos.createCommitStatus(
+        context.github.repos.createCommitStatus(
           context.repo({
             sha: entry.sha,
             state: 'failure',
@@ -196,7 +194,7 @@ export class ValidateCla extends BaseWebhookHandler {
     // If we get here, all is good :+1:
     context.scheduleIssueLabel(ClaIssueLabel.CLA_SIGNED);
     try {
-      await this.githubApiClient.issues.removeLabel(
+      await context.github.issues.removeLabel(
         context.issue({
           name: ClaIssueLabel.CLA_NEEDED,
         }),
@@ -206,7 +204,7 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     commits.data.forEach((commit) => {
-      this.githubApiClient.repos.createCommitStatus(
+      context.github.repos.createCommitStatus(
         context.repo({
           sha: commit.sha,
           state: 'success',

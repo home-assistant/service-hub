@@ -1,20 +1,25 @@
+import { Octokit } from '@octokit/rest';
+
 interface WebhookContextParams {
+  github: Octokit;
   payload: Record<string, any>;
   eventType: string;
 }
 
 export class WebhookContext {
+  public github: Octokit;
   public eventType: string;
   public payload: Record<string, any>;
   public scheduledComments: { context: string; comment: string }[] = [];
   public scheduledlabels: string[] = [];
 
   constructor(params: WebhookContextParams) {
+    this.github = params.github;
     this.eventType = params.eventType;
     this.payload = params.payload;
   }
 
-  public repo<T>(data?: T) {
+  public repo<T>(data?: T): { owner: string; repo: string } & T {
     return {
       owner: this.payload.repository.owner.login,
       repo: this.payload.repository.name,

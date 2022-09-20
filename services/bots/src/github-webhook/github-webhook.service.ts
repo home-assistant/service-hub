@@ -8,13 +8,18 @@ import { WebhookContext } from './github-webhook.model';
 
 @Injectable()
 export class GithubWebhookService {
-  private githubApiClient: Octokit;
+  private githubClient: Octokit;
 
   constructor(configService: ConfigService) {
-    this.githubApiClient = new Octokit({ auth: configService.get('github.token') });
+    this.githubClient = new Octokit({ auth: configService.get('github.token') });
   }
 
-  async handleWebhook(context: WebhookContext): Promise<void> {
+  async handleWebhook(headers: Record<string, any>, payload: Record<string, any>): Promise<void> {
+    const context = new WebhookContext({
+      github: this.githubClient,
+      eventType: `${headers['x-github-event']}.${payload.action}`,
+      payload,
+    });
     try {
       await Promise.all(WEBHOOK_HANDLERS.map((handler) => handler.handle(context)));
     } catch (err) {
@@ -22,7 +27,7 @@ export class GithubWebhookService {
     }
 
     if (context.scheduledlabels.length) {
-      await this.githubApiClient.issues.addLabels(
+      await this.githubClient.issues.addLabels(
         context.issue({
           labels: context.scheduledlabels,
         }),
@@ -30,7 +35,7 @@ export class GithubWebhookService {
     }
 
     if (context.scheduledComments.length) {
-      await this.githubApiClient.issues.createComment(
+      await this.githubClient.issues.createComment(
         context.issue({
           body: context.scheduledComments
             .map(
