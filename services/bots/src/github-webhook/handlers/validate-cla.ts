@@ -6,6 +6,7 @@ import { ClaIssueLabel } from '@lib/common/github';
 import { DynamoDB } from 'aws-sdk';
 import { PullRequestEventData } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
+import { Injectable } from '@nestjs/common';
 
 const ignoredAuthors: Set<string> = new Set([
   // Ignore bot accounts that are not masked as bots
@@ -34,19 +35,20 @@ const ignoredRepositories: Set<string> = new Set([
 
 const botContextName = 'cla-bot';
 
+@Injectable()
 export class ValidateCla extends BaseWebhookHandler {
   private ddbClient: DynamoDB;
   private signersTableName: string;
   private pendingSignersTableName: string;
 
-  constructor(configService: ConfigService) {
-    super(configService);
+  constructor(private configService: ConfigService) {
+    super();
     this.ddbClient = new DynamoDB({ region: configService.get('dynamodb.cla.region') });
     this.signersTableName = configService.get('dynamodb.cla.signersTable');
     this.pendingSignersTableName = configService.get('dynamodb.cla.pendingSignersTable');
   }
 
-  async handle(context: WebhookContext) {
+  async handle(context: WebhookContext<PullRequestEventData>) {
     if (
       ![
         'pull_request.labeled',
@@ -58,31 +60,26 @@ export class ValidateCla extends BaseWebhookHandler {
       return;
     }
 
-    const eventData = context.payload as PullRequestEventData;
     const authorsWithSignedCLA: Set<string> = new Set();
     const authorsNeedingCLA: { sha: string; login: string }[] = [];
     const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];
 
-    if (ignoredRepositories.has(eventData.repository.full_name)) {
+    if (ignoredRepositories.has(context.payload.repository.full_name)) {
       return;
     }
 
-    if (eventData.action === 'labeled') {
-      if (eventData.label.name !== ClaIssueLabel.CLA_RECHECK) {
+    if (context.payload.action === 'labeled') {
+      if (context.payload.label.name !== ClaIssueLabel.CLA_RECHECK) {
         return;
       }
       try {
-        await this.githubApiClient.issues.removeLabel(
-          context.issue({ name: ClaIssueLabel.CLA_RECHECK }),
-        );
+        await context.github.issues.removeLabel(context.issue({ name: ClaIssueLabel.CLA_RECHECK }));
       } catch {
         // ignroe missing label
       }
     }
 
-    const commits = await this.githubApiClient.pulls.listCommits(
-      context.pullRequest({ per_page: 100 }),
-    );
+    const commits = await context.github.pulls.listCommits(context.pullRequest({ per_page: 100 }));
 
     for await (const commit of commits.data) {
       if (commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email)) {
@@ -119,15 +116,15 @@ export class ValidateCla extends BaseWebhookHandler {
         botContextName,
         noLoginOnShaComment(
           commitsWithoutLogins,
-          eventData.pull_request.user.login,
-          `https://github.com/${eventData.repository.full_name}/pull/${eventData.number}/commits/`,
+          context.payload.pull_request.user.login,
+          `https://github.com/${context.payload.repository.full_name}/pull/${context.payload.number}/commits/`,
         ),
       );
 
       context.scheduleIssueLabel(ClaIssueLabel.CLA_ERROR);
 
       commitsWithoutLogins.forEach((commit) => {
-        this.githubApiClient.repos.createCommitStatus(
+        context.github.repos.createCommitStatus(
           context.repo({
             sha: commit.sha,
             state: 'failure',
@@ -142,12 +139,15 @@ export class ValidateCla extends BaseWebhookHandler {
     if (authorsNeedingCLA.length) {
       context.scheduleIssueComment(
         botContextName,
-        pullRequestComment(authorsNeedingCLA, eventData.number),
+        pullRequestComment(
+          authorsNeedingCLA,
+          `${context.payload.repository.full_name}#${context.payload.number}`,
+        ),
       );
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
-        this.githubApiClient.repos.createCommitStatus(
+        context.github.repos.createCommitStatus(
           context.repo({
             sha: entry.sha,
             state: 'failure',
@@ -175,10 +175,10 @@ export class ValidateCla extends BaseWebhookHandler {
                 Item: {
                   github_username: { S: author },
                   commits: { L: missingSign[author].map((entry) => ({ S: entry })) },
-                  pr: { S: `${eventData.repository.full_name}#${eventData.number}` },
-                  repository_owner: { S: eventData.repository.owner.login },
-                  repository: { S: eventData.repository.name },
-                  pr_number: { S: String(eventData.number) },
+                  pr: { S: `${context.payload.repository.full_name}#${context.payload.number}` },
+                  repository_owner: { S: context.payload.repository.owner.login },
+                  repository: { S: context.payload.repository.name },
+                  pr_number: { S: String(context.payload.number) },
                   signatureRequestedAt: { S: new Date().toISOString() },
                 },
               })
@@ -198,7 +198,7 @@ export class ValidateCla extends BaseWebhookHandler {
     // If we get here, all is good :+1:
     context.scheduleIssueLabel(ClaIssueLabel.CLA_SIGNED);
     try {
-      await this.githubApiClient.issues.removeLabel(
+      await context.github.issues.removeLabel(
         context.issue({
           name: ClaIssueLabel.CLA_NEEDED,
         }),
@@ -208,7 +208,7 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     commits.data.forEach((commit) => {
-      this.githubApiClient.repos.createCommitStatus(
+      context.github.repos.createCommitStatus(
         context.repo({
           sha: commit.sha,
           state: 'success',
@@ -261,10 +261,10 @@ We apologize for this inconvenience, especially since it usually bites new contr
 Thanks, I look forward to checking this PR again soon! :heart:
 `;
 
-const pullRequestComment = (users: { sha: string; login: string }[], prNumber: string | number) => `
+const pullRequestComment = (users: { sha: string; login: string }[], pullRequest: string) => `
 Hi ${users.map((user) => `@${user.login}`).join(',')}
 
-It seems you haven't yet signed a CLA. Please do so [here](https://home-assistant.io/developers/cla_sign_start/?pr=${prNumber}).
+It seems you haven't yet signed a CLA. Please do so [here](https://home-assistant.io/developers/cla_sign_start/?pr=${pullRequest}).
 
 Once you do that we will be able to review and accept this pull request.
 
