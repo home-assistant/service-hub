@@ -7,6 +7,7 @@ import { BaseWebhookHandler } from './base';
 export class SetIntegration extends BaseWebhookHandler {
   async handle(context: WebhookContext<IssuesOpenedEvent>) {
     if (
+      context.senderIsBot ||
       context.eventType !== 'issues.opened' ||
       ![Repository.CORE, Repository.HOME_ASSISTANT_IO].includes(context.repo().repo as Repository)
     ) {
