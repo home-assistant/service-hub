@@ -13,7 +13,7 @@ const KNOWN_FILETYPES = new Set([
   'yml',
 ]);
 
-const formatedMessage = /^\`\`\`([\w]*)\n(.*)\n\`\`\`[\n]*$/s;
+const formatedMessage = /^\`\`\`([a-z|A-Z]*)\n(.*)\n\`\`\`[\n]*$/s;
 
 export class LineCountEnforcer {
   @On('messageCreate')
