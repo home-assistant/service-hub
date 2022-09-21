@@ -22,7 +22,7 @@ export class WebhookContext<E> {
   public scheduledComments: { handler: string; comment: string }[] = [];
   public scheduledlabels: string[] = [];
 
-  public _prFilesCacheCache?: ListPullRequestFiles;
+  public _prFilesCache?: ListPullRequestFiles;
   private _issueRequestCache: { [key: string]: GetIssueResponse } = {};
   private _pullRequestCache: { [key: string]: GetPullRequestResponse } = {};
 
