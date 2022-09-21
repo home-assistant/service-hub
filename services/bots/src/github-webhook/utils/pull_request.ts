@@ -4,8 +4,8 @@ import { WebhookContext } from '../github-webhook.model';
 export const fetchPullRequestFilesFromContext = async (
   context: WebhookContext<any>,
 ): Promise<ListPullRequestFiles> => {
-  if (!context._prFiles) {
-    context._prFiles = (await context.github.pulls.listFiles(context.issue())).data;
+  if (!context._prFilesCache) {
+    context._prFilesCache = (await context.github.pulls.listFiles(context.issue())).data;
   }
-  return context._prFiles;
+  return context._prFilesCache;
 };

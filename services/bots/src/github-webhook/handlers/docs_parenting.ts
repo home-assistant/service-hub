@@ -120,7 +120,7 @@ const updateDocsParentStatus = async (
 
   if (parentState === 'open') {
     // Parent is open, docs issue should be open too.
-    const docsPR = await context.github.fetchPullRequestWithCache({
+    const docsPR = await context.fetchPullRequestWithCache({
       owner: docLink.owner,
       repo: docLink.repo,
       pull_number: docLink.number,

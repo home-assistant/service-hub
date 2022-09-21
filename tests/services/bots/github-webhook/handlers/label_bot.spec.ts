@@ -24,7 +24,7 @@ describe('LabelBot', () => {
   });
 
   it('works', async () => {
-    mockContext._prFiles = [
+    mockContext._prFilesCache = [
       {
         filename: 'homeassistant/components/mqtt/climate.py',
       },
@@ -39,7 +39,7 @@ describe('LabelBot', () => {
   });
 
   it('many labels', async () => {
-    mockContext._prFiles = [
+    mockContext._prFilesCache = [
       {
         filename: 'homeassistant/components/mqtt/climate.py',
       },

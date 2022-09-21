@@ -7,27 +7,7 @@ import {
   ListPullRequestFiles,
 } from './github-webhook.const';
 
-export class GithubClient extends Octokit {
-  private _issueRequestCache: { [key: string]: GetIssueResponse } = {};
-  private _pullRequestCache: { [key: string]: GetPullRequestResponse } = {};
-
-  public async fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {
-    const key = `${params.owner}/${params.repo}/${params.pull_number}`;
-    if (!(key in this._issueRequestCache)) {
-      this._issueRequestCache[key] = (await this.issues.get(params)).data;
-    }
-    return this._issueRequestCache[key];
-  }
-  public async fetchPullRequestWithCache(
-    params: GetPullRequestParams,
-  ): Promise<GetPullRequestResponse> {
-    const key = `${params.owner}/${params.repo}/${params.pull_number}`;
-    if (!(key in this._pullRequestCache)) {
-      this._pullRequestCache[key] = (await this.pulls.get(params)).data;
-    }
-    return this._pullRequestCache[key];
-  }
-}
+export class GithubClient extends Octokit {}
 
 interface WebhookContextParams<E> {
   github: GithubClient;
@@ -42,7 +22,9 @@ export class WebhookContext<E> {
   public scheduledComments: { handler: string; comment: string }[] = [];
   public scheduledlabels: string[] = [];
 
-  public _prFiles?: ListPullRequestFiles;
+  public _prFilesCacheCache?: ListPullRequestFiles;
+  private _issueRequestCache: { [key: string]: GetIssueResponse } = {};
+  private _pullRequestCache: { [key: string]: GetPullRequestResponse } = {};
 
   constructor(params: WebhookContextParams<E>) {
     this.github = params.github;
@@ -91,5 +73,22 @@ export class WebhookContext<E> {
 
   public scheduleIssueLabel(label: string): void {
     this.scheduledlabels.push(label);
+  }
+
+  public async fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {
+    const key = `${params.owner}/${params.repo}/${params.pull_number}`;
+    if (!(key in this._issueRequestCache)) {
+      this._issueRequestCache[key] = (await this.github.issues.get(params)).data;
+    }
+    return this._issueRequestCache[key];
+  }
+  public async fetchPullRequestWithCache(
+    params: GetPullRequestParams,
+  ): Promise<GetPullRequestResponse> {
+    const key = `${params.owner}/${params.repo}/${params.pull_number}`;
+    if (!(key in this._pullRequestCache)) {
+      this._pullRequestCache[key] = (await this.github.pulls.get(params)).data;
+    }
+    return this._pullRequestCache[key];
   }
 }
