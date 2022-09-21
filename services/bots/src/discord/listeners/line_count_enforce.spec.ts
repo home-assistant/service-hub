@@ -13,7 +13,7 @@ describe('LineCountEnforcer', () => {
     sendMessage = {};
     mockMessage = {
       content: '',
-      author: { bot: false },
+      author: { bot: false, id: '1337' },
       member: {
         roles: {
           cache: [{}],
@@ -35,7 +35,7 @@ describe('LineCountEnforcer', () => {
     await listener.handler(mockMessage);
     assert.deepStrictEqual(
       sendMessage.content,
-      "I converted your message into a file since it's above 15 lines :+1:",
+      `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
     );
     assert.deepStrictEqual(sendMessage.files[0].name, 'message.txt');
   });
@@ -51,7 +51,7 @@ describe('LineCountEnforcer', () => {
     await listener.handler(mockMessage);
     assert.deepStrictEqual(
       sendMessage.content,
-      "I converted your message into a file since it's above 15 lines :+1:",
+      `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
     );
     assert.deepStrictEqual(sendMessage.files[0].name, 'message.yaml');
   });
@@ -62,7 +62,7 @@ describe('LineCountEnforcer', () => {
     await listener.handler(mockMessage);
     assert.deepStrictEqual(
       sendMessage.content,
-      "I converted your message into a file since it's above 15 lines :+1:",
+      `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
     );
     assert.deepStrictEqual(sendMessage.files[0].name, 'message.txt');
   });

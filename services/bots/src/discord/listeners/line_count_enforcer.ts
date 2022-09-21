@@ -8,6 +8,7 @@ const KNOWN_FILETYPES = new Set([
   'js',
   'json',
   'py',
+  'python',
   'sh',
   'ts',
   'txt',
@@ -40,7 +41,7 @@ export class LineCountEnforcer {
         }`,
       });
       await message.channel.send({
-        content: "I converted your message into a file since it's above 15 lines :+1:",
+        content: `<@${message.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
         files: [attachment],
       });
       await message.delete();
