@@ -3,9 +3,12 @@ import { Message, AttachmentBuilder } from 'discord.js';
 
 export const MAX_LINE_LENGTH = 17;
 const KNOWN_FILETYPES = new Set([
+  'diff',
   'javascript',
   'js',
   'json',
+  'py',
+  'sh',
   'ts',
   'txt',
   'typescript',
