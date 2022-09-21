@@ -56,7 +56,7 @@ export class ClaSignService {
           TableName: this.signersTableName,
           Item: {
             github_username: { S: signData.github_username },
-            company_name: { S: signData.company_name || '' },
+            company_name: signData.company_name ? { S: signData.company_name } : { NULL: true },
             country: { S: signData.country },
             email: { S: signData.email },
             github_user_id: { S: signData.github_user_id },
