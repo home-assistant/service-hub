@@ -8,6 +8,7 @@ export const mockWebhookContext = (params?: Partial<WebhookContext<any>>): Webho
     github: { ...params.github },
     payload: {
       repository: { name: 'core', owner: { login: 'home-assistant' } },
+      sender: { type: 'user', login: 'test-developer#1337' },
       number: 1337,
       ...params?.payload,
     },

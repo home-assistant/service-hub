@@ -29,10 +29,7 @@ export class Hacktoberfest extends BaseWebhookHandler {
 
     // If a Hacktoberfest PR got closed, automatically remove the  "Hacktoberfest" label
     try {
-      await context.github.issues.removeLabel({
-        ...context.issue(),
-        name: 'Hacktoberfest',
-      });
+      await context.github.issues.removeLabel(context.issue({ name: 'Hacktoberfest' }));
     } catch (_) {
       // ignroe missing label
     }

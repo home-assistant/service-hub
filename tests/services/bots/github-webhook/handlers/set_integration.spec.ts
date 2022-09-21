@@ -1,6 +1,6 @@
 // @ts-nocheck
 import * as assert from 'assert';
-import { WebhookContext } from 'services/bots/src/github-webhook/github-webhook.model';
+import { WebhookContext } from '../../../../../bots/src/github-webhook/github-webhook.model';
 import { SetIntegration } from '../../../../../services/bots/src/github-webhook/handlers/set_integration';
 import { mockWebhookContext } from '../../../../utils/test_context';
 

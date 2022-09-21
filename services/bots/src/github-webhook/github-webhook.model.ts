@@ -67,11 +67,9 @@ export class WebhookContext<E> {
 
   public issue<T>(data?: T) {
     return {
-      issue_number: (
-        (this.payload as any).issue ||
-        (this.payload as any).pull_request ||
-        this.payload
-      ).number as number,
+      issue_number: ((this.payload as any).issue?.number ||
+        (this.payload as any).pull_request?.number ||
+        (this.payload as any)?.number) as number,
       ...this.repo(data),
     };
   }
