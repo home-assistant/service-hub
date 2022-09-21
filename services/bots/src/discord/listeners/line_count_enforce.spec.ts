@@ -13,6 +13,12 @@ describe('LineCountEnforcer', () => {
     sendMessage = {};
     mockMessage = {
       content: '',
+      author: { bot: false },
+      member: {
+        roles: {
+          cache: [{}],
+        },
+      },
       channel: {
         // @ts-ignore
         async send(content) {
@@ -59,5 +65,19 @@ describe('LineCountEnforcer', () => {
       "I converted your message into a file since it's above 15 lines :+1:",
     );
     assert.deepStrictEqual(sendMessage.files[0].name, 'message.txt');
+  });
+
+  it('Ignore bots', async () => {
+    mockMessage.author.bot = true;
+    mockMessage.content = [...Array(MAX_LINE_LENGTH + 1).keys()].map(() => `hi`).join('\n');
+    await listener.handler(mockMessage);
+    assert.deepStrictEqual(sendMessage.content, undefined);
+  });
+
+  it('Ignore roles', async () => {
+    mockMessage.member.roles.cache = [{ name: 'Mod' }];
+    mockMessage.content = [...Array(MAX_LINE_LENGTH + 1).keys()].map(() => `hi`).join('\n');
+    await listener.handler(mockMessage);
+    assert.deepStrictEqual(sendMessage.content, undefined);
   });
 });

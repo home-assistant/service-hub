@@ -12,13 +12,18 @@ const KNOWN_FILETYPES = new Set([
   'yaml',
   'yml',
 ]);
+const IGNORE_ROLES = new Set(['Admin', 'Mod']);
 
 const formatedMessage = /^\`\`\`([a-z|A-Z]*)\n(.*)\n\`\`\`[\n]*$/s;
 
 export class LineCountEnforcer {
   @On('messageCreate')
   async handler(message: Message): Promise<void> {
-    if (message.content.split('\n').length > MAX_LINE_LENGTH) {
+    if (
+      !message.author.bot &&
+      !message.member.roles.cache.map((r) => r.name).find((role) => IGNORE_ROLES.has(role)) &&
+      message.content.split('\n').length > MAX_LINE_LENGTH
+    ) {
       let messageContent: string = message.content;
       let fileType = 'txt';
       if (formatedMessage.test(message.content)) {
