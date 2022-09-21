@@ -144,7 +144,7 @@ export class ValidateCla extends BaseWebhookHandler {
         botContextName,
         pullRequestComment(
           authorsNeedingCLA,
-          `${eventData.repository.full_name}#${eventData.repository.full_name}`,
+          `${eventData.repository.full_name}#${eventData.number}`,
         ),
       );
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
