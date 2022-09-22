@@ -80,6 +80,9 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     const commits = await context.github.pulls.listCommits(context.pullRequest({ per_page: 100 }));
+    const allCommitsIgnored = commits.data.every(
+      (commit) => commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email),
+    );
 
     for await (const commit of commits.data) {
       if (commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email)) {
@@ -196,7 +199,9 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     // If we get here, all is good :+1:
-    context.scheduleIssueLabel(ClaIssueLabel.CLA_SIGNED);
+    if (!allCommitsIgnored) {
+      context.scheduleIssueLabel(ClaIssueLabel.CLA_SIGNED);
+    }
     try {
       await context.github.issues.removeLabel(
         context.issue({
@@ -212,7 +217,9 @@ export class ValidateCla extends BaseWebhookHandler {
         context.repo({
           sha: commit.sha,
           state: 'success',
-          description: 'Everyone involved has signed the CLA',
+          description: `Everyone involved ${
+            allCommitsIgnored ? 'are ignored' : 'has signed the CLA'
+          }`,
           context: botContextName,
         }),
       );
