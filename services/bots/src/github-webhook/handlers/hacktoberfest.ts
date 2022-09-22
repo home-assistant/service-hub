@@ -14,7 +14,7 @@ export class Hacktoberfest extends BaseWebhookHandler {
     ) {
       return;
     }
-    if (isHacktoberfestLive && context.eventType === 'pull_request.opened') {
+    if (isHacktoberfestLive() && context.eventType === 'pull_request.opened') {
       await this.handlePullRequestOpened(context);
     } else if (context.eventType === 'pull_request.closed') {
       await this.handlePullRequestClosed(context);
