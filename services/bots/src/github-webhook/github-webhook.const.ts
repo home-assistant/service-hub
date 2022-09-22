@@ -19,6 +19,7 @@ export enum Repository {
   BRANDS = 'brands',
   CORE = 'core',
   DEVELOPERS_HOME_ASSISTANT = 'developers.home-assistant',
+  FRONTEND = 'frontend',
   HOME_ASSISTANT_IO = 'home-assistant.io',
 }
 
