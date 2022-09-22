@@ -4,7 +4,7 @@ import {
   PullRequestOpenedEvent,
   PullRequestReopenedEvent,
 } from '@octokit/webhooks-types';
-import { HOME_ASSISTANT_ORG, Repository } from '../github-webhook.const';
+import { EventType, HOME_ASSISTANT_ORG, Repository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import {
   extractIssuesOrPullRequestMarkdownLinks,
@@ -13,6 +13,14 @@ import {
 import { BaseWebhookHandler } from './base';
 
 export class DocsParenting extends BaseWebhookHandler {
+  public allowedEventTypes = [
+    EventType.PULL_REQUEST_OPENED,
+    EventType.PULL_REQUEST_REOPENED,
+    EventType.PULL_REQUEST_CLOSED,
+    EventType.PULL_REQUEST_EDITED,
+  ];
+  public allowedRepositories = [Repository.CORE, Repository.HOME_ASSISTANT_IO, Repository.FRONTEND];
+
   async handle(
     context: WebhookContext<
       | PullRequestReopenedEvent
@@ -22,25 +30,13 @@ export class DocsParenting extends BaseWebhookHandler {
     >,
   ) {
     if (
-      ![
-        'pull_request.reopened',
-        'pull_request.closed',
-        'pull_request.opened',
-        'pull_request.edited',
-      ].includes(context.eventType) ||
-      ![Repository.CORE, Repository.HOME_ASSISTANT_IO, Repository.FRONTEND].includes(
-        context.repo().repo as Repository,
-      )
+      [EventType.PULL_REQUEST_REOPENED, EventType.PULL_REQUEST_CLOSED].includes(context.eventType)
     ) {
-      return;
-    }
-
-    if (['pull_request.reopened', 'pull_request.closed'].includes(context.eventType)) {
       updateDocsParentStatus(
         context as WebhookContext<PullRequestReopenedEvent | PullRequestClosedEvent>,
       );
     } else {
-      if (context.repo().repo === Repository.HOME_ASSISTANT_IO) {
+      if (context.repositoryName === Repository.HOME_ASSISTANT_IO) {
         await runDocsParentingDocs(
           context as WebhookContext<PullRequestOpenedEvent | PullRequestEditedEvent>,
         );
@@ -106,7 +102,7 @@ const runDocsParentingDocs = async (
 const updateDocsParentStatus = async (
   context: WebhookContext<PullRequestReopenedEvent | PullRequestClosedEvent>,
 ) => {
-  if (context.repo().repo === Repository.HOME_ASSISTANT_IO) {
+  if (context.repositoryName === Repository.HOME_ASSISTANT_IO) {
     return;
   }
 

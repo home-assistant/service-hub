@@ -4,7 +4,7 @@ import { BaseWebhookHandler } from './base';
 import { ServiceError } from '@lib/common';
 import { ClaIssueLabel } from '@lib/common/github';
 import { DynamoDB } from 'aws-sdk';
-import { PullRequestEventData } from '../github-webhook.const';
+import { EventType, PullRequestEventData } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { Injectable } from '@nestjs/common';
 
@@ -37,6 +37,13 @@ const botContextName = 'cla-bot';
 
 @Injectable()
 export class ValidateCla extends BaseWebhookHandler {
+  public allowedEventTypes = [
+    EventType.PULL_REQUEST_OPENED,
+    EventType.PULL_REQUEST_REOPENED,
+    EventType.PULL_REQUEST_SYNCHRONIZE,
+    EventType.PULL_REQUEST_LABELED,
+  ];
+
   private ddbClient: DynamoDB;
   private signersTableName: string;
   private pendingSignersTableName: string;
@@ -49,17 +56,6 @@ export class ValidateCla extends BaseWebhookHandler {
   }
 
   async handle(context: WebhookContext<PullRequestEventData>) {
-    if (
-      ![
-        'pull_request.labeled',
-        'pull_request.opened',
-        'pull_request.reopened',
-        'pull_request.synchronize',
-      ].includes(context.eventType)
-    ) {
-      return;
-    }
-
     const authorsWithSignedCLA: Set<string> = new Set();
     const authorsNeedingCLA: { sha: string; login: string }[] = [];
     const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];

@@ -1,10 +1,12 @@
 import { Octokit } from '@octokit/rest';
 import {
+  EventType,
   GetIssueParams,
   GetIssueResponse,
   GetPullRequestParams,
   GetPullRequestResponse,
   ListPullRequestFiles,
+  Repository,
 } from './github-webhook.const';
 
 export class GithubClient extends Octokit {}
@@ -12,12 +14,13 @@ export class GithubClient extends Octokit {}
 interface WebhookContextParams<E> {
   github: GithubClient;
   payload: E;
-  eventType: string;
+  eventType: EventType;
 }
 
 export class WebhookContext<E> {
   public github: GithubClient;
-  public eventType: string;
+  public eventType: EventType;
+  public repositoryName: Repository;
   public payload: E;
   public scheduledComments: { handler: string; comment: string }[] = [];
   public scheduledlabels: string[] = [];
@@ -30,6 +33,7 @@ export class WebhookContext<E> {
     this.github = params.github;
     this.eventType = params.eventType;
     this.payload = params.payload;
+    this.repositoryName = (params.payload as any).repository.name;
   }
 
   public get senderIsBot(): boolean {

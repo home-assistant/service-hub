@@ -23,6 +23,18 @@ export enum Repository {
   HOME_ASSISTANT_IO = 'home-assistant.io',
 }
 
+export enum EventType {
+  ISSUES_LABELED = 'issues.labeled',
+  ISSUES_OPENED = 'issues.opened',
+  PULL_REQUEST_CLOSED = 'pull_request.closed',
+  PULL_REQUEST_EDITED = 'pull_request.edited',
+  PULL_REQUEST_LABELED = 'pull_request.labeled',
+  PULL_REQUEST_OPENED = 'pull_request.opened',
+  PULL_REQUEST_REOPENED = 'pull_request.reopened',
+  PULL_REQUEST_SYNCHRONIZE = 'pull_request.synchronize',
+  PULL_REQUEST_UNLABELED = 'pull_request.unlabeled',
+}
+
 export const entityComponents = new Set([
   'air_quality',
   'alarm_control_panel',

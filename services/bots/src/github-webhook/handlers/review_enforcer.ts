@@ -1,5 +1,5 @@
 import { PullRequestOpenedEvent } from '@octokit/webhooks-types';
-import { Repository } from '../github-webhook.const';
+import { EventType, Repository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { ParsedDocsPath } from '../utils/parse_docs_path';
 import { ParsedPath } from '../utils/parse_path';
@@ -10,11 +10,11 @@ const INTEGRATIONS = new Set(['xiaomi_miio']);
 const USERS = new Set([]);
 
 export class ReviewEnforcer extends BaseWebhookHandler {
+  public allowBots = false;
+  public allowedEventTypes = [EventType.PULL_REQUEST_OPENED];
+
   async handle(context: WebhookContext<PullRequestOpenedEvent>) {
-    if (context.senderIsBot || context.eventType !== 'pull_request.opened') {
-      return;
-    }
-    const repositoryName = context.repo().repo as Repository;
+    const repositoryName = context.repositoryName as Repository;
     if (USERS.has(context.payload.sender.login)) {
       context.scheduleIssueComment(
         'ReviewEnforcer',

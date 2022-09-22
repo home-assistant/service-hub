@@ -1,16 +1,14 @@
 import { IssuesLabeledEvent } from '@octokit/webhooks-types';
-import { Repository } from '../github-webhook.const';
+import { EventType, Repository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
 export class IssueLinks extends BaseWebhookHandler {
+  public allowedEventTypes = [EventType.ISSUES_LABELED];
+  public allowedRepositories = [Repository.CORE];
+
   async handle(context: WebhookContext<IssuesLabeledEvent>) {
-    if (
-      context.eventType !== 'issues.labeled' ||
-      context.repo().repo !== Repository.CORE ||
-      !context.payload.label ||
-      !context.payload.label.name.startsWith('integration: ')
-    ) {
+    if (!context.payload.label || !context.payload.label.name.startsWith('integration: ')) {
       return;
     }
 

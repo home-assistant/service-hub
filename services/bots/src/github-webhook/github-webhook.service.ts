@@ -2,7 +2,7 @@ import { ServiceError } from '@lib/common';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { WEBHOOK_HANDLERS } from './github-webhook.const';
+import { EventType, WEBHOOK_HANDLERS } from './github-webhook.const';
 import { GithubClient, WebhookContext } from './github-webhook.model';
 
 @Injectable()
@@ -16,11 +16,18 @@ export class GithubWebhookService {
   async handleWebhook(headers: Record<string, any>, payload: Record<string, any>): Promise<void> {
     const context = new WebhookContext({
       github: this.githubClient,
-      eventType: `${headers['x-github-event']}.${payload.action}`,
+      eventType: `${headers['x-github-event']}.${payload.action}` as EventType,
       payload,
     });
     try {
-      await Promise.all(WEBHOOK_HANDLERS.map((handler) => handler.handle(context)));
+      await Promise.all(
+        WEBHOOK_HANDLERS.filter(
+          (handler) =>
+            (handler.allowBots || !context.senderIsBot) &&
+            handler.allowedEventTypes.includes(context.eventType) &&
+            handler.allowedRepositories.includes(context.repositoryName),
+        ).map((handler) => handler.handle(context)),
+      );
     } catch (err) {
       throw new ServiceError('Could not process webhook', { cause: err, data: { context } });
     }
