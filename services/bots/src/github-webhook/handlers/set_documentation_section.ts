@@ -21,11 +21,11 @@ export class SetDocumentationSection extends BaseWebhookHandler {
       return;
     }
 
-    foundSections.forEach(async (section) => {
+    for (const section of foundSections) {
       const exist = await context.github.issues.getLabel(context.issue({ name: section }));
       if (exist.status === 200 && exist.data.name === section) {
         context.scheduleIssueLabel(exist.data.name);
       }
-    });
+    }
   }
 }
