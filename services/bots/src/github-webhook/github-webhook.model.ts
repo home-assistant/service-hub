@@ -19,7 +19,7 @@ export class WebhookContext<E> {
   public github: GithubClient;
   public eventType: string;
   public payload: E;
-  public scheduledComments: { handler: string; comment: string }[] = [];
+  public scheduledComments: { handler: string; comment: string; priority?: number }[] = [];
   public scheduledlabels: string[] = [];
 
   public _prFilesCache?: ListPullRequestFiles;
@@ -67,8 +67,12 @@ export class WebhookContext<E> {
     };
   }
 
-  public scheduleIssueComment(handler: string, comment: string): void {
-    this.scheduledComments.push({ handler, comment });
+  public scheduleIssueComment(params: {
+    handler: string;
+    comment: string;
+    priority?: number;
+  }): void {
+    this.scheduledComments.push(params);
   }
 
   public scheduleIssueLabel(label: string): void {

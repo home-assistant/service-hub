@@ -81,8 +81,8 @@ const wrongTargetBranchDetected = async (
   ['needs-rebase', 'in-progress'].forEach((label) => context.scheduleIssueLabel(label));
 
   await context.github.issues.addAssignees(context.issue({ assignees: [author] }));
-  context.scheduleIssueComment(
-    'DocsTargetBranch',
-    correctTargetBranch === 'next' ? bodyShouldTargetNext : bodyShouldTargetCurrent,
-  );
+  context.scheduleIssueComment({
+    handler: 'DocsTargetBranch',
+    comment: correctTargetBranch === 'next' ? bodyShouldTargetNext : bodyShouldTargetCurrent,
+  });
 };

@@ -16,10 +16,11 @@ export class ReviewEnforcer extends BaseWebhookHandler {
     }
     const repositoryName = context.repo().repo as Repository;
     if (USERS.has(context.payload.sender.login)) {
-      context.scheduleIssueComment(
-        'ReviewEnforcer',
-        'This pull request needs to be manually signed off by @home-assistant/core before it can get merged.',
-      );
+      context.scheduleIssueComment({
+        handler: 'ReviewEnforcer',
+        comment:
+          'This pull request needs to be manually signed off by @home-assistant/core before it can get merged.',
+      });
     } else if ([Repository.HOME_ASSISTANT_IO, Repository.CORE].includes(repositoryName)) {
       const files = await fetchPullRequestFilesFromContext(context);
       const parsed = files.map((file) =>
@@ -29,10 +30,11 @@ export class ReviewEnforcer extends BaseWebhookHandler {
       );
 
       if (parsed.some((file) => file.component && INTEGRATIONS.has(file.component))) {
-        context.scheduleIssueComment(
-          'ReviewEnforcer',
-          'This pull request needs to be manually signed off by @home-assistant/core before it can get merged.',
-        );
+        context.scheduleIssueComment({
+          handler: 'ReviewEnforcer',
+          comment:
+            'This pull request needs to be manually signed off by @home-assistant/core before it can get merged.',
+        });
       }
     }
   }

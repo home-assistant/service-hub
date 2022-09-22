@@ -115,14 +115,14 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (commitsWithoutLogins.length) {
-      context.scheduleIssueComment(
-        botContextName,
-        noLoginOnShaComment(
+      context.scheduleIssueComment({
+        handler: botContextName,
+        comment: noLoginOnShaComment(
           commitsWithoutLogins,
           context.payload.pull_request.user.login,
           `https://github.com/${context.payload.repository.full_name}/pull/${context.payload.number}/commits/`,
         ),
-      );
+      });
 
       context.scheduleIssueLabel(ClaIssueLabel.CLA_ERROR);
 
@@ -140,13 +140,13 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (authorsNeedingCLA.length) {
-      context.scheduleIssueComment(
-        botContextName,
-        pullRequestComment(
+      context.scheduleIssueComment({
+        handler: botContextName,
+        comment: pullRequestComment(
           authorsNeedingCLA,
           `${context.payload.repository.full_name}#${context.payload.number}`,
         ),
-      );
+      });
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
