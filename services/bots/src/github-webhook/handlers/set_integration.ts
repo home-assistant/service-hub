@@ -9,17 +9,15 @@ export class SetIntegration extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.ISSUES_OPENED];
   public allowedRepositories = [Repository.CORE, Repository.HOME_ASSISTANT_IO];
 
-  async handle(context: WebhookContext<IssuesOpenedEvent>) {
-    for (const link of extractIntegrationDocumentationLinks(
-      (context.payload.issue as Issue).body,
-    )) {
-      const label = `integration: ${link.integration}`;
-      const exist = await context.github.issues.getLabel(
-        context.issue({ name: label, repo: Repository.CORE }),
-      );
-      if (exist.status === 200 && exist.data.name === label) {
-        context.scheduleIssueLabel(label);
-      }
+  for (const link of extractIntegrationDocumentationLinks(
+    (context.payload.issue as Issue).body,
+  )) {
+    const label = `integration: ${link.integration}`;
+    const exist = await context.github.issues.getLabel(
+      context.issue({ name: label, repo: Repository.CORE }),
+    );
+    if (exist.status === 200 && exist.data.name === label) {
+      context.scheduleIssueLabel(label);
     }
   }
 }
