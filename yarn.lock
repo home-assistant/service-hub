@@ -1475,6 +1475,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/js-yaml@npm:^4":
+  version: 4.0.5
+  resolution: "@types/js-yaml@npm:4.0.5"
+  checksum: 7dcac8c50fec31643cc9d6444b5503239a861414cdfaa7ae9a38bc22597c4d850c4b8cec3d82d73b3fbca408348ce223b0408d598b32e094470dfffc6d486b4d
+  languageName: node
+  linkType: hard
+
 "@types/json-schema@npm:*, @types/json-schema@npm:^7.0.8, @types/json-schema@npm:^7.0.9":
   version: 7.0.11
   resolution: "@types/json-schema@npm:7.0.11"
@@ -6511,6 +6518,7 @@ __metadata:
     "@octokit/webhooks-types": ^6.3.6
     "@sentry/integrations": ^6.19.7
     "@sentry/node": ^6.19.7
+    "@types/js-yaml": ^4
     "@typescript-eslint/eslint-plugin": 5.21.0
     "@typescript-eslint/parser": ^5.21.0
     apollo-server-express: ^3.6.7
@@ -6523,6 +6531,7 @@ __metadata:
     eslint-plugin-import: ^2.26.0
     find-up: ^4.0.0
     graphql: ^16.6.0
+    js-yaml: ^4.1.0
     mocha: ^10.0.0
     nestjs-pino: ^2.5.2
     node-fetch: 2
