@@ -73,8 +73,10 @@ describe('LabelBot', () => {
     ];
     mockContext.payload.pull_request = {
       body:
-        '\n- [x] Bugfix (non-breaking change which fixes an issue)' +
-        '\n- [x] Breaking change (fix/feature causing existing functionality to break)',
+        '\n- [ x] Bugfix (non-breaking change which fixes an issue)' +
+        '\n- [X ] Breaking change (fix/feature causing existing functionality to break)' +
+        '\n- [ ] Code quality improvements to existing code or addition of tests' +
+        '\n- [ ] Dependency upgrade',
       base: { ref: 'master' },
     };
     await handler.handle(mockContext);
