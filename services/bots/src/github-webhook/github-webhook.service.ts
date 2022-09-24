@@ -22,7 +22,10 @@ export class GithubWebhookService {
     try {
       await Promise.all(WEBHOOK_HANDLERS.map((handler) => handler.handle(context)));
     } catch (err) {
-      throw new ServiceError('Could not process webhook', { cause: err, data: { context } });
+      throw new ServiceError(`Could not process webhook (${err?.message})`, {
+        cause: err,
+        data: { context, payload },
+      });
     }
 
     if (context.scheduledlabels.length) {
