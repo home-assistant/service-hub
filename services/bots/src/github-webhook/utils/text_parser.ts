@@ -31,7 +31,7 @@ export const extractIntegrationDocumentationLinks = (
   return results;
 };
 
-export const extractTasks = (body: string) =>
+export const extractTasks = (body: string): Task[] =>
   body
     .split('\n')
     .map((line) => /^-\s?\[\s?(?<checked>\w| |)\s?\] (?<description>.*)/.exec(line.trim())?.groups)
