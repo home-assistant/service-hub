@@ -39,7 +39,7 @@ class MessageDto {
 export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
   private messageData: MessageData;
 
-  async reloadMessageData(force?: boolean): Promise<void> {
+  async ensureMessageDataLoaded(force?: boolean): Promise<void> {
     if (force || !this.messageData) {
       this.messageData = yaml.load(await (await fetch(DATA_FILE_URL)).text(), {
         json: true,
@@ -54,7 +54,7 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
     const { messageKey } = handlerDto;
     const { interaction } = context;
     if (messageKey === 'reload') {
-      await this.reloadMessageData(true);
+      await this.ensureMessageDataLoaded(true);
 
       await interaction.reply({
         content: 'Message list reloaded',
@@ -71,7 +71,7 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
       return;
     }
 
-    await this.reloadMessageData();
+    await this.ensureMessageDataLoaded();
 
     await interaction.reply({
       embeds: [
@@ -89,7 +89,7 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
       return;
     }
     try {
-      await this.reloadMessageData();
+      await this.ensureMessageDataLoaded();
       const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
       await interaction.respond(
