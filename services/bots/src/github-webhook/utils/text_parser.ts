@@ -1,5 +1,3 @@
-import { WebhookContext } from '../github-webhook.model';
-
 interface IntegrationDocumentationLink {
   link: string;
   integration: string;
@@ -26,30 +24,22 @@ export const extractIntegrationDocumentationLinks = (
   do {
     match = re.exec(body);
     if (match) {
-      results.push({ link: match, integration: match[2] });
+      results.push({ link: match[0], integration: match[2] });
     }
   } while (match);
 
   return results;
 };
 
-export const extractTasks = (body: string) => {
-  const matchAll = /- \[( |)(x|X| |)(| )\] /;
-  const matchChecked = /- \[( |)(x|X)(| )\] /;
-  const tasks: Task[] = [];
-
-  body.split('\n').forEach((line: string) => {
-    if (!line.trim().startsWith('- [')) {
-      return;
-    }
-
-    const lineSplit = line.split(matchAll);
-    const checked: boolean = matchChecked.test(line);
-    const description: string = lineSplit[lineSplit.length - 1].trim().replace(/\\r/g, '');
-    tasks.push({ checked, description });
-  });
-  return tasks;
-};
+export const extractTasks = (body: string): Task[] =>
+  body
+    .split('\n')
+    .map((line) => /^-\s?\[\s?(?<checked>\w| |)\s?\] (?<description>.*)/.exec(line.trim())?.groups)
+    .filter((groups) => groups !== undefined)
+    .map((groups) => ({
+      checked: Boolean(groups.checked),
+      description: groups.description,
+    }));
 
 export const extractDocumentationSectionsLinks = (body: string): string[] => {
   const re = /https:\/\/(www.|rc.|next.|)home-assistant.io\/(.*)\//g;

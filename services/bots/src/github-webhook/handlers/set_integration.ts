@@ -14,16 +14,16 @@ export class SetIntegration extends BaseWebhookHandler {
       return;
     }
 
-    extractIntegrationDocumentationLinks((context.payload.issue as Issue).body).forEach(
-      async (link) => {
-        const label = `integration: ${link.integration}`;
-        const exist = await context.github.issues.getLabel(
-          context.issue({ name: label, repo: Repository.CORE }),
-        );
-        if (exist.status === 200 && exist.data.name === label) {
-          context.scheduleIssueLabel(label);
-        }
-      },
-    );
+    for (const link of extractIntegrationDocumentationLinks(
+      (context.payload.issue as Issue).body,
+    )) {
+      const label = `integration: ${link.integration}`;
+      const exist = await context.github.issuesGetLabel(
+        context.issue({ name: label, repo: Repository.CORE }),
+      );
+      if (exist?.name === label) {
+        context.scheduleIssueLabel(label);
+      }
+    }
   }
 }

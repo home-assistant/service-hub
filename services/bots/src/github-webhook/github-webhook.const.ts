@@ -14,11 +14,15 @@ export type GetPullRequestParams = RestEndpointMethodTypes['pulls']['get']['para
 export type GetPullRequestResponse = RestEndpointMethodTypes['pulls']['get']['response']['data'];
 export type GetIssueParams = RestEndpointMethodTypes['issues']['get']['parameters'];
 export type GetIssueResponse = RestEndpointMethodTypes['issues']['get']['response']['data'];
+export type GetIssueLabelParams = RestEndpointMethodTypes['issues']['getLabel']['parameters'];
+export type GetIssueLabelResponse =
+  RestEndpointMethodTypes['issues']['getLabel']['response']['data'];
 
 export enum Repository {
   BRANDS = 'brands',
   CORE = 'core',
   DEVELOPERS_HOME_ASSISTANT = 'developers.home-assistant',
+  FRONTEND = 'frontend',
   HOME_ASSISTANT_IO = 'home-assistant.io',
 }
 

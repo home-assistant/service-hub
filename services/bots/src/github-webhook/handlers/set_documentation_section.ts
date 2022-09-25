@@ -16,16 +16,16 @@ export class SetDocumentationSection extends BaseWebhookHandler {
 
     const foundSections = extractDocumentationSectionsLinks((context.payload.issue as Issue).body);
 
-    if (foundSections.includes('integration')) {
+    if (foundSections.includes('integrations')) {
       // Don't do anything for integration sections
       return;
     }
 
-    foundSections.forEach(async (section) => {
-      const exist = await context.github.issues.getLabel(context.issue({ name: section }));
-      if (exist.status === 200 && exist.data.name === section) {
-        context.scheduleIssueLabel(exist.data.name);
+    for (const section of foundSections) {
+      const exist = await context.github.issuesGetLabel(context.issue({ name: section }));
+      if (exist?.name === section) {
+        context.scheduleIssueLabel(exist.name);
       }
-    });
+    }
   }
 }

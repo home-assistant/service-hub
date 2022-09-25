@@ -27,7 +27,10 @@ export class DocsParenting extends BaseWebhookHandler {
         'pull_request.closed',
         'pull_request.opened',
         'pull_request.edited',
-      ].includes(context.eventType)
+      ].includes(context.eventType) ||
+      ![Repository.CORE, Repository.HOME_ASSISTANT_IO, Repository.FRONTEND].includes(
+        context.repo().repo as Repository,
+      )
     ) {
       return;
     }
