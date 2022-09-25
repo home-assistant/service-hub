@@ -15,9 +15,9 @@ export class IssueLinks extends BaseWebhookHandler {
     const domain = context.payload.label.name.split('integration: ')[1];
     const docLink = `https://www.home-assistant.io/integrations/${domain}`;
     const codeLink = `https://github.com/home-assistant/core/tree/dev/homeassistant/components/${domain}`;
-    context.scheduleIssueComment(
-      'IssueLinks',
-      `[${domain} documentation](${docLink})\n[${domain} source](${codeLink})`,
-    );
+    context.scheduleIssueComment({
+      handler: 'IssueLinks',
+      comment: `[${domain} documentation](${docLink})\n[${domain} source](${codeLink})`,
+    });
   }
 }

@@ -47,6 +47,7 @@ export class GithubWebhookService {
       await this.githubClient.issues.createComment(
         context.issue({
           body: context.scheduledComments
+            .sort((a, b) => (a.priority || 10) - (b.priority || 10))
             .map(
               (entry) =>
                 `${entry.comment}${
