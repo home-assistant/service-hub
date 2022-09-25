@@ -1,5 +1,5 @@
 import { PullRequestEditedEvent, PullRequestOpenedEvent } from '@octokit/webhooks-types';
-import { HOME_ASSISTANT_ORG, Repository } from '../github-webhook.const';
+import { EventType, HOME_ASSISTANT_ORG, Repository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import {
   extractIssuesOrPullRequestMarkdownLinks,
@@ -15,15 +15,10 @@ export const bodyShouldTargetNext: string =
   'It seems that this PR is targeted against an incorrect branch since it has a parent PR on one of our codebases. Documentation that needs to be updated for an upcoming release should target the `next` branch. Please change the target branch of this PR to `next` and rebase if needed.';
 
 export class DocsTargetBranch extends BaseWebhookHandler {
-  async handle(context: WebhookContext<PullRequestOpenedEvent | PullRequestEditedEvent>) {
-    if (
-      context.senderIsBot ||
-      !['pull_request.opened', 'pull_request.edited'].includes(context.eventType) ||
-      context.repo().repo !== Repository.HOME_ASSISTANT_IO
-    ) {
-      return;
-    }
+  public allowedEventTypes = [EventType.PULL_REQUEST_EDITED, EventType.PULL_REQUEST_OPENED];
+  public allowedRepositories = [Repository.HOME_ASSISTANT_IO];
 
+  async handle(context: WebhookContext<PullRequestOpenedEvent | PullRequestEditedEvent>) {
     const target = context.payload.pull_request.base.ref;
     const links = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body).concat(
       extractPullRequestURLLinks(context.payload.pull_request.body).filter(
@@ -69,8 +64,6 @@ const wrongTargetBranchDetected = async (
   correctTargetBranch: 'current' | 'next',
 ) => {
   const author = context.payload.sender.login;
-  const body: string =
-    correctTargetBranch === 'next' ? bodyShouldTargetNext : bodyShouldTargetCurrent;
 
   const currentLabels = context.payload.pull_request.labels.map((label) => label.name);
   if (currentLabels.includes('needs-rebase')) {

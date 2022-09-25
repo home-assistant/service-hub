@@ -14,6 +14,9 @@ export type GetPullRequestParams = RestEndpointMethodTypes['pulls']['get']['para
 export type GetPullRequestResponse = RestEndpointMethodTypes['pulls']['get']['response']['data'];
 export type GetIssueParams = RestEndpointMethodTypes['issues']['get']['parameters'];
 export type GetIssueResponse = RestEndpointMethodTypes['issues']['get']['response']['data'];
+export type GetIssueLabelParams = RestEndpointMethodTypes['issues']['getLabel']['parameters'];
+export type GetIssueLabelResponse =
+  RestEndpointMethodTypes['issues']['getLabel']['response']['data'];
 
 export enum Repository {
   BRANDS = 'brands',
@@ -21,6 +24,18 @@ export enum Repository {
   DEVELOPERS_HOME_ASSISTANT = 'developers.home-assistant',
   FRONTEND = 'frontend',
   HOME_ASSISTANT_IO = 'home-assistant.io',
+}
+
+export enum EventType {
+  ISSUES_LABELED = 'issues.labeled',
+  ISSUES_OPENED = 'issues.opened',
+  PULL_REQUEST_CLOSED = 'pull_request.closed',
+  PULL_REQUEST_EDITED = 'pull_request.edited',
+  PULL_REQUEST_LABELED = 'pull_request.labeled',
+  PULL_REQUEST_OPENED = 'pull_request.opened',
+  PULL_REQUEST_REOPENED = 'pull_request.reopened',
+  PULL_REQUEST_SYNCHRONIZE = 'pull_request.synchronize',
+  PULL_REQUEST_UNLABELED = 'pull_request.unlabeled',
 }
 
 export const entityComponents = new Set([

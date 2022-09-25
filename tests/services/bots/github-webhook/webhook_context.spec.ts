@@ -63,7 +63,7 @@ describe('WebhookContext', () => {
   describe('Schedule helpers', () => {
     const context = new WebhookContext({
       github: {},
-      payload: {},
+      payload: { repository: { name: 'awesome_repo' } },
       eventType: '',
     });
     it('label', () => {

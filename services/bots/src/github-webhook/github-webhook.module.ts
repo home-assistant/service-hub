@@ -15,7 +15,6 @@ import { Hacktoberfest } from './handlers/hacktoberfest';
 import { IssueLinks } from './handlers/issue_links';
 import { LabelBot } from './handlers/label_bot/handler';
 import { LabelCleaner } from './handlers/label_cleaner';
-import { ReviewEnforcer } from './handlers/review_enforcer';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
@@ -33,7 +32,6 @@ import { ValidateCla } from './handlers/validate-cla';
     IssueLinks,
     LabelBot,
     LabelCleaner,
-    ReviewEnforcer,
     SetDocumentationSection,
     SetIntegration,
     ValidateCla,
