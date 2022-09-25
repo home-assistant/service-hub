@@ -1,5 +1,5 @@
 import { PullRequestOpenedEvent } from '@octokit/webhooks-types';
-import { Repository } from '../../github-webhook.const';
+import { EventType, Repository } from '../../github-webhook.const';
 import { WebhookContext } from '../../github-webhook.model';
 import { ParsedPath } from '../../utils/parse_path';
 import { fetchPullRequestFilesFromContext } from '../../utils/pull_request';
@@ -26,15 +26,11 @@ const STRATEGIES = new Set([
 ]);
 
 export class LabelBot extends BaseWebhookHandler {
-  async handle(context: WebhookContext<PullRequestOpenedEvent>) {
-    if (
-      context.senderIsBot ||
-      context.eventType !== 'pull_request.opened' ||
-      context.repo().repo !== Repository.CORE
-    ) {
-      return;
-    }
+  public allowBots = false;
+  public allowedRepositories = [Repository.CORE];
+  public allowedEventTypes = [EventType.PULL_REQUEST_OPENED];
 
+  async handle(context: WebhookContext<PullRequestOpenedEvent>) {
     const files = await fetchPullRequestFilesFromContext(context);
     const parsed = files.map((file) => new ParsedPath(file));
     const labelSet: Set<string> = new Set();

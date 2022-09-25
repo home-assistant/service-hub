@@ -4,7 +4,7 @@ import { BaseWebhookHandler } from './base';
 import { ServiceError } from '@lib/common';
 import { ClaIssueLabel } from '@lib/common/github';
 import { DynamoDB } from 'aws-sdk';
-import { PullRequestEventData } from '../github-webhook.const';
+import { EventType, PullRequestEventData } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { Injectable } from '@nestjs/common';
 
@@ -37,6 +37,13 @@ const botContextName = 'cla-bot';
 
 @Injectable()
 export class ValidateCla extends BaseWebhookHandler {
+  public allowedEventTypes = [
+    EventType.PULL_REQUEST_OPENED,
+    EventType.PULL_REQUEST_REOPENED,
+    EventType.PULL_REQUEST_SYNCHRONIZE,
+    EventType.PULL_REQUEST_LABELED,
+  ];
+
   private ddbClient: DynamoDB;
   private signersTableName: string;
   private pendingSignersTableName: string;
@@ -49,17 +56,6 @@ export class ValidateCla extends BaseWebhookHandler {
   }
 
   async handle(context: WebhookContext<PullRequestEventData>) {
-    if (
-      ![
-        'pull_request.labeled',
-        'pull_request.opened',
-        'pull_request.reopened',
-        'pull_request.synchronize',
-      ].includes(context.eventType)
-    ) {
-      return;
-    }
-
     const authorsWithSignedCLA: Set<string> = new Set();
     const authorsNeedingCLA: { sha: string; login: string }[] = [];
     const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];
@@ -80,22 +76,23 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     const commits = await context.github.pulls.listCommits(context.pullRequest({ per_page: 100 }));
+    const allCommitsIgnored = commits.data.every(
+      (commit) => commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email),
+    );
 
     for await (const commit of commits.data) {
       if (commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email)) {
         continue;
       }
 
-      if (!commit.author && commit.commit?.author?.email) {
+      if (!commit.author) {
         commitsWithoutLogins.push({
           sha: commit.sha,
-          maybeText: commit.commit.author.email.includes('@')
+          maybeText: commit.commit?.author?.email?.includes('@')
             ? `This commit has something that looks like an email address (${commit.commit.author.email}). Maybe try linking that to GitHub?.`
             : 'No email found attached to the commit.',
         });
-      }
-
-      if (!authorsWithSignedCLA.has(commit.author?.login)) {
+      } else if (!authorsWithSignedCLA.has(commit.author.login)) {
         const ddbEntry = await this.ddbClient
           .getItem({
             TableName: this.signersTableName,
@@ -196,7 +193,9 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     // If we get here, all is good :+1:
-    context.scheduleIssueLabel(ClaIssueLabel.CLA_SIGNED);
+    if (!allCommitsIgnored) {
+      context.scheduleIssueLabel(ClaIssueLabel.CLA_SIGNED);
+    }
     try {
       await context.github.issues.removeLabel(
         context.issue({
@@ -212,7 +211,9 @@ export class ValidateCla extends BaseWebhookHandler {
         context.repo({
           sha: commit.sha,
           state: 'success',
-          description: 'Everyone involved has signed the CLA',
+          description: `Everyone involved ${
+            allCommitsIgnored ? 'are ignored' : 'has signed the CLA'
+          }`,
           context: botContextName,
         }),
       );

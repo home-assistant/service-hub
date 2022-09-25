@@ -3,25 +3,23 @@ import {
   PullRequestSynchronizeEvent,
   PullRequestUnlabeledEvent,
 } from '@octokit/webhooks-types';
-import { Repository } from '../github-webhook.const';
+import { EventType, Repository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
 export class DocsMissing extends BaseWebhookHandler {
+  public allowedEventTypes = [
+    EventType.PULL_REQUEST_LABELED,
+    EventType.PULL_REQUEST_UNLABELED,
+    EventType.PULL_REQUEST_SYNCHRONIZE,
+  ];
+  public allowedRepositories = [Repository.CORE];
+
   async handle(
     context: WebhookContext<
       PullRequestLabeledEvent | PullRequestUnlabeledEvent | PullRequestSynchronizeEvent
     >,
   ) {
-    if (
-      !['pull_request.labeled', 'pull_request.unlabeled', 'pull_request.synchronize'].includes(
-        context.eventType,
-      ) ||
-      context.repo().repo !== Repository.CORE
-    ) {
-      return;
-    }
-
     const hasDocsMissingLabel = context.payload.pull_request.labels
       .map((label) => label.name)
       .includes('docs-missing');

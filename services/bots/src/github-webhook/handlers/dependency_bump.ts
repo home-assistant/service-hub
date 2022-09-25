@@ -1,5 +1,5 @@
 import { PullRequestOpenedEvent } from '@octokit/webhooks-types';
-import { Repository } from '../github-webhook.const';
+import { EventType, Repository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { fetchPullRequestFilesFromContext } from '../utils/pull_request';
 import { BaseWebhookHandler } from './base';
@@ -15,15 +15,11 @@ const DEPENDENCY_FILES = new Set([
 ]);
 
 export class DependencyBump extends BaseWebhookHandler {
-  async handle(context: WebhookContext<PullRequestOpenedEvent>) {
-    if (
-      context.senderIsBot ||
-      context.eventType !== 'pull_request.opened' ||
-      context.repo().repo !== Repository.CORE
-    ) {
-      return;
-    }
+  public allowBots = false;
+  public allowedEventTypes = [EventType.PULL_REQUEST_OPENED];
+  public allowedRepositories = [Repository.CORE];
 
+  async handle(context: WebhookContext<PullRequestOpenedEvent>) {
     const files = await fetchPullRequestFilesFromContext(context);
 
     const filenames = files.map((file) => {

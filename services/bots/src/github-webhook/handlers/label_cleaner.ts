@@ -1,5 +1,5 @@
 import { PullRequestClosedEvent } from '@octokit/webhooks-types';
-import { Repository } from '../github-webhook.const';
+import { EventType, Repository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
@@ -16,19 +16,13 @@ const TO_CLEAN: { [key: string]: string[] } = {
 };
 
 export class LabelCleaner extends BaseWebhookHandler {
-  async handle(context: WebhookContext<PullRequestClosedEvent>) {
-    const repositoryName = context.repo().repo;
-    if (
-      context.eventType !== 'pull_request.closed' ||
-      ![Repository.CORE, Repository.HOME_ASSISTANT_IO].includes(repositoryName as Repository) ||
-      !TO_CLEAN[repositoryName]?.length
-    ) {
-      return;
-    }
+  public allowedEventTypes = [EventType.PULL_REQUEST_CLOSED];
+  public allowedRepositories = [Repository.CORE, Repository.HOME_ASSISTANT_IO];
 
+  async handle(context: WebhookContext<PullRequestClosedEvent>) {
     const currentLabels = context.payload.pull_request.labels.map((label) => label.name);
 
-    TO_CLEAN[repositoryName]
+    TO_CLEAN[context.repositoryName]
       .filter((label) => currentLabels.includes(label))
       .forEach(async (label) => {
         await context.github.issues.removeLabel(context.issue({ name: label }));
