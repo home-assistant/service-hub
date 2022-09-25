@@ -16,7 +16,7 @@ export class SetDocumentationSection extends BaseWebhookHandler {
 
     const foundSections = extractDocumentationSectionsLinks((context.payload.issue as Issue).body);
 
-    if (foundSections.includes('integration')) {
+    if (foundSections.includes('integrations')) {
       // Don't do anything for integration sections
       return;
     }
