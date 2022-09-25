@@ -42,3 +42,18 @@ jobs:
           push: true
           tags: "ghcr.io/${{ github.repository_owner }}/service-hub:${{ steps.version.outputs.version }}"
 
+      - name: Update Terraform variable set
+        run: |
+          variable_id=$(curl -sSL \
+            --header "Authorization: Bearer ${{ secrets.TERRAFORM_CLOUD_TOKEN }}" \
+            --header "Content-Type: application/vnd.api+json" \
+            --request GET \
+              https://app.terraform.io/api/v2/varsets/${{ secrets.TERRAFORM_CLOUD_VARSET_ID }} \
+              | jq -r '.data.relationships.vars.data[0] | .id')
+
+          curl -sSL \
+            --header "Authorization: Bearer ${{ secrets.TERRAFORM_CLOUD_TOKEN }}" \
+            --header "Content-Type: application/vnd.api+json" \
+            --request PATCH \
+            --data '{"data": {"type": "vars", "attributes": {"value": "${{ steps.version.outputs.version }}"}}}' \
+              "https://app.terraform.io/api/v2/varsets/${{ secrets.TERRAFORM_CLOUD_VARSET_ID }}/relationships/vars/$variable_id"
