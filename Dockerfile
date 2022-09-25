@@ -1,4 +1,4 @@
-FROM node:16.14.2 AS builder
+FROM node:16.17.1 AS builder
 WORKDIR /app
 COPY . /app
 ENV NODE_ENV production
@@ -8,7 +8,7 @@ RUN \
     && yarn build:bots
 
 
-FROM node:16.14.2-slim
+FROM node:16.17.1-slim
 WORKDIR /app
 COPY --from=builder /app/.yarn /app/.yarn
 COPY --from=builder /app/dist /app/dist
