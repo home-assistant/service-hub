@@ -24,7 +24,7 @@ export const extractIntegrationDocumentationLinks = (
   do {
     match = re.exec(body);
     if (match) {
-      results.push({ link: match, integration: match[2] });
+      results.push({ link: match[0], integration: match[2] });
     }
   } while (match);
 

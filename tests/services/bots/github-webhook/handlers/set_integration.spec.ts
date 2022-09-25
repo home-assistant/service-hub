@@ -18,10 +18,8 @@ describe('SetIntegration', () => {
         issue: {},
       },
       github: {
-        issues: {
-          async getLabel() {
-            return getLabelResponse;
-          },
+        async issuesGetLabel() {
+          return getLabelResponse;
         },
       },
     });
@@ -29,7 +27,7 @@ describe('SetIntegration', () => {
 
   it('Integration label does exsist', async () => {
     mockContext.payload.issue.body = 'Link: https://www.home-assistant.io/integrations/awesome';
-    getLabelResponse = { status: 200, data: { name: 'integration: awesome' } };
+    getLabelResponse = { name: 'integration: awesome' };
     await handler.handle(mockContext);
 
     assert.deepStrictEqual(mockContext.scheduledlabels, ['integration: awesome']);
@@ -46,8 +44,7 @@ describe('SetIntegration', () => {
     mockContext.payload.issue.body =
       'Link: https://www.home-assistant.io/integrations/awesome_integration';
     getLabelResponse = {
-      status: 200,
-      data: { name: 'integration: awesome_integration' },
+      name: 'integration: awesome_integration',
     };
     await handler.handle(mockContext);
 
@@ -58,8 +55,7 @@ describe('SetIntegration', () => {
     mockContext.payload.issue.body =
       'Link: https://www.home-assistant.io/integrations/platform.awesome';
     getLabelResponse = {
-      status: 200,
-      data: { name: 'integration: awesome' },
+      name: 'integration: awesome',
     };
     await handler.handle(mockContext);
 

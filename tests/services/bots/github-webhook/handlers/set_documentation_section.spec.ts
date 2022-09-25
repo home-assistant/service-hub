@@ -19,10 +19,8 @@ describe('SetDocumentationSection', () => {
         issue: {},
       },
       github: {
-        issues: {
-          async getLabel() {
-            return getLabelResponse;
-          },
+        async issuesGetLabel() {
+          return getLabelResponse;
         },
       },
     });
@@ -31,7 +29,7 @@ describe('SetDocumentationSection', () => {
   it('Section label does exsist', async () => {
     mockContext.payload.issue.body =
       'Link: https://www.home-assistant.io/getting-started/configuration/';
-    getLabelResponse = { status: 200, data: { name: 'configuration' } };
+    getLabelResponse = { name: 'configuration' };
     await handler.handle(mockContext);
     assert.deepStrictEqual(mockContext.scheduledlabels, ['configuration']);
   });
@@ -41,7 +39,7 @@ describe('SetDocumentationSection', () => {
     Link: https://www.home-assistant.io/getting-started/configuration/
     Link: https://www.home-assistant.io/getting-started/configuration/
     `;
-    getLabelResponse = { status: 200, data: { name: 'configuration' } };
+    getLabelResponse = { name: 'configuration' };
     await handler.handle(mockContext);
     assert.deepStrictEqual(mockContext.scheduledlabels, ['configuration']);
   });
@@ -49,7 +47,7 @@ describe('SetDocumentationSection', () => {
   it('Section label does not exsist', async () => {
     mockContext.payload.issue.body =
       'Link: https://www.home-assistant.io/getting-started/configuration/';
-    getLabelResponse = { status: 404 };
+    getLabelResponse = {};
     await handler.handle(mockContext);
     assert.deepStrictEqual(mockContext.scheduledlabels, []);
   });
@@ -57,11 +55,11 @@ describe('SetDocumentationSection', () => {
   it('First section label does not exsist', async () => {
     mockContext.payload.issue.body =
       'Link: https://www.home-assistant.io/getting-started/configuration/';
-    getLabelResponse = { status: 404 };
+    getLabelResponse = {};
     await handler.handle(mockContext);
     assert.deepStrictEqual(mockContext.scheduledlabels, []);
 
-    getLabelResponse = { status: 200, data: { name: 'getting-started' } };
+    getLabelResponse = { name: 'getting-started' };
     await handler.handle(mockContext);
     assert.deepStrictEqual(mockContext.scheduledlabels, ['getting-started']);
   });
