@@ -1,6 +1,8 @@
 import { Octokit } from '@octokit/rest';
 import {
   EventType,
+  GetIssueLabelParams,
+  GetIssueLabelResponse,
   GetIssueParams,
   GetIssueResponse,
   GetPullRequestParams,
@@ -9,7 +11,19 @@ import {
   Repository,
 } from './github-webhook.const';
 
-export class GithubClient extends Octokit {}
+export class GithubClient extends Octokit {
+  async issuesGetLabel(params: GetIssueLabelParams): Promise<GetIssueLabelResponse | undefined> {
+    try {
+      const labelResponse = await this.issues.getLabel(params);
+      if (labelResponse.status === 200) {
+        return labelResponse.data;
+      }
+    } catch (_err) {
+      // Sometimes Github responds with 404 directly,
+      // sometimes it does not, and only changes the response.status to 404
+    }
+  }
+}
 
 interface WebhookContextParams<E> {
   github: GithubClient;

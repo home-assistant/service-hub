@@ -14,10 +14,10 @@ export class SetIntegration extends BaseWebhookHandler {
       (context.payload.issue as Issue).body,
     )) {
       const label = `integration: ${link.integration}`;
-      const exist = await context.github.issues.getLabel(
+      const exist = await context.github.issuesGetLabel(
         context.issue({ name: label, repo: Repository.CORE }),
       );
-      if (exist.status === 200 && exist.data.name === label) {
+      if (exist?.name === label) {
         context.scheduleIssueLabel(label);
       }
     }

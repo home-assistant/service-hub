@@ -85,16 +85,14 @@ export class ValidateCla extends BaseWebhookHandler {
         continue;
       }
 
-      if (!commit.author && commit.commit?.author?.email) {
+      if (!commit.author) {
         commitsWithoutLogins.push({
           sha: commit.sha,
-          maybeText: commit.commit.author.email.includes('@')
+          maybeText: commit.commit?.author?.email?.includes('@')
             ? `This commit has something that looks like an email address (${commit.commit.author.email}). Maybe try linking that to GitHub?.`
             : 'No email found attached to the commit.',
         });
-      }
-
-      if (!authorsWithSignedCLA.has(commit.author?.login)) {
+      } else if (!authorsWithSignedCLA.has(commit.author.login)) {
         const ddbEntry = await this.ddbClient
           .getItem({
             TableName: this.signersTableName,

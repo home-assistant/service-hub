@@ -78,6 +78,11 @@ export class CodeOwnersMention extends BaseWebhookHandler {
         )}, mind taking a look at this ${triggerLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!`,
       );
     }
+
+    // Add a label if author of issue/PR is a code owner
+    if (owners.includes(payloadUsername)) {
+      context.scheduleIssueLabel('by-code-owner');
+    }
   }
 }
 

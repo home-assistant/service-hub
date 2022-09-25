@@ -64,8 +64,6 @@ const wrongTargetBranchDetected = async (
   correctTargetBranch: 'current' | 'next',
 ) => {
   const author = context.payload.sender.login;
-  const body: string =
-    correctTargetBranch === 'next' ? bodyShouldTargetNext : bodyShouldTargetCurrent;
 
   const currentLabels = context.payload.pull_request.labels.map((label) => label.name);
   if (currentLabels.includes('needs-rebase')) {
