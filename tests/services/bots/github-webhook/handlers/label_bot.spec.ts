@@ -73,16 +73,20 @@ describe('LabelBot', () => {
     ];
     mockContext.payload.pull_request = {
       body:
+        '\n- [x] Deprecation (breaking change to happen in the future)' +
         '\n- [ x] Bugfix (non-breaking change which fixes an issue)' +
         '\n- [X ] Breaking change (fix/feature causing existing functionality to break)' +
         '\n- [ ] Code quality improvements to existing code or addition of tests' +
-        '\n- [ ] Dependency upgrade',
+        '\n- [ ] Dependency upgrade' +
+        '\n- [C] New integration (thank you!)',
       base: { ref: 'master' },
     };
     await handler.handle(mockContext);
     assert.deepStrictEqual(mockContext.scheduledlabels, [
       'core',
       'bugfix',
+      'new-integration',
+      'deprecation',
       'breaking-change',
       'merging-to-master',
     ]);
