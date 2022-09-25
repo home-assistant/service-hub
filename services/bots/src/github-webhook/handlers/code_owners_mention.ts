@@ -56,7 +56,13 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     const payloadUsername = triggerIssue.user.login.toLowerCase();
     const ownersMinusAuthor = owners.filter((usr) => usr !== payloadUsername);
 
-    await context.github.issues.addAssignees(context.issue({ assignees: ownersMinusAuthor }));
+    for (const owner of ownersMinusAuthor) {
+      try {
+        await context.github.issues.addAssignees(context.issue({ assignees: [owner] }));
+      } catch (_) {
+        // Ignore assignment issues
+      }
+    }
 
     const mentions = ownersMinusAuthor
       .filter((usr) => !assignees.includes(usr) && !commenters.includes(usr))
