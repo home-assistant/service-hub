@@ -1,19 +1,15 @@
 import { Issue, IssuesOpenedEvent } from '@octokit/webhooks-types';
-import { Repository } from '../github-webhook.const';
+import { EventType, Repository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { extractDocumentationSectionsLinks } from '../utils/text_parser';
 import { BaseWebhookHandler } from './base';
 
 export class SetDocumentationSection extends BaseWebhookHandler {
-  async handle(context: WebhookContext<IssuesOpenedEvent>) {
-    if (
-      context.senderIsBot ||
-      context.eventType !== 'issues.opened' ||
-      context.repo().repo !== Repository.HOME_ASSISTANT_IO
-    ) {
-      return;
-    }
+  public allowBots = false;
+  public allowedEventTypes = [EventType.ISSUES_OPENED];
+  public allowedRepositories = [Repository.HOME_ASSISTANT_IO];
 
+  async handle(context: WebhookContext<IssuesOpenedEvent>) {
     const foundSections = extractDocumentationSectionsLinks((context.payload.issue as Issue).body);
 
     if (foundSections.includes('integrations')) {
