@@ -37,6 +37,7 @@ const botContextName = 'cla-bot';
 
 @Injectable()
 export class ValidateCla extends BaseWebhookHandler {
+  public allowedRepositories = [];
   public allowedEventTypes = [
     EventType.PULL_REQUEST_OPENED,
     EventType.PULL_REQUEST_REOPENED,

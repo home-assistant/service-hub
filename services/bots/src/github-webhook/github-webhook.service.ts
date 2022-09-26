@@ -25,7 +25,8 @@ export class GithubWebhookService {
           (handler) =>
             (handler.allowBots || !context.senderIsBot) &&
             handler.allowedEventTypes.includes(context.eventType) &&
-            handler.allowedRepositories.includes(context.repositoryName),
+            (!handler.allowedRepositories.length ||
+              handler.allowedRepositories.includes(context.repositoryName)),
         ).map((handler) => handler.handle(context)),
       );
     } catch (err) {
