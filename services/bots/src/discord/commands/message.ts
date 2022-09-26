@@ -29,6 +29,13 @@ class MessageDto {
     autocomplete: true,
   })
   messageKey: string;
+
+  @Param({
+    name: 'user',
+    description: 'Tag the user you want the message to be posted for',
+    required: false,
+  })
+  userMention: string;
 }
 
 @DiscordCommandClass({
@@ -51,7 +58,7 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
     @Payload() handlerDto: MessageDto,
     context: TransformedCommandExecutionContext,
   ): Promise<void> {
-    const { messageKey } = handlerDto;
+    const { messageKey, userMention } = handlerDto;
     const { interaction } = context;
     if (messageKey === 'reload') {
       await this.ensureMessageDataLoaded(true);
@@ -76,7 +83,7 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
     await interaction.reply({
       embeds: [
         new EmbedBuilder({
-          description: this.messageData[messageKey].content,
+          description: [userMention, this.messageData[messageKey].content].join(' '),
         }),
       ],
     });
