@@ -18,6 +18,7 @@ import { LabelCleaner } from './handlers/label_cleaner';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
+import { RemoveAssignees } from './handlers/remove_assignees';
 
 @Module({
   providers: [
@@ -34,6 +35,7 @@ import { ValidateCla } from './handlers/validate-cla';
     LabelCleaner,
     SetDocumentationSection,
     SetIntegration,
+    RemoveAssignees,
     ValidateCla,
   ],
   imports: [
