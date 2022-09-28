@@ -138,7 +138,7 @@ export class ValidateCla extends BaseWebhookHandler {
       context.scheduleIssueComment({
         handler: botContextName,
         comment: pullRequestComment(
-          authorsNeedingCLA,
+          Array.from(new Set(authorsNeedingCLA.map((entry) => entry.login))),
           `${context.payload.repository.full_name}#${context.payload.number}`,
         ),
       });
@@ -263,8 +263,8 @@ We apologize for this inconvenience, especially since it usually bites new contr
 Thanks, I look forward to checking this PR again soon! :heart:
 `;
 
-const pullRequestComment = (users: { sha: string; login: string }[], pullRequest: string) => `
-Hi ${users.map((user) => `@${user.login}`).join(',')}
+const pullRequestComment = (users: string[], pullRequest: string) => `
+Hi ${users.join(',')}
 
 It seems you haven't yet signed a CLA. Please do so [here](https://home-assistant.io/developers/cla_sign_start/?pr=${pullRequest}).
 
