@@ -37,6 +37,11 @@ const conf = convict({
       env: 'APN_CERTIFICATE',
       format: String,
     },
+    topic: {
+      default: '',
+      env: 'APN_TOPIC',
+      format: String,
+    },
     keyId: {
       default: '',
       env: 'APN_KEY_ID',

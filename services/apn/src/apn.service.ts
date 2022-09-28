@@ -6,8 +6,10 @@ import { Provider, Notification } from '@parse/node-apn';
 @Injectable()
 export class ApnService {
   private apn: Provider;
+  private topic: string;
 
   constructor(private configService: ConfigService) {
+    this.topic = configService.get('apn.topic');
     this.apn = new Provider({
       token: {
         key: configService.get('apn.certificate'),
@@ -19,6 +21,9 @@ export class ApnService {
   }
 
   async sendNotification(payload: any, recipients: string | string[]): Promise<void> {
-    await this.apn.send(new Notification(payload), recipients);
+    const notification = new Notification(payload);
+    notification.topic = this.topic;
+
+    await this.apn.send(notification, recipients);
   }
 }
