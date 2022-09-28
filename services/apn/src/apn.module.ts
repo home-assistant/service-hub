@@ -7,6 +7,7 @@ import { LoggerModule } from 'nestjs-pino';
 import Config, { AppConfig } from './config';
 import { ApnController } from './apn.controller';
 import { ApnService } from './apn.service';
+import { HealthModule } from '@lib/health';
 
 const version = getVersionInfo(__dirname);
 
@@ -25,6 +26,7 @@ const version = getVersionInfo(__dirname);
         release: version.version,
       }),
     }),
+    HealthModule.register({ version }),
     LoggerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
