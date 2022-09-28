@@ -17,6 +17,15 @@
         "tsConfigPath": "services/example/tsconfig.app.json"
       }
     },
+    "apn": {
+      "type": "application",
+      "root": "services/apn",
+      "entryFile": "main",
+      "sourceRoot": "services/apn/src",
+      "compilerOptions": {
+        "tsConfigPath": "services/apn/tsconfig.app.json"
+      }
+    },
     "bots": {
       "type": "application",
       "root": "services/bots",

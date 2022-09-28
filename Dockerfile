@@ -5,6 +5,7 @@ ENV NODE_ENV production
 RUN \
     yarn install \
     && yarn prebuild \
+    && yarn build:apn \
     && yarn build:bots
 
 
