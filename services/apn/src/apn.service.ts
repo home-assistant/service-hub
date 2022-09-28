@@ -2,11 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { Provider, Notification } from '@parse/node-apn';
+import { defaultRatelimitValues } from './apn.const';
+import { RateLimit } from './apn.model';
 
 @Injectable()
 export class ApnService {
   private apn: Provider;
   private topic: string;
+  private rateLimits: Record<string, RateLimit> = {};
 
   constructor(private configService: ConfigService) {
     this.topic = configService.get('apn.topic');
@@ -18,6 +21,10 @@ export class ApnService {
       },
       production: configService.get('env') === 'production',
     });
+  }
+
+  getRatelimit(deviceId: string): RateLimit {
+    return { ...defaultRatelimitValues(), ...this.rateLimits[deviceId] };
   }
 
   async sendNotification(payload: any, recipients: string | string[]): Promise<void> {
