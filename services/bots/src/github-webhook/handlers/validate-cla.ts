@@ -7,6 +7,7 @@ import { DynamoDB } from 'aws-sdk';
 import { EventType, PullRequestEventData } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { Injectable } from '@nestjs/common';
+import { uniqueEntries } from '../utils/list';
 
 const ignoredAuthors: Set<string> = new Set([
   // Ignore bot accounts that are not masked as bots
@@ -138,7 +139,7 @@ export class ValidateCla extends BaseWebhookHandler {
       context.scheduleIssueComment({
         handler: botContextName,
         comment: pullRequestComment(
-          Array.from(new Set(authorsNeedingCLA.map((entry) => entry.login))),
+          uniqueEntries(authorsNeedingCLA.map((entry) => entry.login)),
           `${context.payload.repository.full_name}#${context.payload.number}`,
         ),
       });
