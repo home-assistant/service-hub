@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { EventType, WEBHOOK_HANDLERS } from './github-webhook.const';
 import { GithubClient, WebhookContext } from './github-webhook.model';
+import { uniqueEntries } from './utils/list';
 
 @Injectable()
 export class GithubWebhookService {
@@ -39,7 +40,7 @@ export class GithubWebhookService {
     if (context.scheduledlabels.length) {
       await this.githubClient.issues.addLabels(
         context.issue({
-          labels: context.scheduledlabels,
+          labels: uniqueEntries(context.scheduledlabels),
         }),
       );
     }
