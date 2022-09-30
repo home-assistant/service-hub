@@ -89,9 +89,9 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
           url: redirectData.params
             ? `https://my.home-assistant.io/create-link/?redirect=${redirectData.redirect}`
             : `https://my.home-assistant.io/redirect/${redirectData.redirect}/`,
-          ...(redirectData.params
-            ? { footer: { text: 'This My link needs adjustments before usage' } }
-            : {}),
+          footer: redirectData.params
+            ? { text: 'This My link needs adjustments before usage' }
+            : undefined,
         }),
       ],
     });
