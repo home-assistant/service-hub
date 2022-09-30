@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 import { TransformPipe } from '@discord-nestjs/common';
 import {
   DiscordTransformedCommand,
@@ -21,18 +19,8 @@ import {
   TextInputStyle,
 } from 'discord.js';
 import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
-
-interface Redirect {
-  redirect: string;
-  deprecated?: boolean;
-  custom?: boolean;
-  name: string;
-  badge?: string;
-  description: string;
-  introduced?: string;
-  component?: string;
-  params?: Record<string, string>;
-}
+import { IntegrationData, IntegrationDataService } from '../services/integration-data';
+import { MyRedirectDataService } from '../services/my-redirect-data';
 
 class MyDto {
   @Param({
@@ -50,17 +38,11 @@ class MyDto {
 })
 @UsePipes(TransformPipe)
 export class MyCommand implements DiscordTransformedCommand<MyDto> {
-  private redirects: Redirect[];
+  constructor(
+    private integrationDataService: IntegrationDataService,
+    private myRedirectDataService: MyRedirectDataService,
+  ) {}
 
-  async ensureRedirects(force?: boolean): Promise<void> {
-    if (force || !this.redirects?.length) {
-      this.redirects = await (
-        await fetch(
-          'https://raw.githubusercontent.com/home-assistant/my.home-assistant.io/main/redirect.json',
-        )
-      ).json();
-    }
-  }
   @CommandHandler()
   async handler(
     @Payload() handlerDto: MyDto,
@@ -69,7 +51,7 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
     const { redirect } = handlerDto;
     const { interaction } = context;
     if (redirect === 'reload') {
-      await this.ensureRedirects(true);
+      await this.myRedirectDataService.ensureData(true);
 
       await interaction.reply({
         content: 'My redirect list reloaded',
@@ -78,9 +60,7 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
       return;
     }
 
-    await this.ensureRedirects();
-
-    const redirectData = this.redirects.find((entry) => entry.redirect === redirect);
+    const redirectData = await this.myRedirectDataService.getRedirect(redirect);
 
     if (!redirectData) {
       await interaction.reply({
@@ -128,12 +108,12 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
     // This is the autocomplete handler for the /my command
     if (interaction.isAutocomplete() && interaction.commandName === 'my') {
       try {
-        await this.ensureRedirects();
+        await this.myRedirectDataService.ensureData();
         const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
         await interaction.respond(
           focusedValue.length !== 0
-            ? this.redirects
+            ? this.myRedirectDataService.data
                 .filter((redirect) => !redirect.deprecated)
                 .map((redirect) => ({
                   name: redirect.name,
@@ -162,8 +142,14 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
       }
     } // This is modal submition handler if the redirect supports params
     else if (interaction.isModalSubmit()) {
-      const redirectData = this.redirects.find((entry) => entry.redirect === interaction.customId);
-      console.log(JSON.stringify(interaction.fields.fields));
+      const redirectData = await this.myRedirectDataService.getRedirect(interaction.customId);
+      const domainField = interaction.fields.fields.get('domain');
+      let integrationData: IntegrationData;
+
+      if (domainField) {
+        integrationData = await this.integrationDataService.getIntegration(domainField.value);
+      }
+
       const url = new URL(`https://my.home-assistant.io/redirect/${redirectData.redirect}/`);
       for (const field of interaction.fields.fields.values()) {
         url.searchParams.set(field.customId, field.value);
@@ -171,7 +157,10 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
       await interaction.reply({
         embeds: [
           new EmbedBuilder({
-            title: redirectData.name,
+            title:
+              domainField && redirectData.redirect === 'config_flow_start'
+                ? `Add integration: ${integrationData?.title || domainField}`
+                : redirectData.name,
             description: redirectData.description,
             url: url.toString(),
           }),

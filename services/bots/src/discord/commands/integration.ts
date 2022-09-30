@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 import { TransformPipe } from '@discord-nestjs/common';
 import {
   DiscordTransformedCommand,
@@ -13,6 +11,7 @@ import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
 import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
 import { Emoji } from '../discord.const';
+import { IntegrationDataService } from '../services/integration-data';
 
 const QualityScale = {
   no_score: 'No score',
@@ -38,15 +37,8 @@ class IntegrationDto {
 })
 @UsePipes(TransformPipe)
 export class IntegrationCommand implements DiscordTransformedCommand<IntegrationDto> {
-  private integrationData: Record<string, Record<string, any>>;
+  constructor(private integrationDataService: IntegrationDataService) {}
 
-  async reloadIntegrationData(force?: boolean): Promise<void> {
-    if (force || !this.integrationData) {
-      this.integrationData = await (
-        await fetch('https://www.home-assistant.io/integrations.json')
-      ).json();
-    }
-  }
   @CommandHandler()
   async handler(
     @Payload() handlerDto: IntegrationDto,
@@ -55,7 +47,7 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
     const { domain } = handlerDto;
     const { interaction } = context;
     if (domain === 'reload') {
-      await this.reloadIntegrationData(true);
+      await this.integrationDataService.ensureData(true);
 
       await interaction.reply({
         content: 'Integration list reloaded',
@@ -64,31 +56,29 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
       return;
     }
 
-    if (!this.integrationData[domain]) {
+    const integrationData = await this.integrationDataService.getIntegration(domain);
+
+    if (!integrationData) {
       await interaction.reply({
         content: 'Could not find information',
         ephemeral: true,
       });
       return;
     }
-
-    await this.reloadIntegrationData();
-
     await interaction.reply({
       embeds: [
         new EmbedBuilder({
-          title: this.integrationData[domain].title,
+          title: integrationData.title,
           thumbnail: { url: `https://brands.home-assistant.io/${domain}/dark_logo.png` },
           fields: [
             {
               name: 'Quality scale',
-              value:
-                QualityScale[this.integrationData[domain].quality_scale] || QualityScale.no_score,
+              value: QualityScale[integrationData.quality_scale] || QualityScale.no_score,
               inline: true,
             },
             {
               name: 'IoT Class',
-              value: this.integrationData[domain].iot_class || 'Unknown',
+              value: integrationData.iot_class || 'Unknown',
               inline: true,
             },
             {
@@ -119,12 +109,12 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
       return;
     }
     try {
-      await this.reloadIntegrationData();
+      await this.integrationDataService.ensureData();
       const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
       await interaction.respond(
         focusedValue.length !== 0
-          ? Object.entries(this.integrationData)
+          ? Object.entries(this.integrationDataService.data)
               .map(([domain, data]) => ({
                 name: data.title,
                 value: domain,

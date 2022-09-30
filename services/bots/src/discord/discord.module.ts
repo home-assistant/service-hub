@@ -5,9 +5,19 @@ import { VersionsCommand } from './commands/versions';
 import { IntegrationCommand } from './commands/integration';
 import { MessageCommand } from './commands/message';
 import { MyCommand } from './commands/my';
+import { IntegrationDataService } from './services/integration-data';
+import { MyRedirectDataService } from './services/my-redirect-data';
 
 @Module({
   imports: [DiscordModule.forFeature()],
-  providers: [PingCommand, VersionsCommand, IntegrationCommand, MessageCommand, MyCommand],
+  providers: [
+    IntegrationDataService,
+    MyRedirectDataService,
+    PingCommand,
+    VersionsCommand,
+    IntegrationCommand,
+    MessageCommand,
+    MyCommand,
+  ],
 })
 export class DiscordBotModule {}
