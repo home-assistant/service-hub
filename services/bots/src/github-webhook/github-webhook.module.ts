@@ -18,6 +18,7 @@ import { LabelCleaner } from './handlers/label_cleaner';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
+import { MonthOfWTH } from './handlers/month_of_wth';
 
 @Module({
   providers: [
@@ -32,6 +33,7 @@ import { ValidateCla } from './handlers/validate-cla';
     IssueLinks,
     LabelBot,
     LabelCleaner,
+    MonthOfWTH,
     SetDocumentationSection,
     SetIntegration,
     ValidateCla,
