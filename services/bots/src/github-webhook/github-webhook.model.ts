@@ -10,6 +10,7 @@ import {
   ListPullRequestFiles,
   Repository,
 } from './github-webhook.const';
+import { markdownParser, MarkdownSection } from './utils/markdown';
 
 export class GithubClient extends Octokit {
   async issuesGetLabel(params: GetIssueLabelParams): Promise<GetIssueLabelResponse | undefined> {
@@ -36,6 +37,7 @@ export class WebhookContext<E> {
   public eventType: EventType;
   public repositoryName: Repository;
   public payload: E;
+  public parsedMarkdown: MarkdownSection[];
   public scheduledComments: { handler: string; comment: string; priority?: number }[] = [];
   public scheduledlabels: string[] = [];
 
@@ -48,6 +50,10 @@ export class WebhookContext<E> {
     this.eventType = params.eventType;
     this.payload = params.payload;
     this.repositoryName = (params.payload as any).repository.name;
+    this.parsedMarkdown = markdownParser(
+      (params.payload as any).pull_request?.body || (params.payload as any).issue?.body,
+      { ignoreComments: true },
+    );
   }
 
   public get senderIsBot(): boolean {
