@@ -71,7 +71,7 @@ describe('WebhookContext', () => {
       assert.deepStrictEqual(context.scheduledlabels, ['test']);
     });
     it('comment', () => {
-      context.scheduleIssueComment('test', 'hi');
+      context.scheduleIssueComment({ handler: 'test', comment: 'hi' });
       assert.deepStrictEqual(context.scheduledComments, [{ handler: 'test', comment: 'hi' }]);
     });
   });

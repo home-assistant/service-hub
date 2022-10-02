@@ -56,7 +56,13 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     const payloadUsername = triggerIssue.user.login.toLowerCase();
     const ownersMinusAuthor = owners.filter((usr) => usr !== payloadUsername);
 
-    await context.github.issues.addAssignees(context.issue({ assignees: ownersMinusAuthor }));
+    for (const owner of ownersMinusAuthor) {
+      try {
+        await context.github.issues.addAssignees(context.issue({ assignees: [owner] }));
+      } catch (_) {
+        // Ignore assignment issues
+      }
+    }
 
     const mentions = ownersMinusAuthor
       .filter((usr) => !assignees.includes(usr) && !commenters.includes(usr))
@@ -71,12 +77,13 @@ export class CodeOwnersMention extends BaseWebhookHandler {
             : 'pull request'
           : 'feedback';
 
-      context.scheduleIssueComment(
-        'CodeOwnersMention',
-        `Hey there ${mentions.join(
+      context.scheduleIssueComment({
+        handler: 'CodeOwnersMention',
+        comment: `Hey there ${mentions.join(
           ', ',
         )}, mind taking a look at this ${triggerLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!`,
-      );
+        priority: 1,
+      });
     }
 
     // Add a label if author of issue/PR is a code owner

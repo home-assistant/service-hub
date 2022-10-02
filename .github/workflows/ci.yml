@@ -9,7 +9,11 @@ on:
       - main
 
 env:
-  NODE_VERSION: '14'
+  NODE_VERSION: '16.17.1'
+
+concurrency:
+  group: '${{ github.workflow }}-${{ github.head_ref || github.run_id }}'
+  cancel-in-progress: true
 
 jobs:
   lint:
@@ -21,6 +25,11 @@ jobs:
 
       - name: Run JQ lint
         uses: home-assistant/actions/helpers/jq@master
+
+      - name: Setup YQ
+        uses: chrisdickinson/setup-yq@latest
+        with:
+          yq-version: v4.25.3
 
       - name: Use Node.js ${{ env.node-NODE_VERSION }}
         uses: actions/setup-node@v3.4.1
@@ -39,6 +48,9 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
+
+      - name: Lint YAML files
+        run: yq '.' ./data/discord_messages.yaml
 
       - name: Install dependencies
         run: yarn install  --immutable

@@ -31,6 +31,16 @@ export const extractIntegrationDocumentationLinks = (
   return results;
 };
 
+export const extractForumLinks = (body: string): string[] =>
+  body
+    .split('\n')
+    .map(
+      (line) =>
+        /.*(?<link>https:\/\/community.home-assistant.io\/t\/.*\S)(\s|\n|)/.exec(line)?.groups,
+    )
+    .filter((groups) => groups !== undefined)
+    .map((groups) => groups.link);
+
 export const extractTasks = (body: string): Task[] =>
   body
     .split('\n')

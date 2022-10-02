@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 
 import { EventType, WEBHOOK_HANDLERS } from './github-webhook.const';
 import { GithubClient, WebhookContext } from './github-webhook.model';
+import { uniqueEntries } from './utils/list';
 
 @Injectable()
 export class GithubWebhookService {
@@ -25,7 +26,8 @@ export class GithubWebhookService {
           (handler) =>
             (handler.allowBots || !context.senderIsBot) &&
             handler.allowedEventTypes.includes(context.eventType) &&
-            handler.allowedRepositories.includes(context.repositoryName),
+            (!handler.allowedRepositories.length ||
+              handler.allowedRepositories.includes(context.repositoryName)),
         ).map((handler) => handler.handle(context)),
       );
     } catch (err) {
@@ -38,7 +40,7 @@ export class GithubWebhookService {
     if (context.scheduledlabels.length) {
       await this.githubClient.issues.addLabels(
         context.issue({
-          labels: context.scheduledlabels,
+          labels: uniqueEntries(context.scheduledlabels),
         }),
       );
     }
@@ -47,6 +49,7 @@ export class GithubWebhookService {
       await this.githubClient.issues.createComment(
         context.issue({
           body: context.scheduledComments
+            .sort((a, b) => (a.priority || 10) - (b.priority || 10))
             .map(
               (entry) =>
                 `${entry.comment}${

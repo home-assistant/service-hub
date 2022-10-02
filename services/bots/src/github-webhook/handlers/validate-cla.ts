@@ -7,6 +7,7 @@ import { DynamoDB } from 'aws-sdk';
 import { EventType, PullRequestEventData } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { Injectable } from '@nestjs/common';
+import { uniqueEntries } from '../utils/list';
 
 const ignoredAuthors: Set<string> = new Set([
   // Ignore bot accounts that are not masked as bots
@@ -37,6 +38,7 @@ const botContextName = 'cla-bot';
 
 @Injectable()
 export class ValidateCla extends BaseWebhookHandler {
+  public allowedRepositories = [];
   public allowedEventTypes = [
     EventType.PULL_REQUEST_OPENED,
     EventType.PULL_REQUEST_REOPENED,
@@ -109,14 +111,14 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (commitsWithoutLogins.length) {
-      context.scheduleIssueComment(
-        botContextName,
-        noLoginOnShaComment(
+      context.scheduleIssueComment({
+        handler: botContextName,
+        comment: noLoginOnShaComment(
           commitsWithoutLogins,
           context.payload.pull_request.user.login,
           `https://github.com/${context.payload.repository.full_name}/pull/${context.payload.number}/commits/`,
         ),
-      );
+      });
 
       context.scheduleIssueLabel(ClaIssueLabel.CLA_ERROR);
 
@@ -134,13 +136,13 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (authorsNeedingCLA.length) {
-      context.scheduleIssueComment(
-        botContextName,
-        pullRequestComment(
-          authorsNeedingCLA,
+      context.scheduleIssueComment({
+        handler: botContextName,
+        comment: pullRequestComment(
+          uniqueEntries(authorsNeedingCLA.map((entry) => entry.login)),
           `${context.payload.repository.full_name}#${context.payload.number}`,
         ),
-      );
+      });
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
@@ -262,8 +264,8 @@ We apologize for this inconvenience, especially since it usually bites new contr
 Thanks, I look forward to checking this PR again soon! :heart:
 `;
 
-const pullRequestComment = (users: { sha: string; login: string }[], pullRequest: string) => `
-Hi ${users.map((user) => `@${user.login}`).join(',')}
+const pullRequestComment = (users: string[], pullRequest: string) => `
+Hi ${users.join(',')}
 
 It seems you haven't yet signed a CLA. Please do so [here](https://home-assistant.io/developers/cla_sign_start/?pr=${pullRequest}).
 
