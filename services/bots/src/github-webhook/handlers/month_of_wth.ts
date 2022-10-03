@@ -10,7 +10,6 @@ const WTH_CATEGORY_ID = 56;
 
 export class MonthOfWTH extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.PULL_REQUEST_OPENED];
-  public allowedRepositories = [];
 
   async handle(context: WebhookContext<PullRequestOpenedEvent>) {
     for (const link of extractForumLinks((context.payload.pull_request as PullRequest).body)) {

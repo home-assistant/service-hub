@@ -1,5 +1,5 @@
-import { PullRequestClosedEvent } from '@octokit/webhooks-types';
-import { EventType, Repository } from '../github-webhook.const';
+import { PullRequestClosedEvent, PullRequestOpenedEvent } from '@octokit/webhooks-types';
+import { EventType } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
@@ -7,7 +7,6 @@ export const isHacktoberfestLive = () => new Date().getMonth() === 9;
 
 export class Hacktoberfest extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.PULL_REQUEST_OPENED, EventType.PULL_REQUEST_CLOSED];
-  public allowedRepositories = [Repository.CORE, Repository.HOME_ASSISTANT_IO, Repository.FRONTEND];
 
   async handle(context: WebhookContext<any>) {
     if (isHacktoberfestLive() && context.eventType === EventType.PULL_REQUEST_OPENED) {
@@ -17,10 +16,17 @@ export class Hacktoberfest extends BaseWebhookHandler {
     }
   }
 
-  async handlePullRequestOpened(context: WebhookContext<any>) {
+  async handlePullRequestOpened(context: WebhookContext<PullRequestOpenedEvent>) {
+    if (!context.payload.repository?.topics?.includes('hacktoberfest')) {
+      return;
+    }
     context.scheduleIssueLabel('Hacktoberfest');
   }
   async handlePullRequestClosed(context: WebhookContext<PullRequestClosedEvent>) {
+    if (!context.payload.repository?.topics?.includes('hacktoberfest')) {
+      return;
+    }
+
     const pullRequest = context.payload.pull_request;
 
     // Don't do something if the PR got merged or if it had no Hacktoberfest label.
