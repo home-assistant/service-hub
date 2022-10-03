@@ -39,16 +39,12 @@ export class DocsMissing extends BaseWebhookHandler {
       needsDocumentation = linksToDocs.length === 0;
     }
 
-    const hasDocsMissingLabel = context.payload.pull_request.labels
-      .map((label) => label.name)
-      .includes('docs-missing');
-
     await context.github.repos.createCommitStatus(
       context.repo({
         sha: context.payload.pull_request.head.sha,
         context: 'docs-missing',
         state: needsDocumentation ? 'failure' : 'success',
-        description: hasDocsMissingLabel ? `Please open a documentation PR.` : `Documentation ok.`,
+        description: needsDocumentation ? `Please open a documentation PR.` : `Documentation ok.`,
       }),
     );
   }
