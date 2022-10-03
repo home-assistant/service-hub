@@ -102,8 +102,9 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
       await interaction.respond(
         focusedValue.length !== 0
           ? Object.entries(this.messageData)
+              .filter(([_, data]) => data.description)
               .map(([key, data]) => ({
-                name: data.description || key,
+                name: data.description,
                 value: key,
               }))
               .filter(
