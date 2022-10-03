@@ -23,10 +23,6 @@ export class Hacktoberfest extends BaseWebhookHandler {
     context.scheduleIssueLabel('Hacktoberfest');
   }
   async handlePullRequestClosed(context: WebhookContext<PullRequestClosedEvent>) {
-    if (!context.payload.repository?.topics?.includes('hacktoberfest')) {
-      return;
-    }
-
     const pullRequest = context.payload.pull_request;
 
     // Don't do something if the PR got merged or if it had no Hacktoberfest label.
