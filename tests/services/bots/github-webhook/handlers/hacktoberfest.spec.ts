@@ -51,6 +51,7 @@ describe('Hacktoberfest', () => {
 
   it('Add hacktoberfest label on new PR', async () => {
     const clock = sinon.useFakeTimers(new Date(2020, 9, 1).getTime());
+    mockContext.payload.repository = { topics: ['hacktoberfest'] };
     await handler.handle(mockContext);
     clock.restore();
 

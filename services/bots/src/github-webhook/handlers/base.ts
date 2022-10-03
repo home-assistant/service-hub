@@ -6,7 +6,7 @@ import { WebhookContext } from '../github-webhook.model';
 export class BaseWebhookHandler {
   public allowBots: boolean = true;
   public allowedEventTypes: EventType[] = [];
-  public allowedRepositories: Repository[] = Object.values(Repository);
+  public allowedRepositories: Repository[] = [];
 
   constructor() {
     WEBHOOK_HANDLERS.push(this);

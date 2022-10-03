@@ -19,11 +19,20 @@ export type GetIssueLabelResponse =
   RestEndpointMethodTypes['issues']['getLabel']['response']['data'];
 
 export enum Repository {
+  ADDONS = 'addons',
+  ANDROID = 'android',
   BRANDS = 'brands',
+  CLI = 'cli',
+  COMPANION_HOME_ASSISTANT = 'companion.home-assistant',
   CORE = 'core',
   DEVELOPERS_HOME_ASSISTANT = 'developers.home-assistant',
   FRONTEND = 'frontend',
   HOME_ASSISTANT_IO = 'home-assistant.io',
+  IOS = 'iOS',
+  OPERATING_SYSTEM = 'operating-system',
+  SERVICE_HUB = 'service-hub',
+  SUPERVISED_INSTALLER = 'supervised-installer',
+  SUPERVISOR = 'supervisor',
 }
 
 export enum EventType {
