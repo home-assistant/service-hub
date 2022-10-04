@@ -8,6 +8,7 @@ import {
   GetPullRequestParams,
   GetPullRequestResponse,
   ListPullRequestFiles,
+  Organization,
   Repository,
 } from './github-webhook.const';
 
@@ -34,7 +35,8 @@ interface WebhookContextParams<E> {
 export class WebhookContext<E> {
   public github: GithubClient;
   public eventType: EventType;
-  public repositoryName: Repository;
+  public repository: Repository;
+  public organization: Organization;
   public payload: E;
   public scheduledComments: { handler: string; comment: string; priority?: number }[] = [];
   public scheduledlabels: string[] = [];
@@ -47,7 +49,8 @@ export class WebhookContext<E> {
     this.github = params.github;
     this.eventType = params.eventType;
     this.payload = params.payload;
-    this.repositoryName = (params.payload as any).repository.name;
+    this.repository = (params.payload as any).repository.full_name;
+    this.organization = (params.payload as any).repository.owner.login;
   }
 
   public get senderIsBot(): boolean {

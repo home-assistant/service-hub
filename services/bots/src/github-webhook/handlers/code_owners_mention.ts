@@ -1,5 +1,5 @@
 import { IssuesLabeledEvent, PullRequestLabeledEvent } from '@octokit/webhooks-types';
-import { EventType, Repository } from '../github-webhook.const';
+import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { issueFromPayload } from '../utils/issue';
 import { BaseWebhookHandler } from './base';
@@ -8,7 +8,10 @@ import { CodeOwnersEntry, matchFile } from 'codeowners-utils';
 
 export class CodeOwnersMention extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED];
-  public allowedRepositories = [Repository.CORE, Repository.HOME_ASSISTANT_IO];
+  public allowedRepositories = [
+    HomeAssistantRepository.CORE,
+    HomeAssistantRepository.HOME_ASSISTANT_IO,
+  ];
 
   async handle(context: WebhookContext<IssuesLabeledEvent | PullRequestLabeledEvent>) {
     if (!context.payload.label || !context.payload.label.name.startsWith('integration: ')) {
@@ -18,7 +21,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     const triggerIssue = issueFromPayload(context.payload);
     const integrationName = context.payload.label.name.split('integration: ')[1];
     const path =
-      context.repositoryName === Repository.CORE
+      context.repository === HomeAssistantRepository.CORE
         ? `homeassistant/components/${integrationName}/*`
         : `source/_integrations/${integrationName}.markdown`;
 
@@ -71,7 +74,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
 
     if (mentions.length > 0) {
       const triggerLabel =
-        context.repositoryName === Repository.CORE
+        context.repository === HomeAssistantRepository.CORE
           ? context.eventType.startsWith('issues')
             ? 'issue'
             : 'pull request'
