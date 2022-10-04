@@ -26,8 +26,10 @@ export class GithubWebhookService {
           (handler) =>
             (handler.allowBots || !context.senderIsBot) &&
             handler.allowedEventTypes.includes(context.eventType) &&
+            (!handler.allowedOrganizations.length ||
+              handler.allowedOrganizations.includes(context.organization)) &&
             (!handler.allowedRepositories.length ||
-              handler.allowedRepositories.includes(context.repositoryName)),
+              handler.allowedRepositories.includes(context.repository)),
         ).map((handler) => handler.handle(context)),
       );
     } catch (err) {

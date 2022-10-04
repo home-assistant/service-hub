@@ -6,7 +6,11 @@ describe('WebhookContext', () => {
   const context = new WebhookContext({
     github: {},
     payload: {
-      repository: { owner: { login: 'awesome_owner' }, name: 'awesome_name' },
+      repository: {
+        owner: { login: 'awesome_owner' },
+        name: 'awesome_name',
+        full_name: 'awesome_owner/awesome_name',
+      },
       sender: {},
       number: 1337,
     },
@@ -23,6 +27,15 @@ describe('WebhookContext', () => {
     context.payload.sender = {};
     assert.deepStrictEqual(context.senderIsBot, false);
   });
+
+  it('repository', () => {
+    assert.deepStrictEqual(context.repository, 'awesome_owner/awesome_name');
+  });
+
+  it('organization', () => {
+    assert.deepStrictEqual(context.organization, 'awesome_owner');
+  });
+
   describe('Context helpers', () => {
     it('repo', () => {
       assert.deepStrictEqual(context.repo(), { owner: 'awesome_owner', repo: 'awesome_name' });
@@ -63,7 +76,7 @@ describe('WebhookContext', () => {
   describe('Schedule helpers', () => {
     const context = new WebhookContext({
       github: {},
-      payload: { repository: { name: 'awesome_repo' } },
+      payload: { repository: { name: 'awesome_repo', owner: { login: 'awesome' } } },
       eventType: '',
     });
     it('label', () => {

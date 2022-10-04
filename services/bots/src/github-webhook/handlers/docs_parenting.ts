@@ -4,7 +4,7 @@ import {
   PullRequestOpenedEvent,
   PullRequestReopenedEvent,
 } from '@octokit/webhooks-types';
-import { EventType, HOME_ASSISTANT_ORG, Repository } from '../github-webhook.const';
+import { EventType, Organization, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import {
   extractIssuesOrPullRequestMarkdownLinks,
@@ -19,7 +19,11 @@ export class DocsParenting extends BaseWebhookHandler {
     EventType.PULL_REQUEST_CLOSED,
     EventType.PULL_REQUEST_EDITED,
   ];
-  public allowedRepositories = [Repository.CORE, Repository.HOME_ASSISTANT_IO, Repository.FRONTEND];
+  public allowedRepositories = [
+    HomeAssistantRepository.CORE,
+    HomeAssistantRepository.HOME_ASSISTANT_IO,
+    HomeAssistantRepository.FRONTEND,
+  ];
 
   async handle(
     context: WebhookContext<
@@ -36,7 +40,7 @@ export class DocsParenting extends BaseWebhookHandler {
         context as WebhookContext<PullRequestReopenedEvent | PullRequestClosedEvent>,
       );
     } else {
-      if (context.repositoryName === Repository.HOME_ASSISTANT_IO) {
+      if (context.repository === HomeAssistantRepository.HOME_ASSISTANT_IO) {
         await runDocsParentingDocs(
           context as WebhookContext<PullRequestOpenedEvent | PullRequestEditedEvent>,
         );
@@ -55,7 +59,7 @@ const runDocsParentingNonDocs = async (
 ) => {
   const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body)
     .concat(extractPullRequestURLLinks(context.payload.pull_request.body))
-    .filter((link) => link.repo === Repository.HOME_ASSISTANT_IO);
+    .filter((link) => link.repo === HomeAssistantRepository.HOME_ASSISTANT_IO);
 
   if (linksToDocs.length === 0) {
     return;
@@ -83,7 +87,9 @@ const runDocsParentingDocs = async (
   const linksToNonDocs = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body)
     .concat(extractPullRequestURLLinks(context.payload.pull_request.body))
     .filter(
-      (link) => link.owner === HOME_ASSISTANT_ORG && link.repo !== Repository.HOME_ASSISTANT_IO,
+      (link) =>
+        link.owner === Organization.HOME_ASSISTANT &&
+        link.repo !== HomeAssistantRepository.HOME_ASSISTANT_IO,
     );
 
   if (linksToNonDocs.length === 0) {
@@ -102,13 +108,13 @@ const runDocsParentingDocs = async (
 const updateDocsParentStatus = async (
   context: WebhookContext<PullRequestReopenedEvent | PullRequestClosedEvent>,
 ) => {
-  if (context.repositoryName === Repository.HOME_ASSISTANT_IO) {
+  if (context.repository === HomeAssistantRepository.HOME_ASSISTANT_IO) {
     return;
   }
 
   const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(
     context.payload.pull_request.body,
-  ).filter((link) => link.repo === Repository.HOME_ASSISTANT_IO);
+  ).filter((link) => link.repo === HomeAssistantRepository.HOME_ASSISTANT_IO);
 
   if (linksToDocs.length !== 1) {
     return;

@@ -1,5 +1,5 @@
 import { PullRequestOpenedEvent } from '@octokit/webhooks-types';
-import { EventType, Repository } from '../github-webhook.const';
+import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { fetchPullRequestFilesFromContext } from '../utils/pull_request';
 import { BaseWebhookHandler } from './base';
@@ -17,7 +17,7 @@ const DEPENDENCY_FILES = new Set([
 export class DependencyBump extends BaseWebhookHandler {
   public allowBots = false;
   public allowedEventTypes = [EventType.PULL_REQUEST_OPENED];
-  public allowedRepositories = [Repository.CORE];
+  public allowedRepositories = [HomeAssistantRepository.CORE];
 
   async handle(context: WebhookContext<PullRequestOpenedEvent>) {
     const files = await fetchPullRequestFilesFromContext(context);

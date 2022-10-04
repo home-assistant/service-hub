@@ -1,11 +1,11 @@
 import { IssuesLabeledEvent } from '@octokit/webhooks-types';
-import { EventType, Repository } from '../github-webhook.const';
+import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
 export class IssueLinks extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.ISSUES_LABELED];
-  public allowedRepositories = [Repository.CORE];
+  public allowedRepositories = [HomeAssistantRepository.CORE];
 
   async handle(context: WebhookContext<IssuesLabeledEvent>) {
     if (!context.payload.label || !context.payload.label.name.startsWith('integration: ')) {
