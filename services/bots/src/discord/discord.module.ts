@@ -1,10 +1,11 @@
-import { DynamicModule, Inject, Module, ModuleMetadata } from '@nestjs/common';
+import { DynamicModule, Module } from '@nestjs/common';
 import { DiscordModule } from '@discord-nestjs/core';
-import { PingCommand } from './commands/ping';
-import { VersionsCommand } from './commands/versions';
 import { IntegrationCommand } from './commands/integration';
 import { MessageCommand } from './commands/message';
 import { MyCommand } from './commands/my';
+import { PingCommand } from './commands/ping';
+import { VersionsCommand } from './commands/versions';
+import { LineCountEnforcer } from './listeners/line_count_enforcer';
 import { IntegrationDataService } from './services/integration-data';
 import { MyRedirectDataService } from './services/my-redirect-data';
 import { DiscordGuild } from './discord.const';
@@ -17,13 +18,14 @@ const config = Config.getProperties();
 const PROVIDERS = {
   global: [PingCommand],
   [DiscordGuild.HOME_ASSISTANT]: [
-    IntegrationDataService,
-    MyRedirectDataService,
-    VersionsCommand,
     IntegrationCommand,
+    IntegrationDataService,
     MessageCommand,
     MyCommand,
+    MyRedirectDataService,
+    VersionsCommand,
   ],
+  [DiscordGuild.TEST_SERVER]: [LineCountEnforcer],
 };
 
 @Module({
@@ -33,7 +35,11 @@ const PROVIDERS = {
       useFactory: (configService: ConfigService) => ({
         token: configService.get('discord.token'),
         discordClientOptions: {
-          intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+          intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.MessageContent,
+          ],
         },
         registerCommandOptions: [
           {
