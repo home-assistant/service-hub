@@ -4,7 +4,7 @@ import { BaseWebhookHandler } from './base';
 import { ServiceError } from '@lib/common';
 import { ClaIssueLabel } from '@lib/common/github';
 import { DynamoDB } from 'aws-sdk';
-import { EventType, PullRequestEventData } from '../github-webhook.const';
+import { EventType, Organization, PullRequestEventData } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { Injectable } from '@nestjs/common';
 import { uniqueEntries } from '../utils/list';
@@ -38,7 +38,7 @@ const botContextName = 'cla-bot';
 
 @Injectable()
 export class ValidateCla extends BaseWebhookHandler {
-  public allowedRepositories = [];
+  public allowedOrganizations = [Organization.HOME_ASSISTANT];
   public allowedEventTypes = [
     EventType.PULL_REQUEST_OPENED,
     EventType.PULL_REQUEST_REOPENED,

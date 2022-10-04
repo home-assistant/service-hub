@@ -1,5 +1,5 @@
 import { PullRequestOpenedEvent } from '@octokit/webhooks-types';
-import { EventType, Repository } from '../../github-webhook.const';
+import { EventType, HomeAssistantRepository } from '../../github-webhook.const';
 import { WebhookContext } from '../../github-webhook.model';
 import { ParsedPath } from '../../utils/parse_path';
 import { fetchPullRequestFilesFromContext } from '../../utils/pull_request';
@@ -27,7 +27,7 @@ const STRATEGIES = new Set([
 
 export class LabelBot extends BaseWebhookHandler {
   public allowBots = false;
-  public allowedRepositories = [Repository.CORE];
+  public allowedRepositories = [HomeAssistantRepository.CORE];
   public allowedEventTypes = [EventType.PULL_REQUEST_OPENED];
 
   async handle(context: WebhookContext<PullRequestOpenedEvent>) {

@@ -1,5 +1,5 @@
 import { PullRequestEditedEvent, PullRequestOpenedEvent } from '@octokit/webhooks-types';
-import { EventType, HOME_ASSISTANT_ORG, Repository } from '../github-webhook.const';
+import { EventType, Organization, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import {
   extractIssuesOrPullRequestMarkdownLinks,
@@ -7,7 +7,10 @@ import {
 } from '../utils/text_parser';
 import { BaseWebhookHandler } from './base';
 
-const IGNORE_REPOS = [Repository.BRANDS, Repository.DEVELOPERS_HOME_ASSISTANT];
+const IGNORE_REPOS = [
+  HomeAssistantRepository.BRANDS,
+  HomeAssistantRepository.DEVELOPERS_HOME_ASSISTANT,
+];
 
 export const bodyShouldTargetCurrent: string =
   'It seems that this PR is targeted against an incorrect branch. Documentation updates which apply to our current stable release should target the `current` branch. Please change the target branch of this PR to `current` and rebase if needed. If this is documentation for a new feature, please add a link to that PR in your description.';
@@ -16,14 +19,15 @@ export const bodyShouldTargetNext: string =
 
 export class DocsTargetBranch extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.PULL_REQUEST_EDITED, EventType.PULL_REQUEST_OPENED];
-  public allowedRepositories = [Repository.HOME_ASSISTANT_IO];
+  public allowedRepositories = [HomeAssistantRepository.HOME_ASSISTANT_IO];
 
   async handle(context: WebhookContext<PullRequestOpenedEvent | PullRequestEditedEvent>) {
     const target = context.payload.pull_request.base.ref;
     const links = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body).concat(
       extractPullRequestURLLinks(context.payload.pull_request.body).filter(
         (link) =>
-          !IGNORE_REPOS.includes(link.repo as Repository) || HOME_ASSISTANT_ORG !== link.owner,
+          !IGNORE_REPOS.includes(link.repo as HomeAssistantRepository) ||
+          Organization.HOME_ASSISTANT !== link.owner,
       ),
     );
 

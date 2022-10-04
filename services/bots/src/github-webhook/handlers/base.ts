@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { EventType, Repository, WEBHOOK_HANDLERS } from '../github-webhook.const';
+import { EventType, Organization, Repository, WEBHOOK_HANDLERS } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 
 @Injectable()
 export class BaseWebhookHandler {
   public allowBots: boolean = true;
   public allowedEventTypes: EventType[] = [];
-  public allowedRepositories: Repository[] = Object.values(Repository);
+  public allowedOrganizations: Organization[] = [];
+  public allowedRepositories: Repository[] = [];
 
   constructor() {
     WEBHOOK_HANDLERS.push(this);

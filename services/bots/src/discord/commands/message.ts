@@ -18,7 +18,7 @@ const DATA_FILE_URL =
   'https://raw.githubusercontent.com/home-assistant/service-hub/main/data/discord_messages.yaml';
 
 interface MessageData {
-  [key: string]: { description: string; content: string };
+  [key: string]: { description?: string; content: string };
 }
 
 class MessageDto {
@@ -102,6 +102,7 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
       await interaction.respond(
         focusedValue.length !== 0
           ? Object.entries(this.messageData)
+              .filter(([_, data]) => data.description)
               .map(([key, data]) => ({
                 name: data.description,
                 value: key,
