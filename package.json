@@ -51,7 +51,7 @@
     "graphql": "^16.6.0",
     "js-yaml": "^4.1.0",
     "nestjs-pino": "^2.5.2",
-    "node-fetch": "2",
+    "node-fetch": "3",
     "pino": "^8.4.2",
     "pino-http": "^7.0.0",
     "pino-pretty": "^7.6.1",
