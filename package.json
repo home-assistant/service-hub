@@ -35,7 +35,7 @@
     "@nestjs/passport": "^8.2.1",
     "@nestjs/platform-express": "^8.4.4",
     "@nestjs/platform-ws": "^8.4.4",
-    "@nestjs/schedule": "^1.1.0",
+    "@nestjs/schedule": "^2.1.0",
     "@nestjs/websockets": "^8.4.4",
     "@octokit/rest": "^19.0.4",
     "@octokit/webhooks": "^10.1.5",
