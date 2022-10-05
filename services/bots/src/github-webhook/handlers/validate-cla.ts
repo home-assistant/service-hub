@@ -14,6 +14,7 @@ const ignoredAuthors: Set<string> = new Set([
   'travis@travis-ci.org',
   'ImgBotHelp@gmail.com',
   'support@lokalise.com',
+  'github-action@users.noreply.github.com',
 ]);
 
 const ignoredRepositories: Set<string> = new Set([
