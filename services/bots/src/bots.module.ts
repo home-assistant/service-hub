@@ -40,7 +40,7 @@ const version = getVersionInfo(__dirname);
       }),
     }),
     DiscordBotModule.register(),
-    ClaSignModule,
+    ClaSignModule.register(),
     GithubWebhookModule,
   ],
 })
