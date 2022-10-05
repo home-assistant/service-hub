@@ -47,7 +47,7 @@
     "codeowners-utils": "^1.0.2",
     "convict": "^6.2.3",
     "discord.js": "^14.3.0",
-    "find-up": "^4.0.0",
+    "find-up": "^6.3.0",
     "graphql": "^16.6.0",
     "js-yaml": "^4.1.0",
     "nestjs-pino": "^2.5.2",
