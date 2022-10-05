@@ -54,7 +54,7 @@
     "node-fetch": "2",
     "pino": "^8.4.2",
     "pino-http": "^7.0.0",
-    "pino-pretty": "^7.6.1",
+    "pino-pretty": "^9.1.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^7.5.5",
