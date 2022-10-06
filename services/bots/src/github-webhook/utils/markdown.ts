@@ -27,7 +27,7 @@ export const markdownParser = (
     .map((rawSection) => {
       const splitSections = rawSection.split('\n');
       const section: MarkdownSection = {
-        title: markdown.includes('#') ? splitSections[0].replace('#', '').trim() : undefined,
+        title: markdown.includes('#') ? splitSections[0].replace(/#/g, '').trim() : undefined,
         urls: [],
         tasks: [],
       };
@@ -57,7 +57,6 @@ export const markdownParser = (
             description: matchTask.groups.description,
           });
         } else {
-          console.log(matchTask);
           rawText.push(trimmedLine);
         }
       }
