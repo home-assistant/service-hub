@@ -3,7 +3,7 @@ import {
   PullRequestSynchronizeEvent,
   PullRequestUnlabeledEvent,
 } from '@octokit/webhooks-types';
-import { EventType, Repository } from '../github-webhook.const';
+import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import {
   extractIssuesOrPullRequestMarkdownLinks,
@@ -17,7 +17,7 @@ export class DocsMissing extends BaseWebhookHandler {
     EventType.PULL_REQUEST_UNLABELED,
     EventType.PULL_REQUEST_SYNCHRONIZE,
   ];
-  public allowedRepositories = [Repository.CORE];
+  public allowedRepositories = [HomeAssistantRepository.CORE];
 
   async handle(
     context: WebhookContext<
@@ -34,21 +34,17 @@ export class DocsMissing extends BaseWebhookHandler {
     ) {
       const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body)
         .concat(extractPullRequestURLLinks(context.payload.pull_request.body))
-        .filter((link) => link.repo === Repository.HOME_ASSISTANT_IO);
+        .filter((link) => link.repo === HomeAssistantRepository.HOME_ASSISTANT_IO);
 
       needsDocumentation = linksToDocs.length === 0;
     }
-
-    const hasDocsMissingLabel = context.payload.pull_request.labels
-      .map((label) => label.name)
-      .includes('docs-missing');
 
     await context.github.repos.createCommitStatus(
       context.repo({
         sha: context.payload.pull_request.head.sha,
         context: 'docs-missing',
         state: needsDocumentation ? 'failure' : 'success',
-        description: hasDocsMissingLabel ? `Please open a documentation PR.` : `Documentation ok.`,
+        description: needsDocumentation ? `Please open a documentation PR.` : `Documentation ok.`,
       }),
     );
   }

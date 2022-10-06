@@ -2,8 +2,6 @@ import { RestEndpointMethodTypes } from '@octokit/rest';
 import { EventPayloadMap } from '@octokit/webhooks-types';
 import { BaseWebhookHandler } from './handlers/base';
 
-export const HOME_ASSISTANT_ORG = 'home-assistant';
-
 export const WEBHOOK_HANDLERS: BaseWebhookHandler[] = [];
 
 export type PullRequestEventData = EventPayloadMap['pull_request'];
@@ -18,12 +16,27 @@ export type GetIssueLabelParams = RestEndpointMethodTypes['issues']['getLabel'][
 export type GetIssueLabelResponse =
   RestEndpointMethodTypes['issues']['getLabel']['response']['data'];
 
-export enum Repository {
-  BRANDS = 'brands',
-  CORE = 'core',
-  DEVELOPERS_HOME_ASSISTANT = 'developers.home-assistant',
-  FRONTEND = 'frontend',
-  HOME_ASSISTANT_IO = 'home-assistant.io',
+export type Repository = HomeAssistantRepository;
+
+export enum Organization {
+  HOME_ASSISTANT = 'home-assistant',
+}
+
+export enum HomeAssistantRepository {
+  ADDONS = 'home-assistant/addons',
+  ANDROID = 'home-assistant/android',
+  BRANDS = 'home-assistant/brands',
+  CLI = 'home-assistant/cli',
+  COMPANION_HOME_ASSISTANT = 'home-assistant/companion.home-assistant',
+  CORE = 'home-assistant/core',
+  DEVELOPERS_HOME_ASSISTANT = 'home-assistant/developers.home-assistant',
+  FRONTEND = 'home-assistant/frontend',
+  HOME_ASSISTANT_IO = 'home-assistant/home-assistant.io',
+  IOS = 'home-assistant/iOS',
+  OPERATING_SYSTEM = 'home-assistant/operating-system',
+  SERVICE_HUB = 'home-assistant/service-hub',
+  SUPERVISED_INSTALLER = 'home-assistant/supervised-installer',
+  SUPERVISOR = 'home-assistant/supervisor',
 }
 
 export enum EventType {

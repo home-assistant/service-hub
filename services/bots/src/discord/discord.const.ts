@@ -6,3 +6,8 @@ export enum Emoji {
   HOUSE = ':house:',
   TROPHY = ':trophy:',
 }
+
+export enum DiscordGuild {
+  HOME_ASSISTANT = '330944238910963714',
+  TEST_SERVER = '566594464689160192',
+}
