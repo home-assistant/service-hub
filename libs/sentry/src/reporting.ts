@@ -149,8 +149,8 @@ export function reportRequestException(
   Sentry.withScope((scope: Sentry.Scope) => {
     scope.addEventProcessor((event: Sentry.Event) => {
       if (request) {
-        const sentryEvent = Sentry.Handlers.parseRequest(event, request);
-        sentryEvent.level = Sentry.Severity.Error;
+        const sentryEvent = Sentry.addRequestDataToEvent(event, request);
+        sentryEvent.level = 'error';
         return sentryEvent;
       }
       return null;
