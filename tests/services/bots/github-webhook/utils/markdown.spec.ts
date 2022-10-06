@@ -98,7 +98,7 @@ LOREM IPSUM
 -->
 
 - This PR fixes or closes issue: fixes #
-- This PR is related to issue: #79313
+- This PR is related to issue: #
 - Link to documentation pull request:
 
 ## Checklist
