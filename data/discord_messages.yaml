@@ -430,11 +430,6 @@ jedi:
     The **Jedi** role (*blue*) is given to our community members who have proven
     themselves knowledgable and worthy of helping others. *Please do not request
     to be assigned this role. It must be earned.*
-github:
-  description: "Backing up on GitHub"
-  content: >-
-    Check out <@!330904501299183616>'s page for a good [cheat
-    sheet](https://github.com/arsaboo/homeassistant-config/blob/master/HASS%20Cheatsheet.md#backing-up-configurations-on-github)
 customize:
   description: "Customize"
   content: >-
@@ -1423,3 +1418,21 @@ bp:
 
 
     If that's not working out, this is a good secondary spot for help.
+python:
+  description: "Python"
+  content: >-
+    Python 3.9 is the minimum version of Python supported by Home Assistant,
+    with 3.9 being recommended. If you're using a Python virtual environment
+    install you can install an updated version of Python, then manually upgrade
+    your venv as described in
+    <https://blog.ceard.tech/2017/12/upgrading-python-virtual-environment.html>
+check:
+  description: "Check configuration"
+  content: >-  
+    * HAOS [`ha core
+    check`](https://www.home-assistant.io/common-tasks/os/#configuration-check)
+    * Container uses [`docker`
+    commands](https://www.home-assistant.io/common-tasks/container/#configuration-check)
+    * Core requires you to [activate the venv
+    first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
+   
