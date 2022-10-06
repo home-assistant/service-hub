@@ -5452,13 +5452,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nestjs-pino@npm:^2.5.2":
-  version: 2.6.0
-  resolution: "nestjs-pino@npm:2.6.0"
+"nestjs-pino@npm:^3.1.1":
+  version: 3.1.1
+  resolution: "nestjs-pino@npm:3.1.1"
   peerDependencies:
-    "@nestjs/common": ^8.0.0
-    pino-http: ^6.4.0 || ^7.0.0
-  checksum: b274e607e24d924a95b0b55902b5631725d894b4951fbbe3a7f70fd6f7ae78a4217dd3c1a579b1ccd5e825f42bf19cfbfba3ae559b0ee069b57248fb7127a055
+    "@nestjs/common": ^8.0.0 || ^9.0.0
+    pino-http: ^6.4.0 || ^7.0.0 || ^8.0.0
+  checksum: a200b356bfcf6f29ed21316291d545ff3caa2018a6d6fdbecfc73912fb5fb9d70b08d44af7144f0154ddd9e68dd98bba05feaa2e17d824482f0dbd52223dfe31
   languageName: node
   linkType: hard
 
@@ -6533,7 +6533,7 @@ __metadata:
     graphql: ^16.6.0
     js-yaml: ^4.1.0
     mocha: ^10.0.0
-    nestjs-pino: ^2.5.2
+    nestjs-pino: ^3.1.1
     node-fetch: 2
     pino: ^8.4.2
     pino-http: ^7.0.0
