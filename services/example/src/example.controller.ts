@@ -7,7 +7,6 @@ export class ExampleController {
 
   @Get('/hello')
   hello(): string {
-    console.log('hi');
     return this.exampleService.hello();
   }
 }
