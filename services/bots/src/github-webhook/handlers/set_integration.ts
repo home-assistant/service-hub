@@ -18,7 +18,7 @@ export class SetIntegration extends BaseWebhookHandler {
     )) {
       const label = `integration: ${link.integration}`;
       const exist = await context.github.issuesGetLabel(
-        context.issue({ name: label, repo: HomeAssistantRepository.CORE }),
+        context.issue({ name: label, repo: 'core' }),
       );
       if (exist?.name === label) {
         context.scheduleIssueLabel(label);
