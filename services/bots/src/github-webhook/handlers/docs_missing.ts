@@ -34,7 +34,9 @@ export class DocsMissing extends BaseWebhookHandler {
     ) {
       const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body)
         .concat(extractPullRequestURLLinks(context.payload.pull_request.body))
-        .filter((link) => link.repo === HomeAssistantRepository.HOME_ASSISTANT_IO);
+        .filter(
+          (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
+        );
 
       needsDocumentation = linksToDocs.length === 0;
     }
