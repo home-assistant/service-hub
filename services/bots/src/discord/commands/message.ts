@@ -99,6 +99,11 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
       await this.ensureMessageDataLoaded();
       const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
+      if (interaction.responded) {
+        // this happens up upgrades when 2 bots run at the same time
+        return;
+      }
+
       await interaction.respond(
         focusedValue.length !== 0
           ? Object.entries(this.messageData)
