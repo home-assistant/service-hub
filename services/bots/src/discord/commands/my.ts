@@ -111,6 +111,11 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
         await this.myRedirectDataService.ensureData();
         const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
+        if (interaction.responded) {
+          // this happens up upgrades when 2 bots run at the same time
+          return;
+        }
+
         await interaction.respond(
           focusedValue.length !== 0
             ? this.myRedirectDataService.data
