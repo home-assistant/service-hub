@@ -13,6 +13,7 @@ import { BaseWebhookHandler } from './base';
 
 export class DocsMissing extends BaseWebhookHandler {
   public allowedEventTypes = [
+    EventType.PULL_REQUEST_EDITED,
     EventType.PULL_REQUEST_LABELED,
     EventType.PULL_REQUEST_UNLABELED,
     EventType.PULL_REQUEST_SYNCHRONIZE,
