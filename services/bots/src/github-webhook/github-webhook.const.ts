@@ -47,6 +47,7 @@ export enum EventType {
   PULL_REQUEST_LABELED = 'pull_request.labeled',
   PULL_REQUEST_OPENED = 'pull_request.opened',
   PULL_REQUEST_REOPENED = 'pull_request.reopened',
+  PULL_REQUEST_REVIEW_SUBMITTED = 'pull_request_review.submitted',
   PULL_REQUEST_SYNCHRONIZE = 'pull_request.synchronize',
   PULL_REQUEST_UNLABELED = 'pull_request.unlabeled',
 }
