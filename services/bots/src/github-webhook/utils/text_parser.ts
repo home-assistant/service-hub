@@ -36,7 +36,7 @@ export const extractForumLinks = (body: string): string[] =>
     .split('\n')
     .map(
       (line) =>
-        /.*(?<link>https:\/\/community.home-assistant.io\/t\/.*\S)(\s|\n|)/.exec(line)?.groups,
+        /.*(?<link>https:\/\/community.home-assistant.io\/t\/.*\/\d+)(\s|\n|)/.exec(line)?.groups,
     )
     .filter((groups) => groups !== undefined)
     .map((groups) => groups.link);
