@@ -53,7 +53,18 @@ describe('SetIntegration', () => {
 
   it('Integration with platform', async () => {
     mockContext.payload.issue.body =
-      'Link: https://www.home-assistant.io/integrations/platform.awesome';
+      'Link: https://www.home-assistant.io/integrations/sensor.awesome';
+    getLabelResponse = {
+      name: 'integration: awesome',
+    };
+    await handler.handle(mockContext);
+
+    assert.deepStrictEqual(mockContext.scheduledlabels, ['integration: awesome']);
+  });
+
+  it('Integration with platform', async () => {
+    mockContext.payload.issue.body =
+      'Link: https://www.home-assistant.io/integrations/awesome.sensor';
     getLabelResponse = {
       name: 'integration: awesome',
     };
