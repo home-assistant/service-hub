@@ -95,7 +95,7 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
         new EmbedBuilder({
           title: redirectData.name,
           description: redirectData.description,
-          url: `https://my.home-assistant.io/create-link/?redirect=${redirectData.redirect}`,
+          url: `https://my.home-assistant.io/redirect/${redirectData.redirect}/`,
         }),
       ],
     });
