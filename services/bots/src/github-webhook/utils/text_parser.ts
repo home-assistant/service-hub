@@ -1,6 +1,7 @@
 interface IntegrationDocumentationLink {
   link: string;
   integration: string;
+  platform?: string;
 }
 
 interface Task {
@@ -16,20 +17,21 @@ interface IssuePullInfo {
 
 export const extractIntegrationDocumentationLinks = (
   body: string,
-): IntegrationDocumentationLink[] => {
-  const re = /https:\/\/(www.|rc.|next.|)home-assistant.io\/integrations\/(?:\w+\.)?(\w+)/g;
-  let match;
-  let results: IntegrationDocumentationLink[] = [];
-
-  do {
-    match = re.exec(body);
-    if (match) {
-      results.push({ link: match[0], integration: match[2] });
-    }
-  } while (match);
-
-  return results;
-};
+): IntegrationDocumentationLink[] =>
+  body
+    .split('\n')
+    .map(
+      (line) =>
+        /(?<link>https:\/\/(?<subdomain>www|rc|next).?home-assistant.io\/integrations\/(?<integration>\w+)\.?(?<platform>\w+)?)/g.exec(
+          line,
+        )?.groups,
+    )
+    .filter((groups) => groups !== undefined)
+    .map((groups) => ({
+      link: groups.link,
+      integration: groups.integration,
+      platform: groups.platform,
+    }));
 
 export const extractForumLinks = (body: string): string[] =>
   body

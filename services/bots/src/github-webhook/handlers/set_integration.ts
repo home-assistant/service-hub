@@ -1,5 +1,5 @@
 import { Issue, IssuesOpenedEvent } from '@octokit/webhooks-types';
-import { EventType, HomeAssistantRepository } from '../github-webhook.const';
+import { entityComponents, EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { extractIntegrationDocumentationLinks } from '../utils/text_parser';
 import { BaseWebhookHandler } from './base';
@@ -16,7 +16,9 @@ export class SetIntegration extends BaseWebhookHandler {
     for (const link of extractIntegrationDocumentationLinks(
       (context.payload.issue as Issue).body,
     )) {
-      const label = `integration: ${link.integration}`;
+      const integration =
+        link.platform && entityComponents.has(link.integration) ? link.platform : link.integration;
+      const label = `integration: ${integration}`;
       const exist = await context.github.issuesGetLabel(
         context.issue({ name: label, repo: 'core' }),
       );
