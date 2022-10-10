@@ -17,6 +17,10 @@ export class QualityScaleLabeler extends BaseWebhookHandler {
     const domain = context.payload.label.name.split('integration: ')[1];
     const manifest = await fetchIntegrationManifest(domain);
 
-    context.scheduleIssueLabel(`Quality Scale: ${manifest.quality_scale || QualityScale.NO_SCORE}`);
+    if (manifest) {
+      context.scheduleIssueLabel(
+        `Quality Scale: ${manifest.quality_scale || QualityScale.NO_SCORE}`,
+      );
+    }
   }
 }

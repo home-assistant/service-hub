@@ -9,7 +9,7 @@ export enum QualityScale {
 }
 
 interface IntegrationManifest {
-  codeowners: string[];
+  codeowners?: string[];
   domain: string;
   name: string;
   quality_scale?: QualityScale;
@@ -20,9 +20,15 @@ interface IntegrationManifest {
   iot_class: string;
 }
 
-export const fetchIntegrationManifest = async (domain: string): Promise<IntegrationManifest> =>
-  await (
-    await fetch(
+export const fetchIntegrationManifest = async (
+  domain: string,
+): Promise<IntegrationManifest | undefined> => {
+  try {
+    const res = await fetch(
       `https://raw.githubusercontent.com/home-assistant/core/dev/homeassistant/components/${domain}/manifest.json`,
-    )
-  ).json();
+    );
+    return await res.json();
+  } catch (_) {
+    // We expect errors when the file doesnt exist
+  }
+};

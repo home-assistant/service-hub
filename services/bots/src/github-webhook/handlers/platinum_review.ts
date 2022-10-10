@@ -49,7 +49,7 @@ export class PlatinumReview extends BaseWebhookHandler {
     if (requiresCodeownerApproval) {
       const manifest = await fetchIntegrationManifest(integrations[0].substring(13));
 
-      if (!manifest.codeowners.length) {
+      if (!manifest?.codeowners?.length) {
         requiresCodeownerApproval = false;
       } else {
         // We have a list of codeowners, check if someone from there has approved.
