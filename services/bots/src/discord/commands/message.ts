@@ -19,7 +19,12 @@ const DATA_FILE_URL =
   'https://raw.githubusercontent.com/home-assistant/service-hub/main/data/discord_messages.yaml';
 
 interface MessageData {
-  [key: string]: { description?: string; content: string };
+  [key: string]: {
+    description?: string;
+    content: string;
+    image?: string;
+    title?: string;
+  };
 }
 
 class MessageDto extends OptionalUserMentionDto {
@@ -74,10 +79,16 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
 
     await this.ensureMessageDataLoaded();
 
+    console.log(this.messageData[messageKey]);
+
     await interaction.reply({
       embeds: [
         new EmbedBuilder({
           description: [userMention, this.messageData[messageKey].content].join(' '),
+          title: this.messageData[messageKey].title,
+          image: this.messageData[messageKey].image
+            ? { url: this.messageData[messageKey].image }
+            : undefined,
         }),
       ],
     });
@@ -101,9 +112,9 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
       await interaction.respond(
         focusedValue.length !== 0
           ? Object.entries(this.messageData)
-              .filter(([_, data]) => data.description)
+              .filter(([_, data]) => data.description || data.title)
               .map(([key, data]) => ({
-                name: data.description,
+                name: data.description || data.title,
                 value: key,
               }))
               .filter(
