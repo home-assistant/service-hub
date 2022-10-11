@@ -21,6 +21,7 @@ const PROVIDERS = {
   [DiscordGuild.HOME_ASSISTANT]: [
     IntegrationCommand,
     IntegrationDataService,
+    LineCountEnforcer,
     MessageCommand,
     MyCommand,
     MyRedirectDataService,
