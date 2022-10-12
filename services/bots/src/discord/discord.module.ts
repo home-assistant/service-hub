@@ -26,7 +26,7 @@ const PROVIDERS = {
     MyRedirectDataService,
     VersionsCommand,
   ],
-  [DiscordGuild.TEST_SERVER]: [LineCountEnforcer],
+  [DiscordGuild.ESPHOME]: [LineCountEnforcer],
 };
 
 @Module({
