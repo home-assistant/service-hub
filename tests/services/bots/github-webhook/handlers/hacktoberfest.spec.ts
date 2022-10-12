@@ -7,6 +7,7 @@ import {
   isHacktoberfestLive,
 } from '../../../../../services/bots/src/github-webhook/handlers/hacktoberfest';
 import { mockWebhookContext } from '../../../../utils/test_context';
+import { loadJsonFixture } from '../../../../utils/fixture';
 
 describe('Hacktoberfest', () => {
   let handler: Hacktoberfest;
@@ -20,9 +21,7 @@ describe('Hacktoberfest', () => {
     removeLabel = undefined;
     mockContext = mockWebhookContext({
       eventType: 'pull_request.opened',
-      payload: {
-        pull_request: {},
-      },
+      payload: loadJsonFixture('pull_request.opened'),
       github: {
         issues: {
           async getLabel() {
@@ -51,7 +50,9 @@ describe('Hacktoberfest', () => {
 
   it('Add hacktoberfest label on new PR', async () => {
     const clock = sinon.useFakeTimers(new Date(2020, 9, 1).getTime());
-    mockContext.payload.repository = { topics: ['hacktoberfest'] };
+    mockContext.payload = loadJsonFixture('pull_request.opened', {
+      repository: { topics: ['hacktoberfest'] },
+    });
     await handler.handle(mockContext);
     clock.restore();
 
@@ -60,14 +61,16 @@ describe('Hacktoberfest', () => {
 
   it('Remove hacktoberfest label on closed PR', async () => {
     mockContext.eventType = 'pull_request.closed';
-    mockContext.payload.pull_request = { labels: [{ name: 'Hacktoberfest' }], merged: false };
+    mockContext.payload = loadJsonFixture('pull_request.opened', {
+      pull_request: { labels: [{ name: 'Hacktoberfest' }], merged: false },
+    });
     await handler.handle(mockContext);
 
     assert.deepStrictEqual(removeLabel, {
-      issue_number: 1337,
+      issue_number: 2,
       name: 'Hacktoberfest',
-      owner: 'home-assistant',
-      repo: 'core',
+      owner: 'Codertocat',
+      repo: 'Hello-World',
     });
   });
 });

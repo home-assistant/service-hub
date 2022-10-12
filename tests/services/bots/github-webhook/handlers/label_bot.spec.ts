@@ -14,9 +14,6 @@ describe('LabelBot', () => {
     getLabelResponse = {};
     mockContext = mockWebhookContext({
       eventType: 'pull_request.opened',
-      payload: {
-        pull_request: {},
-      },
       github: {
         issues: {},
       },
