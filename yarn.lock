@@ -6489,6 +6489,7 @@ __metadata:
     aws-sdk: ^2.1211.0
     codeowners-utils: ^1.0.2
     convict: ^6.2.3
+    deepmerge: ^4.2.2
     discord.js: ^14.3.0
     eslint: 8.14.0
     eslint-config-prettier: ^8.5.0
