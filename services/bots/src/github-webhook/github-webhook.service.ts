@@ -17,7 +17,7 @@ export class GithubWebhookService {
       auth: {
         appId: Number(configService.get('github.appId')),
         installationId: Number(configService.get('github.installationId')),
-        privateKey: configService.get('github.keyContents').replace(/\\\n/g, '\n'),
+        privateKey: configService.get('github.keyContents'),
       },
     });
   }

@@ -8,7 +8,7 @@ export interface IntegrationData {
 }
 
 @Injectable()
-export class IntegrationDataService {
+export class ServiceHomeassistantIntegrationData {
   public data: { [key: string]: IntegrationData };
 
   public async getIntegration(domain: string): Promise<IntegrationData | undefined> {

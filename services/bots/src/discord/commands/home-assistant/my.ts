@@ -18,9 +18,12 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from 'discord.js';
-import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
-import { IntegrationData, IntegrationDataService } from '../services/integration-data';
-import { MyRedirectDataService } from '../services/my-redirect-data';
+import {
+  IntegrationData,
+  ServiceHomeassistantIntegrationData,
+} from '../../services/home-assistant/integration-data';
+import { ServiceHomeassistantMyRedirectData } from '../../services/home-assistant/my-redirect-data';
+import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 
 class MyDto {
   @Param({
@@ -37,10 +40,10 @@ class MyDto {
   description: 'Returns a my link',
 })
 @UsePipes(TransformPipe)
-export class MyCommand implements DiscordTransformedCommand<MyDto> {
+export class CommandHomeAssistantMy implements DiscordTransformedCommand<MyDto> {
   constructor(
-    private integrationDataService: IntegrationDataService,
-    private myRedirectDataService: MyRedirectDataService,
+    private serviceHomeassistantIntegrationData: ServiceHomeassistantIntegrationData,
+    private serviceHomeassistantMyRedirectData: ServiceHomeassistantMyRedirectData,
   ) {}
 
   @CommandHandler()
@@ -51,7 +54,7 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
     const { redirect } = handlerDto;
     const { interaction } = context;
     if (redirect === 'reload') {
-      await this.myRedirectDataService.ensureData(true);
+      await this.serviceHomeassistantMyRedirectData.ensureData(true);
 
       await interaction.reply({
         content: 'My redirect list reloaded',
@@ -60,7 +63,7 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
       return;
     }
 
-    const redirectData = await this.myRedirectDataService.getRedirect(redirect);
+    const redirectData = await this.serviceHomeassistantMyRedirectData.getRedirect(redirect);
 
     if (!redirectData) {
       await interaction.reply({
@@ -108,7 +111,7 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
     // This is the autocomplete handler for the /my command
     if (interaction.isAutocomplete() && interaction.commandName === 'my') {
       try {
-        await this.myRedirectDataService.ensureData();
+        await this.serviceHomeassistantMyRedirectData.ensureData();
         const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
         if (interaction.responded) {
@@ -118,7 +121,7 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
 
         await interaction.respond(
           focusedValue.length !== 0
-            ? this.myRedirectDataService.data
+            ? this.serviceHomeassistantMyRedirectData.data
                 .filter((redirect) => !redirect.deprecated)
                 .map((redirect) => ({
                   name: redirect.name,
@@ -147,12 +150,16 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
       }
     } // This is modal submition handler if the redirect supports params
     else if (interaction.isModalSubmit()) {
-      const redirectData = await this.myRedirectDataService.getRedirect(interaction.customId);
+      const redirectData = await this.serviceHomeassistantMyRedirectData.getRedirect(
+        interaction.customId,
+      );
       const domainField = interaction.fields.fields.get('domain');
       let integrationData: IntegrationData;
 
       if (domainField) {
-        integrationData = await this.integrationDataService.getIntegration(domainField.value);
+        integrationData = await this.serviceHomeassistantIntegrationData.getIntegration(
+          domainField.value,
+        );
       }
 
       const url = new URL(`https://my.home-assistant.io/redirect/${redirectData.redirect}/`);
