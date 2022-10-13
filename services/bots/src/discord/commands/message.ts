@@ -79,8 +79,6 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
 
     await this.ensureMessageDataLoaded();
 
-    console.log(this.messageData[messageKey]);
-
     await interaction.reply({
       embeds: [
         new EmbedBuilder({
