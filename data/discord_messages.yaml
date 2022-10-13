@@ -38,7 +38,7 @@ rpi4:
     **Trying to install HAOS with an SSD in Rpi4?** Things you need to know:
 
 
-    1)Make sure your Pi is updated to a stable
+    1) Make sure your Pi is updated to a stable
     [bootloader](https://www.raspberrypi.org/documentation/hardware/raspberrypi/bcm2711_bootloader_config.md#usbmassstorageboot)
     release that supports USB boot
 
@@ -46,7 +46,7 @@ rpi4:
     enabled](https://www.raspberrypi.org/forums/viewtopic.php?t=245931) to work
     correctly. Find your adapter's ID and add the quirks parameter to your
     `cmdline.txt` file (found in the boot partition) once you've flashed your
-    5.x HAOS image of choice on the SSD.
+    HAOS image for your Raspberry Pi on the SSD.
 
     3) If no SD card is used add `sd_poll_once=on` to `dtparam` in `config.txt`
     to get rid of `mmc0: timeout waiting for hardware interrupt` kernel errors.
@@ -419,7 +419,7 @@ split_config:
     configuration](https://home-assistant.io/docs/configuration/splitting_configuration/)
     into multiple YAML files
 videos:
-  description: "Video are often out of date"
+  description: "Videos are often out of date"
   content: >-
     Videos are great to watch but are usually out of date QUICK.... [Best to
     read the DOCS](https://www.home-assistant.io/docs/)
