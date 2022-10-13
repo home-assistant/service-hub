@@ -3,6 +3,7 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GatewayIntentBits } from 'discord.js';
 import Config from '../config';
+import { ComponentsCommand } from './commands/components';
 import { IntegrationCommand } from './commands/integration';
 import { MessageCommand } from './commands/message';
 import { MyCommand } from './commands/my';
@@ -11,6 +12,7 @@ import { TopicCommand } from './commands/topic';
 import { VersionsCommand } from './commands/versions';
 import { DiscordGuild } from './discord.const';
 import { LineCountEnforcer } from './listeners/line_count_enforcer';
+import { ComponentDataService } from './services/component-data';
 import { IntegrationDataService } from './services/integration-data';
 import { MyRedirectDataService } from './services/my-redirect-data';
 
@@ -26,7 +28,7 @@ const PROVIDERS = {
     MyRedirectDataService,
     VersionsCommand,
   ],
-  [DiscordGuild.ESPHOME]: [LineCountEnforcer],
+  [DiscordGuild.ESPHOME]: [ComponentsCommand, ComponentDataService, LineCountEnforcer],
 };
 
 @Module({
