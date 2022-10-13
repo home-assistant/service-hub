@@ -27,7 +27,7 @@ export class ClaSignService {
     const signData: Record<string, any> = {
       ...payload,
       received_at: new Date().toISOString(),
-      ip_address: headers['x-forwarded-ip'],
+      ip_address: headers['x-forwarded-for'],
       user_agent: headers['user-agent'],
     };
 
