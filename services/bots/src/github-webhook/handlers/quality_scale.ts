@@ -6,7 +6,7 @@ import { BaseWebhookHandler } from './base';
 import { fetchIntegrationManifest, QualityScale } from '../utils/integration';
 
 export class QualityScaleLabeler extends BaseWebhookHandler {
-  public allowedEventTypes = [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED];
+  public allowedEventTypes = [EventType.PULL_REQUEST_LABELED];
   public allowedRepositories = [HomeAssistantRepository.CORE];
 
   async handle(context: WebhookContext<IssuesLabeledEvent | PullRequestLabeledEvent>) {
