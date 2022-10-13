@@ -95,7 +95,7 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
         new EmbedBuilder({
           title: redirectData.name,
           description: redirectData.description,
-          url: `https://my.home-assistant.io/create-link/?redirect=${redirectData.redirect}`,
+          url: `https://my.home-assistant.io/redirect/${redirectData.redirect}/`,
         }),
       ],
     });
@@ -110,6 +110,11 @@ export class MyCommand implements DiscordTransformedCommand<MyDto> {
       try {
         await this.myRedirectDataService.ensureData();
         const focusedValue = interaction.options.getFocused()?.toLowerCase();
+
+        if (interaction.responded) {
+          // this happens up upgrades when 2 bots run at the same time
+          return;
+        }
 
         await interaction.respond(
           focusedValue.length !== 0

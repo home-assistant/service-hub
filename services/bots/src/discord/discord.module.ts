@@ -1,22 +1,23 @@
-import { DynamicModule, Module } from '@nestjs/common';
 import { DiscordModule } from '@discord-nestjs/core';
+import { DynamicModule, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { GatewayIntentBits } from 'discord.js';
+import Config from '../config';
 import { IntegrationCommand } from './commands/integration';
 import { MessageCommand } from './commands/message';
 import { MyCommand } from './commands/my';
 import { PingCommand } from './commands/ping';
+import { TopicCommand } from './commands/topic';
 import { VersionsCommand } from './commands/versions';
+import { DiscordGuild } from './discord.const';
 import { LineCountEnforcer } from './listeners/line_count_enforcer';
 import { IntegrationDataService } from './services/integration-data';
 import { MyRedirectDataService } from './services/my-redirect-data';
-import { DiscordGuild } from './discord.const';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { GatewayIntentBits } from 'discord.js';
-import Config from '../config';
 
 const config = Config.getProperties();
 
 const PROVIDERS = {
-  global: [PingCommand],
+  global: [PingCommand, TopicCommand],
   [DiscordGuild.HOME_ASSISTANT]: [
     IntegrationCommand,
     IntegrationDataService,
@@ -25,7 +26,7 @@ const PROVIDERS = {
     MyRedirectDataService,
     VersionsCommand,
   ],
-  [DiscordGuild.TEST_SERVER]: [LineCountEnforcer],
+  [DiscordGuild.ESPHOME]: [LineCountEnforcer],
 };
 
 @Module({

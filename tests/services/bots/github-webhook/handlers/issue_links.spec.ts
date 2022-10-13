@@ -3,6 +3,7 @@ import * as assert from 'assert';
 import { WebhookContext } from '../../../../../bots/src/github-webhook/github-webhook.model';
 import { IssueLinks } from '../../../../../services/bots/src/github-webhook/handlers/issue_links';
 import { mockWebhookContext } from '../../../../utils/test_context';
+import { loadJsonFixture } from '../../../../utils/fixture';
 
 describe('SetIntegration', () => {
   let handler: IssueLinks;
@@ -14,10 +15,9 @@ describe('SetIntegration', () => {
     getLabelResponse = {};
     mockContext = mockWebhookContext({
       eventType: 'issues.labeled',
-      payload: {
+      payload: loadJsonFixture('pull_request.opened', {
         label: { name: 'integration: awesome' },
-        issue: {},
-      },
+      }),
       github: {
         issues: {
           async getLabel() {

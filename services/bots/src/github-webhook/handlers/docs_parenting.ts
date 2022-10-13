@@ -59,7 +59,7 @@ const runDocsParentingNonDocs = async (
 ) => {
   const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body)
     .concat(extractPullRequestURLLinks(context.payload.pull_request.body))
-    .filter((link) => link.repo === HomeAssistantRepository.HOME_ASSISTANT_IO);
+    .filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
 
   if (linksToDocs.length === 0) {
     return;
@@ -89,7 +89,7 @@ const runDocsParentingDocs = async (
     .filter(
       (link) =>
         link.owner === Organization.HOME_ASSISTANT &&
-        link.repo !== HomeAssistantRepository.HOME_ASSISTANT_IO,
+        `${link.owner}/${link.repo}` !== HomeAssistantRepository.HOME_ASSISTANT_IO,
     );
 
   if (linksToNonDocs.length === 0) {
@@ -114,7 +114,7 @@ const updateDocsParentStatus = async (
 
   const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(
     context.payload.pull_request.body,
-  ).filter((link) => link.repo === HomeAssistantRepository.HOME_ASSISTANT_IO);
+  ).filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
 
   if (linksToDocs.length !== 1) {
     return;

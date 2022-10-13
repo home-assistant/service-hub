@@ -6,22 +6,27 @@ import { extractForumLinks } from '../../../../../services/bots/src/github-webho
 describe('text_parser', () => {
   it('extractForumLinks', async () => {
     assert.deepStrictEqual(
-      extractForumLinks(`https://community.home-assistant.io/t/example-topic/some_id`),
-      ['https://community.home-assistant.io/t/example-topic/some_id'],
+      extractForumLinks(`https://community.home-assistant.io/t/example-topic/12456`),
+      ['https://community.home-assistant.io/t/example-topic/12456'],
     );
 
     assert.deepStrictEqual(
-      extractForumLinks(`\nhttps://community.home-assistant.io/t/example-topic/some_id  `),
-      ['https://community.home-assistant.io/t/example-topic/some_id'],
+      extractForumLinks(`\nhttps://community.home-assistant.io/t/example-topic/12456  `),
+      ['https://community.home-assistant.io/t/example-topic/12456'],
     );
 
     assert.deepStrictEqual(
-      extractForumLinks(`HI https://community.home-assistant.io/t/example-topic/some_id\n  `),
-      ['https://community.home-assistant.io/t/example-topic/some_id'],
+      extractForumLinks(`HI https://community.home-assistant.io/t/example-topic/12456\n  `),
+      ['https://community.home-assistant.io/t/example-topic/12456'],
     );
 
     assert.deepStrictEqual(
-      extractForumLinks(`HI http://community.home-assistant.io/t/example-topic/some_id\n  `),
+      extractForumLinks(`[HI](https://community.home-assistant.io/t/example-topic/12456)`),
+      ['https://community.home-assistant.io/t/example-topic/12456'],
+    );
+
+    assert.deepStrictEqual(
+      extractForumLinks(`HI http://community.home-assistant.io/t/example-topic/12456\n  `),
       [],
     );
   });

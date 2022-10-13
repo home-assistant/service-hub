@@ -13,6 +13,7 @@ import {
 import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
 import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
+import { OptionalUserMentionDto } from '../discord.const';
 
 const DATA_FILE_URL =
   'https://raw.githubusercontent.com/home-assistant/service-hub/main/data/discord_messages.yaml';
@@ -21,7 +22,7 @@ interface MessageData {
   [key: string]: { description?: string; content: string };
 }
 
-class MessageDto {
+class MessageDto extends OptionalUserMentionDto {
   @Param({
     name: 'message',
     description: 'What message do you want to post?',
@@ -29,13 +30,6 @@ class MessageDto {
     autocomplete: true,
   })
   messageKey: string;
-
-  @Param({
-    name: 'user',
-    description: 'Tag the user you want the message to be posted for',
-    required: false,
-  })
-  userMention: string;
 }
 
 @DiscordCommandClass({
@@ -98,6 +92,11 @@ export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
     try {
       await this.ensureMessageDataLoaded();
       const focusedValue = interaction.options.getFocused()?.toLowerCase();
+
+      if (interaction.responded) {
+        // this happens up upgrades when 2 bots run at the same time
+        return;
+      }
 
       await interaction.respond(
         focusedValue.length !== 0

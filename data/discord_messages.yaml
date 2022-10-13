@@ -1,7 +1,5 @@
-hello_world:
-    description: "Print hello world message"
-    content: "Hello world :wave:"
 '404':
+  description: "404"
   content: >-
     **404** Error for docker usually is a result of one of these things:
 
@@ -12,7 +10,10 @@ hello_world:
 
     - There is not enough space left on the device to download the new
     container.
+
+    - There was a networking issue preventing the image from being downloaded.
 '502':
+  description: "502"
   content: >-
     If you're getting a 502 from an add-on then the add-on isn't running.
 
@@ -20,6 +21,7 @@ hello_world:
     On Zigbee2MQTT a common cause is having only one Zigbee coordinator/stick
     and also having enabled ZHA or deCONZ.
 format:
+  description: "How to format text as code"
   content: >-
     To format your text as code, enter three backticks on the first line, press
     Enter for a new line, paste your code, press Enter again for another new
@@ -36,6 +38,7 @@ format:
     (pick _YAML_ for the language), or <https://paste.debian.net/> (pick _YAML_
     for the language).
 rpi4:
+  description: "RPi with SSD"
   content: >-
     **Trying to install HassOS with an SSD in Rpi4?** Things you need to know:
 
@@ -62,6 +65,7 @@ rpi4:
     If install is still failing then your SSD is perhaps not supported by uboot.
     Try a different drive if you have another one.
 help:
+  description: "Help"
   content: >-
     Welcome to the Home Assistant Discord.
 
@@ -78,6 +82,7 @@ help:
     hi, or the the relevant channel if you need help (if you're unsure, start in
     <#332167321311510530>).
 share:
+  description: "Sharing code"
   content: >-
     Please use a code share site to share code or logs, for example:
 
@@ -95,6 +100,7 @@ share:
     people to help you. Remember that others may have colour blindness, impaired
     vision, etc.
 z-wave:
+  description: "What is Z-Wave"
   content: >-
     Z-Wave is a low power, low bandwidth, protocol for home automation devices -
     mostly sensors, switches, and light controls. The <#332357267364249621>
@@ -112,6 +118,7 @@ xy:
     The problem occurs when people get stuck on what they believe is the
     solution and are unable to step back and explain the issue in full.
 show_sensors:
+  description: "List all sensors"
   content: >-
     Paste the following code into the Template Builder in Developer Tools to
     list all sensors and their names:
@@ -135,6 +142,7 @@ show_sensors:
 
     ```
 show_zwave:
+  description: "List all Z-Wave devices"
   content: >-
     Paste the following code into the Template Builder in Developer Tools to
     list all Z-Wave devices and their status:
@@ -190,6 +198,7 @@ config:
     configuration.yaml file, visit [the docs
     page](https://home-assistant.io/integrations/config/) for more info.
 interference:
+  description: "Wifi Zigbee interference"
   content: >-
     https://cdn.discordapp.com/attachments/330944238910963714/353573816464834560/wifi-zigbee-channels.png
 mosquitto_passwd:
@@ -208,6 +217,7 @@ hadashboard:
     is a dashboard for Home Assistant that is intended to be wall mounted, and
     is optimized for distance viewing.
 notify:
+  description: "Notifications"
   content: >-
     Have a look at the [notify configuration
     options](https://home-assistant.io/integrations/notify/)
@@ -219,6 +229,7 @@ homebridge_link:
     on how to make Homebridge dependant on Home Assistant so it auto starts up
     second.
 entity_count:
+  description: "List number of entities"
   content: >-
     To get the total number of entities in your Home Assistant setup, use this
     <:templates:333726940861169666> template:
@@ -228,29 +239,8 @@ entity_count:
     {{ states|list|length }}
 
     ```
-rkaramandi:
-  content: >-
-    Visit Rohan [Karamandi's Github](https://github.com/rkaramandi) and follow
-    his [Home Automation blog](http://www.karamandi.com/)
-iamtpage_repo:
-  content: <https://github.com/iamtpage/HomeAssistantConfig-Public>
-norien_repo:
-  content: <https://github.com/Norien/Home-Assistant-Config>
-bassclarinetl2:
-  content: >-
-    Will caught the tech bug at age 7 and hasn't stopped. Odds are he's hanging
-    out in the chat and will pipe up when he has something to say. Since this is
-    while he's usually at work, he may disappear in the middle of a
-    conversation. His hass repo is here:
-    https://github.com/bassclarinetl2/hass_config The link for contributing to
-    his Dr. Pepper problem is here: https://www.paypal.me/scottishviking
-bassclarinetl2_repo:
-  content: <https://github.com/bassclarinetl2/hass>
-bassclarinetl2_guides:
-  content: <http://willheid.com>
-cvoid_repo:
-  content: <https://github.com/bl0rp/Home-AssistantConfig>
 jinja2:
+  description: "What is Jinja"
   content: >-
     Jinja is used by Home Assistant's template engine, see the [Jinja Template
     Designer
@@ -269,18 +259,11 @@ homebridge:
 
     ```
 markdown:
+  description: "Markdown"
   content: >-
     [Discord Markdown Text
     101](https://support.discordapp.com/hc/en-us/articles/210298617)
-mihalski:
-  content: >-
-    It's not that bad Dude.  Things will get better.  Everything is a work in
-    progress so just keep a chin up and [watch
-    this](http://www.nbc.com/saturday-night-live/video/weekend-update-olya-povlatsky-on-the-russian-economy/2855730?snl=1)
-maxr1998:
-  content: >-
-    Developer of a native Home Assistant [client for
-    Android](https://github.com/Maxr1998/home-assistant-Android)
+
 espeasy:
   content: >-
     **Ready to use firmware for ESP8266 based wireless devices**
@@ -301,32 +284,12 @@ espeasy:
 
     ESPEasy version 2.0 and higher
     <https://github.com/letscontrolit/ESPEasy/releases>
-cribbs:
-  content: >-
-    ​​Brian Cribbs' [configuration
-    repo](https://github.com/cribbstechnologies/ha_config)
 
-    Also, check out his [automation
-    blog](http://www.cribbstechnologies.com/index.php/home-automation/)
-collse:
-  content: <https://github.com/collse/Home-AssistantConfig>
-rrubin0:
-  content: >-
-    rrubin0's [Home Assistant
-    Configs](https://github.com/rrubin0/hassio-config). Be sure to follow my
-    repo, if you like anything here!
-pow377:
-  content: For random toot on [Github](https://github.com/Pow377)
-sixreeves:
-  content: >-
-    Check out @sixreeves [github
-    repo](https://github.com/sixreeves/Home-AssistantConfig)
 rsnapshot:
   content: >-
     [rsnapshot](http://rsnapshot.org/) makes it easy to make periodic snapshots
     of local machines, and remote machines over ssh.
-moose517:
-  content: <https://github.com/moose51789/home-assistant> 😄 LOL
+
 haaska:
   content: >-
     Use [Haaska](https://github.com/auchter/haaska) to communicate with your
@@ -335,8 +298,6 @@ ssh_tunnel:
   content: >-
     For visual drawings of how to use SSH Port Forwarding/Tunneling, please see:
     <https://unix.stackexchange.com/questions/115897/whats-ssh-port-forwarding-and-whats-the-difference-between-ssh-local-and-remot/115906#115906>
-ben:
-  content: '[BRUH Automation](https://www.youtube.com/channel/UCLecVrux63S6aYiErxdiy4w)'
 links:
   content: >-
     You can disable link preview in Discord by adding `<` before and `>` after
@@ -360,27 +321,19 @@ floorplan:
     [Floorplan](https://github.com/pkozul/ha-floorplan) allows you to extend the
     user interface by adding your own visuals. It also exists [in a dashboard
     version](https://github.com/pkozul/lovelace-floorplan/).
-moose:
-  content: >-
-    Take A Look At [Moose's
-    Config](https://github.com/ChristopherLMiller/home-assistant-config)
-Vasiley_Wiki:
-  content: >-
-    [A wiki](https://github.com/Vasiley/Home-Assistant-Main/wiki) to explain my
-    config
 quotes:
   content: >-
     check out the [best
     practices](https://developers.home-assistant.io/docs/documenting/yaml-style-guide#strings)
     around using quotes in templates.
-vampire:
-  content: <http://slash7.com/2006/12/22/vampires/>
 discovery:
+  description: "MQTT discovery"
   content: >-
     MQTT Discovery requires that the devices (or software) support HA's [MQTT
     Discovery](https://www.home-assistant.io/docs/mqtt/discovery/) and that it's
     enabled in HA _and_ the device (or software).
 tasmota:
+  description: "What is Tasmota"
   content: >-
     ***Ready to use custom firmware for ESP8266 devices (including Sonoff)***
 
@@ -393,22 +346,8 @@ tasmota:
 
     They have their own [Discord server](https://discord.gg/Ks2Kzd4>) or you can
     ask in <#444529271806099486>
-python:
-  content: >-
-    Python 3.9 is the minimum version of Python supported by Home Assistant,
-    with 3.9 being recommended. If you're using a Python virtual environment
-    install you can install an updated version of Python, then manually upgrade
-    your venv as described in
-    <https://blog.ceard.tech/2017/12/upgrading-python-virtual-environment.html>
-norien:
-  content: >-
-    [Check out my repo](https://github.com/Norien/Home-Assistant-Config) and
-    take a peak
-jackjohnsonuk:
-  content: >-
-    Please visit my [Github
-    repository](https://github.com/jackjohnsonuk/homeassistant-config)
 getting_started:
+  description: "Getting Started"
   content: >-
     When you're getting started, take the time to read [the
     docs](https://home-assistant.io/docs/) and have a look at the [supported
@@ -417,6 +356,7 @@ getting_started:
     and people's live [GitHub
     repositories](https://github.com/search?o=desc&q=topic%3Ahome-assistant-config&s=updated&type=Repositories).
 rule4:
+  description: "Rule 4"
   content: >-
     **Rule #4:** Our moderators are kind enough to volunteer their time to help
     keep this a great community for everyone. Any inappropriate or
@@ -426,6 +366,7 @@ rule4:
     *Please take the time now to review all of the rules and references in
     <#331130181102206976>.*
 rule3:
+  description: "Rule 3"
   content: >-
     **Rule #3:** Do not insult, belittle, or abuse your fellow community
     members. Any reports of abuse will not be taken lightly and **will lead to a
@@ -435,6 +376,7 @@ rule3:
     *Please take the time now to review all of the rules and references in
     <#331130181102206976>.*
 rule2:
+  description: "Rule 2"
   content: >-
     **Rule #2:** If you have a question, please check the FAQ¹ and relevant
     documentation² before posting.
@@ -443,6 +385,7 @@ rule2:
     *Please take the time now to review all of the rules and references in
     <#331130181102206976>.*
 rule1:
+  description: "Rule 1"
   content: >-
     **Rule #1:** **New members: Welcome!** Start by reading over the FAQ¹. Feel
     free to introduce yourself, as we are all friends here!
@@ -451,16 +394,14 @@ rule1:
     *Please take the time now to review all of the rules and references in
     <#331130181102206976>.*
 automation:
+  description: "What is an automation"
   content: >-
     [An automation](https://home-assistant.io/docs/automation/) consists of a
     trigger section (describes the events that cause the automation to run), a
     condition section (to limit when the automation runs), and an action section
     (to say what to do).
-vasiley_main:
-  content: >-
-    Have a [Poke around](https://github.com/Vasiley/Home-Assistant-Main)
-    something may help
 faq:
+  description: "FAQ"
   content: >-
     There is a [list of FAQs](https://home-assistant.io/faq/), including one
     explaining the difference between [Home Assistant (the software) and Home
@@ -468,15 +409,15 @@ faq:
     installer)](https://www.home-assistant.io/faq/#home-assistant-vs-hassio).
     There is also a [glossary](https://www.home-assistant.io/docs/glossary/)
     explaining many common terms.
-persistence:
-  content: >-
-    <https://github.com/dale3h/homeassistant-config/blob/master/packages/drop-in/persistence.yaml>
+
 yaml_anchor:
+  description: "YAML anchors"
   content: >-
     YAML has a handy feature called
     [*anchors*](https://github.com/dale3h/homeassistant-config/blob/master/examples/learn_yaml.yaml#L105-L122),
     which let you easily duplicate content across your document
 padawan:
+  description: "Padawan"
   content: >-
     The **Padawan** role (*purple*) is given to our community members who have
     shown that they are willing to learn, have shown progress toward becoming a
@@ -484,26 +425,26 @@ padawan:
     to others when they can. *Please do not request to be assigned this role. It
     must be earned.*
 jedi:
+  description: "Jedi"
   content: >-
     The **Jedi** role (*blue*) is given to our community members who have proven
     themselves knowledgable and worthy of helping others. *Please do not request
     to be assigned this role. It must be earned.*
-github:
-  content: >-
-    Check out <@!330904501299183616>'s page for a good [cheat
-    sheet](https://github.com/arsaboo/homeassistant-config/blob/master/HASS%20Cheatsheet.md#backing-up-configurations-on-github)
 customize:
+  description: "Customize"
   content: >-
     By default, all of your devices will be visible and have a default icon
     determined by their domain. See [customizing
     devices](https://home-assistant.io/docs/configuration/customizing-devices/)
     for how to change that.
 learn_yaml:
+  description: "Learn YAML"
   content: >-
     [Learn
     YAML](https://github.com/dale3h/homeassistant-config/blob/master/examples/learn_yaml.yaml)
     in Y Minutes
 addon-security:
+  description: "Add-on Security"
   content: >-
     From a security perspective, you should protect everything, even internal
     stuff. Given our user base opening up ports just to get stuff working, this
@@ -514,39 +455,29 @@ addon-security:
     **Reasoning:** *"One should do effort to lower security, not the other way
     around."*
 rpi-clone:
+  description: "RPi Clone"
   content: >-
     [A tool](https://github.com/billw2/rpi-clone) for creating and updating a
     bootable image of your entire install, to another SD card (in a micro SD
     card reader)
 split_config:
+  description: "How to Split Configuration"
   content: >-
     Here is now to [split your
     configuration](https://home-assistant.io/docs/configuration/splitting_configuration/)
     into multiple YAML files
 Videos:
+  description: "Video are often out of date"
   content: >-
     Videos are great to watch but are usually out of date QUICK.... [Best to
     read the DOCS](https://www.home-assistant.io/docs/)
 group:
+  description: "Group"
   content: >-
     [Groups](https://home-assistant.io/integrations/group/) allow the user to
     combine multiple entities into one.
-dale3h:
-  content: >-
-    AKA [Dale Higgs](https://github.com/dale3h/homeassistant-config), the guru
-    and codesmith ninja (aka Jinja Ninja) who cures most of our hair-pulling
-
-
-    If you have received any significant help on the Home Assistant Discord
-    server, it is likely due to Dale's expertise and general good-natured
-    spirit.
-philhawthorne:
-  content: >-
-    [Phil Hawthorne's Github](https://github.com/philhawthorne)and Phil's
-    wonderful [Home Automation site](https://philhawthorne.com/homeautomation/)
-hassbot:
-  content: 'Error: Infinite loop'
 crosspost:
+  description: "Please don't cross post"
   content: >-
     **Please DO NOT cross post.**  Read the channel description, post it and
     wait for folks to respond. Crossposting wastes people's time as they're
@@ -556,6 +487,7 @@ crosspost:
     If you don't get any responses after an hour or more, and your message is no
     longer on screen, it is fine to re-post or post a link to it.
 troubleshooting:
+  description: "Troubleshooting"
   content: >-
     If you're having problems with your updates to your configuration:
 
@@ -588,6 +520,7 @@ hassctl:
     For more information, please visit the `hassctl` project page:
     <https://github.com/dale3h/hassctl>
 backups:
+  description: "Backing Up"
   content: >-
     You should automate, outside of Home Assistant, taking backups of your
     configuration, multiple times per day, using a tool that will track and
@@ -596,39 +529,18 @@ backups:
     bootable backups), rsnapshot (for backups within your home network), and
     rclone (for online backups).
 awesome:
+  description: "Awesome List"
   content: >-
     [Awesome Home Assistant](https://www.awesome-ha.com/) - A curated list of
     amazingly awesome Home Assistant resources.
-atom:
-  content: >-
-    Atom is a text editor that supports live YAML checking.
 
-    - Get Atom here: <https://atom.io/​>
-
-
-    Useful Atom plugins:
-
-    - YAML language support in Atom: <https://atom.io/packages/language-yaml>
-
-    - Linter plugin for YAML: <https://atom.io/packages/linter-js-yaml>
-
-    - Indent Guide Improved: <https://atom.io/packages/indent-guide-improved>
-
-    - Atom Sublime Select: <https://github.com/bigfive/atom-sublime-select>
-
-    - Atom Mini-Map: <https://github.com/atom-minimap/minimap>
-
-    - Remote FTP/SFTP/SFTP: <https://github.com/icetee/remote-ftp>
-
-
-    ***Note:** It is safe to ignore the error shown for `!secret` when using the
-    YAML linter plugin.*
 git:
   content: >-
     Here are some [useful
     commands](https://github.com/CCOSTAN/Home-AssistantConfig/blob/master/shell_scripts/gitupdate.sh)
     to push your repo to GitHub once you have the `git` part all set up
 device_class:
+  description: "Device class"
   content: >-
     [Binary
     sensors](https://www.home-assistant.io/components/binary_sensor/#device-class)
@@ -637,16 +549,19 @@ device_class:
     have device classes that change how things look in the frontend and are
     shared with Google/Alexa.
 secrets:
+  description: "Secrets"
   content: >-
     Rather than putting sensitive information (passwords, locations, etc) into
     your configuration, you can store them in
     [secrets](https://home-assistant.io/docs/configuration/secrets/) to make
     sharing easier.
 linux:
+  description: "Linux basics"
   content: >-
     To learn about the basics of Linux check out [this
     guide](https://www.digitalocean.com/community/tutorials/an-introduction-to-linux-basics)
 rule5:
+  description: "Rule 5"
   content: >-
     **Rule #5:** Channels starting with `#dev` are for **development discussion
     only**. <#397426163649216512> is for non Home Assistant related chat. Please
@@ -655,40 +570,31 @@ rule5:
 
     *Please take the time now to review all of the rules and references in
     <#331130181102206976>.*
-ccostan:
-  content: >-
-    Be sure to visit me at [my
-    github](https://github.com/CCOSTAN/Home-AssistantConfig#logo) and visit [my
-    website](https://vcloudinfo.com/)
-sharethelove:
-  content: A place for LoveLace Config <https://sharethelove.io/>
-vasiley_fishtank:
-  content: >-
-    Have a Poke around [the
-    tank](https://github.com/Vasiley/Home-Assistant_FishTank)
-arsaboo:
-  content: >-
-    For best of the best home automations, visit [my
-    repo](https://github.com/arsaboo/homeassistant-config)
+
 which:
+  description: "Which install am I using"
   content: >-
     Not sure which install you're using? Check the [Home Assistant info
     page](https://my.home-assistant.io/redirect/info)
 forum:
+  description: "Community Forum"
   content: >-
     You can find the [community forum
     here](https://community.home-assistant.io/)
 thoughts:
+  description: "Thoughts"
   content: >-
     Please don't use the channels to think out aloud. Go through the basic
     troubleshooting steps and then highlight the specific problem that you are
     facing. We don't have access to your system and it is hard for people to
     imagine what may be going on.
 json:
+  description: "JSON validation"
   content: >-
     Use these tools to [check validity of JSON](http://www.jsonlint.com) or
     [parse JSON](https://jqplay.org/)
 rules:
+  description: "5 rules"
   content: >-
     5 Rules for better support:
 
@@ -714,18 +620,9 @@ rules:
 
     We are thankful to all the members who dedicate their personal time helping
     others.
-dshokouhi:
-  content: >-
-    Take a Peak at [my
-    github](https://github.com/dshokouhi/Home-AssistantConfig) and see if it
-    helps
-nocolaz:
-  content: >-
-    My [Github
-    Repo](https://github.com/klaasnicolaas/Smarthome-homeassistant-config)
-vasiley:
-  content: Have a [Walk Around](https://github.com/Vasiley)
+
 backup:
+  description: "Backups"
   content: >-
     Be sure to regularly, automatically, back up your Home Assistant install.
     There are various critical files and configuration options (like the Z-Wave
@@ -733,21 +630,7 @@ backup:
     snapshots, and for unix type installs see [this
     page](https://blog.ceard.tech/2017/10/backing-up-home-assistant.html).  Oh,
     and most important of all **test your ability to restore regularly**.
-flowolf:
-  content: >-
-    Have a look at [flowolf's
-    config](https://github.com/flowolf/homeassistant-config)
-fruitsalad:
-  content: Fruit salad is something that is made of fruits, and it is yummy!
-nicolaz:
-  content: >-
-    My [Github
-    Repo](https://github.com/klaasnicolaas/Smarthome-homeassistant-config)
-sinker1345:
-  content: >-
-    Have a peek at [my
-    github](https://github.com/sinker1345/Home-Assistant-Configuration) maybe it
-    can help
+
 jinja:
   content: >-
     [Jinja Template Designer
@@ -767,30 +650,13 @@ repos:
     You can find a number of people's [GitHub repositories
     here](https://github.com/topics/home-assistant-config) - these are their
     working configurations, not simply documentation examples
-skalavala:
-  content: >-
-    Skalavala's [github repo](https://www.github.com/skalavala) and [his
-    blog](https://www.awesome-automations.com/blog/)
 condition:
+  description: "Condition"
   content: >-
     [Conditions](https://home-assistant.io/docs/scripts/conditions/) can be used
     within a script or automation to prevent further execution.
-rule6:
-  content: >-
-    **[Rule
-    #6](https://discord.com/channels/330944238910963714/331130181102206976/848778640015622234):**
-    Spam will not be tolerated, including but not limited to: self-promotion,
-    flooding, text walls (longer than 15 lines) and unapproved bots.
-
-
-    *Please take the time now to review all of the rules and references in
-    <#331130181102206976>.*
-
-
-    For sharing code or logs use a code share site such as <https://dpaste.org/>
-    (pick _YAML_ for the language) or <http://pastie.org/> (pick _YAML_ for the
-    language).
 RTFM:
+  description: "RTFM"
   content: >-
     **RTFM** is a well known phrase, used when someone hasn't taken time to read
     the documentation. Please take time to Read The $%#@ Manual - author
@@ -829,6 +695,7 @@ packages:
     For more information on packages, please refer to the packages docs:
     <https://home-assistant.io/docs/configuration/packages/>
 yaml:
+  description: "What is YAML"
   content: >-
     [YAML](https://home-assistant.io/docs/configuration/yaml/) is the mark up
     language used by Home Assistant, consistent indenting (two spaces per level)
@@ -839,19 +706,8 @@ lovelace_glance:
   content: >-
     [Glance cards](https://www.home-assistant.io/lovelace/glance/) are very
     compact
-monster-card:
-  content: >-
-    The monster card was replaced by [auto
-    entities](https://github.com/thomasloven/lovelace-auto-entities) which is a
-    magical type of card. Because it's dynamic if you're smart about it, you can
-    have one card that adapts and that you don't need to touch when adding new
-    entities & sensors to your setup. Supports both inclusion and exclusion
-    filters with wildcard for `entity_id`
-tinkerer:
-  content: >-
-    [His GitHub](https://github.com/DubhAd/Home-AssistantConfig/) and [his
-    blog](https://ceard.tech/)
 template:
+  description: "Template"
   content: >-
     When working with templates, don't forget:
 
@@ -918,6 +774,7 @@ question:
     these things. We like answering questions for people who have demonstrated
     they can learn from the answers.
 images:
+  description: "Image sharing"
   content: >-
     Please use [imgur](https://imgur.com/) or other image sharing web sites, and
     share the link here.
@@ -927,11 +784,9 @@ images:
     text as images. Sharing text as images assumes that everybody sees the world
     as you do, which isn't the case. Some people are colour blind, or have
     visual impairment that means they can't make sense of an image of text.
-tracker-owntracks:
-  content: >-
-    Remove all reference to the `owntracks` device tracker and [set up the
-    integration](https://home-assistant.io/integrations/owntracks)
+
 issues:
+  description: "Issues"
   content: >-
     Want to see what issues are open (or were open and are now closed)?
 
@@ -967,6 +822,7 @@ issues:
     5. Open an issue, following the template provided and including the log
     information
 llat:
+  description: "Long Lived Access Token"
   content: >-
     The LLAT, or [Long Lived Access
     Token](https://www.home-assistant.io/docs/authentication/#your-account-profile)
@@ -986,34 +842,7 @@ vef:
       Example: auto, manual, yaml, legacy (not lovelace)
 
     Examples: 0.84.3/venv/yaml
-check:
-  content: >-
-    ***Always*** run the configuration check *command* when you make changes.
-    Don't trust the UI check - it misses some problems.
 
-
-    * HAOS & Supervised use [`ha core
-    check`](https://www.home-assistant.io/common-tasks/os/#configuration-check)
-
-    * Container uses [`docker`
-    commands](https://www.home-assistant.io/common-tasks/container/#configuration-check)
-
-    * Core requires you to [activate the venv
-    first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
-list:
-  content: >-
-    Want to see the full list of commands for the bot? Try
-
-    ```
-
-    curl -sSL
-    https://raw.githubusercontent.com/awesome-automations/hassbot-data/master/commands.json
-    | jq .[].CommandName --raw-output | grep rule
-
-    ```
-
-    Or [the raw
-    data](https://raw.githubusercontent.com/awesome-automations/hassbot-data/master/commands.json)
 custom-cards:
   content: >-
     Head over to [the custom cards github](https://github.com/custom-cards) to
@@ -1036,8 +865,6 @@ context:
   content: >-
     Save variables in Node Red using [context
     variables](https://nodered.org/docs/user-guide/context)
-villhellm:
-  content: '[Link to Villhellm''s github page](https://github.com/Villhellm)'
 monitor:
   content: >-
     As an alternative to HA built-in bluetooth tracking, [the monitor
@@ -1062,18 +889,17 @@ explain:
     Supervised, Container, Core), the exact component you're having problems
     with (eg _Nest climate_ rather than _climate_), and details of the problem
     (ideally with any error message in full).
-ludeeus:
-  content: >-
-    [This repository exists mostly for my own
-    amusement](https://github.com/ludeeus/Home-Assistant-Config), but it may
-    contain some things that others might find useful. :dancer:
+
 hacs:
+  description: "Home Assistant Community Store"
   content: >-
-    [Home Assistant Community Store](https://hacs.xyz/) is the successor to the
+    [Home Assistant Community Store](https://hacs.xyz/) allows for easy installation and management of
+    custom unsupported integrations. It is the successor to the
     old Custom Updater, and can do so much more - you should check it out. They
     even have a [Discord server](https://discord.gg/apgchf8) for issues with
     HACS itself.
 irc:
+  description: "IRC"
   content: >-
     Discord isn't like IRC, you don't have to tag people on every response. Keep
     in mind that every time you tag somebody, they get a notification ping. That
@@ -1086,18 +912,18 @@ irc:
 
 
     You have to change this every time (thank the Discord devs for that).
-tediore:
-  content: >-
-    It's dangerous to go alone! Check out my
-    [GitHub](https://github.com/Tediore/My-HASS-config).
+
 devices:
+  description: "Devices"
   content: >-
     Not every entity in your system is associated with a Device. If you want to
     see everything, look under _Developer Tools_ then _States_ or in the
     _Entities_ menu under _Configuration_.
 flippy_boi:
+  description: "Input boolean"
   content: https://www.home-assistant.io/integrations/input_boolean/
 zigbee:
+  description: "Zigbee"
   content: >-
     There are three Zigbee options with Home Assistant (regardless of how you
     install it). These are:
@@ -1135,11 +961,12 @@ zigbee:
     boards are supported. Known working devices are documented, and how to
     request support for a new device is documented too (you can't add
     unsupported devices yourself).
-codewall:
+textwall:
+  description: "Wall of stuff"
   content: >-
     **[Rule
     #6](https://discord.com/channels/330944238910963714/331130181102206976/848778640015622234):**
-    Please do not post codewalls (text longer than ***15 lines***, including
+    Please do not post walls of text or code (text longer than ***15 lines***, including
     whitespace) - use sites such as <http://pastie.org/> (select _YAML_ for the
     language), <https://dpaste.org/> (pick _YAML_ for the language), or
     <https://paste.debian.net/> (pick _YAML_ for the language).
@@ -1147,19 +974,13 @@ codewall:
 
     *Please take the time now to review all of the rules and references in
     <#331130181102206976>.*
-textwall:
-  content: >-
-    **[Rule
-    #6](https://discord.com/channels/330944238910963714/331130181102206976/848778640015622234):**
-    Please do not post text walls (longer than ***15 lines***, including
-    whitespace) - use sites such as <http://pastie.org/> (select _YAML_ for the
-    language), <https://dpaste.org/> (pick _YAML_ for the language), or
-    <https://paste.debian.net/> (pick _YAML_ for the language).
+
 
 
     *Please take the time now to review all of the rules and references in
     <#331130181102206976>.*
 what:
+  description: "What to buy"
   content: |-
     Looking for advice about a device to buy? Remember to provide guidance on:
     * Which country you're in
@@ -1167,11 +988,13 @@ what:
     * What protocols you prefer (eg Zigbee, WiFi, Z-Wave)
     * Any features you want (such as power monitoring, dimming, etc)
 hassio:
+  description: "Hassio is an old reference"
   content: >-
     Hass.io was the old name for the appliance like install option, that _uses_
     Docker. It was renamed in January 2020 and is now called _Home Assistant
     OS_.
 integration:
+  description: "Integrations"
   content: >-
     <#672220541343760384> _integrate_ Home Assistant with devices or services,
     or provide functionality within Home Assistant.
@@ -1182,6 +1005,7 @@ integration:
     OS and Supervised only, other install methods can install software other
     ways.
 Windows:
+  description: "Windows warning"
   content: >-
     Running Home Assistant in a venv on Windows isn't recommended. Not all
     integrations may work, because some Python packages aren't available. You
@@ -1197,6 +1021,7 @@ deconz:
     Home Assistant, but they also have their own [Discord
     server](https://discord.gg/RNTwa6d).
 esphome:
+  description: "ESPHome"
   content: >-
     [ESPHome](https://www.home-assistant.io/integrations/esphome/) is a system
     to control your ESP8266/ESP32, with a [native
@@ -1209,6 +1034,7 @@ esphome:
     (<#672220541343760384> for the Home Assistant side integration with it).
     They also have their own [Discord server too](https://discord.gg/KhAMKrd).
 appdaemon:
+  description: "Appdaemon"
   content: >-
     [AppDaemon](https://appdaemon.readthedocs.io/en/latest/) is a loosely
     coupled, multithreaded, sandboxed python execution environment for writing
@@ -1216,6 +1042,7 @@ appdaemon:
     with HA. You can get help at [their Discord
     server](https://discord.gg/Mx5qafB).
 zigbee2mqtt:
+  description: "What is zigbee2mqtt"
   content: >-
     [Zigbee2MQTT](https://www.zigbee2mqtt.io/) is a Zigbee gateway that uses
     MQTT to communicate with HA and supports a range of TI chipset based
@@ -1223,6 +1050,7 @@ zigbee2mqtt:
     using it with Home Assistant, but they also have their own [Discord
     server](https://discord.gg/NyseBeK).
 integrations:
+  description: "Some integrations require YAML"
   content: >-
     Some [integrations](https://www.home-assistant.io/integrations) are added
     with YAML, some in the UI. Check the documentation for your integration to
@@ -1232,22 +1060,22 @@ learning:
     A learning experience is one of those things that says, _'You know that
     thing you just did? Don't do that.'_
 addon:
+  description: "What is an add-on"
   content: >-
     An add-on is a Docker container with tweaks to allow it to be configured in
     the Supervisor UI. It is only available in the Supervised installs
     (<#330990055533576204> and <#330944238910963714>) since if you've used any
     other install method you're able to install software already.
 advanced:
+  description: "Advanced mode"
   content: >-
     Various settings are hidden unless your [user
     profile](https://my.home-assistant.io/redirect/profile/) has _Advanced mode_
     enabled. These include some add-ons, the Lovelace _Resources_ menu, server
     control options, and more.
-atxbyea:
-  content: >-
-    You can find his config lurking [in the
-    darkness](https://github.com/atxbyea/HA-Config).
+
 test:
+  description: "Testing automations"
   content: >-
     To test an automation there's three stages you can follow. Testing the
     action, the condition and action, and the whole automation:
@@ -1277,10 +1105,7 @@ test:
     docs](https://www.home-assistant.io/docs/automation/troubleshooting/) and
     with HA 2021.4 onwards [debug
     automations](https://www.home-assistant.io/blog/2021/04/07/release-20214/#automation-debugging).
-error:
-  content: >-
-    Please don't say _I have an error_ or describe an error. Share the whole
-    actual error message so we can help you.
+
 pickyourstick:
   content: >-
     Buy something CC2652 based. [This
@@ -1323,24 +1148,7 @@ tagging:
     side of the compose bar.
 latest:
   content: '''Latest'' is not a version number. Please provide the actual version number.'
-malformed:
-  content: >-
-    **Oh boy!** :scream:
 
-
-    `database disk image is malformed` tells you that your database file has
-    been corrupted :cry:
-
-    But do not worry, there is an easy fix :tada:
-
-    1. Delete the `home-assistant_v2.db` file in the same folder as
-    `configuration.yaml`
-
-    2. Restart Home Assistant.
-
-
-    _Sidenote: this will cause you to lose all your history, but it's broken
-    anyway, so just do it._
 works:
   content: >-
     Want to know if something works with Home Assistant? Here's a few things to
@@ -1353,31 +1161,9 @@ works:
     2. Search [community forum](https://community.home-assistant.io/)
 
     3. Try Googling _Home Assistant MYDEVICE_ or _MYDEVICE Python_
-pinned:
-  content: See the pinned messages
-flooding:
-  content: >-
-    **[Rule
-    #6](https://discordapp.com/channels/330944238910963714/331130181102206976/461249903478439937):**
-    Spam will not be tolerated, including but not limited to: self-promotion,
-    ***flooding*** (posting lots of shorter messages), text walls (longer than
-    15 lines) and unapproved bots.
 
-
-    *Please take the time now to review all of the rules and references in
-    <#331130181102206976>.*
-hadebug:
-  content: >-
-    To enable debug for the deCONZ integration in Home-Assistant, add the
-    following to your configuration.yaml:```yaml
-
-    logger:
-      default: info
-      logs:
-        pydeconz: debug
-        homeassistant.components.deconz: debug
-    ```
 features:
+  description: "Feature requests"
   content: >-
     If you have a feature request for the frontend you can open [one
     here](https://github.com/home-assistant/frontend/issues), for Home Assistant
@@ -1386,6 +1172,7 @@ features:
     feature requests should be made to the developer of that custom
     card/component.
 weather:
+  description: "Weather"
   content: >-
     There is no universal _best_ [weather
     integration](https://www.home-assistant.io/integrations#weather). Which one
@@ -1405,11 +1192,13 @@ best:
 
     * Any protocols that you'd prefer (eg Zigbee) or want to avoid (eg Zigbee)
 unique_id:
+  description: "Unique ID"
   content: >-
     Please see the [faq
     entry](https://www.home-assistant.io/faq/#this-entity-does-not-have-a-unique-id)
     about that message.
 swag:
+  description: "SWAG"
   content: >-
     [Secure Web Application Gateway](https://docs.linuxserver.io/general/swag)
     aka SWAG - is the easiest way of setting up a reverse proxy server with SSL
@@ -1418,13 +1207,15 @@ swag:
     get stuck they also have [a Discord server](https://discord.gg/YWrKVTn) and
     [forum](https://docs.linuxserver.io/general/swag).
 tts:
+  description: "TTS"
   content: >-
     If `tts` isn't working in your media players (and on a Google device at most
     you get a _bloop_), then the problem is most likely down to SSL. If you're
     using SSL in HA make sure that your
-    [`external_url`](https://www.home-assistant.io/docs/configuration/basic) is
-    correctly set, and that `internal_url` matches it.
+    [`Internet`](https://my.home-assistant.io/redirect/network/) and
+    `Local Network` are set correctly.
 elevation:
+  description: "Elevation"
   content: >-
     Why use the [sun elevation
     trigger](https://www.home-assistant.io/docs/automation/trigger/#sun-elevation-trigger)
@@ -1457,6 +1248,7 @@ patience:
     Have a little patience. Keep in mind that repeatedly posting to get
     attention is against the rules (flooding) and can get you muted or banned.
 spam:
+  description: "Reporting Spam to Discord"
   content: >-
     You can report spam [Directly to
     Discord](https://support.discord.com/hc/en-us/articles/360000291932-How-to-Properly-Report-Issues-to-Trust-Safety)
@@ -1464,6 +1256,7 @@ spam:
     you provide a screenshot of the spam and the user's handle (eg @spammer#123)
     in <#397426163649216512>.
 states:
+  description: "States"
   content: >-
     The [_States_
     screen](https://my.home-assistant.io/redirect/developer_states) is your
@@ -1471,6 +1264,7 @@ states:
     along with the state the system knows (instead of the translated value you
     see elsewhere), and all attributes.
 docker:
+  description: "Docker based installs"
   content: >-
     If you're using any of the install methods that use Docker (basically
     everything but HA Core) then Home Assistant runs in a container that only
@@ -1484,22 +1278,12 @@ docker:
     services, when you create a file in `/root` or `/tmp` and then can't find it
     in another container.
 blue:
+  description: "Home Assistant Blue"
   content: >-
     The [Home Assistant Blue](https://www.home-assistant.io/blue) is an
-    ODROID-N2+ in a custom case.
-security:
-  content: >-
-    If you have questions about the security bulletin the only place to find the
-    answers is in [the blog
-    post](https://www.home-assistant.io/blog/2021/01/14/security-bulletin/). If
-    the information isn't there we can't tell you, because we don't know either.
+    ODROID-N2+ in a custom case. The Blue had a limited run and is no longer available,
+    but you may still be able to find Odroid N2+ bundles with HA installed available from vendors (without the case).
 
-
-    PS: We also don't know when it'll be updated.
-
-
-    If you have any questions, they're best asked on the linked [forum
-    thread](https://community.home-assistant.io/t/security-bulletin/268456/).
 reply:
   content: >-
     When using Discord's _Reply_ feature it defaults to pinging the person you
@@ -1509,18 +1293,7 @@ reply:
 
 
     You have to change this every time (thank the Discord devs for that).
-ffs:
-  content: >-
-    When using Discord's _Reply_ feature it defaults to pinging the person you
-    reply to, which can get **very frustrating for the target**. Use _Shift +
-    click_ on the _Reply_ option, or click `@ ON` to `@ OFF` to stop this - on
-    the right side of the compose bar - you have to do this on every reply.
 
-
-    Or don't, and just wait for the recipient to get annoyed enough to block
-    you.
-raccoon:
-  content: There can be only one.
 zigbeestick:
   content: >-
     For Zigbee2MQTT any CC2652p (or CC2652) based stick is a good choice. Those
@@ -1530,19 +1303,13 @@ zigbeestick:
     Don't pick the cheap CC2530/CC2531 sticks, and avoid the Sonoff Zigbee
     bridge since Zigbee and WiFi aren't friends. If you're not using deCONZ
     avoid the ConBee and RaspBee devices.
-readme:
-  content: >-
-    Remember, a few hours of trial and error can save you several minutes of
-    reading the documentation.
-amber:
-  content: >-
-    See the <#887751499785072711> channel for everything to do with the [Home
-    Assistant Yellow](https://www.home-assistant.io/yellow).
 yellow:
+  description: "Yellow"
   content: >-
     See the <#887751499785072711> channel for everything to do with the [Home
     Assistant Yellow](https://www.home-assistant.io/yellow).
 trigger:
+  description: "Trigger"
   content: >-
     There are three sections to an automation:
 
@@ -1560,11 +1327,9 @@ trigger:
 
     * [**`action`**](https://www.home-assistant.io/docs/scripts/): This is the
     part that does something, and can also include further conditions.
-hello:
-  content: Please don't just say [hello](https://nohello.net/), post your question too.
-hi:
-  content: Please don't just say [hi](https://nohello.net/), post your question too.
+
 hasswp:
+  description: "hasswp"
   content: >-
     Don't use HassWP, it's unsupported and unsupportable. It runs Home Assistnat
     directly in Windows, which means many things won't work, and relies on the
@@ -1575,6 +1340,7 @@ hasswp:
     approach](https://www.home-assistant.io/installation#compare-installation-methods)
     and you'll have less pain.
 pr:
+  description: "What about my PR?"
   content: >-
     If you have an open PR and are waiting for feedback, please be patient and
     do not beg for a review. We have a huge backlog of PRs at any given moment
@@ -1591,6 +1357,7 @@ pr:
     can post here asking for help since we want to make sure that PRs don't get
     auto-closed because of a lack of feedback.
 schedy:
+  description: "Schedy"
   content: >-
     [Schedy](https://hass-apps.readthedocs.io/en/stable/apps/schedy/) is a
     highly-configurable, comfortable to use multi-purpose scheduler for Home
@@ -1603,52 +1370,41 @@ schedy:
     time of day and day of week) while leaving advanced users plenty of room for
     customization with arbitrarily complex rules.
 sd:
+  description: "SD cards"
   content: >-
     SD cards die - the more you write to them, the sooner they die. You can get
     a longer life with an Industrial SD card, or ones designed for 24x7 camera
     recording.
 
-
     You're better off moving off the SD cards though, either use an SSD or
     replace that Pi with just about any 64 bit capable system from the last
     decade.
 supervised:
+  description: "Supervised"
   content: >-
     Home Assistant Supervised is considered advanced and should only be used if
     you are an expert in managing a Linux operating system, Docker and
     networking. Maintaining a Debian installation to a very specific set of
     requirements is hard.
 
-
     Insecure installations and Unsupported configurations will result if you
     dont know what you are doing.
 
-
     You **MAY** regret using this method.
-wawft:
-  content: >-
-    Maybe my Code or Blog will help you, found here:
-
-
-    WhatAreWeFixing.Today [Home Assistant GIT
-    Config](https://github.com/SirGoodenough/Home-Assistant-Config) & [Blueprint
-    Repo](https://github.com/SirGoodenough/Home-Assistant-Config) &
-    [Website](https://www.WhatAreWeFixing.Today/).
 yamlshare:
+  description: "Share the YAML"
   content: >-
     Sadly we're not mind readers (any more anyway, not after the last time we
     tried). Please [share the YAML and any errors](https://dpaste.org/) so we
     can see what you've done.
-drzzs:
-  content: >-
-    DrZzs has a [Discord server](https://discord.com/invite/drzzs) with channels
-    dedicated to things like LED lighting, 3d printing, and a lot more.
 router:
+  description: "Zigbee routers"
   content: >-
     Most mains powered devices are a Zigbee router, for the exceptions [see this
     community wiki
     page](https://community.home-assistant.io/t/mains-powered-zigbee-devices-that-arent-routers/458500).
 bp:
+  description: "Blueprints"
   content: >-
     If you are looking for that specific Blueprint that does that special thing,
     search [The Blueprint
@@ -1662,3 +1418,21 @@ bp:
 
 
     If that's not working out, this is a good secondary spot for help.
+python:
+  description: "Python"
+  content: >-
+    Python 3.9 is the minimum version of Python supported by Home Assistant,
+    with 3.9 being recommended. If you're using a Python virtual environment
+    install you can install an updated version of Python, then manually upgrade
+    your venv as described in
+    <https://blog.ceard.tech/2017/12/upgrading-python-virtual-environment.html>
+check:
+  description: "Check configuration"
+  content: >-  
+    * HAOS [`ha core
+    check`](https://www.home-assistant.io/common-tasks/os/#configuration-check)
+    * Container uses [`docker`
+    commands](https://www.home-assistant.io/common-tasks/container/#configuration-check)
+    * Core requires you to [activate the venv
+    first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
+   

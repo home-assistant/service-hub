@@ -26,7 +26,7 @@ export class DocsTargetBranch extends BaseWebhookHandler {
     const links = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body).concat(
       extractPullRequestURLLinks(context.payload.pull_request.body).filter(
         (link) =>
-          !IGNORE_REPOS.includes(link.repo as HomeAssistantRepository) ||
+          !IGNORE_REPOS.includes(`${link.owner}/${link.repo}` as HomeAssistantRepository) ||
           Organization.HOME_ASSISTANT !== link.owner,
       ),
     );
