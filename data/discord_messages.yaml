@@ -22,43 +22,33 @@
     and also having enabled ZHA or deCONZ.
 format:
   description: "How to format text as code"
+  image: https://raw.githubusercontent.com/awesome-automations/hassbot-data/master/format.gif
   content: >-
     To format your text as code, enter three backticks on the first line, press
     Enter for a new line, paste your code, press Enter again for another new
-    line, and lastly three more backticks. [Here's an
-    example](https://raw.githubusercontent.com/awesome-automations/hassbot-data/master/format.gif)
+    line, and lastly three more backticks.
 
 
     Don't forget you can edit your post rather than repeatedly posting the same
     thing.
 
-
-    **For over 15 lines** you must use a code share site such as
-    <https://dpaste.org/> (pick _YAML_ for the language), <http://pastie.org/>
-    (pick _YAML_ for the language), or <https://paste.debian.net/> (pick _YAML_
-    for the language).
 rpi4:
   description: "RPi with SSD"
   content: >-
-    **Trying to install HassOS with an SSD in Rpi4?** Things you need to know:
+    **Trying to install HAOS with an SSD in Rpi4?** Things you need to know:
 
 
-    1) USB boot is supported only by the 64-bit [5.x dev
-    images](https://github.com/home-assistant/operating-system/releases) as of
-    now. (You installed a 5.x image but it's not working? -> Make sure it's
-    actually the 64-bit version!).
-
-    2)Make sure your Pi is updated to a stable
+    1) Make sure your Pi is updated to a stable
     [bootloader](https://www.raspberrypi.org/documentation/hardware/raspberrypi/bcm2711_bootloader_config.md#usbmassstorageboot)
     release that supports USB boot
 
-    3) If install still fails, then your SSD likely needs [quirks
+    2) If install still fails, then your SSD likely needs [quirks
     enabled](https://www.raspberrypi.org/forums/viewtopic.php?t=245931) to work
     correctly. Find your adapter's ID and add the quirks parameter to your
     `cmdline.txt` file (found in the boot partition) once you've flashed your
-    5.x HassOS image of choice on the SSD.
+    HAOS image for your Raspberry Pi on the SSD.
 
-    4) If no SD card is used add `sd_poll_once=on` to `dtparam` in `config.txt`
+    3) If no SD card is used add `sd_poll_once=on` to `dtparam` in `config.txt`
     to get rid of `mmc0: timeout waiting for hardware interrupt` kernel errors.
 
 
@@ -110,17 +100,10 @@ xy:
     [The XY problem](https://en.wikipedia.org/wiki/XY_problem) is asking about
     your attempted solution rather than your actual problem.
 
-
-    This leads to enormous amounts of wasted time and energy, both on the part
-    of people asking for help, and on the part of those providing help.
-
-
-    The problem occurs when people get stuck on what they believe is the
-    solution and are unable to step back and explain the issue in full.
 show_sensors:
   description: "List all sensors"
   content: >-
-    Paste the following code into the Template Builder in Developer Tools to
+    Paste the following code into the [Template Builder in Developer Tools](https://my.home-assistant.io/redirect/developer_template/) to
     list all sensors and their names:
 
 
@@ -144,7 +127,7 @@ show_sensors:
 show_zwave:
   description: "List all Z-Wave devices"
   content: >-
-    Paste the following code into the Template Builder in Developer Tools to
+    Paste the following code into the [Template Builder in Developer Tools](https://my.home-assistant.io/redirect/developer_template/) to
     list all Z-Wave devices and their status:
 
 
@@ -231,8 +214,8 @@ homebridge_link:
 entity_count:
   description: "List number of entities"
   content: >-
-    To get the total number of entities in your Home Assistant setup, use this
-    <:templates:333726940861169666> template:
+    Paste the following code into the [Template Builder in Developer Tools](https://my.home-assistant.io/redirect/developer_template/) to
+    get a count of your entities.
 
     ```jinja
 
@@ -249,15 +232,7 @@ jinja2:
 
     For more examples and samples, visit see [this
     page](https://github.com/skalavala/mysmarthome/tree/master/jinja_helpers#jinja-code-for-ninjas).
-homebridge:
-  content: >-
-    ```shell
 
-    $ wget -Nnv
-    https://raw.githubusercontent.com/dale3h/homeassistant-config/master/wizard/homebridge-wizard.sh
-    && bash homebridge-wizard.sh
-
-    ```
 markdown:
   description: "Markdown"
   content: >-
@@ -304,8 +279,7 @@ links:
     the URL, like this: `<http://home-assistant.io/>`
 regex:
   content: >-
-    As of 0.67.0, regular expressions are supported as filers in the Jinja
-    scripting.  If you are not familiar with regex, you can play and learn
+    If you are not familiar with regex, you can play and learn
     online at <https://regex101.com/>
 sftp:
   content: >-
@@ -351,48 +325,37 @@ getting_started:
   content: >-
     When you're getting started, take the time to read [the
     docs](https://home-assistant.io/docs/) and have a look at the [supported
-    components](https://home-assistant.io/components/). Check out
+    integrations](https://home-assistant.io/integrations/). Check out
     [Blueprints](https://community.home-assistant.io/c/blueprints-exchange/53)
     and people's live [GitHub
     repositories](https://github.com/search?o=desc&q=topic%3Ahome-assistant-config&s=updated&type=Repositories).
 rule4:
-  description: "Rule 4"
+  title: "Rule 4"
   content: >-
-    **Rule #4:** Our moderators are kind enough to volunteer their time to help
-    keep this a great community for everyone. Any inappropriate or
-    unconstructive comments toward or about them **will result in a ban.**
+    Our moderators are kind enough to volunteer their time to help keep this a great community for everyone.
+    Any inappropriate or unconstructive comments toward or about them **will result in a ban**.
 
-
-    *Please take the time now to review all of the rules and references in
-    <#331130181102206976>.*
+    _Please take the time now to review all of the rules and references in <#331130181102206976>._
 rule3:
-  description: "Rule 3"
+  title: "Rule 3"
   content: >-
-    **Rule #3:** Do not insult, belittle, or abuse your fellow community
-    members. Any reports of abuse will not be taken lightly and **will lead to a
-    ban.**
+    Do not insult, belittle, or abuse your fellow community members.
+    Any reports of abuse will not be taken lightly and **will lead to a ban**.
 
-
-    *Please take the time now to review all of the rules and references in
-    <#331130181102206976>.*
+    _Please take the time now to review all of the rules and references in <#331130181102206976>._
 rule2:
-  description: "Rule 2"
+  title: "Rule 2"
   content: >-
-    **Rule #2:** If you have a question, please check the FAQ¹ and relevant
-    documentation² before posting.
+    If you have a question, please check the FAQ and relevant documentation² before posting.
 
-
-    *Please take the time now to review all of the rules and references in
-    <#331130181102206976>.*
+    _Please take the time now to review all of the rules and references in <#331130181102206976>._
 rule1:
   description: "Rule 1"
+  title: "New members: Welcome!"
   content: >-
-    **Rule #1:** **New members: Welcome!** Start by reading over the FAQ¹. Feel
-    free to introduce yourself, as we are all friends here!
+    Start by reading over the FAQ. Feel free to introduce yourself, as we are all friends here!
 
-
-    *Please take the time now to review all of the rules and references in
-    <#331130181102206976>.*
+    _Please take the time now to review all of the rules and references in <#331130181102206976>._
 automation:
   description: "What is an automation"
   content: >-
@@ -443,17 +406,6 @@ learn_yaml:
     [Learn
     YAML](https://github.com/dale3h/homeassistant-config/blob/master/examples/learn_yaml.yaml)
     in Y Minutes
-addon-security:
-  description: "Add-on Security"
-  content: >-
-    From a security perspective, you should protect everything, even internal
-    stuff. Given our user base opening up ports just to get stuff working, this
-    is not a bad default setting/enforcing. That is why it is all
-    enforced/enabled by default.
-
-
-    **Reasoning:** *"One should do effort to lower security, not the other way
-    around."*
 rpi-clone:
   description: "RPi Clone"
   content: >-
@@ -466,8 +418,8 @@ split_config:
     Here is now to [split your
     configuration](https://home-assistant.io/docs/configuration/splitting_configuration/)
     into multiple YAML files
-Videos:
-  description: "Video are often out of date"
+videos:
+  description: "Videos are often out of date"
   content: >-
     Videos are great to watch but are usually out of date QUICK.... [Best to
     read the DOCS](https://www.home-assistant.io/docs/)
@@ -479,7 +431,7 @@ group:
 crosspost:
   description: "Please don't cross post"
   content: >-
-    **Please DO NOT cross post.**  Read the channel description, post it and
+    Please do not cross post. Read the channel description, post it and
     wait for folks to respond. Crossposting wastes people's time as they're
     unaware of the help you're getting elsewhere.
 
@@ -534,11 +486,6 @@ awesome:
     [Awesome Home Assistant](https://www.awesome-ha.com/) - A curated list of
     amazingly awesome Home Assistant resources.
 
-git:
-  content: >-
-    Here are some [useful
-    commands](https://github.com/CCOSTAN/Home-AssistantConfig/blob/master/shell_scripts/gitupdate.sh)
-    to push your repo to GitHub once you have the `git` part all set up
 device_class:
   description: "Device class"
   content: >-
@@ -563,14 +510,17 @@ linux:
 rule5:
   description: "Rule 5"
   content: >-
-    **Rule #5:** Channels starting with `#dev` are for **development discussion
-    only**. <#397426163649216512> is for non Home Assistant related chat. Please
-    use the appropriate channel as it pertains to the nature of your discussion.
+    Please use the appropriate channel as it relates to the nature of your discussion.
+    Please read the channel topics before posting. Channels starting with `#devs_` are for **development discussion only**.
 
+    _Please take the time now to review all of the rules and references in <#331130181102206976>._
+rule6:
+  title: "Rule 6"
+  content: >-
+    Spam will not be tolerated, including but not limited to: self-promotion, flooding, textwalls
+    (longer than 15 lines - use Hastebin or similar³) and unapproved bots.
 
-    *Please take the time now to review all of the rules and references in
-    <#331130181102206976>.*
-
+    _Please take the time now to review all of the rules and references in <#331130181102206976>._
 which:
   description: "Which install am I using"
   content: >-
@@ -655,7 +605,7 @@ condition:
   content: >-
     [Conditions](https://home-assistant.io/docs/scripts/conditions/) can be used
     within a script or automation to prevent further execution.
-RTFM:
+rtfm:
   description: "RTFM"
   content: >-
     **RTFM** is a well known phrase, used when someone hasn't taken time to read
@@ -682,8 +632,6 @@ packages:
     ```yaml
 
     homeassistant:
-      name: Home
-      latitude: !secret home_latitude
       ...
       packages: !include_dir_named packages
     ```
@@ -702,10 +650,7 @@ yaml:
     is key. [Here](http://thomasloven.com/blog/2018/08/YAML-For-Nonprogrammers/)
     is a primer, and [this](https://yaml-multiline.info/) explains multi-line
     templates. For validating YAML see [YAML Lint](http://www.yamllint.com/).
-lovelace_glance:
-  content: >-
-    [Glance cards](https://www.home-assistant.io/lovelace/glance/) are very
-    compact
+
 template:
   description: "Template"
   content: >-
@@ -799,7 +744,7 @@ issues:
 
     * [The Supervisor](https://github.com/home-assistant/supervisor)
 
-    * [HassOS](https://github.com/home-assistant/operating-system/issues)
+    * [HAOS](https://github.com/home-assistant/operating-system/issues)
 
     * [The
     documentation](https://github.com/home-assistant/home-assistant.io/issues)
@@ -830,27 +775,7 @@ llat:
     profile](https://my.home-assistant.io/redirect/profile/). For examples of
     using it for the API see the [API
     docs](https://developers.home-assistant.io/docs/en/external_api_rest.html)
-vef:
-  content: |-
-    Help us help you. To quickly explain your environment please specify V/E/F
 
-    - Version - Which version of Home Assistant are you running?
-      Example: 0.84.3, 0.82.0, 0.85.beta.1
-    - Enviroment - How are you running Home Assistant?
-      Example: venv, venv-WSL, docker, hassio, native
-    - Frontend: - Which kind of frontend configuration are you using?
-      Example: auto, manual, yaml, legacy (not lovelace)
-
-    Examples: 0.84.3/venv/yaml
-
-custom-cards:
-  content: >-
-    Head over to [the custom cards github](https://github.com/custom-cards) to
-    see a selection of community made custom_cards for Home Assistant?
-cards:
-  content: >-
-    Head over to [this page](https://sharethelove.io/custom-resources/cards) to
-    see a selection of community made custom cards for Home Assistant?
 websocket:
   content: >-
     Add [this
@@ -894,8 +819,7 @@ hacs:
   description: "Home Assistant Community Store"
   content: >-
     [Home Assistant Community Store](https://hacs.xyz/) allows for easy installation and management of
-    custom unsupported integrations. It is the successor to the
-    old Custom Updater, and can do so much more - you should check it out. They
+    custom unsupported integrations. They
     even have a [Discord server](https://discord.gg/apgchf8) for issues with
     HACS itself.
 irc:
@@ -905,13 +829,9 @@ irc:
     in mind that every time you tag somebody, they get a notification ping. That
     can very quickly become annoying and people may block you.
 
-
     When using Discord's new _Reply_ feature it defaults to pinging the person
     you reply to, click `@ ON` to `@ OFF` to stop this - on the right side of
     the compose bar.
-
-
-    You have to change this every time (thank the Discord devs for that).
 
 devices:
   description: "Devices"
@@ -975,10 +895,6 @@ textwall:
     *Please take the time now to review all of the rules and references in
     <#331130181102206976>.*
 
-
-
-    *Please take the time now to review all of the rules and references in
-    <#331130181102206976>.*
 what:
   description: "What to buy"
   content: |-
@@ -1004,7 +920,7 @@ integration:
     integration could possibility integrate with. Add-ons are for Home Assistant
     OS and Supervised only, other install methods can install software other
     ways.
-Windows:
+windows:
   description: "Windows warning"
   content: >-
     Running Home Assistant in a venv on Windows isn't recommended. Not all
@@ -1428,11 +1344,11 @@ python:
     <https://blog.ceard.tech/2017/12/upgrading-python-virtual-environment.html>
 check:
   description: "Check configuration"
-  content: >-  
+  content: >-
     * HAOS [`ha core
     check`](https://www.home-assistant.io/common-tasks/os/#configuration-check)
     * Container uses [`docker`
     commands](https://www.home-assistant.io/common-tasks/container/#configuration-check)
     * Core requires you to [activate the venv
     first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
-   
+
