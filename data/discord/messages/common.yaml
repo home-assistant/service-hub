@@ -1,0 +1,13 @@
+format:
+  description: "How to format text as code"
+  content: >-
+    To format your text as code, enter three backticks on the first line, press
+    Enter for a new line, paste your code, press Enter again for another new
+    line, and lastly three more backticks.
+
+    \`\`\`yaml
+    example: here
+    \`\`\`
+
+    Don't forget you can edit your post rather than repeatedly posting the same
+    thing.

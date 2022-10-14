@@ -1,31 +1,17 @@
-import fetch from 'node-fetch';
-import yaml from 'js-yaml';
-
 import { TransformPipe } from '@discord-nestjs/common';
 import {
   DiscordTransformedCommand,
+  On,
+  Param,
   Payload,
   TransformedCommandExecutionContext,
-  Param,
   UsePipes,
-  On,
 } from '@discord-nestjs/core';
-import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
-import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
+import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { OptionalUserMentionDto } from '../../discord.const';
-
-const DATA_FILE_URL =
-  'https://raw.githubusercontent.com/home-assistant/service-hub/main/data/discord_messages.yaml';
-
-interface MessageData {
-  [key: string]: {
-    description?: string;
-    content: string;
-    image?: string;
-    title?: string;
-  };
-}
+import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
+import { ServiceCommonMessageData } from '../../services/common/message-data';
 
 class MessageDto extends OptionalUserMentionDto {
   @Param({
@@ -42,16 +28,9 @@ class MessageDto extends OptionalUserMentionDto {
   description: 'Returns a predefined message',
 })
 @UsePipes(TransformPipe)
-export class CommandHomeassistantMessage implements DiscordTransformedCommand<MessageDto> {
-  private messageData: MessageData;
+export class CommandCommonMessage implements DiscordTransformedCommand<MessageDto> {
+  constructor(private serviceCommonMessageData: ServiceCommonMessageData) {}
 
-  async ensureMessageDataLoaded(force?: boolean): Promise<void> {
-    if (force || !this.messageData) {
-      this.messageData = yaml.load(await (await fetch(DATA_FILE_URL)).text(), {
-        json: true,
-      }) as MessageData;
-    }
-  }
   @CommandHandler()
   async handler(
     @Payload() handlerDto: MessageDto,
@@ -60,7 +39,7 @@ export class CommandHomeassistantMessage implements DiscordTransformedCommand<Me
     const { messageKey, userMention } = handlerDto;
     const { interaction } = context;
     if (messageKey === 'reload') {
-      await this.ensureMessageDataLoaded(true);
+      await this.serviceCommonMessageData.ensureData(interaction.guildId, true);
 
       await interaction.reply({
         content: 'Message list reloaded',
@@ -69,7 +48,9 @@ export class CommandHomeassistantMessage implements DiscordTransformedCommand<Me
       return;
     }
 
-    if (!this.messageData[messageKey]) {
+    const message = await this.serviceCommonMessageData.getMessage(interaction.guildId, messageKey);
+
+    if (!message) {
       await interaction.reply({
         content: 'Could not find information',
         ephemeral: true,
@@ -77,16 +58,14 @@ export class CommandHomeassistantMessage implements DiscordTransformedCommand<Me
       return;
     }
 
-    await this.ensureMessageDataLoaded();
+    await this.serviceCommonMessageData.ensureData(interaction.guildId);
 
     await interaction.reply({
       embeds: [
         new EmbedBuilder({
-          description: [userMention, this.messageData[messageKey].content].join(' '),
-          title: this.messageData[messageKey].title,
-          image: this.messageData[messageKey].image
-            ? { url: this.messageData[messageKey].image }
-            : undefined,
+          description: [userMention, message.content].join(' '),
+          title: message.title,
+          image: message.image ? { url: message.image } : undefined,
         }),
       ],
     });
@@ -99,7 +78,7 @@ export class CommandHomeassistantMessage implements DiscordTransformedCommand<Me
       return;
     }
     try {
-      await this.ensureMessageDataLoaded();
+      await this.serviceCommonMessageData.ensureData(interaction.guildId);
       const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
       if (interaction.responded) {
@@ -109,7 +88,7 @@ export class CommandHomeassistantMessage implements DiscordTransformedCommand<Me
 
       await interaction.respond(
         focusedValue.length !== 0
-          ? Object.entries(this.messageData)
+          ? Object.entries(this.serviceCommonMessageData.data)
               .filter(([_, data]) => data.description || data.title)
               .map(([key, data]) => ({
                 name: data.description || data.title,
