@@ -4,11 +4,16 @@ import { Injectable } from '@nestjs/common';
 export interface ComponentData {
   title: string;
   url: string;
+  path: string;
+  image?: string;
 }
 
 const SOURCES = {
   default: 'https://esphome.io/components.json',
+  beta: 'https://beta.esphome.io/components.json',
 };
+
+const sourceWithFallback = (source: string) => (source in SOURCES ? source : 'default');
 
 @Injectable()
 export class ServiceEsphomeComponentData {
@@ -18,13 +23,15 @@ export class ServiceEsphomeComponentData {
     channel: string,
     component: string,
   ): Promise<ComponentData | undefined> {
-    await this.ensureData(channel);
-    return this.data?.[channel]?.[component];
+    const sourceName = sourceWithFallback(channel);
+    await this.ensureData(sourceName);
+    return this.data?.[sourceName]?.[component];
   }
 
   public async ensureData(channel: string, force?: boolean) {
-    if (force || !this.data[channel]) {
-      this.data[channel] = await (await fetch(SOURCES[channel] || SOURCES.default)).json();
+    const sourceName = sourceWithFallback(channel);
+    if (force || !this.data[sourceName]) {
+      this.data[sourceName] = await (await fetch(SOURCES[sourceName])).json();
     }
   }
 }

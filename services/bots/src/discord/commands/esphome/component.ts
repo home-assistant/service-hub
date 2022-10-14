@@ -62,6 +62,7 @@ export class CommandEsphomeComponent implements DiscordTransformedCommand<Compon
       embeds: [
         new EmbedBuilder({
           title: componentData.title,
+          thumbnail: componentData.image ? { url: componentData.image } : undefined,
           fields: [
             {
               name: 'Documentation',
@@ -70,7 +71,7 @@ export class CommandEsphomeComponent implements DiscordTransformedCommand<Compon
             },
             {
               name: 'Source',
-              value: `[View the source on GitHub](https://github.com/esphome/esphome/tree/dev/esphome/${component})`,
+              value: `[View the source on GitHub](https://github.com/esphome/esphome/tree/dev/esphome/${componentData.path})`,
               inline: true,
             },
           ],
