@@ -2,6 +2,7 @@ import { ServiceError } from '@lib/common';
 import { ClaIssueLabel } from '@lib/common/github';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createAppAuth } from '@octokit/auth-app';
 import { DynamoDB } from 'aws-sdk';
 import { GithubClient } from '../github-webhook/github-webhook.model';
 
@@ -13,7 +14,15 @@ export class ClaSignService {
   private pendingSignersTableName: string;
 
   constructor(configService: ConfigService) {
-    this.githubApiClient = new GithubClient({ auth: configService.get('github.token') });
+    this.githubApiClient = new GithubClient({
+      authStrategy: createAppAuth,
+      auth: {
+        appId: Number(configService.get('github.appId')),
+        installationId: Number(configService.get('github.installationId')),
+        privateKey: configService.get('github.keyContents'),
+      },
+    });
+
     this.ddbClient = new DynamoDB({ region: configService.get('dynamodb.cla.region') });
 
     this.signersTableName = configService.get('dynamodb.cla.signersTable');
