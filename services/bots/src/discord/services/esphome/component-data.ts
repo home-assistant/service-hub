@@ -13,7 +13,7 @@ const SOURCES = {
   beta: 'https://beta.esphome.io/components.json',
 };
 
-const sourceWithFallback = (source: string) => (source in SOURCES ? source : 'default');
+export const sourceWithFallback = (source: string) => (source in SOURCES ? source : 'default');
 
 @Injectable()
 export class ServiceEsphomeComponentData {

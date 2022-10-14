@@ -10,7 +10,10 @@ import {
 import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
-import { ServiceEsphomeComponentData } from '../../services/esphome/component-data';
+import {
+  ServiceEsphomeComponentData,
+  sourceWithFallback,
+} from '../../services/esphome/component-data';
 
 class ComponentsDto {
   @Param({
@@ -99,7 +102,7 @@ export class CommandEsphomeComponent implements DiscordTransformedCommand<Compon
 
       await interaction.respond(
         focusedValue.length !== 0
-          ? Object.entries(this.serviceEsphomeComponentData.data[channel])
+          ? Object.entries(this.serviceEsphomeComponentData.data[sourceWithFallback(channel)])
               .map(([component, data]) => ({
                 name: data.title,
                 value: component,
