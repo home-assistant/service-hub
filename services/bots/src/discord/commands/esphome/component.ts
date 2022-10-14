@@ -10,7 +10,10 @@ import {
 import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
-import { ServiceEsphomeComponentData } from '../../services/esphome/component-data';
+import {
+  ServiceEsphomeComponentData,
+  sourceWithFallback,
+} from '../../services/esphome/component-data';
 
 class ComponentsDto {
   @Param({
@@ -62,6 +65,7 @@ export class CommandEsphomeComponent implements DiscordTransformedCommand<Compon
       embeds: [
         new EmbedBuilder({
           title: componentData.title,
+          thumbnail: componentData.image ? { url: componentData.image } : undefined,
           fields: [
             {
               name: 'Documentation',
@@ -70,7 +74,7 @@ export class CommandEsphomeComponent implements DiscordTransformedCommand<Compon
             },
             {
               name: 'Source',
-              value: `[View the source on GitHub](https://github.com/esphome/esphome/tree/dev/esphome/${component})`,
+              value: `[View the source on GitHub](https://github.com/esphome/esphome/tree/dev/esphome/${componentData.path})`,
               inline: true,
             },
           ],
@@ -98,7 +102,7 @@ export class CommandEsphomeComponent implements DiscordTransformedCommand<Compon
 
       await interaction.respond(
         focusedValue.length !== 0
-          ? Object.entries(this.serviceEsphomeComponentData.data[channel])
+          ? Object.entries(this.serviceEsphomeComponentData.data[sourceWithFallback(channel)])
               .map(([component, data]) => ({
                 name: data.title,
                 value: component,
