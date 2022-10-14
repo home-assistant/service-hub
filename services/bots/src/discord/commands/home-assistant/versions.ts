@@ -12,8 +12,6 @@ import {
 import { TransformPipe } from '@discord-nestjs/common';
 import { BlankDto } from '../../discord.const';
 
-const version = getVersionInfo(__dirname);
-
 @DiscordCommandClass({
   name: 'versions',
   description: 'Returns version information',
@@ -43,7 +41,6 @@ export class CommandHomeAssistantVersions implements DiscordTransformedCommand<a
             { name: 'OS beta', value: beta.hassos.ova, inline: true },
             { name: 'Supervisor stable', value: stable.supervisor, inline: true },
             { name: 'Supervisor beta', value: beta.supervisor, inline: true },
-            { name: 'Bot', value: version.version, inline: true },
           ],
         }),
       ],
