@@ -24,11 +24,11 @@ const GUILD_MESSAGES = {
 
 @Injectable()
 export class ServiceCommonMessageData {
-  public data: MessageData = {};
+  public data: MessageData;
 
   public async getMessage(guildId: string, messageKey: string): Promise<Message | undefined> {
     await this.ensureData(guildId);
-    return this.data[messageKey];
+    return this.data?.[messageKey];
   }
 
   public async ensureData(guildId: string, force?: boolean) {
