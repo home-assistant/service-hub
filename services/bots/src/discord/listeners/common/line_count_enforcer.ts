@@ -1,5 +1,6 @@
 import { On } from '@discord-nestjs/core';
 import { Message, AttachmentBuilder } from 'discord.js';
+import { DiscordGuild } from '../../discord.const';
 
 export const MAX_LINE_LENGTH = 17;
 const KNOWN_FILETYPES = new Set([
@@ -16,35 +17,45 @@ const KNOWN_FILETYPES = new Set([
   'yaml',
   'yml',
 ]);
-const IGNORE_ROLES = new Set(['Admin', 'Mod']);
+const IGNORE_ROLES = new Set(['Admin', 'Modaaa']);
 
 const formatedMessage = /^\`\`\`([a-z|A-Z]*)\n(.*)\n\`\`\`[\n]*$/s;
+
+const Filter = {
+  default: (message: Message) =>
+    message.author.bot ||
+    message.member.roles.cache.map((r) => r.name).find((role) => IGNORE_ROLES.has(role)) ||
+    message.content.split('\n').length <= MAX_LINE_LENGTH,
+  [DiscordGuild.ESPHOME]: (message: Message) => message.channel.isThread(),
+};
 
 export class ListenerCommonLineCountEnforcer {
   @On('messageCreate')
   async handler(message: Message): Promise<void> {
     if (
-      !message.author.bot &&
-      !message.member.roles.cache.map((r) => r.name).find((role) => IGNORE_ROLES.has(role)) &&
-      message.content.split('\n').length > MAX_LINE_LENGTH
+      Filter.default(message) || message.guildId in Filter
+        ? Filter[message.guildId](message)
+        : false
     ) {
-      let messageContent: string = message.content;
-      let fileType = 'txt';
-      if (formatedMessage.test(message.content)) {
-        const [_, language, content] = formatedMessage.exec(message.content);
-        fileType = language;
-        messageContent = content;
-      }
-      const attachment = new AttachmentBuilder(Buffer.from(messageContent, 'utf-8'), {
-        name: `message.${
-          KNOWN_FILETYPES.has(fileType.toLowerCase()) ? fileType.toLowerCase() : 'txt'
-        }`,
-      });
-      await message.channel.send({
-        content: `<@${message.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
-        files: [attachment],
-      });
-      await message.delete();
+      return;
     }
+
+    let messageContent: string = message.content;
+    let fileType = 'txt';
+    if (formatedMessage.test(message.content)) {
+      const [_, language, content] = formatedMessage.exec(message.content);
+      fileType = language;
+      messageContent = content;
+    }
+    const attachment = new AttachmentBuilder(Buffer.from(messageContent, 'utf-8'), {
+      name: `message.${
+        KNOWN_FILETYPES.has(fileType.toLowerCase()) ? fileType.toLowerCase() : 'txt'
+      }`,
+    });
+    await message.channel.send({
+      content: `<@${message.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
+      files: [attachment],
+    });
+    await message.delete();
   }
 }
