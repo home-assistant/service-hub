@@ -13,7 +13,7 @@ Receiver to handle CLA sign requests for the [Home Assistant GitHub organization
 #### [discord](https://github.com/home-assistant/service-hub/tree/main/services/bots/src/discord)
 
 - Bot for the [Home Assistant Discord server](https://www.home-assistant.io/join-chat)
-- Bot for the [ESPHOM Discord server](https://www.home-assistant.io/join-chat)
+- Bot for the [ESPHome Discord server](https://discord.gg/KhAMKrd)
 
 #### [github-webhook](https://github.com/home-assistant/service-hub/tree/main/services/bots/src/github-webhook)
 
