@@ -11,7 +11,7 @@ const SOURCES = {
 };
 
 @Injectable()
-export class ComponentDataService {
+export class ServiceEsphomeComponentData {
   public data: { [key: string]: { [key: string]: ComponentData } } = {};
 
   public async getComponent(

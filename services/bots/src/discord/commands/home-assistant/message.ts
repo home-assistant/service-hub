@@ -10,10 +10,10 @@ import {
   UsePipes,
   On,
 } from '@discord-nestjs/core';
-import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
+import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
-import { OptionalUserMentionDto } from '../discord.const';
+import { OptionalUserMentionDto } from '../../discord.const';
 
 const DATA_FILE_URL =
   'https://raw.githubusercontent.com/home-assistant/service-hub/main/data/discord_messages.yaml';
@@ -42,7 +42,7 @@ class MessageDto extends OptionalUserMentionDto {
   description: 'Returns a predefined message',
 })
 @UsePipes(TransformPipe)
-export class MessageCommand implements DiscordTransformedCommand<MessageDto> {
+export class CommandHomeassistantMessage implements DiscordTransformedCommand<MessageDto> {
   private messageData: MessageData;
 
   async ensureMessageDataLoaded(force?: boolean): Promise<void> {

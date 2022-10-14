@@ -2,17 +2,17 @@
 import * as assert from 'assert';
 import { Message } from 'discord.js';
 import {
-  LineCountEnforcer,
   MAX_LINE_LENGTH,
-} from '../../../../../services/bots/src/discord/listeners/line_count_enforcer';
+  ListenerCommonLineCountEnforcer,
+} from '../../../../../services/bots/src/discord/listeners/common/line_count_enforcer';
 
-describe('LineCountEnforcer', () => {
-  let listener: LineCountEnforcer;
+describe('ListenerCommonLineCountEnforcer', () => {
+  let listener: ListenerCommonLineCountEnforcer;
   let mockMessage: Message;
   let sendMessage: any;
 
   beforeEach(function () {
-    listener = new LineCountEnforcer();
+    listener = new ListenerCommonLineCountEnforcer();
     sendMessage = {};
     mockMessage = {
       content: '',

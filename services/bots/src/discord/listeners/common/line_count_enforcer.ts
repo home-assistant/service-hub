@@ -20,7 +20,7 @@ const IGNORE_ROLES = new Set(['Admin', 'Mod']);
 
 const formatedMessage = /^\`\`\`([a-z|A-Z]*)\n(.*)\n\`\`\`[\n]*$/s;
 
-export class LineCountEnforcer {
+export class ListenerCommonLineCountEnforcer {
   @On('messageCreate')
   async handler(message: Message): Promise<void> {
     if (
