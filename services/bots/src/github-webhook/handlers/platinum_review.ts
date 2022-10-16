@@ -43,8 +43,9 @@ export class PlatinumReview extends BaseWebhookHandler {
       // Not only one, do not proceed.
     }
 
-    let requiresCodeownerApproval =
-      !currentLabels.includes('by-code-owner') || !currentLabels.includes('code-owner-approved');
+    let requiresCodeownerApproval = !currentLabels.find((label) =>
+      ['by-code-owner', 'code-owner-approved'].includes(label),
+    );
 
     if (requiresCodeownerApproval) {
       const manifest = await fetchIntegrationManifest(integrations[0].substring(13));
