@@ -29,9 +29,6 @@ describe('ListenerCommonLineCountEnforcer', () => {
           sendMessage = content;
         },
         type: ChannelType.GuildText,
-        isTextBased() {
-          return true;
-        },
       },
       // @ts-ignore
       delete: (val) => val,
