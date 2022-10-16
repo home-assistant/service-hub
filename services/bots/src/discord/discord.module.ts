@@ -3,32 +3,11 @@ import { DynamicModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GatewayIntentBits } from 'discord.js';
 import Config from '../config';
-import { IntegrationCommand } from './commands/integration';
-import { MessageCommand } from './commands/message';
-import { MyCommand } from './commands/my';
-import { PingCommand } from './commands/ping';
-import { TopicCommand } from './commands/topic';
-import { VersionsCommand } from './commands/versions';
-import { DiscordGuild } from './discord.const';
-import { LineCountEnforcer } from './listeners/line_count_enforcer';
-import { IntegrationDataService } from './services/integration-data';
-import { MyRedirectDataService } from './services/my-redirect-data';
+import { DiscordCommands } from './commands';
+import { DiscordListeners } from './listeners';
+import { DiscordServices } from './services';
 
 const config = Config.getProperties();
-
-const PROVIDERS = {
-  global: [PingCommand, TopicCommand],
-  [DiscordGuild.HOME_ASSISTANT]: [
-    IntegrationCommand,
-    IntegrationDataService,
-    LineCountEnforcer,
-    MessageCommand,
-    MyCommand,
-    MyRedirectDataService,
-    VersionsCommand,
-  ],
-  [DiscordGuild.TEST_SERVER]: [LineCountEnforcer],
-};
 
 @Module({
   imports: [
@@ -61,8 +40,12 @@ export class DiscordBotModule {
     return {
       module: DiscordBotModule,
       providers: [
-        ...PROVIDERS.global,
-        ...(config.discord.guildId in PROVIDERS ? PROVIDERS[config.discord.guildId] : []),
+        ...DiscordCommands.common,
+        ...(DiscordCommands[config.discord.guildId] || []),
+        ...DiscordListeners.common,
+        ...(DiscordListeners[config.discord.guildId] || []),
+        ...DiscordServices.common,
+        ...(DiscordServices[config.discord.guildId] || []),
       ],
     };
   }

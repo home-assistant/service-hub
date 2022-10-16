@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 
 import { getVersionInfo } from '@lib/common';
 import { EmbedBuilder } from 'discord.js';
-import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
+import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 import {
   DiscordTransformedCommand,
   Payload,
@@ -10,16 +10,14 @@ import {
   UsePipes,
 } from '@discord-nestjs/core';
 import { TransformPipe } from '@discord-nestjs/common';
-import { BlankDto } from '../discord.const';
-
-const version = getVersionInfo(__dirname);
+import { BlankDto } from '../../discord.const';
 
 @DiscordCommandClass({
   name: 'versions',
   description: 'Returns version information',
 })
 @UsePipes(TransformPipe)
-export class VersionsCommand implements DiscordTransformedCommand<any> {
+export class CommandHomeAssistantVersions implements DiscordTransformedCommand<any> {
   @CommandHandler()
   async handler(
     @Payload() handlerDto: BlankDto,
@@ -43,7 +41,6 @@ export class VersionsCommand implements DiscordTransformedCommand<any> {
             { name: 'OS beta', value: beta.hassos.ova, inline: true },
             { name: 'Supervisor stable', value: stable.supervisor, inline: true },
             { name: 'Supervisor beta', value: beta.supervisor, inline: true },
-            { name: 'Bot', value: version.version, inline: true },
           ],
         }),
       ],

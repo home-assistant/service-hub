@@ -14,7 +14,7 @@ interface Redirect {
 }
 
 @Injectable()
-export class MyRedirectDataService {
+export class ServiceHomeassistantMyRedirectData {
   public data: Redirect[];
 
   public async getRedirect(redirect: string): Promise<Redirect | undefined> {

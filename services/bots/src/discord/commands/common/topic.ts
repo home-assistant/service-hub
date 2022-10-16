@@ -5,15 +5,15 @@ import {
   TransformedCommandExecutionContext,
   UsePipes,
 } from '@discord-nestjs/core';
-import { OptionalUserMentionDto } from '../discord.const';
-import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
+import { OptionalUserMentionDto } from '../../discord.const';
+import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 
 @DiscordCommandClass({
   name: 'topic',
   description: 'Returns the topic of the current channel',
 })
 @UsePipes(TransformPipe)
-export class TopicCommand implements DiscordTransformedCommand<any> {
+export class CommandCommonTopic implements DiscordTransformedCommand<any> {
   @CommandHandler()
   async handler(
     @Payload() handlerDto: OptionalUserMentionDto,

@@ -14,9 +14,6 @@ describe('SetIntegration', () => {
     getLabelResponse = {};
     mockContext = mockWebhookContext({
       eventType: 'issues.opened',
-      payload: {
-        issue: {},
-      },
       github: {
         async issuesGetLabel() {
           return getLabelResponse;

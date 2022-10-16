@@ -15,10 +15,12 @@ import { Hacktoberfest } from './handlers/hacktoberfest';
 import { IssueLinks } from './handlers/issue_links';
 import { LabelBot } from './handlers/label_bot/handler';
 import { LabelCleaner } from './handlers/label_cleaner';
+import { MonthOfWTH } from './handlers/month_of_wth';
+import { PlatinumReview } from './handlers/platinum_review';
+import { QualityScaleLabeler } from './handlers/quality_scale';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
-import { MonthOfWTH } from './handlers/month_of_wth';
 
 @Module({
   providers: [
@@ -34,6 +36,8 @@ import { MonthOfWTH } from './handlers/month_of_wth';
     LabelBot,
     LabelCleaner,
     MonthOfWTH,
+    PlatinumReview,
+    QualityScaleLabeler,
     SetDocumentationSection,
     SetIntegration,
     ValidateCla,

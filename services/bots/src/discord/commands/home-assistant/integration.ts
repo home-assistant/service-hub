@@ -7,11 +7,11 @@ import {
   UsePipes,
   On,
 } from '@discord-nestjs/core';
-import { CommandHandler, DiscordCommandClass } from '../discord.decorator';
+import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { reportException } from '@lib/sentry/reporting';
-import { Emoji } from '../discord.const';
-import { IntegrationDataService } from '../services/integration-data';
+import { Emoji } from '../../discord.const';
+import { ServiceHomeassistantIntegrationData } from '../../services/home-assistant/integration-data';
 
 const QualityScale = {
   no_score: 'No score',
@@ -36,8 +36,8 @@ class IntegrationDto {
   description: 'Returns information about an integration',
 })
 @UsePipes(TransformPipe)
-export class IntegrationCommand implements DiscordTransformedCommand<IntegrationDto> {
-  constructor(private integrationDataService: IntegrationDataService) {}
+export class CommandHomeassistantIntegration implements DiscordTransformedCommand<IntegrationDto> {
+  constructor(private serviceHomeassistantIntegrationData: ServiceHomeassistantIntegrationData) {}
 
   @CommandHandler()
   async handler(
@@ -47,7 +47,7 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
     const { domain } = handlerDto;
     const { interaction } = context;
     if (domain === 'reload') {
-      await this.integrationDataService.ensureData(true);
+      await this.serviceHomeassistantIntegrationData.ensureData(true);
 
       await interaction.reply({
         content: 'Integration list reloaded',
@@ -56,7 +56,7 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
       return;
     }
 
-    const integrationData = await this.integrationDataService.getIntegration(domain);
+    const integrationData = await this.serviceHomeassistantIntegrationData.getIntegration(domain);
 
     if (!integrationData) {
       await interaction.reply({
@@ -109,7 +109,7 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
       return;
     }
     try {
-      await this.integrationDataService.ensureData();
+      await this.serviceHomeassistantIntegrationData.ensureData();
       const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
       if (interaction.responded) {
@@ -119,7 +119,7 @@ export class IntegrationCommand implements DiscordTransformedCommand<Integration
 
       await interaction.respond(
         focusedValue.length !== 0
-          ? Object.entries(this.integrationDataService.data)
+          ? Object.entries(this.serviceHomeassistantIntegrationData.data)
               .map(([domain, data]) => ({
                 name: data.title,
                 value: domain,

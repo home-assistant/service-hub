@@ -50,7 +50,10 @@ jobs:
             ${{ runner.os }}-yarn-
 
       - name: Lint YAML files
-        run: yq '.' ./data/discord_messages.yaml
+        run: |
+          yq '.' ./data/discord/messages/common.yaml
+          yq '.' ./data/discord/messages/esphome.yaml
+          yq '.' ./data/discord/messages/homeassistant.yaml
 
       - name: Install dependencies
         run: yarn install  --immutable

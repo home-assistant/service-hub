@@ -20,9 +20,19 @@ const conf = convict({
     format: ['development', 'production'],
   },
   github: {
-    token: {
+    appId: {
       default: '',
-      env: 'GITHUB_TOKEN',
+      env: 'GITHUB_APP_ID',
+      format: String,
+    },
+    installationId: {
+      default: '',
+      env: 'GITHUB_INSTALLATION_ID',
+      format: String,
+    },
+    keyContents: {
+      default: '',
+      env: 'GITHUB_KEY_CONTENTS',
       format: String,
     },
     webhookSecret: {
