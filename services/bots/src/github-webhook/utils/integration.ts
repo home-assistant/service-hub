@@ -1,11 +1,11 @@
 import fetch from 'node-fetch';
 
 export enum QualityScale {
-  NO_SCORE = 'No score',
-  SILVER = 'Silver',
-  GOLD = 'Gold',
-  PLATINUM = 'Platinum',
-  INTERNAL = 'Internal',
+  NO_SCORE = 'no score',
+  SILVER = 'silver',
+  GOLD = 'gold',
+  PLATINUM = 'platinum',
+  INTERNAL = 'internal',
 }
 
 interface IntegrationManifest {
