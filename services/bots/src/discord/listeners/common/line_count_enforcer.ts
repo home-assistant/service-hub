@@ -1,5 +1,5 @@
 import { On } from '@discord-nestjs/core';
-import { Message, AttachmentBuilder } from 'discord.js';
+import { Message, AttachmentBuilder, ChannelType } from 'discord.js';
 
 export const MAX_LINE_LENGTH = 17;
 const KNOWN_FILETYPES = new Set([
@@ -25,6 +25,7 @@ export class ListenerCommonLineCountEnforcer {
   async handler(message: Message): Promise<void> {
     if (
       !message.author.bot &&
+      message.channel.type === ChannelType.GuildText &&
       !message.member.roles.cache.map((r) => r.name).find((role) => IGNORE_ROLES.has(role)) &&
       message.content.split('\n').length > MAX_LINE_LENGTH
     ) {

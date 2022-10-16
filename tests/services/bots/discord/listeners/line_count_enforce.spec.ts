@@ -1,6 +1,7 @@
 // @ts-nocheck
 import * as assert from 'assert';
-import { Message } from 'discord.js';
+import { Message, ChannelType } from 'discord.js';
+
 import {
   MAX_LINE_LENGTH,
   ListenerCommonLineCountEnforcer,
@@ -26,6 +27,10 @@ describe('ListenerCommonLineCountEnforcer', () => {
         // @ts-ignore
         async send(content) {
           sendMessage = content;
+        },
+        type: ChannelType.GuildText,
+        isTextBased() {
+          return true;
         },
       },
       // @ts-ignore
@@ -79,6 +84,13 @@ describe('ListenerCommonLineCountEnforcer', () => {
 
   it('Ignore roles', async () => {
     mockMessage.member.roles.cache = [{ name: 'Mod' }];
+    mockMessage.content = [...Array(MAX_LINE_LENGTH + 1).keys()].map(() => `hi`).join('\n');
+    await listener.handler(mockMessage);
+    assert.deepStrictEqual(sendMessage.content, undefined);
+  });
+
+  it('Ignore non-text channel types', async () => {
+    mockMessage.channel.type = ChannelType.PublicThread;
     mockMessage.content = [...Array(MAX_LINE_LENGTH + 1).keys()].map(() => `hi`).join('\n');
     await listener.handler(mockMessage);
     assert.deepStrictEqual(sendMessage.content, undefined);
