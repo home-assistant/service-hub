@@ -9,7 +9,11 @@ export class Hacktoberfest extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.PULL_REQUEST_OPENED, EventType.PULL_REQUEST_CLOSED];
 
   async handle(context: WebhookContext<any>) {
-    if (isHacktoberfestLive() && context.eventType === EventType.PULL_REQUEST_OPENED) {
+    if (
+      !context.senderIsBot &&
+      context.eventType === EventType.PULL_REQUEST_OPENED &&
+      isHacktoberfestLive()
+    ) {
       await this.handlePullRequestOpened(context);
     } else if (context.eventType === EventType.PULL_REQUEST_CLOSED) {
       await this.handlePullRequestClosed(context);

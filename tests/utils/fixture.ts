@@ -4,8 +4,8 @@ import deepmerge from 'deepmerge';
 
 const fixures = findUp.sync('fixtures', { cwd: __filename, type: 'directory' });
 
-export const loadJsonFixture = (
+export const loadJsonFixture = <T>(
   fixture: string,
-  override?: Record<string, any>,
+  override?: Partial<T> | Record<string, any>,
 ): Record<string, any> =>
   deepmerge(JSON.parse(fs.readFileSync(`${fixures}/${fixture}.json`, 'utf8')), override || {});
