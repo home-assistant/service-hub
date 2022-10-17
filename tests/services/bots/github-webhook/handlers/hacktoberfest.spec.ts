@@ -8,6 +8,7 @@ import {
 } from '../../../../../services/bots/src/github-webhook/handlers/hacktoberfest';
 import { mockWebhookContext } from '../../../../utils/test_context';
 import { loadJsonFixture } from '../../../../utils/fixture';
+import { PullRequestOpenedEvent } from '@octokit/webhooks-types';
 
 describe('Hacktoberfest', () => {
   let handler: Hacktoberfest;
@@ -57,6 +58,17 @@ describe('Hacktoberfest', () => {
     clock.restore();
 
     assert.deepStrictEqual(mockContext.scheduledlabels, ['Hacktoberfest']);
+  });
+
+  it('Do not add hacktoberfest label on new PR if sender is bot', async () => {
+    const clock = sinon.useFakeTimers(new Date(2020, 9, 1).getTime());
+    mockContext.payload = loadJsonFixture<PullRequestOpenedEvent>('pull_request.opened', {
+      sender: { type: 'Bot' },
+    });
+    await handler.handle(mockContext);
+    clock.restore();
+
+    assert.deepStrictEqual(mockContext.scheduledlabels, []);
   });
 
   it('Remove hacktoberfest label on closed PR', async () => {
