@@ -29,7 +29,7 @@ jobs:
           echo "{\"version\": {\"hash\": \"$hash\", \"version\": \"${{ steps.version.outputs.version }}\"}}" > ./version.json
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2.0.0
+        uses: docker/login-action@v2.1.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
