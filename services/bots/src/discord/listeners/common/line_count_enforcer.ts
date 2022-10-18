@@ -1,3 +1,5 @@
+import yaml from 'js-yaml';
+
 import { On } from '@discord-nestjs/core';
 import { Message, AttachmentBuilder, ChannelType } from 'discord.js';
 
@@ -20,6 +22,24 @@ const IGNORE_ROLES = new Set(['Admin', 'Mod']);
 
 const formatedMessage = /^\`\`\`([a-z|A-Z]*)\n(.*)\n\`\`\`[\n]*$/s;
 
+const contentIsValidJson = (content: string): boolean => {
+  try {
+    JSON.parse(content);
+    return true;
+  } catch (_) {
+    return false;
+  }
+};
+
+const contentIsValidYaml = (content: string): boolean => {
+  try {
+    yaml.load(content);
+    return true;
+  } catch (_) {
+    return false;
+  }
+};
+
 export class ListenerCommonLineCountEnforcer {
   @On('messageCreate')
   async handler(message: Message): Promise<void> {
@@ -32,7 +52,12 @@ export class ListenerCommonLineCountEnforcer {
       let messageContent: string = message.content;
       let fileType = 'txt';
       if (formatedMessage.test(message.content)) {
-        const [_, language, content] = formatedMessage.exec(message.content);
+        let [_, language, content] = formatedMessage.exec(message.content);
+        if (!language && contentIsValidJson(content)) {
+          language = 'json';
+        } else if (!language && contentIsValidYaml(content)) {
+          language = 'yaml';
+        }
         fileType = language;
         messageContent = content;
       }
