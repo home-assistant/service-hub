@@ -47,13 +47,27 @@ export const CommandHandler = (options?: CommandHandlerDecoratorOptions): Method
         if (!interaction.replied) {
           await interaction.reply({ content: 'Command completed', ephemeral: true });
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (
+          [
+            10062, // Unknown interaction
+            40060, // Interaction has already been acknowledged.
+          ].includes(err.code)
+        ) {
+          // Ignore these codes as they are expected during upgrades
+          return;
+        }
+
         reportException(err, {
           cause: err,
+          user: {
+            id: interaction.user.id,
+            username: interaction.user.tag,
+          },
+          tags: { command: interaction.commandName, bot: 'discord' },
           data: {
             options,
             interaction: interaction.toJSON(),
-            user: interaction.user.toJSON(),
             channel: interaction.channel.toJSON(),
             command: interaction.command.toJSON(),
           },

@@ -101,20 +101,37 @@ export function filterSentryEvent(event: Sentry.Event, hint: unknown): Sentry.Ev
  * @param excContexts Contexts.
  */
 export function reportException(
-  err: Error,
-  extra: { cause?: Error; data?: Record<string, any> },
+  err: any,
+  extra: {
+    cause?: Error;
+    data?: Record<string, any>;
+    tags?: Record<string, string>;
+    user?: Sentry.User;
+  },
   excContexts: ExtraContext[] = [],
 ): void {
-  Sentry.withScope((scope) => {
+  Sentry.withScope((scope: Sentry.Scope) => {
     for (const ctx of excContexts) {
       scope.setContext(ctx.name, ctx.fieldData);
     }
     if (extra.cause) {
       scope.setExtra('exceptionCause', extra.cause);
+    } else if (err.cause) {
+      scope.setExtra('exceptionCause', err.cause);
     }
     if (extra.data) {
       scope.setContext('exceptionData', extra.data);
+    } else if (err.data) {
+      scope.setContext('exceptionData', err.data);
     }
+    if (err.service) {
+      scope.setTag('service', err.service);
+    }
+    if (extra.tags) {
+      scope.setTags(extra.tags);
+    }
+    scope.setUser(extra.user);
+
     Sentry.captureException(err);
   });
 }
@@ -165,6 +182,7 @@ export function reportRequestException(
       if (exception.data) {
         scope.setContext('exceptionData', exception.data);
       }
+      scope.setTag('service', exception.service);
     }
     Sentry.captureException(exception);
     if ((exception as Error & { reported?: boolean }) instanceof Error) {
