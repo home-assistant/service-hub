@@ -61,6 +61,32 @@ describe('ListenerCommonLineCountEnforcer', () => {
     assert.deepStrictEqual(sendMessage.files[0].name, 'message.yaml');
   });
 
+  it('Content is large and language is unknown but valid YAML', async () => {
+    mockMessage.content =
+      '```\n' +
+      [...Array(MAX_LINE_LENGTH - 1).keys()].map((_, idx) => `hi${idx}:`).join('\n') +
+      '\n```';
+    await listener.handler(mockMessage);
+    assert.deepStrictEqual(
+      sendMessage.content,
+      `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
+    );
+    assert.deepStrictEqual(sendMessage.files[0].name, 'message.yaml');
+  });
+
+  it('Content is large and language is unknown but valid JSON', async () => {
+    mockMessage.content =
+      '```\n[' +
+      [...Array(MAX_LINE_LENGTH - 1).keys()].map((_, idx) => `{"hi": "there"}`).join(',\n') +
+      ']\n```';
+    await listener.handler(mockMessage);
+    assert.deepStrictEqual(
+      sendMessage.content,
+      `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
+    );
+    assert.deepStrictEqual(sendMessage.files[0].name, 'message.json');
+  });
+
   it('Content is large and language is unknown', async () => {
     mockMessage.content =
       '```unknown\n' + [...Array(MAX_LINE_LENGTH - 1).keys()].map(() => `hi`).join('\n') + '\n```';
