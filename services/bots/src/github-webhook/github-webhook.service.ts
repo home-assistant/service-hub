@@ -44,6 +44,7 @@ export class GithubWebhookService {
       throw new ServiceError(`Could not process webhook (${err?.message})`, {
         cause: err,
         data: { context, payload },
+        service: 'github-webhook',
       });
     }
 

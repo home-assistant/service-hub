@@ -42,7 +42,10 @@ export class ClaSignService {
 
     // Check signData
     if (!signData.github_username) {
-      throw new ServiceError('Missing required data in payload', { data: { signData } });
+      throw new ServiceError('Missing required data in payload', {
+        data: { signData },
+        service: 'cla-sign',
+      });
     }
 
     const pendingRequest = (
@@ -55,7 +58,7 @@ export class ClaSignService {
     ).Item;
 
     if (!pendingRequest) {
-      throw new ServiceError('No pending request', { data: { signData } });
+      throw new ServiceError('No pending request', { data: { signData }, service: 'cla-sign' });
     }
 
     // Store signData
@@ -83,6 +86,7 @@ export class ClaSignService {
       throw new ServiceError('Could not store signed data', {
         cause: err,
         data: { pendingRequest, signData, payload, headers },
+        service: 'cla-sign',
       });
     }
 

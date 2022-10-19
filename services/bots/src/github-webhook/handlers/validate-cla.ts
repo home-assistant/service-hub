@@ -189,6 +189,7 @@ export class ValidateCla extends BaseWebhookHandler {
         throw new ServiceError('Could add item to pending signers', {
           cause: err,
           data: { missingSign, context },
+          service: 'github-webhook',
         });
       }
 
