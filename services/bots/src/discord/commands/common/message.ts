@@ -1,16 +1,14 @@
 import { TransformPipe } from '@discord-nestjs/common';
 import {
   DiscordTransformedCommand,
-  On,
   Param,
   Payload,
   TransformedCommandExecutionContext,
   UsePipes,
 } from '@discord-nestjs/core';
-import { reportException } from '@lib/sentry/reporting';
-import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
+import { AutocompleteInteraction, EmbedBuilder, Events, InteractionType } from 'discord.js';
 import { OptionalUserMentionDto } from '../../discord.const';
-import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
+import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
 import { ServiceCommonMessageData } from '../../services/common/message-data';
 
 class MessageDto extends OptionalUserMentionDto {
@@ -72,48 +70,31 @@ export class CommandCommonMessage implements DiscordTransformedCommand<MessageDt
   }
 
   // This is the autocomplete handler for the /message command
-  @On('interactionCreate')
+  @OnDiscordEvent({
+    event: Events.InteractionCreate,
+    commandName: 'message',
+    interactionType: InteractionType.ApplicationCommandAutocomplete,
+  })
   async onInteractionCreate(interaction: AutocompleteInteraction): Promise<void> {
-    if (!interaction.isAutocomplete() || interaction.commandName !== 'message') {
-      return;
-    }
-    try {
-      await this.serviceCommonMessageData.ensureData(interaction.guildId);
-      const focusedValue = interaction.options.getFocused()?.toLowerCase();
+    await this.serviceCommonMessageData.ensureData(interaction.guildId);
+    const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
-      if (interaction.responded) {
-        // this happens up upgrades when 2 bots run at the same time
-        return;
-      }
-
-      await interaction.respond(
-        focusedValue.length !== 0
-          ? Object.entries(this.serviceCommonMessageData.data)
-              .filter(([_, data]) => data.description || data.title)
-              .map(([key, data]) => ({
-                name: data.description || data.title,
-                value: key,
-              }))
-              .filter(
-                (choice) =>
-                  choice.value.toLowerCase().includes(focusedValue) ||
-                  choice.name.toLowerCase().includes(focusedValue),
-              )
-              // The API only allow max 25 sugestions
-              .slice(0, 25)
-          : [],
-      );
-    } catch (err) {
-      reportException(err, {
-        cause: err,
-        data: {
-          interaction: interaction.toJSON(),
-          user: interaction.user.toJSON(),
-          channel: interaction.channel.toJSON(),
-          command: interaction.command.toJSON(),
-        },
-      });
-      await interaction.respond([]);
-    }
+    await interaction.respond(
+      focusedValue.length !== 0
+        ? Object.entries(this.serviceCommonMessageData.data)
+            .filter(([_, data]) => data.description || data.title)
+            .map(([key, data]) => ({
+              name: data.description || data.title,
+              value: key,
+            }))
+            .filter(
+              (choice) =>
+                choice.value.toLowerCase().includes(focusedValue) ||
+                choice.name.toLowerCase().includes(focusedValue),
+            )
+            // The API only allow max 25 sugestions
+            .slice(0, 25)
+        : [],
+    );
   }
 }

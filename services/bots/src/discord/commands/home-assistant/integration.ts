@@ -5,11 +5,9 @@ import {
   TransformedCommandExecutionContext,
   Param,
   UsePipes,
-  On,
 } from '@discord-nestjs/core';
-import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
-import { AutocompleteInteraction, EmbedBuilder } from 'discord.js';
-import { reportException } from '@lib/sentry/reporting';
+import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
+import { AutocompleteInteraction, EmbedBuilder, Events, InteractionType } from 'discord.js';
 import { Emoji } from '../../discord.const';
 import { ServiceHomeassistantIntegrationData } from '../../services/home-assistant/integration-data';
 
@@ -103,47 +101,30 @@ export class CommandHomeassistantIntegration implements DiscordTransformedComman
   }
 
   // This is the autocomplete handler for the /integration command
-  @On('interactionCreate')
+  @OnDiscordEvent({
+    event: Events.InteractionCreate,
+    commandName: 'integration',
+    interactionType: InteractionType.ApplicationCommandAutocomplete,
+  })
   async onInteractionCreate(interaction: AutocompleteInteraction): Promise<void> {
-    if (!interaction.isAutocomplete() || interaction.commandName !== 'integration') {
-      return;
-    }
-    try {
-      await this.serviceHomeassistantIntegrationData.ensureData();
-      const focusedValue = interaction.options.getFocused()?.toLowerCase();
+    await this.serviceHomeassistantIntegrationData.ensureData();
+    const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
-      if (interaction.responded) {
-        // this happens up upgrades when 2 bots run at the same time
-        return;
-      }
-
-      await interaction.respond(
-        focusedValue.length !== 0
-          ? Object.entries(this.serviceHomeassistantIntegrationData.data)
-              .map(([domain, data]) => ({
-                name: data.title,
-                value: domain,
-              }))
-              .filter(
-                (choice) =>
-                  choice.value.toLowerCase().includes(focusedValue) ||
-                  choice.name.toLowerCase().includes(focusedValue),
-              )
-              // The API only allow max 25 sugestions
-              .slice(0, 25)
-          : [],
-      );
-    } catch (err) {
-      reportException(err, {
-        cause: err,
-        data: {
-          interaction: interaction.toJSON(),
-          user: interaction.user.toJSON(),
-          channel: interaction.channel.toJSON(),
-          command: interaction.command.toJSON(),
-        },
-      });
-      await interaction.respond([]);
-    }
+    await interaction.respond(
+      focusedValue.length !== 0
+        ? Object.entries(this.serviceHomeassistantIntegrationData.data)
+            .map(([domain, data]) => ({
+              name: data.title,
+              value: domain,
+            }))
+            .filter(
+              (choice) =>
+                choice.value.toLowerCase().includes(focusedValue) ||
+                choice.name.toLowerCase().includes(focusedValue),
+            )
+            // The API only allow max 25 sugestions
+            .slice(0, 25)
+        : [],
+    );
   }
 }

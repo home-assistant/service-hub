@@ -7,11 +7,11 @@ import {
   TransformedCommandExecutionContext,
   UsePipes,
 } from '@discord-nestjs/core';
-import { reportException } from '@lib/sentry/reporting';
 import {
   ActionRowBuilder,
   AutocompleteInteraction,
   EmbedBuilder,
+  Events,
   ModalActionRowComponentBuilder,
   ModalBuilder,
   ModalSubmitInteraction,
@@ -23,7 +23,7 @@ import {
   ServiceHomeassistantIntegrationData,
 } from '../../services/home-assistant/integration-data';
 import { ServiceHomeassistantMyRedirectData } from '../../services/home-assistant/my-redirect-data';
-import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
+import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
 
 class MyDto {
   @Param({
@@ -104,50 +104,32 @@ export class CommandHomeAssistantMy implements DiscordTransformedCommand<MyDto> 
     });
   }
 
-  @On('interactionCreate')
+  @OnDiscordEvent({ event: Events.InteractionCreate })
   async onInteractionCreate(
     interaction: AutocompleteInteraction | ModalSubmitInteraction,
   ): Promise<void> {
     // This is the autocomplete handler for the /my command
     if (interaction.isAutocomplete() && interaction.commandName === 'my') {
-      try {
-        await this.serviceHomeassistantMyRedirectData.ensureData();
-        const focusedValue = interaction.options.getFocused()?.toLowerCase();
+      await this.serviceHomeassistantMyRedirectData.ensureData();
+      const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
-        if (interaction.responded) {
-          // this happens up upgrades when 2 bots run at the same time
-          return;
-        }
-
-        await interaction.respond(
-          focusedValue.length !== 0
-            ? this.serviceHomeassistantMyRedirectData.data
-                .filter((redirect) => !redirect.deprecated)
-                .map((redirect) => ({
-                  name: redirect.name,
-                  value: redirect.redirect,
-                }))
-                .filter(
-                  (choice) =>
-                    choice.value.toLowerCase().includes(focusedValue) ||
-                    choice.name.toLowerCase().includes(focusedValue),
-                )
-                // The API only allow max 25 sugestions
-                .slice(0, 25)
-            : [],
-        );
-      } catch (err) {
-        reportException(err, {
-          cause: err,
-          data: {
-            interaction: interaction.toJSON(),
-            user: interaction.user.toJSON(),
-            channel: interaction.channel.toJSON(),
-            command: interaction.command.toJSON(),
-          },
-        });
-        await interaction.respond([]);
-      }
+      await interaction.respond(
+        focusedValue.length !== 0
+          ? this.serviceHomeassistantMyRedirectData.data
+              .filter((redirect) => !redirect.deprecated)
+              .map((redirect) => ({
+                name: redirect.name,
+                value: redirect.redirect,
+              }))
+              .filter(
+                (choice) =>
+                  choice.value.toLowerCase().includes(focusedValue) ||
+                  choice.name.toLowerCase().includes(focusedValue),
+              )
+              // The API only allow max 25 sugestions
+              .slice(0, 25)
+          : [],
+      );
     } // This is modal submition handler if the redirect supports params
     else if (interaction.isModalSubmit()) {
       const redirectData = await this.serviceHomeassistantMyRedirectData.getRedirect(
