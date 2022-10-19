@@ -3,8 +3,15 @@ import {
   COMMAND_DECORATOR,
   TransformedCommandExecutionContext,
 } from '@discord-nestjs/core';
+
 import { reportException } from '@lib/sentry/reporting';
-import { PermissionFlagsBits } from 'discord.js';
+import {
+  AutocompleteInteraction,
+  Events,
+  InteractionType,
+  Message,
+  PermissionFlagsBits,
+} from 'discord.js';
 
 interface CommandHandlerDecoratorOptions {
   allowChannels?: string[];
@@ -75,6 +82,64 @@ export const CommandHandler = (options?: CommandHandlerDecoratorOptions): Method
         if (!interaction.replied) {
           await interaction.reply({ content: err?.message || 'Unknown error', ephemeral: true });
         }
+      }
+    };
+    return descriptor;
+  };
+};
+
+export const OnDiscordEvent = (options: {
+  event: Events;
+  commandName?: string;
+  interactionType?: InteractionType;
+}): MethodDecorator => {
+  return (
+    target: Record<string, any>,
+    propertyKey: string | symbol,
+    descriptor: PropertyDescriptor,
+  ): PropertyDescriptor => {
+    const originalMethod = descriptor.value;
+    Reflect.defineMetadata('__on_decorator__', { event: options.event }, target, propertyKey);
+
+    descriptor.value = async function (...params: any[]) {
+      const eventObject: Message | AutocompleteInteraction = params[0];
+      if (
+        (options.commandName &&
+          options.commandName !== (eventObject as AutocompleteInteraction).commandName) ||
+        (options.interactionType &&
+          options.interactionType !== (eventObject as AutocompleteInteraction).type)
+      ) {
+        return;
+      }
+      try {
+        await originalMethod.apply(this, params);
+      } catch (err: any) {
+        if (
+          [
+            10062, // Unknown interaction
+            40060, // Interaction has already been acknowledged.
+          ].includes(err.code)
+        ) {
+          // Ignore these codes as they are expected during upgrades
+          return;
+        }
+
+        reportException(err, {
+          cause: err,
+          user: {
+            id: ((eventObject as Message).author || (eventObject as AutocompleteInteraction).user)
+              .id,
+            username: (
+              (eventObject as Message).author || (eventObject as AutocompleteInteraction).user
+            ).tag,
+          },
+          tags: { bot: 'discord' },
+          data: {
+            options,
+            eventObject: eventObject.toJSON(),
+            channel: eventObject.channel.toJSON(),
+          },
+        });
       }
     };
     return descriptor;

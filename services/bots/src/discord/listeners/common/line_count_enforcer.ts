@@ -1,7 +1,7 @@
 import yaml from 'js-yaml';
 
-import { On } from '@discord-nestjs/core';
-import { Message, AttachmentBuilder, ChannelType } from 'discord.js';
+import { Message, AttachmentBuilder, ChannelType, Events } from 'discord.js';
+import { OnDiscordEvent } from '../../discord.decorator';
 
 export const MAX_LINE_LENGTH = 17;
 const KNOWN_FILETYPES = new Set([
@@ -41,7 +41,7 @@ const contentIsValidYaml = (content: string): boolean => {
 };
 
 export class ListenerCommonLineCountEnforcer {
-  @On('messageCreate')
+  @OnDiscordEvent({ event: Events.MessageCreate })
   async handler(message: Message): Promise<void> {
     if (
       !message.author.bot &&
