@@ -4,7 +4,7 @@ import {
   TransformedCommandExecutionContext,
 } from '@discord-nestjs/core';
 
-import { reportException } from '@lib/sentry/reporting';
+import { reportException } from '../../../../libs/sentry/src/reporting';
 import {
   AutocompleteInteraction,
   Events,
