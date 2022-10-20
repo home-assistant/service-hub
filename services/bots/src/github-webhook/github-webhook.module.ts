@@ -21,6 +21,7 @@ import { QualityScaleLabeler } from './handlers/quality_scale';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
+import { IssueCommentCommands } from './handlers/issue_comment_commands/handler';
 
 @Module({
   providers: [
@@ -32,6 +33,7 @@ import { ValidateCla } from './handlers/validate-cla';
     DocsTargetBranch,
     GithubWebhookService,
     Hacktoberfest,
+    IssueCommentCommands,
     IssueLinks,
     LabelBot,
     LabelCleaner,
