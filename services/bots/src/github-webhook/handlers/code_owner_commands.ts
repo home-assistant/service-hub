@@ -7,6 +7,7 @@ import { BaseWebhookHandler } from './base';
 export const CODE_OWNER_COMMANDS: {
   [command: string]: {
     description: string;
+    example?: string;
     handler: (context: WebhookContext<IssueCommentCreatedEvent>) => Promise<void>;
   };
 } = {
@@ -22,6 +23,7 @@ export const CODE_OWNER_COMMANDS: {
   },
   '/rename': {
     description: 'Change the title of the issue.',
+    example: '/rename Awesome new title',
     handler: async (context: WebhookContext<IssueCommentCreatedEvent>) => {
       const title = context.payload.comment.body.split('/rename ')[1];
       if (title) {

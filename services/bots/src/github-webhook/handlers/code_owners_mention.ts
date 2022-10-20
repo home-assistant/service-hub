@@ -95,10 +95,13 @@ export class CodeOwnersMention extends BaseWebhookHandler {
 
           Code owners of \`${integrationName}\` can use these commands to help triage issues:
 
-          Command | Description
-          --- | ---
+          Command | Example | Description
+          --- | --- | ---
           ${Object.entries(CODE_OWNER_COMMANDS)
-            .map(([command, data]) => `- \`${command}\` | ${data.description}`)
+            .map(
+              ([command, data]) =>
+                `- \`${command}\` | \`${data.example || command} }\` | ${data.description}`,
+            )
             .join('\n')}
 
         </details>
