@@ -24,6 +24,9 @@ export class IssueCommentCommands extends BaseWebhookHandler {
 
     const command = ISSUE_COMMENT_COMMANDS[input.command];
     if (!command || (command.requireAdditional && !input.additional)) {
+      await context.github.reactions.createForIssueComment(
+        context.repo({ comment_id: context.payload.comment.id, content: '-1' }),
+      );
       return;
     }
 
@@ -37,11 +40,20 @@ export class IssueCommentCommands extends BaseWebhookHandler {
       integrationManifests[integration] = await fetchIntegrationManifest(integration);
     }
 
-    await command.handler(context, {
-      invoker: context.payload.comment.user.login,
-      additional: input.additional,
-      currentLabels,
-      integrationManifests,
-    });
+    try {
+      await command.handler(context, {
+        invoker: context.payload.comment.user.login,
+        additional: input.additional,
+        currentLabels,
+        integrationManifests,
+      });
+      await context.github.reactions.createForIssueComment(
+        context.repo({ comment_id: context.payload.comment.id, content: '+1' }),
+      );
+    } catch (_) {
+      await context.github.reactions.createForIssueComment(
+        context.repo({ comment_id: context.payload.comment.id, content: '-1' }),
+      );
+    }
   }
 }

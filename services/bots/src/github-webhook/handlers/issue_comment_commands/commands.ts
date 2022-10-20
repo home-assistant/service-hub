@@ -12,7 +12,7 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
       command: IssueCommentCommandContext,
     ) => {
       if (invokerIsCodeOwner(command)) {
-        return;
+        throw new Error('Only code owners can close issues.');
       }
 
       await context.github.issues.update(
@@ -32,7 +32,7 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
       command: IssueCommentCommandContext,
     ) => {
       if (invokerIsCodeOwner(command)) {
-        return;
+        throw new Error('Only the issue creator can rename the issue.');
       }
 
       await context.github.issues.update(context.issue({ title: command.additional }));
@@ -49,7 +49,7 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
       command: IssueCommentCommandContext,
     ) => {
       if (invokerIsCodeOwner(command, command.integrationManifests[command.additional])) {
-        return;
+        throw new Error('Only code owners can unassign themselves.');
       }
       await context.github.issues.removeLabel(
         context.issue({
