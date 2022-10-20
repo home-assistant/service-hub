@@ -23,11 +23,10 @@ export const CODE_OWNER_COMMANDS: {
   '/rename': {
     description: 'Change the title of the issue.',
     handler: async (context: WebhookContext<IssueCommentCreatedEvent>) => {
-      await context.github.issues.update(
-        context.issue({
-          title: context.payload.comment.body.replace('/rename ', ''),
-        }),
-      );
+      const title = context.payload.comment.body.split('/rename ')[1];
+      if (title) {
+        await context.github.issues.update(context.issue({ title }));
+      }
     },
   },
   '/unassign': {
@@ -40,11 +39,13 @@ export const CODE_OWNER_COMMANDS: {
           )[0].name,
         }),
       );
-      await context.github.issues.removeAssignees(
-        context.issue({
-          assignees: context.payload.issue.assignees.map((user) => user.login),
-        }),
-      );
+      if (context.payload.issue.assignees.length) {
+        await context.github.issues.removeAssignees(
+          context.issue({
+            assignees: context.payload.issue.assignees.map((user) => user.login),
+          }),
+        );
+      }
     },
   },
 };
@@ -75,10 +76,6 @@ export class CodeOwnerCommands extends BaseWebhookHandler {
       // Return if the user is not a code owner
       return;
     }
-
-    await context.github.reactions.createForIssueComment(
-      context.repo({ comment_id: context.payload.comment.id, content: '+1' }),
-    );
 
     await command.handler(context);
   }
