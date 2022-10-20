@@ -5,6 +5,7 @@ import { issueFromPayload } from '../utils/issue';
 import { BaseWebhookHandler } from './base';
 
 import { CodeOwnersEntry, matchFile } from 'codeowners-utils';
+import { CODE_OWNER_COMMANDS } from './code_owner_commands';
 
 export class CodeOwnersMention extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED];
@@ -84,7 +85,27 @@ export class CodeOwnersMention extends BaseWebhookHandler {
         handler: 'CodeOwnersMention',
         comment: `Hey there ${mentions.join(
           ', ',
-        )}, mind taking a look at this ${triggerLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!`,
+        )}, mind taking a look at this ${triggerLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!
+        ${
+          mentions.length === 1
+            ? `
+
+        <details>
+          <summary>Code owner comands</summary>
+
+          Code owners of \`${integrationName}\` can use these commands to help triage issues:
+
+          Command | Description
+          --- | ---
+          ${Object.entries(CODE_OWNER_COMMANDS)
+            .map(([command, data]) => `- \`${command}\` | ${data.description}`)
+            .join('\n')}
+
+        </details>
+
+        `
+            : ''
+        }`,
         priority: 1,
       });
     }

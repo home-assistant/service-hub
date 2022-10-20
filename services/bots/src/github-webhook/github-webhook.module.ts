@@ -7,6 +7,7 @@ import { AppConfig } from '../config';
 import { GithubWebhookController } from './github-webhook.controller';
 import { BranchLabels } from './handlers/branch_labels';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
+import { CodeOwnerCommands } from './handlers/code_owner_commands';
 import { DependencyBump } from './handlers/dependency_bump';
 import { DocsMissing } from './handlers/docs_missing';
 import { DocsParenting } from './handlers/docs_parenting';
@@ -25,6 +26,7 @@ import { ValidateCla } from './handlers/validate-cla';
 @Module({
   providers: [
     BranchLabels,
+    CodeOwnerCommands,
     CodeOwnersMention,
     DependencyBump,
     DocsMissing,
