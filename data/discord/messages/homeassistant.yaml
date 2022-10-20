@@ -1336,8 +1336,10 @@ check:
   content: >-
     * HAOS [`ha core
     check`](https://www.home-assistant.io/common-tasks/os/#configuration-check)
+    
     * Container uses [`docker`
     commands](https://www.home-assistant.io/common-tasks/container/#configuration-check)
+    
     * Core requires you to [activate the venv
     first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
 
