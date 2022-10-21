@@ -6,9 +6,10 @@ import { BaseWebhookHandler } from '../base';
 
 import { ISSUE_COMMENT_COMMANDS } from './commands';
 
-const commandRegex = /(?<tagged>@home-assistant)\s(?<command>\w*)(\s(?<additional>.*))?/;
+const commandRegex = /^(?<tagged>@home-assistant)\s(?<command>\w*)(\s(?<additional>.*))?$/;
 
 export class IssueCommentCommands extends BaseWebhookHandler {
+  public allowBots = false;
   public allowedEventTypes = [EventType.ISSUE_COMMENT_CREATED];
   public allowedRepositories = [
     HomeAssistantRepository.CORE,
