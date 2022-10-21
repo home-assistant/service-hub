@@ -27,7 +27,7 @@ ${Object.entries(ISSUE_COMMENT_COMMANDS)
   .filter(([command, data]) => data.invokerType === 'code_owner')
   .map(
     ([command, data]) =>
-      `- \`${['@home-assistant', command, data.exampleAdditional?.replace('[domain]', integration)]
+      `- \`${['@home-assistant', command, data.exampleAdditional?.replace('<domain>', integration)]
         .filter((item) => item !== undefined)
         .join(' ')
         .trim()}\` ${data.description}`,

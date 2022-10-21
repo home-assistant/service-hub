@@ -41,7 +41,7 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
   unassign: {
     description:
       'Removes the current integration label and assignees on the issue, add the integration domain after the command.',
-    exampleAdditional: '[domain]',
+    exampleAdditional: '<domain>',
     invokerType: 'code_owner',
     requireAdditional: true,
     handler: async (
