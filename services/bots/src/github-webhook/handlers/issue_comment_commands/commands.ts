@@ -48,7 +48,7 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
       context: WebhookContext<IssueCommentCreatedEvent>,
       command: IssueCommentCommandContext,
     ) => {
-      if (invokerIsCodeOwner(command, command.integrationManifests[command.additional])) {
+      if (!invokerIsCodeOwner(command, command.integrationManifests[command.additional])) {
         throw new Error('Only code owners can unassign themselves.');
       }
       await context.github.issues.removeLabel(

@@ -2253,6 +2253,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/jest@npm:^29.2.0":
+  version: 29.2.0
+  resolution: "@types/jest@npm:29.2.0"
+  dependencies:
+    expect: ^29.0.0
+    pretty-format: ^29.0.0
+  checksum: 6779e63d8d7507b116a61b2935a200e48531849fc1ac74090212759fe17716777ca6d2c3a8d927a563e9cfa474ae91d40b1688376ae80e3a08974b3c9e9691e1
+  languageName: node
+  linkType: hard
+
 "@types/js-yaml@npm:^4":
   version: 4.0.5
   resolution: "@types/js-yaml@npm:4.0.5"
@@ -4662,7 +4672,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"expect@npm:^29.2.1":
+"expect@npm:^29.0.0, expect@npm:^29.2.1":
   version: 29.2.1
   resolution: "expect@npm:29.2.1"
   dependencies:
@@ -7626,7 +7636,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pretty-format@npm:^29.2.1":
+"pretty-format@npm:^29.0.0, pretty-format@npm:^29.2.1":
   version: 29.2.1
   resolution: "pretty-format@npm:29.2.1"
   dependencies:
@@ -8195,6 +8205,7 @@ __metadata:
     "@octokit/webhooks-types": ^6.4.0
     "@sentry/integrations": ^7.14.1
     "@sentry/node": ^7.14.1
+    "@types/jest": ^29.2.0
     "@types/js-yaml": ^4
     "@typescript-eslint/eslint-plugin": 5.21.0
     "@typescript-eslint/parser": ^5.21.0
