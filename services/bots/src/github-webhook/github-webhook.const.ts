@@ -40,6 +40,7 @@ export enum HomeAssistantRepository {
 }
 
 export enum EventType {
+  ISSUE_COMMENT_CREATED = 'issue_comment.created',
   ISSUES_LABELED = 'issues.labeled',
   ISSUES_OPENED = 'issues.opened',
   PULL_REQUEST_CLOSED = 'pull_request.closed',

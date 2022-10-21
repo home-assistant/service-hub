@@ -8,7 +8,7 @@ export enum QualityScale {
   INTERNAL = 'internal',
 }
 
-interface IntegrationManifest {
+export interface IntegrationManifest {
   codeowners?: string[];
   domain: string;
   name: string;

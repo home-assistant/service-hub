@@ -5,6 +5,7 @@ import { issueFromPayload } from '../utils/issue';
 import { BaseWebhookHandler } from './base';
 
 import { CodeOwnersEntry, matchFile } from 'codeowners-utils';
+import { ISSUE_COMMENT_COMMANDS } from './issue_comment_commands/commands';
 
 export class CodeOwnersMention extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED];
@@ -84,7 +85,31 @@ export class CodeOwnersMention extends BaseWebhookHandler {
         handler: 'CodeOwnersMention',
         comment: `Hey there ${mentions.join(
           ', ',
-        )}, mind taking a look at this ${triggerLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!`,
+        )}, mind taking a look at this ${triggerLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!
+
+        <details>
+          <summary>Code owner commands</summary>
+
+          Code owners of \`${integrationName}\` can trigger bot actions by commenting:
+
+          ${Object.entries(ISSUE_COMMENT_COMMANDS)
+            .filter(
+              ([command, data]) =>
+                data.invokerType === 'code_owner' &&
+                (mentions.length === 1 || command === 'unassign'),
+            )
+            .map(
+              ([command, data]) =>
+                `- \`${['@home-assistant', command, data.exampleAdditional]
+                  .filter((item) => item !== undefined)
+                  .join(' ')
+                  .trim()}\` ${data.description}`,
+            )
+            .join('\n')}
+
+        </details>
+
+        `,
         priority: 1,
       });
     }
