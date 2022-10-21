@@ -11,7 +11,7 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
       context: WebhookContext<IssueCommentCreatedEvent>,
       command: IssueCommentCommandContext,
     ) => {
-      if (invokerIsCodeOwner(command)) {
+      if (!invokerIsCodeOwner(command)) {
         throw new Error('Only code owners can close issues.');
       }
 
@@ -31,8 +31,8 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
       context: WebhookContext<IssueCommentCreatedEvent>,
       command: IssueCommentCommandContext,
     ) => {
-      if (invokerIsCodeOwner(command)) {
-        throw new Error('Only the issue creator can rename the issue.');
+      if (!invokerIsCodeOwner(command)) {
+        throw new Error('Only the code owner can rename the issue.');
       }
 
       await context.github.issues.update(context.issue({ title: command.additional }));
