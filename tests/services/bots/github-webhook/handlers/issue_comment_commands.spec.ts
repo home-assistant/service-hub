@@ -9,16 +9,16 @@ import { EventType } from '../../../../../services/bots/src/github-webhook/githu
 
 // Globally mock fetch
 jest.mock('node-fetch', () => jest.fn());
+fetch.mockImplementation(() =>
+  Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
+);
 
 describe('IssueCommentCommands', () => {
   let handler: IssueCommentCommands;
   let mockContext: WebhookContext<IssueCommentCreatedEvent>;
-  let getLabelResponse: any;
 
   beforeEach(function () {
-    fetch.mockReset();
     handler = new IssueCommentCommands();
-    getLabelResponse = {};
     mockContext = mockWebhookContext<IssueCommentCreatedEvent>({
       eventType: EventType.ISSUE_COMMENT_CREATED,
       payload: loadJsonFixture<IssueCommentCreatedEvent>('issue_comment.created', {
@@ -39,14 +39,10 @@ describe('IssueCommentCommands', () => {
 
   describe('command: close', () => {
     beforeEach(function () {
-      fetch.mockReset();
       mockContext.payload.comment.body = '@home-assistant close';
     });
 
     it('by codeowner', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
       mockContext.payload.comment.user.login = 'test';
       await handler.handle(mockContext);
 
@@ -72,14 +68,7 @@ describe('IssueCommentCommands', () => {
   });
 
   describe('command: rename', () => {
-    beforeEach(function () {
-      fetch.mockReset();
-    });
-
     it('by codeowner with title', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
       mockContext.payload.comment.body = '@home-assistant rename New Title';
       mockContext.payload.comment.user.login = 'test';
       await handler.handle(mockContext);
@@ -92,9 +81,6 @@ describe('IssueCommentCommands', () => {
       );
     });
     it('by codeowner without title', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
       mockContext.payload.comment.body = '@home-assistant rename';
       mockContext.payload.comment.user.login = 'test';
       await handler.handle(mockContext);
@@ -105,9 +91,6 @@ describe('IssueCommentCommands', () => {
       expect(mockContext.github.issues.update).not.toHaveBeenCalled();
     });
     it('not by codeowner with title', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
       mockContext.payload.comment.body = '@home-assistant rename  New Titl';
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
@@ -120,14 +103,7 @@ describe('IssueCommentCommands', () => {
   });
 
   describe('command: unassign', () => {
-    beforeEach(function () {
-      fetch.mockReset();
-    });
-
     it('by codeowner with domain', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
       mockContext.payload.comment.body = '@home-assistant unassign awesome';
       mockContext.payload.comment.user.login = 'test';
       await handler.handle(mockContext);
@@ -143,9 +119,6 @@ describe('IssueCommentCommands', () => {
       );
     });
     it('not by codeowner with domain', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
       mockContext.payload.comment.body = '@home-assistant unassign awesome';
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
@@ -157,9 +130,6 @@ describe('IssueCommentCommands', () => {
       expect(mockContext.github.issues.removeAssignees).not.toHaveBeenCalled();
     });
     it('by codeowner without domain', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
       mockContext.payload.comment.body = '@home-assistant unassign';
       mockContext.payload.comment.user.login = 'test';
       await handler.handle(mockContext);
@@ -171,9 +141,6 @@ describe('IssueCommentCommands', () => {
       expect(mockContext.github.issues.removeAssignees).not.toHaveBeenCalled();
     });
     it('not by codeowner without domain', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
       mockContext.payload.comment.body = '@home-assistant unassign';
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
@@ -186,10 +153,6 @@ describe('IssueCommentCommands', () => {
     });
 
     it('by codeowner with domain (when there are multiple domains)', async () => {
-      fetch.mockImplementation(() =>
-        Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-      );
-
       mockContext.payload.comment.body = '@home-assistant unassign awesome';
       mockContext.payload.comment.user.login = 'test';
       mockContext.payload.issue.labels = [
