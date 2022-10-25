@@ -38,6 +38,24 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
       await context.github.issues.update(context.issue({ title: command.additional }));
     },
   },
+  reopen: {
+    description: 'Reopen the issue.',
+    invokerType: 'code_owner',
+    handler: async (
+      context: WebhookContext<IssueCommentCreatedEvent>,
+      command: IssueCommentCommandContext,
+    ) => {
+      if (!invokerIsCodeOwner(command)) {
+        throw new Error('Only code owners can reopen issues.');
+      }
+
+      await context.github.issues.update(
+        context.issue({
+          state: 'open',
+        }),
+      );
+    },
+  },
   unassign: {
     description:
       'Removes the current integration label and assignees on the issue, add the integration domain after the command.',
