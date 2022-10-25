@@ -48,7 +48,8 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
       context: WebhookContext<IssueCommentCreatedEvent>,
       command: IssueCommentCommandContext,
     ) => {
-      if (!invokerIsCodeOwner(command, command.integrationManifests[command.additional])) {
+      const manifest = command.integrationManifests[command.additional];
+      if (!invokerIsCodeOwner(command, manifest)) {
         throw new Error('Only code owners can unassign themselves.');
       }
       await context.github.issues.removeLabel(
@@ -56,11 +57,13 @@ export const ISSUE_COMMENT_COMMANDS: { [command: string]: IssueCommentCommand } 
           name: `integration: ${command.additional}`,
         }),
       );
-      const currentAssignees = context.payload.issue.assignees.map((assignee) => assignee.login);
-      if (currentAssignees.includes(command.invoker)) {
+      const currentAssignees = context.payload.issue.assignees
+        .map((assignee) => assignee.login)
+        .filter((assignee) => manifest.codeowners?.includes(`@${assignee}`));
+      if (currentAssignees.length) {
         await context.github.issues.removeAssignees(
           context.issue({
-            assignees: [command.invoker],
+            assignees: currentAssignees,
           }),
         );
       }
