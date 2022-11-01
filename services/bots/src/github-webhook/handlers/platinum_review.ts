@@ -61,7 +61,7 @@ export class PlatinumReview extends BaseWebhookHandler {
         if (
           reviews.data.find(
             (review) =>
-              review.state === 'approved' && manifest.codeowners.includes(`@${review.user.login}`),
+              review.state === 'APPROVED' && manifest.codeowners.includes(`@${review.user.login}`),
           )
         ) {
           // A code owner did approve, it's done.
