@@ -12,7 +12,15 @@ export interface IntegrationData {
     | 'local_polling'
     | 'local_push'
     | 'calculated';
-  integration_type: 'hub' | 'device' | 'service';
+  integration_type:
+    | 'device'
+    | 'entity'
+    | 'hardware'
+    | 'helper'
+    | 'hub'
+    | 'service'
+    | 'system'
+    | 'virtual';
 }
 
 @Injectable()
