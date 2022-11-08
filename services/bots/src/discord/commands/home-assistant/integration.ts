@@ -67,6 +67,7 @@ export class CommandHomeassistantIntegration implements DiscordTransformedComman
       embeds: [
         new EmbedBuilder({
           title: integrationData.title,
+          description: integrationData.description,
           thumbnail: { url: `https://brands.home-assistant.io/${domain}/dark_logo.png` },
           fields: [
             {

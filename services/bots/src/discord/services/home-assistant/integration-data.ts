@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 export interface IntegrationData {
   title: string;
+  description: string;
   quality_scale: string;
   iot_class: string;
 }
