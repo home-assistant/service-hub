@@ -72,12 +72,21 @@ export class CommandHomeassistantIntegration implements DiscordTransformedComman
           fields: [
             {
               name: 'Quality scale',
-              value: QualityScale[integrationData.quality_scale] || QualityScale.no_score,
+              value: `[${
+                QualityScale[integrationData.quality_scale] || QualityScale.no_score
+              }](https://www.home-assistant.io/docs/quality_scale/)`,
               inline: true,
             },
             {
               name: 'IoT Class',
-              value: integrationData.iot_class || 'Unknown',
+              value: `[${
+                integrationData.iot_class || 'Unknown'
+              }](https://developers.home-assistant.io/docs/creating_integration_manifest#iot-class)`,
+              inline: true,
+            },
+            {
+              name: 'Integration type',
+              value: `[${integrationData.integration_type}](https://developers.home-assistant.io/docs/creating_integration_manifest#integration-type)`,
               inline: true,
             },
             {
