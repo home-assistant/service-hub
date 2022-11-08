@@ -39,13 +39,10 @@ export class PlatinumReview extends BaseWebhookHandler {
     }
 
     const integrations = currentLabels.filter((label) => label.startsWith('integration: '));
-    if (integrations.length !== 1) {
-      // Not only one, do not proceed.
-    }
 
-    let requiresCodeownerApproval = !currentLabels.find((label) =>
-      ['by-code-owner', 'code-owner-approved'].includes(label),
-    );
+    let requiresCodeownerApproval =
+      integrations.length === 1 &&
+      !currentLabels.find((label) => ['by-code-owner', 'code-owner-approved'].includes(label));
 
     if (requiresCodeownerApproval) {
       const manifest = await fetchIntegrationManifest(integrations[0].substring(13));
