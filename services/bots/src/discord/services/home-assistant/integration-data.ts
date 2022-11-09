@@ -4,8 +4,23 @@ import { Injectable } from '@nestjs/common';
 export interface IntegrationData {
   title: string;
   description: string;
-  quality_scale: string;
-  iot_class: string;
+  quality_scale: 'no_score' | 'silver' | 'gold' | 'platinum' | 'internal';
+  iot_class:
+    | 'assumed_state'
+    | 'cloud_polling'
+    | 'cloud_push'
+    | 'local_polling'
+    | 'local_push'
+    | 'calculated';
+  integration_type:
+    | 'device'
+    | 'entity'
+    | 'hardware'
+    | 'helper'
+    | 'hub'
+    | 'service'
+    | 'system'
+    | 'virtual';
 }
 
 @Injectable()
