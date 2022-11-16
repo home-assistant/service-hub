@@ -7,6 +7,7 @@ export class IssueCommentCommandBase {
   description: string;
   invokerType?: string;
   requireAdditional?: boolean;
+  exampleAdditional?: string;
 
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,

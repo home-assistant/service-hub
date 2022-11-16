@@ -5,7 +5,7 @@ import { issueFromPayload } from '../utils/issue';
 import { BaseWebhookHandler } from './base';
 
 import { CodeOwnersEntry, matchFile } from 'codeowners-utils';
-import { ISSUE_COMMENT_COMMANDS } from './issue_comment_commands/commands';
+import { ISSUE_COMMENT_COMMANDS } from './issue_comment_commands/handler';
 
 const generateCodeOwnersMentionComment = (
   integration: string,
@@ -23,14 +23,17 @@ Hey there ${codeOwners.join(
 
 Code owners of \`${integration}\` can trigger bot actions by commenting:
 
-${Object.entries(ISSUE_COMMENT_COMMANDS)
-  .filter(([command, data]) => data.invokerType === 'code_owner')
+${ISSUE_COMMENT_COMMANDS.filter((command) => command.invokerType === 'code_owner')
   .map(
-    ([command, data]) =>
-      `- \`${['@home-assistant', command, data.exampleAdditional?.replace('<domain>', integration)]
+    (command) =>
+      `- \`${[
+        '@home-assistant',
+        command.command,
+        command.exampleAdditional?.replace('<domain>', integration),
+      ]
         .filter((item) => item !== undefined)
         .join(' ')
-        .trim()}\` ${data.description}`,
+        .trim()}\` ${command.description}`,
   )
   .join('\n')}
 

@@ -12,7 +12,7 @@ import { UnassignIssueCommentCommand } from './commands/unassign';
 
 const COMMAND_REGEX: RegExp = /^(?<tagged>@home-assistant)\s(?<command>\w*)(\s(?<additional>.*))?$/;
 
-const ISSUE_COMMENT_COMMANDS: IssueCommentCommandBase[] = [
+export const ISSUE_COMMENT_COMMANDS: IssueCommentCommandBase[] = [
   new CloseIssueCommentCommand(),
   new RenameIssueCommentCommand(),
   new ReopenIssueCommentCommand(),
