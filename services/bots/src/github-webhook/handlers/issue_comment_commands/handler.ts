@@ -3,10 +3,21 @@ import { EventType, HomeAssistantRepository } from '../../github-webhook.const';
 import { WebhookContext } from '../../github-webhook.model';
 import { fetchIntegrationManifest } from '../../utils/integration';
 import { BaseWebhookHandler } from '../base';
+import { IssueCommentCommandBase } from './commands/base';
 
-import { ISSUE_COMMENT_COMMANDS } from './commands';
+import { CloseIssueCommentCommand } from './commands/close';
+import { RenameIssueCommentCommand } from './commands/rename';
+import { ReopenIssueCommentCommand } from './commands/reopen';
+import { UnassignIssueCommentCommand } from './commands/unassign';
 
-const commandRegex = /^(?<tagged>@home-assistant)\s(?<command>\w*)(\s(?<additional>.*))?$/;
+const COMMAND_REGEX: RegExp = /^(?<tagged>@home-assistant)\s(?<command>\w*)(\s(?<additional>.*))?$/;
+
+const ISSUE_COMMENT_COMMANDS: IssueCommentCommandBase[] = [
+  new CloseIssueCommentCommand(),
+  new RenameIssueCommentCommand(),
+  new ReopenIssueCommentCommand(),
+  new UnassignIssueCommentCommand(),
+];
 
 export class IssueCommentCommands extends BaseWebhookHandler {
   public allowBots = false;
@@ -17,13 +28,13 @@ export class IssueCommentCommands extends BaseWebhookHandler {
   ];
 
   async handle(context: WebhookContext<IssueCommentCreatedEvent>) {
-    const input = commandRegex.exec(context.payload.comment.body || '')?.groups;
+    const input = COMMAND_REGEX.exec(context.payload.comment.body || '')?.groups;
 
     if (!input) {
       return;
     }
 
-    const command = ISSUE_COMMENT_COMMANDS[input.command];
+    const command = ISSUE_COMMENT_COMMANDS.find((command) => command.command === input.command);
     if (!command || (command.requireAdditional && !input.additional)) {
       await context.github.reactions.createForIssueComment(
         context.repo({ comment_id: context.payload.comment.id, content: '-1' }),
@@ -42,7 +53,7 @@ export class IssueCommentCommands extends BaseWebhookHandler {
     }
 
     try {
-      await command.handler(context, {
+      await command.handle(context, {
         invoker: context.payload.comment.user.login,
         additional: input.additional,
         currentLabels,
