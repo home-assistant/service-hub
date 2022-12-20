@@ -32,6 +32,7 @@ export enum HomeAssistantRepository {
   DEVELOPERS_HOME_ASSISTANT = 'home-assistant/developers.home-assistant',
   FRONTEND = 'home-assistant/frontend',
   HOME_ASSISTANT_IO = 'home-assistant/home-assistant.io',
+  INTENTS = 'home-assistant/intents',
   IOS = 'home-assistant/iOS',
   OPERATING_SYSTEM = 'home-assistant/operating-system',
   SERVICE_HUB = 'home-assistant/service-hub',
