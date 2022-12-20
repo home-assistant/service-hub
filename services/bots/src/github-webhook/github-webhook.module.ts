@@ -12,6 +12,8 @@ import { DocsMissing } from './handlers/docs_missing';
 import { DocsParenting } from './handlers/docs_parenting';
 import { DocsTargetBranch } from './handlers/docs_target_branch';
 import { Hacktoberfest } from './handlers/hacktoberfest';
+import { SetIntentsLanguage } from './handlers/intents_language';
+import { IssueCommentCommands } from './handlers/issue_comment_commands/handler';
 import { IssueLinks } from './handlers/issue_links';
 import { LabelBot } from './handlers/label_bot/handler';
 import { LabelCleaner } from './handlers/label_cleaner';
@@ -21,7 +23,6 @@ import { QualityScaleLabeler } from './handlers/quality_scale';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
-import { IssueCommentCommands } from './handlers/issue_comment_commands/handler';
 
 @Module({
   providers: [
@@ -42,6 +43,7 @@ import { IssueCommentCommands } from './handlers/issue_comment_commands/handler'
     QualityScaleLabeler,
     SetDocumentationSection,
     SetIntegration,
+    SetIntentsLanguage,
     ValidateCla,
   ],
   imports: [
