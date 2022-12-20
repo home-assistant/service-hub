@@ -18,10 +18,7 @@ export class SetIntentsLanguage extends BaseWebhookHandler {
     for (const file of files) {
       const parsed = LanguageFileRegex.exec(file.filename);
       if (parsed?.groups?.language_code) {
-        context.scheduleIssueLabel(`language: ${parsed.groups.language_code}`);
-      }
-      if (parsed?.groups?.section) {
-        context.scheduleIssueLabel(`type: ${parsed.groups.section}`);
+        context.scheduleIssueLabel(`lang: ${parsed.groups.language_code}`);
       }
     }
   }
