@@ -96,8 +96,8 @@ export class CommandHomeAssistantMy implements DiscordTransformedCommand<MyDto> 
     await interaction.reply({
       embeds: [
         new EmbedBuilder({
-          title: `Open ${redirectData.name} in your Home Assistant`,
-          description: redirectData.description,
+          title: redirectData.name,
+          description: `Open your Home Assistant instance and ${redirectData.description}`,
           url: `https://my.home-assistant.io/redirect/${redirectData.redirect}/`,
         }),
       ],
