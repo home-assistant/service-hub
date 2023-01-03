@@ -1,5 +1,5 @@
-import { Body, Controller, Post, Headers } from '@nestjs/common';
-import { ClaSignService } from './cla-sign.service';
+import { Body, Controller, Post, Headers, HttpException } from '@nestjs/common';
+import { ClaSignService, ServiceRequestError } from './cla-sign.service';
 
 @Controller('/cla-sign')
 export class ClaSignController {
@@ -10,6 +10,13 @@ export class ClaSignController {
     @Headers() headers: Record<string, any>,
     @Body() payload: Record<string, any>,
   ): Promise<void> {
-    await this.claSignService.handleClaSignature(headers, payload);
+    try {
+      await this.claSignService.handleClaSignature(headers, payload);
+    } catch (e) {
+      if (e instanceof ServiceRequestError) {
+        throw new HttpException(e.message, 400);
+      }
+      throw e;
+    }
   }
 }

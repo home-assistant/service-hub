@@ -6,6 +6,8 @@ import { createAppAuth } from '@octokit/auth-app';
 import { DynamoDB } from 'aws-sdk';
 import { GithubClient } from '../github-webhook/github-webhook.model';
 
+export class ServiceRequestError extends ServiceError {}
+
 @Injectable()
 export class ClaSignService {
   private githubApiClient: GithubClient;
@@ -42,7 +44,7 @@ export class ClaSignService {
 
     // Check signData
     if (!signData.github_username) {
-      throw new ServiceError('Missing required data in payload', {
+      throw new ServiceRequestError('Missing required data in payload', {
         data: { signData },
         service: 'cla-sign',
       });
@@ -58,7 +60,13 @@ export class ClaSignService {
     ).Item;
 
     if (!pendingRequest) {
-      throw new ServiceError('No pending request', { data: { signData }, service: 'cla-sign' });
+      throw new ServiceRequestError(
+        `No pending request found for ${signData.github_username}. Are you signing the CLA with the same GitHub user that created the commits in the Pull Request?`,
+        {
+          data: { signData },
+          service: 'cla-sign',
+        },
+      );
     }
 
     // Store signData
