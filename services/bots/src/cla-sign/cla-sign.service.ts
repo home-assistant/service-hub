@@ -60,7 +60,7 @@ export class ClaSignService {
     ).Item;
 
     if (!pendingRequest) {
-      throw new ServiceRequestError('No pending request', {
+      throw new ServiceRequestError(`No pending request found for ${signData.github_username}. Are you signing the CLA with the same GitHub user that created the commits in the Pull Request?`, {
         data: { signData },
         service: 'cla-sign',
       });
