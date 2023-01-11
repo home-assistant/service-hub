@@ -6,7 +6,7 @@ import {
   UsePipes,
 } from '@discord-nestjs/core';
 import { getVersionInfo } from '@lib/common';
-import { OptionalUserMentionDto } from '../../discord.const';
+import { BlankDto } from '../../discord.const';
 import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 
 const version = getVersionInfo(__dirname);
@@ -19,7 +19,7 @@ const version = getVersionInfo(__dirname);
 export class CommandCommonInfo implements DiscordTransformedCommand<any> {
   @CommandHandler()
   async handler(
-    @Payload() handlerDto: OptionalUserMentionDto,
+    @Payload() handlerDto: BlankDto,
     { interaction }: TransformedCommandExecutionContext,
   ): Promise<void> {
     await interaction.reply({
