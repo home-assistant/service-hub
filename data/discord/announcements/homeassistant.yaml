@@ -1,4 +1,10 @@
 - channel: "1065682268506558514"
   messages:
     - content: |
-        test
+        Welcome to the Home Assistant Discord Server!
+
+        Rules:
+
+        Please carefully read through these rules **before engaging in conversation.**
+    - content: |
+        1. **New members: Welcome!** Start by reading over the FAQ¹. Feel free to introduce yourself, as we are all friends here!
