@@ -123,7 +123,7 @@ export const OnDiscordEvent = (options: {
           // Ignore these codes as they are expected during upgrades
           return;
         }
-
+        console.error(err);
         reportException(err, {
           cause: err,
           user: {
@@ -137,7 +137,7 @@ export const OnDiscordEvent = (options: {
           data: {
             options,
             eventObject: eventObject.toJSON(),
-            channel: eventObject.channel.toJSON(),
+            channel: eventObject.channel?.toJSON(),
           },
         });
       }

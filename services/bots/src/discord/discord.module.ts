@@ -40,12 +40,12 @@ export class DiscordBotModule {
     return {
       module: DiscordBotModule,
       providers: [
+        ...DiscordServices.common,
+        ...(DiscordServices[config.discord.guildId] || []),
         ...DiscordCommands.common,
         ...(DiscordCommands[config.discord.guildId] || []),
         ...DiscordListeners.common,
         ...(DiscordListeners[config.discord.guildId] || []),
-        ...DiscordServices.common,
-        ...(DiscordServices[config.discord.guildId] || []),
       ],
     };
   }

@@ -1,3 +1,4 @@
+import { ServiceCommonAnnouncementsData } from './announcements-data';
 import { ServiceCommonMessageData } from './message-data';
 
-export const ServicesCommon = [ServiceCommonMessageData];
+export const ServicesCommon = [ServiceCommonAnnouncementsData, ServiceCommonMessageData];

@@ -1,4 +1,4 @@
-- channel: "1065682268506558514"
+- channel: ""
   messages:
     - content: |
         Welcome to the Home Assistant Discord Server!
@@ -8,3 +8,4 @@
         Please carefully read through these rules **before engaging in conversation.**
     - content: |
         1. **New members: Welcome!** Start by reading over the FAQ¹. Feel free to introduce yourself, as we are all friends here!
+        2. If you have a question, please check the FAQ¹ and relevant documentation² before posting.
