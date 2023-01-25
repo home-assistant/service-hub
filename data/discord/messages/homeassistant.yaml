@@ -1342,7 +1342,7 @@ check:
     
     * Core requires you to [activate the venv
     first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
-'chatgpt':
+chatgpt:
   description: "Don't use ChatGPT"
   content: >-
     ChatGPT and other "AI" systems do a fantastic job of generating well structured,
