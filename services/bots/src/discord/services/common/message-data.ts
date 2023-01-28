@@ -9,6 +9,7 @@ interface Message {
   description?: string;
   image?: string;
   title?: string;
+  fields?: { name: string; value: string }[];
 }
 
 interface MessageData {
