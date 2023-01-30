@@ -1,14 +1,17 @@
-import { Param } from '@discord-nestjs/core';
+import { Transform } from 'class-transformer';
+import { Param, ParamType } from '@discord-nestjs/core';
 
 export class BlankDto {}
 
 export class OptionalUserMentionDto {
+  @Transform(({ value }) => (value ? `<@${value}>` : undefined))
   @Param({
     name: 'user',
     description: 'Tag the user you want the message to be posted for',
     required: false,
+    type: ParamType.MENTIONABLE,
   })
-  userMention: string;
+  userMention: string | undefined;
 }
 
 export enum Emoji {
