@@ -5,8 +5,6 @@ import { fetchPullRequestFilesFromContext } from '../utils/pull_request';
 import { BaseWebhookHandler } from './base';
 
 const DEPENDENCY_FILES = new Set([
-  'setup.py',
-  'manifest.json',
   'package_constraints.txt',
   'requirements_all.txt',
   'requirements_docs.txt',
