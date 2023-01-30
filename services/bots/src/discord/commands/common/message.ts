@@ -64,6 +64,9 @@ export class CommandCommonMessage implements DiscordTransformedCommand<MessageDt
           description: [userMention, message.content].join(' '),
           title: message.title,
           image: message.image ? { url: message.image } : undefined,
+          fields: message.fields?.length
+            ? message.fields.map((field) => ({ ...field, inline: true }))
+            : undefined,
         }),
       ],
     });
