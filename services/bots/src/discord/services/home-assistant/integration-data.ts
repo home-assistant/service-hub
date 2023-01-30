@@ -25,16 +25,23 @@ export interface IntegrationData {
 
 @Injectable()
 export class ServiceHomeassistantIntegrationData {
-  public data: { [key: string]: IntegrationData };
+  public data: { [key: string]: { [key: string]: IntegrationData } } = {};
 
-  public async getIntegration(domain: string): Promise<IntegrationData | undefined> {
+  public async getIntegration(
+    domain: string,
+    channel?: 'stable' | 'beta',
+  ): Promise<IntegrationData | undefined> {
     await this.ensureData();
-    return this.data?.[domain];
+    return this.data[channel || 'stable']?.[domain];
   }
 
-  public async ensureData(force?: boolean) {
-    if (force || !this.data) {
-      this.data = await (await fetch('https://www.home-assistant.io/integrations.json')).json();
+  public async ensureData(force?: boolean, channel?: 'stable' | 'beta') {
+    if (force || !this.data[channel || 'stable']) {
+      this.data[channel || 'stable'] = await (
+        await fetch(
+          `https://${channel === 'beta' ? 'rc' : 'www'}.home-assistant.io/integrations.json`,
+        )
+      ).json();
     }
   }
 }

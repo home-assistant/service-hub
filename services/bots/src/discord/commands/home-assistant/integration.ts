@@ -11,6 +11,8 @@ import { AutocompleteInteraction, EmbedBuilder, Events, InteractionType } from '
 import { Emoji } from '../../discord.const';
 import { ServiceHomeassistantIntegrationData } from '../../services/home-assistant/integration-data';
 
+const BETA_CHANNEL_ID = '427516175237382144';
+
 const QualityScale = {
   no_score: 'No score',
   silver: `${Emoji.SECOND_PLACE} Silver`,
@@ -44,8 +46,10 @@ export class CommandHomeassistantIntegration implements DiscordTransformedComman
   ): Promise<void> {
     const { domain } = handlerDto;
     const { interaction } = context;
+    const channel = interaction.channelId === BETA_CHANNEL_ID ? 'beta' : 'stable';
+
     if (domain === 'reload') {
-      await this.serviceHomeassistantIntegrationData.ensureData(true);
+      await this.serviceHomeassistantIntegrationData.ensureData(true, channel);
 
       await interaction.reply({
         content: 'Integration list reloaded',
@@ -54,7 +58,10 @@ export class CommandHomeassistantIntegration implements DiscordTransformedComman
       return;
     }
 
-    const integrationData = await this.serviceHomeassistantIntegrationData.getIntegration(domain);
+    const integrationData = await this.serviceHomeassistantIntegrationData.getIntegration(
+      domain,
+      channel,
+    );
 
     if (!integrationData) {
       await interaction.reply({
@@ -91,7 +98,9 @@ export class CommandHomeassistantIntegration implements DiscordTransformedComman
             },
             {
               name: 'Documentation',
-              value: `[View the documentation](https://www.home-assistant.io/integrations/${domain}/)`,
+              value: `[View the documentation](https://${
+                channel === 'beta' ? 'rc' : 'www'
+              }.home-assistant.io/integrations/${domain}/)`,
               inline: true,
             },
             {
@@ -117,12 +126,13 @@ export class CommandHomeassistantIntegration implements DiscordTransformedComman
     interactionType: InteractionType.ApplicationCommandAutocomplete,
   })
   async onInteractionCreate(interaction: AutocompleteInteraction): Promise<void> {
-    await this.serviceHomeassistantIntegrationData.ensureData();
+    const channel = interaction.channelId === BETA_CHANNEL_ID ? 'beta' : 'stable';
+    await this.serviceHomeassistantIntegrationData.ensureData(false, channel);
     const focusedValue = interaction.options.getFocused()?.toLowerCase();
 
     await interaction.respond(
       focusedValue.length !== 0
-        ? Object.entries(this.serviceHomeassistantIntegrationData.data)
+        ? Object.entries(this.serviceHomeassistantIntegrationData.data[channel])
             .map(([domain, data]) => ({
               name: data.title,
               value: domain,
