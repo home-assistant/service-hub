@@ -140,7 +140,7 @@ export class ValidateCla extends BaseWebhookHandler {
       context.scheduleIssueComment({
         handler: botContextName,
         comment: pullRequestComment(
-          uniqueEntries(authorsNeedingCLA.map((entry) => entry.login)),
+          uniqueEntries(authorsNeedingCLA.map((entry) => `@${entry.login}`)),
           `${context.payload.repository.full_name}#${context.payload.number}`,
         ),
       });
