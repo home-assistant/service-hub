@@ -34,8 +34,8 @@ export class ReviewDrafter extends BaseWebhookHandler {
 
   async handleReviewCommentSubmitted(context: WebhookContext<PullRequestReviewSubmittedEvent>) {
     if (
-      context.payload.review.state !== 'changes_requested' &&
-      !context.payload.pull_request.draft
+      context.payload.pull_request.draft ||
+      context.payload.review.state !== 'changes_requested'
     ) {
       // We only care about changes_requested on non-draft PRs
       return;
