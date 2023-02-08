@@ -23,6 +23,7 @@ import { QualityScaleLabeler } from './handlers/quality_scale';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
+import { ReviewDrafter } from './handlers/review_drafter';
 
 @Module({
   providers: [
@@ -41,6 +42,7 @@ import { ValidateCla } from './handlers/validate-cla';
     MonthOfWTH,
     PlatinumReview,
     QualityScaleLabeler,
+    ReviewDrafter,
     SetDocumentationSection,
     SetIntegration,
     SetIntentsLanguage,
