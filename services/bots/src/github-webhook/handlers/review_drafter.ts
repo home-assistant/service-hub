@@ -41,6 +41,12 @@ export class ReviewDrafter extends BaseWebhookHandler {
       // We only care about changes_requested on non-draft PRs
       return;
     }
+
+    // Mark PR as draft, this is not available in the REST API, so we need to use GraphQL
+    await context.github.graphql({
+      query: `mutation { convertPullRequestToDraft(input: {pullRequestId: "${context.payload.pull_request.node_id}"}) {clientMutationId}}`,
+    });
+
     const currentComments = await context.github.issues.listComments(
       context.issue({ per_page: 100 }),
     );
@@ -52,11 +58,6 @@ export class ReviewDrafter extends BaseWebhookHandler {
         }),
       );
     }
-
-    // Mark PR as draft, this is not available in the REST API, so we need to use GraphQL
-    await context.github.graphql({
-      query: `mutation { convertPullRequestToDraft(input: {pullRequestId: "${context.payload.pull_request.node_id}"}) {}}`,
-    });
   }
 
   async handleReadyForReview(context: WebhookContext<PullRequestReadyForReviewEvent>) {
