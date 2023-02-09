@@ -69,15 +69,20 @@ export class ReviewDrafter extends BaseWebhookHandler {
       return;
     }
 
-    const { data: currentRewiewers } = await context.github.pulls.listRequestedReviewers(
-      context.pullRequest(),
+    const { data: reviews } = await context.github.pulls.listReviews(
+      context.pullRequest({ per_page: 100 }),
     );
-    // Request review from all users and teams that are currently requested
-    await context.github.pulls.requestReviewers(
-      context.pullRequest({
-        reviewers: currentRewiewers.users.map((user) => user.login),
-        team_reviewers: currentRewiewers.teams.map((team) => team.slug),
-      }),
+    const reviewers = new Set(
+      reviews
+        .filter((review) => review.state === 'CHANGES_REQUESTED')
+        .map((review) => review.user.login),
     );
+
+    if (reviewers.size) {
+      // Request review from all reviewers that have requested changes.
+      await context.github.pulls.requestReviewers(
+        context.pullRequest({ reviewers: Array.from(reviewers) }),
+      );
+    }
   }
 }
