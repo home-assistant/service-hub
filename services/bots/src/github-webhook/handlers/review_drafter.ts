@@ -36,9 +36,12 @@ export class ReviewDrafter extends BaseWebhookHandler {
   async handleReviewCommentSubmitted(context: WebhookContext<PullRequestReviewSubmittedEvent>) {
     if (
       context.payload.pull_request.draft ||
-      context.payload.review.state !== 'changes_requested'
+      context.payload.review.state !== 'changes_requested' ||
+      !['COLLABORATOR', 'MEMBER', 'OWNER'].includes(context.payload.review.author_association)
     ) {
-      // We only care about changes_requested on non-draft PRs
+      // If the PR is already a draft, we don't need to do anything
+      // If the review is not a changes requested, we don't need to do anything
+      // If the author is not a collaborator, member or owner, we don't need to do anything
       return;
     }
 
