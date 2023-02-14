@@ -19,3 +19,19 @@ export interface IssueCommentCommand {
     command: IssueCommentCommandContext,
   ) => Promise<void>;
 }
+
+export const invokerIsCodeOwner = (
+  command: IssueCommentCommandContext,
+  manifest?: IntegrationManifest,
+): boolean => {
+  let integrationManifest = manifest;
+  if (!integrationManifest) {
+    const integrationDomains = Object.keys(command.integrationManifests);
+    integrationManifest =
+      integrationDomains.length === 1
+        ? command.integrationManifests[integrationDomains[0]]
+        : undefined;
+  }
+
+  return integrationManifest?.codeowners?.includes(`@${command.invoker}`);
+};
