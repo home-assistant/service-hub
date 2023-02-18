@@ -36,12 +36,25 @@ export class ReviewDrafter extends BaseWebhookHandler {
   async handleReviewCommentSubmitted(context: WebhookContext<PullRequestReviewSubmittedEvent>) {
     if (
       context.payload.pull_request.draft ||
-      context.payload.review.state !== 'changes_requested' ||
-      !['COLLABORATOR', 'MEMBER', 'OWNER'].includes(context.payload.review.author_association)
+      context.payload.review.state !== 'changes_requested'
     ) {
       // If the PR is already a draft, we don't need to do anything
       // If the review is not a changes requested, we don't need to do anything
-      // If the author is not a collaborator, member or owner, we don't need to do anything
+      return;
+    }
+
+    try {
+      const { data: reviewerMembership } = await context.github.orgs.getMembershipForUser({
+        org: context.organization,
+        username: context.payload.review.user.login,
+      });
+
+      if (!['admin', 'member'].includes(reviewerMembership.role)) {
+        // If the author is not admin or member, we don't need to do anything
+        return;
+      }
+    } catch (ev: any) {
+      // We get an error if the user is not a member of the organization
       return;
     }
 
