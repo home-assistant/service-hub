@@ -33,5 +33,10 @@ export const invokerIsCodeOwner = (
         : undefined;
   }
 
-  return integrationManifest?.codeowners?.includes(`@${command.invoker}`);
+  return (
+    integrationManifest?.codeowners
+      // Strip the leading @ and convert to lowercase
+      ?.map((codeowner) => codeowner.substring(1).toLowerCase())
+      ?.includes(command.invoker.toLowerCase())
+  );
 };
