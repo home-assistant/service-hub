@@ -2,7 +2,7 @@ import {
   PullRequestReadyForReviewEvent,
   PullRequestReviewSubmittedEvent,
 } from '@octokit/webhooks-types';
-import { EventType, HomeAssistantRepository } from '../github-webhook.const';
+import { EventType, Organization } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
@@ -11,7 +11,7 @@ const MESSAGE_ID = '<!-- ReviewDrafterComment -->';
 const REVIEW_COMMENT = `${MESSAGE_ID}
 Please take a look at the requested changes, and use the **Ready for review** button when you are done, thanks :+1:
 
-[_Learn more about our pull request process._](https://developers.home-assistant.io/blog/2023/02/07/introducing-PR-drafting-in-reviews)
+[_Learn more about our pull request process._](https://developers.home-assistant.io/awesome_documentation)
 `;
 
 export class ReviewDrafter extends BaseWebhookHandler {
@@ -19,7 +19,7 @@ export class ReviewDrafter extends BaseWebhookHandler {
     EventType.PULL_REQUEST_REVIEW_SUBMITTED,
     EventType.PULL_REQUEST_READY_FOR_REVIEW,
   ];
-  public allowedRepositories = [HomeAssistantRepository.CORE];
+  public allowedOrganizations = [Organization.HOME_ASSISTANT];
 
   async handle(
     context: WebhookContext<PullRequestReviewSubmittedEvent | PullRequestReadyForReviewEvent>,
