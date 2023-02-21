@@ -11,7 +11,7 @@ const MESSAGE_ID = '<!-- ReviewDrafterComment -->';
 const REVIEW_COMMENT = `${MESSAGE_ID}
 Please take a look at the requested changes, and use the **Ready for review** button when you are done, thanks :+1:
 
-[_Learn more about our pull request process._](https://developers.home-assistant.io/awesome_documentation)
+[_Learn more about our pull request process._](https://developers.home-assistant.io/docs/review-process#prs-are-being-drafted-when-changes-are-needed)
 `;
 
 export class ReviewDrafter extends BaseWebhookHandler {
