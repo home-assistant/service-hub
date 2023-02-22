@@ -27,7 +27,7 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
     if (integrationPlatforms.length > 1) {
       await context.github.pulls.createReview(
         context.pullRequest({
-          body: '[When adding new integrations. Limit included platforms to a single platform](https://developers.home-assistant.io/docs/review-process/#home-assistant-core)',
+          body: '[When adding new integrations, limit included platforms to a single platform. Please reduce this PR to a single platform](https://developers.home-assistant.io/docs/review-process/#home-assistant-core)',
           event: 'REQUEST_CHANGES',
         }),
       );
