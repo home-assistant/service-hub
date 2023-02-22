@@ -5,7 +5,7 @@ import { IssueCommentCommandBase } from './base';
 
 export class CloseIssueCommentCommand extends IssueCommentCommandBase {
   command = 'close';
-  description = 'Closes the issue.';
+  description = 'Closes the <type>.';
   invokerType = 'code_owner';
 
   async handle(

@@ -5,7 +5,7 @@ import { IssueCommentCommandBase } from './base';
 
 export class ReopenIssueCommentCommand implements IssueCommentCommandBase {
   command = 'reopen';
-  description = 'Reopen the issue.';
+  description = 'Reopen the <type>.';
   invokerType = 'code_owner';
 
   async handle(

@@ -5,7 +5,7 @@ import { IssueCommentCommandBase } from './base';
 
 export class RenameIssueCommentCommand implements IssueCommentCommandBase {
   command = 'rename';
-  description = 'Renames the issue.';
+  description = 'Renames the <type>.';
   exampleAdditional = 'Awesome new title';
   invokerType = 'code_owner';
   requireAdditional = true;

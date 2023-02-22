@@ -33,7 +33,7 @@ ${ISSUE_COMMENT_COMMANDS.filter((command) => command.invokerType === 'code_owner
       ]
         .filter((item) => item !== undefined)
         .join(' ')
-        .trim()}\` ${command.description}`,
+        .trim()}\` ${command.description?.replace('<type>', triggerLabel)}`,
   )
   .join('\n')}
 

@@ -6,7 +6,7 @@ import { IssueCommentCommandBase } from './base';
 export class UnassignIssueCommentCommand implements IssueCommentCommandBase {
   command = 'unassign';
   description =
-    'Removes the current integration label and assignees on the issue, add the integration domain after the command.';
+    'Removes the current integration label and assignees on the <type>, add the integration domain after the command.';
   exampleAdditional = '<domain>';
   invokerType = 'code_owner';
   requireAdditional = true;
