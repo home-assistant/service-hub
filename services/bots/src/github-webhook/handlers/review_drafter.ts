@@ -15,6 +15,7 @@ Please take a look at the requested changes, and use the **Ready for review** bu
 `;
 
 export class ReviewDrafter extends BaseWebhookHandler {
+  public allowBots = false;
   public allowedEventTypes = [
     EventType.PULL_REQUEST_REVIEW_SUBMITTED,
     EventType.PULL_REQUEST_READY_FOR_REVIEW,
