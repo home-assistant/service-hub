@@ -122,4 +122,15 @@ export class WebhookContext<E> {
     }
     return this._pullRequestCache[key];
   }
+
+  /**
+   *
+   * @param nodeId The node id of the pull request, this is not the pull request number but the id of the pull request
+   *              in the github graphql api. you can get this from `context.payload.pull_request.node_id`
+   */
+  public async convertPullRequestToDraft(nodeId: string): Promise<void> {
+    await this.github.graphql({
+      query: `mutation { convertPullRequestToDraft(input: {pullRequestId: "${nodeId}"}) {clientMutationId}}`,
+    });
+  }
 }
