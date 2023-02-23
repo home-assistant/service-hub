@@ -33,14 +33,10 @@ export class PlatinumReview extends BaseWebhookHandler {
     >,
   ) {
     const currentLabels = context.payload.pull_request.labels.map((label) => label.name);
-    if (!currentLabels.includes(`Quality Scale: ${QualityScale.PLATINUM}`)) {
-      // Not a platinum integration, do not proceed.
-      return;
-    }
-
     const integrations = currentLabels.filter((label) => label.startsWith('integration: '));
 
     let requiresCodeownerApproval =
+      currentLabels.includes(`Quality Scale: ${QualityScale.PLATINUM}`) &&
       integrations.length === 1 &&
       !currentLabels.find((label) => ['by-code-owner', 'code-owner-approved'].includes(label));
 
