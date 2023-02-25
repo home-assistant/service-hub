@@ -66,9 +66,9 @@ share:
     Please use a code share site to share code or logs, for example:
 
 
-    * <http://pastie.org/> (select _YAML_ for the language)
-
     * <https://dpaste.org/> (select _YAML_ for the language)
+
+    * <http://pastie.org/> (select _YAML_ for the language)
 
     * <https://paste.debian.net/> (you guessed it, select _YAML_ as the
     language)
@@ -1334,6 +1334,8 @@ python:
 check:
   description: "Check configuration"
   content: >-
+    To check your configuration use the command for your install method:
+    
     * HAOS [`ha core
     check`](https://www.home-assistant.io/common-tasks/os/#configuration-check)
     
