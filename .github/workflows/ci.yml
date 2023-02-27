@@ -35,19 +35,7 @@ jobs:
         uses: actions/setup-node@v3.6.0
         with:
           node-version: ${{ env.node-NODE_VERSION }}
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-
-      - name: Check yarn cache
-        uses: actions/cache@v3.2.6
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          cache: 'yarn'
 
       - name: Lint YAML files
         run: |
@@ -72,19 +60,7 @@ jobs:
         uses: actions/setup-node@v3.6.0
         with:
           node-version: ${{ env.node-NODE_VERSION }}
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-
-      - name: Check yarn cache
-        uses: actions/cache@v3.2.6
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install  --immutable
@@ -104,19 +80,7 @@ jobs:
         uses: actions/setup-node@v3.6.0
         with:
           node-version: ${{ env.node-NODE_VERSION }}
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn config get cacheFolder)"
-
-      - name: Check yarn cache
-        uses: actions/cache@v3.2.6
-        id: yarn-cache
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+          cache: 'yarn'
 
       - name: Install dependencies
         run: yarn install  --immutable
