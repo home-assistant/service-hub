@@ -1333,17 +1333,18 @@ python:
     <https://blog.ceard.tech/2017/12/upgrading-python-virtual-environment.html>
 check:
   description: "Check configuration"
-  content: >-
-    To check your configuration use the command for your install method:
-    
-    * HAOS [`ha core
-    check`](https://www.home-assistant.io/common-tasks/os/#configuration-check)
-    
-    * Container uses [`docker`
-    commands](https://www.home-assistant.io/common-tasks/container/#configuration-check)
-    
-    * Core requires you to [activate the venv
-    first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
+  content: "To check your configuration use the command for your install method:"
+  fields:
+    - name: HAOS
+      value: >-
+        [`ha core check`](https://www.home-assistant.io/common-tasks/os/#configuration-check)
+    - name: Container
+      value: >-
+        [`docker` commands](https://www.home-assistant.io/common-tasks/container/#configuration-check)
+    - name: Core
+      value: >-
+        Requires you to [activate the venv first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
+
 chatgpt:
   description: "Don't use ChatGPT"
   content: >-
