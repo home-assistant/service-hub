@@ -31,7 +31,9 @@ export class DocsMissing extends BaseWebhookHandler {
 
     if (
       !needsDocumentation &&
-      (currentLabels.has('new-integration') || currentLabels.has('new-platform'))
+      (currentLabels.has('new-integration') ||
+       currentLabels.has('new-platform') ||
+       currentLabels.has('new-feature'))
     ) {
       const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body)
         .concat(extractPullRequestURLLinks(context.payload.pull_request.body))
