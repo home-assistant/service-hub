@@ -43,19 +43,22 @@ export class ReviewDrafter extends BaseWebhookHandler {
       return;
     }
 
-    try {
-      const { data: reviewerMembership } = await context.github.orgs.getMembershipForUser({
-        org: context.organization,
-        username: context.payload.review.user.login,
-      });
+    if (context.payload.sender.type !== 'Bot') {
+      // Check if the author is a member of the organization
+      try {
+        const { data: reviewerMembership } = await context.github.orgs.getMembershipForUser({
+          org: context.organization,
+          username: context.payload.review.user.login,
+        });
 
-      if (!['admin', 'member'].includes(reviewerMembership.role)) {
-        // If the author is not admin or member, we don't need to do anything
+        if (!['admin', 'member'].includes(reviewerMembership.role)) {
+          // If the author is not admin or member, we don't need to do anything
+          return;
+        }
+      } catch (ev: any) {
+        // We get an error if the user is not a member of the organization
         return;
       }
-    } catch (ev: any) {
-      // We get an error if the user is not a member of the organization
-      return;
     }
 
     // Mark PR as draft, this is not available in the REST API, so we use our helper
