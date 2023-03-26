@@ -66,7 +66,7 @@ share:
     Please use a code share site to share code or logs, for example:
 
 
-    * <https://dpaste.org/> (select _YAML_ for the language)
+    * <https://dpaste.org/> (select _YAML_ for the language, and consider picking a longer expiry)
 
     * <http://pastie.org/> (select _YAML_ for the language)
 
@@ -1236,7 +1236,7 @@ trigger:
 hasswp:
   description: "hasswp"
   content: >-
-    Don't use HassWP, it's unsupported and unsupportable. It runs Home Assistnat
+    Don't use HassWP, it's unsupported and unsupportable. It runs Home Assistat
     directly in Windows, which means many things won't work, and relies on the
     developer to keep it updated (which often isn't the case).
 
