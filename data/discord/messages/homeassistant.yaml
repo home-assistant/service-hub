@@ -1236,7 +1236,7 @@ trigger:
 hasswp:
   description: "hasswp"
   content: >-
-    Don't use HassWP, it's unsupported and unsupportable. It runs Home Assistat
+    Don't use HassWP, it's unsupported and unsupportable. It runs Home Assistant
     directly in Windows, which means many things won't work, and relies on the
     developer to keep it updated (which often isn't the case).
 
