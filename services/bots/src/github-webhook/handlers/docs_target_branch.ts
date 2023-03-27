@@ -11,6 +11,7 @@ const IGNORE_REPOS = [
   HomeAssistantRepository.BRANDS,
   HomeAssistantRepository.DEVELOPERS_HOME_ASSISTANT,
 ];
+const IGNORE_BRANCHES = new Set(['new']);
 
 export const bodyShouldTargetCurrent: string =
   'It seems that this PR is targeted against an incorrect branch. Documentation updates which apply to our current stable release should target the `current` branch. Please change the target branch of this PR to `current` and rebase if needed. If this is documentation for a new feature, please add a link to that PR in your description.';
@@ -23,6 +24,10 @@ export class DocsTargetBranch extends BaseWebhookHandler {
 
   async handle(context: WebhookContext<PullRequestOpenedEvent | PullRequestEditedEvent>) {
     const target = context.payload.pull_request.base.ref;
+    if (IGNORE_BRANCHES.has(target)) {
+      // We don't care about this branch
+      return;
+    }
     const links = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body).concat(
       extractPullRequestURLLinks(context.payload.pull_request.body).filter(
         (link) =>
