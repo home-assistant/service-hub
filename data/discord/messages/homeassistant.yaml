@@ -988,8 +988,9 @@ test:
 
     1) Use _Configuration_ ->
     [_Automations_](https://my.home-assistant.io/redirect/automations/) to find
-    the automation and then push _Run Actions_. If this fails your problem is in
-    the `action:` section, and details should be found in your log file
+    the automation and then select _Run_ in the three dots menu. If this fails 
+    your problem is in the `action:` section, and details should be found in 
+    your log file
 
     2) Use _Developer tools_ ->
     [_Services_](https://my.home-assistant.io/redirect/developer_services/) and
@@ -1002,14 +1003,13 @@ test:
     the trigger entity, click the name, then change the state (at the top) to
     something that'll trigger the automation before pushing _Set State_. If this
     fails then the problem is with your `trigger:` section, or the automation is
-    turned off (you can check that in _Developer tools_ ->
-    [_States_](https://my.home-assistant.io/redirect/developer_states/)).
+    turned off (you can check that in [_Automations_](https://my.home-assistant.io/redirect/automations/),
+    automations that are turned off will show _Disabled_)
 
 
     You can also see [this section in the
-    docs](https://www.home-assistant.io/docs/automation/troubleshooting/) and
-    with HA 2021.4 onwards [debug
-    automations](https://www.home-assistant.io/blog/2021/04/07/release-20214/#automation-debugging).
+    docs](https://www.home-assistant.io/docs/automation/troubleshooting/) about testing
+    and automation traces.
 
 pickyourstick:
   content: >-
