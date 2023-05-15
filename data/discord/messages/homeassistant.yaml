@@ -85,6 +85,7 @@ z-wave:
     mostly sensors, switches, and light controls. The <#332357267364249621>
     channel has links to the most current guidance and documentation.
 xy:
+  description: "The XY problem"
   content: >-
     [The XY problem](https://en.wikipedia.org/wiki/XY_problem) is asking about
     your attempted solution rather than your actual problem.
@@ -150,6 +151,7 @@ show_zwave:
 
     ```
 mosquitto:
+  description: "Test with mosquitto_sub"
   content: >-
     If you want to test out your MQTT install from your pi, first install [the
     client](https://mosquitto.org/2013/01/mosquitto-debian-repository/) and then
@@ -229,6 +231,7 @@ markdown:
     101](https://support.discordapp.com/hc/en-us/articles/210298617)
 
 espeasy:
+  description: "ESPEasy"
   content: >-
     **Ready to use firmware for ESP8266 based wireless devices**
 
@@ -250,6 +253,7 @@ espeasy:
     <https://github.com/letscontrolit/ESPEasy/releases>
 
 rsnapshot:
+  description: "Rsnapshot for local backups"
   content: >-
     [rsnapshot](http://rsnapshot.org/) makes it easy to make periodic snapshots
     of local machines, and remote machines over ssh.
@@ -263,6 +267,7 @@ ssh_tunnel:
     For visual drawings of how to use SSH Port Forwarding/Tunneling, please see:
     <https://unix.stackexchange.com/questions/115897/whats-ssh-port-forwarding-and-whats-the-difference-between-ssh-local-and-remot/115906#115906>
 links:
+  description: "Disable link prevews"
   content: >-
     You can disable link preview in Discord by adding `<` before and `>` after
     the URL, like this: `<http://home-assistant.io/>`
@@ -275,15 +280,16 @@ sftp:
     Visit [this page](http://willheid.com/2017/06/21/sftp-user-for-ha-editing)
     for a guide.
 pola:
+  description: "Principle of Least Astonishment"
   content: >-
     The **P**rinciple **O**f **L**east **A**stonishment means that things should
     work in an obvious way - don't expect that you can teach people to do things
     differently to how they've always done it
 floorplan:
+  description: "HA Floorplan"
   content: >-
-    [Floorplan](https://github.com/pkozul/ha-floorplan) allows you to extend the
-    user interface by adding your own visuals. It also exists [in a dashboard
-    version](https://github.com/pkozul/lovelace-floorplan/).
+    [Floorplan](https://github.com/ExperienceLovelace/ha-floorplan) allows you to extend the
+    user interface by adding your own visuals.
 quotes:
   content: >-
     check out the [best
@@ -610,10 +616,12 @@ zwave_stick_alias:
 
     ```
 edit:
+  description: "Edit your message"
   content: >-
     Instead of sending the message again, please [edit the original
     message](https://support.discordapp.com/hc/en-us/articles/207618817-How-do-I-edit-my-messages-)
 packages:
+  description: "Packages"
   content: >-
     To enable packages, add `packages: !include_dir_named packages` to your
     `configuration.yaml` so that it looks similar to this:
@@ -648,6 +656,7 @@ template:
     * You can test them in _Developer tools_ ->
     [_Templates_](https://my.home-assistant.io/redirect/developer_template/)
 ask:
+  description: "Don't ask to ask"
   content: >-
     [Don't ask to ask](https://dontasktoask.com/), just ask your question. Then
     people can answer when they're around.
@@ -673,6 +682,7 @@ ask:
     7. *Can you [share](http://pastie.org/) sample code, ideally with line
     errors where the error occurs?*
 question:
+  description: "How To Ask Questions The Smart Way"
   content: >-
     **Before You Ask**
 
@@ -795,6 +805,7 @@ monitor:
     There is also an [add-on](https://github.com/Limych/addon-presence-monitor)
     available for it.
 explain:
+  description: "Help us help you"
   content: >-
     [This forum
     post](https://community.home-assistant.io/t/how-to-help-us-help-you-or-how-to-ask-a-good-question/114371)
@@ -918,6 +929,7 @@ windows:
     Docker](https://www.home-assistant.io/docs/installation/docker/#windows)
     instead, or running on a Linux host.
 deconz:
+  description: "deCONZ"
   content: >-
     [deCONZ](https://www.home-assistant.io/integrations/deconz) by dresden
     elektronik is a software that communicates with ConBee/RaspBee Zigbee
@@ -961,6 +973,7 @@ integrations:
     with YAML, some in the UI. Check the documentation for your integration to
     see which method it uses.
 learning:
+  description: "Learning"
   content: >-
     A learning experience is one of those things that says, _'You know that
     thing you just did? Don't do that.'_
@@ -1012,6 +1025,7 @@ test:
     and automation traces.
 
 pickyourstick:
+  description: "Pick your Zigbee stick"
   content: >-
     Buy something CC2652 based. [This
     list](https://www.zigbee2mqtt.io/information/supported_adapters.html) is a
@@ -1032,6 +1046,7 @@ pickyourstick:
     Finally, the ConBee range are fine with deCONZ, but experience with ZHA and
     Zigbee2MQTT appears to be mixed.
 tagging:
+  description: "Please don't tag"
   content: >-
     Generally, don't tag people to ask for help - it comes across as bad
     manners, you’re demanding somebody answers you. It’s different if you’re
@@ -1052,9 +1067,11 @@ tagging:
     person you reply to, click `@ ON` to `@ OFF` to stop this - on the right
     side of the compose bar.
 latest:
+  description: "Latest is not a version number"
   content: '''Latest'' is not a version number. Please provide the actual version number.'
 
 works:
+  description: "Does it work in HA?"
   content: >-
     Want to know if something works with Home Assistant? Here's a few things to
     try:
@@ -1084,6 +1101,7 @@ weather:
     works best _for you_ depends on where you live - try them all and see which
     is generally the most accurate.
 best:
+  description: "There is no best"
   content: >-
     There is no universal _best_ anything. There's always trade-offs, you need
     to explain:
@@ -1131,8 +1149,10 @@ elevation:
     before sunset is very different light levels on the longest day than the
     shortest day, for example.
 everything:
+  description: "Everything"
   content: No, there isn't actually a bot command for everything
 cc253x:
+  description: "Don't buy CC253x"
   content: >-
     The CC2531 and CC2530 sticks are cheap for a reason. They're fine for
     testing, but do yourself a favour and buy something better.
@@ -1147,6 +1167,7 @@ cc253x:
     The Sonoff ZBbridge isn't advised since it uses WiFi, and the HUSBZB-1 uses
     an older chipset so should be avoided.
 patience:
+  description: "Patience"
   content: >-
     People (and other sentient or vaguely intelligent beings) aren't waiting
     here for your questions, ready to leap upon them the moment they appear.
@@ -1190,6 +1211,7 @@ blue:
     but you may still be able to find Odroid N2+ bundles with HA installed available from vendors (without the case).
 
 reply:
+  description: "Reply"
   content: >-
     When using Discord's _Reply_ feature it defaults to pinging the person you
     reply to, which can get frustrating for the target. Use _Shift + click_ on
@@ -1200,6 +1222,7 @@ reply:
     You have to change this every time (thank the Discord devs for that).
 
 zigbeestick:
+  description: "Zigbee sticks"
   content: >-
     For Zigbee2MQTT any CC2652p (or CC2652) based stick is a good choice. Those
     are also a good choice for ZHA, which also supports the EmberZNet sticks
