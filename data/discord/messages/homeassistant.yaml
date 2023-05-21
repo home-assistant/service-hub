@@ -267,7 +267,7 @@ ssh_tunnel:
     For visual drawings of how to use SSH Port Forwarding/Tunneling, please see:
     <https://unix.stackexchange.com/questions/115897/whats-ssh-port-forwarding-and-whats-the-difference-between-ssh-local-and-remot/115906#115906>
 links:
-  description: "Disable link prevews"
+  description: "Disable link previews"
   content: >-
     You can disable link preview in Discord by adding `<` before and `>` after
     the URL, like this: `<http://home-assistant.io/>`
