@@ -88,7 +88,7 @@ export class ValidateCla extends BaseWebhookHandler {
         continue;
       }
 
-      if (Object.keys(commit.author).length === 0) {
+      if (!commit.author || Object.keys(commit.author).length === 0) {
         commitsWithoutLogins.push({
           sha: commit.sha,
           maybeText: commit.commit?.author?.email?.includes('@')
