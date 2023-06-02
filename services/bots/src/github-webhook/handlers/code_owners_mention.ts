@@ -2,6 +2,7 @@ import { IssuesLabeledEvent, PullRequestLabeledEvent } from '@octokit/webhooks-t
 import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { issueFromPayload } from '../utils/issue';
+import { expandTeams } from '../utils/teams';
 import { BaseWebhookHandler } from './base';
 
 import { CodeOwnersEntry, matchFile } from 'codeowners-utils';
@@ -80,7 +81,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     }
 
     // Remove the `@` and lowercase
-    const owners = match.owners.map((owner) => owner.substring(1).toLowerCase());
+    const owners = match.owners.map((owner) => owner.slice(1).toLowerCase());
     const codeownersLine = `${
       // @ts-ignore
       codeownersData.data.html_url
@@ -127,8 +128,9 @@ export class CodeOwnersMention extends BaseWebhookHandler {
       });
     }
 
+    const expandedOwners = await expandTeams(owners, context.github);
     // Add a label if author of issue/PR is a code owner
-    if (owners.includes(payloadUsername)) {
+    if (expandedOwners.includes(payloadUsername)) {
       context.scheduleIssueLabel('by-code-owner');
     }
   }
