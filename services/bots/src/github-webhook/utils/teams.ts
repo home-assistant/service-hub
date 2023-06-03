@@ -10,7 +10,7 @@ export const expandTeams = async (
 ): Promise<string[]> => {
   // Remove the `@` and lowercase
   usersAndTeams = usersAndTeams.map((userOrTeam) =>
-    userOrTeam.startsWith('@') ? userOrTeam.slice(1).toLowerCase() : userOrTeam,
+    userOrTeam.startsWith('@') ? userOrTeam.substring(1).toLowerCase() : userOrTeam,
   );
   // Initialize list with users from usersAndTeams
   const users = usersAndTeams.filter((userOrTeam) => !userOrTeam.startsWith(TEAM_PREFIX));
