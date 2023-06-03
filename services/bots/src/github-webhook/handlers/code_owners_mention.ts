@@ -81,7 +81,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
     }
 
     // Remove the `@` and lowercase
-    const owners = match.owners.map((owner) => owner.slice(1).toLowerCase());
+    const owners = match.owners.map((owner) => owner.substring(1).toLowerCase());
     const codeownersLine = `${
       // @ts-ignore
       codeownersData.data.html_url
