@@ -16,7 +16,7 @@ export const expandTeams = async (
   const users = usersAndTeams.filter((name) => !name.startsWith(TEAM_PREFIX));
   // For each team in usersAndTeams, add the members of the team to the list
   for (const team in usersAndTeams
-    .filter((name) => name.startsWith(TEAM_PREFIX))
+    .filter((name) => !users.includes(name))
     .map((name) => name.split(ORG_TEAM_SEP)[1])) {
     users.push(
       ...(
