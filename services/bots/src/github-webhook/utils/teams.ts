@@ -9,15 +9,15 @@ export const expandTeams = async (
   github: GithubClient,
 ): Promise<string[]> => {
   // Remove the `@` and lowercase
-  usersAndTeams = usersAndTeams.map((userOrTeam) =>
-    userOrTeam.startsWith('@') ? userOrTeam.substring(1).toLowerCase() : userOrTeam,
+  usersAndTeams = usersAndTeams.map((name) =>
+    name.startsWith('@') ? name.substring(1).toLowerCase() : name.toLowerCase(),
   );
   // Initialize list with users from usersAndTeams
-  const users = usersAndTeams.filter((userOrTeam) => !userOrTeam.startsWith(TEAM_PREFIX));
+  const users = usersAndTeams.filter((name) => !name.startsWith(TEAM_PREFIX));
   // For each team in usersAndTeams, add the members of the team to the list
   for (const team in usersAndTeams
-    .filter((userOrTeam) => userOrTeam.startsWith(TEAM_PREFIX))
-    .map((userOrTeam) => userOrTeam.split(ORG_TEAM_SEP)[1])) {
+    .filter((name) => name.startsWith(TEAM_PREFIX))
+    .map((name) => name.split(ORG_TEAM_SEP)[1])) {
     users.push(
       ...(
         await github.teams.listMembersInOrg({
