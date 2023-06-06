@@ -2,7 +2,7 @@ import { IssuesLabeledEvent, PullRequestLabeledEvent } from '@octokit/webhooks-t
 import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { issueFromPayload } from '../utils/issue';
-import { expandOrganizationTeams } from '../utils/teams';
+import { expandOrganizationTeams } from '../utils/organization_teams';
 import { BaseWebhookHandler } from './base';
 
 import { CodeOwnersEntry, matchFile } from 'codeowners-utils';

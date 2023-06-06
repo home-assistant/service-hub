@@ -10,7 +10,7 @@ import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 import { fetchIntegrationManifest, QualityScale } from '../utils/integration';
-import { expandOrganizationTeams } from '../utils/teams';
+import { expandOrganizationTeams } from '../utils/organization_teams';
 
 export class PlatinumReview extends BaseWebhookHandler {
   public allowedEventTypes = [
