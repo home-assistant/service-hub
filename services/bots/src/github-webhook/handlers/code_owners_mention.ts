@@ -2,7 +2,7 @@ import { IssuesLabeledEvent, PullRequestLabeledEvent } from '@octokit/webhooks-t
 import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { issueFromPayload } from '../utils/issue';
-import { expandTeams } from '../utils/teams';
+import { expandOrganizationTeams } from '../utils/teams';
 import { BaseWebhookHandler } from './base';
 
 import { CodeOwnersEntry, matchFile } from 'codeowners-utils';
@@ -128,7 +128,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
       });
     }
 
-    const expandedOwners = await expandTeams(owners, context.github);
+    const expandedOwners = await expandOrganizationTeams(context, owners, context.github);
     // Add a label if author of issue/PR is a code owner
     if (expandedOwners.includes(payloadUsername)) {
       context.scheduleIssueLabel('by-code-owner');

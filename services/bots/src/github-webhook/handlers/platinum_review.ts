@@ -10,7 +10,7 @@ import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 import { fetchIntegrationManifest, QualityScale } from '../utils/integration';
-import { expandTeams } from '../utils/teams';
+import { expandOrganizationTeams } from '../utils/teams';
 
 export class PlatinumReview extends BaseWebhookHandler {
   public allowedEventTypes = [
@@ -51,7 +51,11 @@ export class PlatinumReview extends BaseWebhookHandler {
         const reviews = await context.github.pulls.listReviews(
           context.pullRequest({ per_page: 100 }),
         );
-        const expandedOwners = await expandTeams(manifest.codeowners, context.github);
+        const expandedOwners = await expandOrganizationTeams(
+          context,
+          manifest.codeowners,
+          context.github,
+        );
 
         if (
           reviews.data.find(
