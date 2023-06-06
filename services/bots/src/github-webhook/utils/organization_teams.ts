@@ -1,26 +1,9 @@
-import {
-  IssuesLabeledEvent,
-  PullRequestLabeledEvent,
-  PullRequestOpenedEvent,
-  PullRequestReopenedEvent,
-  PullRequestReviewSubmittedEvent,
-  PullRequestSynchronizeEvent,
-  PullRequestUnlabeledEvent,
-} from '@octokit/webhooks-types';
-import { GithubClient, WebhookContext } from '../github-webhook.model';
+import { WebhookContext } from '../github-webhook.model';
 
 const ORG_TEAM_SEP = '/';
 
 export const expandOrganizationTeams = async (
-  context: WebhookContext<
-    | IssuesLabeledEvent
-    | PullRequestLabeledEvent
-    | PullRequestOpenedEvent
-    | PullRequestReopenedEvent
-    | PullRequestReviewSubmittedEvent
-    | PullRequestSynchronizeEvent
-    | PullRequestUnlabeledEvent
-  >,
+  context: WebhookContext<any>,
   usersAndTeams: string[],
 ): Promise<string[]> => {
   // Remove the `@` and lowercase
