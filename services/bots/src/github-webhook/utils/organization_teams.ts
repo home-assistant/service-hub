@@ -11,11 +11,11 @@ export const expandOrganizationTeams = async (
     name.startsWith('@') ? name.substring(1).toLowerCase() : name.toLowerCase(),
   );
   // Get teams from list
-  const teams = usersAndTeams.filter((name) =>
+  const teamNames = usersAndTeams.filter((name) =>
     name.startsWith(`${context.organization}${ORG_TEAM_SEP}`),
   );
   // For each team in usersAndTeams, add the members of the team to the list
-  for (const teamName in teams) {
+  for (const teamName in teamNames) {
     const teamMembers = await context.github.teams.listMembersInOrg({
       org: context.organization,
       team_slug: teamName.split(ORG_TEAM_SEP)[1],
