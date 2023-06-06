@@ -10,18 +10,17 @@ export const expandOrganizationTeams = async (
   usersAndTeams = usersAndTeams.map((name) =>
     name.startsWith('@') ? name.substring(1).toLowerCase() : name.toLowerCase(),
   );
-  // Initialize list with users from usersAndTeams
-  const users = usersAndTeams.filter(
-    (name) => !name.startsWith(`${context.organization}${ORG_TEAM_SEP}`),
+  // Get teams from list
+  const teams = usersAndTeams.filter((name) =>
+    name.startsWith(`${context.organization}${ORG_TEAM_SEP}`),
   );
   // For each team in usersAndTeams, add the members of the team to the list
-  for (const name in usersAndTeams) {
-    if (users.includes(name)) continue;
+  for (const name in teams) {
     const teamMembers = await context.github.teams.listMembersInOrg({
       org: context.organization,
       team_slug: name.split(ORG_TEAM_SEP)[1],
     });
-    users.push(...teamMembers.data.map((member) => member.login.toLowerCase()));
+    usersAndTeams.push(...teamMembers.data.map((member) => member.login.toLowerCase()));
   }
-  return users;
+  return usersAndTeams;
 };
