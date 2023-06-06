@@ -128,7 +128,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
       });
     }
 
-    const expandedOwners = await expandOrganizationTeams(context, owners, context.github);
+    const expandedOwners = await expandOrganizationTeams(context, owners);
     // Add a label if author of issue/PR is a code owner
     if (expandedOwners.includes(payloadUsername)) {
       context.scheduleIssueLabel('by-code-owner');

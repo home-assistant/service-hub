@@ -22,7 +22,6 @@ export const expandOrganizationTeams = async (
     | PullRequestUnlabeledEvent
   >,
   usersAndTeams: string[],
-  github: GithubClient,
 ): Promise<string[]> => {
   // Remove the `@` and lowercase
   usersAndTeams = usersAndTeams.map((name) =>
@@ -38,7 +37,7 @@ export const expandOrganizationTeams = async (
     .map((name) => name.split(ORG_TEAM_SEP)[1])) {
     users.push(
       ...(
-        await github.teams.listMembersInOrg({
+        await context.github.teams.listMembersInOrg({
           org: context.organization,
           team_slug: team,
         })

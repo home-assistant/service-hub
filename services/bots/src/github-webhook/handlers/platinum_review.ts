@@ -51,11 +51,7 @@ export class PlatinumReview extends BaseWebhookHandler {
         const reviews = await context.github.pulls.listReviews(
           context.pullRequest({ per_page: 100 }),
         );
-        const expandedOwners = await expandOrganizationTeams(
-          context,
-          manifest.codeowners,
-          context.github,
-        );
+        const expandedOwners = await expandOrganizationTeams(context, manifest.codeowners);
 
         if (
           reviews.data.find(
