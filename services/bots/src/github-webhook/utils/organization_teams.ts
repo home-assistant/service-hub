@@ -15,14 +15,12 @@ export const expandOrganizationTeams = async (
     (name) => !name.startsWith(`${context.organization}${ORG_TEAM_SEP}`),
   );
   // For each team in usersAndTeams, add the members of the team to the list
-  for (const team in usersAndTeams
-    .filter((name) => !users.includes(name))
-    .map((name) => name.split(ORG_TEAM_SEP)[1])) {
+  for (const name in usersAndTeams.filter((name) => !users.includes(name))) {
     users.push(
       ...(
         await context.github.teams.listMembersInOrg({
           org: context.organization,
-          team_slug: team,
+          team_slug: name.split(ORG_TEAM_SEP)[1],
         })
       ).data.map((member) => member.login.toLowerCase()),
     );
