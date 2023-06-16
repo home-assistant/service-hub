@@ -10,6 +10,7 @@ import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 import { fetchIntegrationManifest, QualityScale } from '../utils/integration';
+import { expandOrganizationTeams } from '../utils/organization_teams';
 
 export class PlatinumReview extends BaseWebhookHandler {
   public allowedEventTypes = [
@@ -50,11 +51,11 @@ export class PlatinumReview extends BaseWebhookHandler {
         const reviews = await context.github.pulls.listReviews(
           context.pullRequest({ per_page: 100 }),
         );
+        const expandedOwners = await expandOrganizationTeams(context, manifest.codeowners);
 
         if (
           reviews.data.find(
-            (review) =>
-              review.state === 'APPROVED' && manifest.codeowners.includes(`@${review.user.login}`),
+            (review) => review.state === 'APPROVED' && expandedOwners.includes(review.user.login),
           )
         ) {
           // A code owner did approve, it's done.
