@@ -15,7 +15,7 @@ export const expandOrganizationTeams = async (
     name.startsWith(`${context.organization}${ORG_TEAM_SEP}`),
   );
   // For each team in usersAndTeamsCopy, add the members of the team to the list
-  for (const teamName in teamNames) {
+  for (const teamName of teamNames) {
     const teamMembers = await context.github.teams.listMembersInOrg({
       org: context.organization,
       team_slug: teamName.split(ORG_TEAM_SEP)[1],
