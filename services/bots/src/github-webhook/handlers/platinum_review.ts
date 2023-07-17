@@ -55,7 +55,9 @@ export class PlatinumReview extends BaseWebhookHandler {
 
         if (
           reviews.data.find(
-            (review) => review.state === 'APPROVED' && expandedOwners.includes(review.user.login),
+            (review) =>
+              review.state === 'APPROVED' &&
+              expandedOwners.includes(review.user.login.toLowerCase()),
           )
         ) {
           // A code owner did approve, it's done.
