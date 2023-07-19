@@ -410,7 +410,7 @@ rpi-clone:
 split_config:
   description: "How to Split Configuration"
   content: >-
-    Here is now to [split your
+    Here is how to [split your
     configuration](https://home-assistant.io/docs/configuration/splitting_configuration/)
     into multiple YAML files
 videos:
