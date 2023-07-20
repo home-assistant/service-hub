@@ -1,7 +1,3 @@
-// - Start a new issue, choose profiler as the integration
-// - Include a callgrind file from the <https://www.home-assistant.io/integrations/profiler/> `profiler.start` service
-// - Include a `py-spy` from <https://community.home-assistant.io/t/instructions-to-install-py-spy-on-haos/480473>. (be sure to zip them up before posting as github mutates svg files)
-// - If memory is leaking, include 4 hours of RAW logs (`Settings -> System -> Logs -> Download`) from the <https://www.home-assistant.io/integrations/profiler/> `profiler.start_log_objects` service with the default settings
 import { IssuesLabeledEvent } from '@octokit/webhooks-types';
 import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
