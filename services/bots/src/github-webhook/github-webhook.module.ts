@@ -7,6 +7,7 @@ import { AppConfig } from '../config';
 import { GithubWebhookController } from './github-webhook.controller';
 import { BranchLabels } from './handlers/branch_labels';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
+import { DebugInfo } from './handlers/debug_info';
 import { DependencyBump } from './handlers/dependency_bump';
 import { DocsMissing } from './handlers/docs_missing';
 import { DocsParenting } from './handlers/docs_parenting';
@@ -30,6 +31,7 @@ import { ValidateCla } from './handlers/validate-cla';
   providers: [
     BranchLabels,
     CodeOwnersMention,
+    DebugInfo,
     DependencyBump,
     DocsMissing,
     DocsParenting,
