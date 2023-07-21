@@ -7,7 +7,6 @@ import { AppConfig } from '../config';
 import { GithubWebhookController } from './github-webhook.controller';
 import { BranchLabels } from './handlers/branch_labels';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
-import { DebugInfo } from './handlers/debug_info';
 import { DependencyBump } from './handlers/dependency_bump';
 import { DocsMissing } from './handlers/docs_missing';
 import { DocsParenting } from './handlers/docs_parenting';
@@ -18,6 +17,7 @@ import { IssueCommentCommands } from './handlers/issue_comment_commands/handler'
 import { IssueLinks } from './handlers/issue_links';
 import { LabelBot } from './handlers/label_bot/handler';
 import { LabelCleaner } from './handlers/label_cleaner';
+import { LabelComment } from './handlers/label_comment';
 import { MonthOfWTH } from './handlers/month_of_wth';
 import { NewIntegrationsHandler } from './handlers/new_integrations';
 import { PlatinumReview } from './handlers/platinum_review';
@@ -31,7 +31,6 @@ import { ValidateCla } from './handlers/validate-cla';
   providers: [
     BranchLabels,
     CodeOwnersMention,
-    DebugInfo,
     DependencyBump,
     DocsMissing,
     DocsParenting,
@@ -42,6 +41,7 @@ import { ValidateCla } from './handlers/validate-cla';
     IssueLinks,
     LabelBot,
     LabelCleaner,
+    LabelComment,
     MonthOfWTH,
     NewIntegrationsHandler,
     PlatinumReview,
