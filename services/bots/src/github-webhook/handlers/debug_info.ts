@@ -12,7 +12,7 @@ export class DebugInfo extends BaseWebhookHandler {
     public allowedRepositories = [HomeAssistantRepository.CORE];
 
     async handle(context: WebhookContext<IssuesLabeledEvent>) {
-        if (!context.payload.label && Object.values(COMMENTS).indexOf(context.payload.label) > -1) {
+        if (!context.payload.label && Object.values(COMMENTS).indexOf(context.payload.label.toString()) > -1) {
             return;
         }
         context.scheduleIssueComment({
