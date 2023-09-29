@@ -40,6 +40,16 @@ const conf = convict({
       env: 'GITHUB_WEBHOOK_SECRET',
       format: String,
     },
+    claSignId: {
+      default: '',
+      env: 'GITHUB_CLA_SIGN_APP_ID',
+      format: String,
+    },
+    claSignSecret: {
+      default: '',
+      env: 'GITHUB_CLA_SIGN_APP_SECRET',
+      format: String,
+    },
   },
   discord: {
     token: {

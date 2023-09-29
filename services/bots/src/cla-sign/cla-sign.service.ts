@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createAppAuth } from '@octokit/auth-app';
 import { DynamoDB } from 'aws-sdk';
+import fetch from 'node-fetch';
 import { GithubClient } from '../github-webhook/github-webhook.model';
 
 export class ServiceRequestError extends ServiceError {}
@@ -14,6 +15,8 @@ export class ClaSignService {
   private ddbClient: DynamoDB;
   private signersTableName: string;
   private pendingSignersTableName: string;
+  private claSignId: string;
+  private claSignSecret: string;
 
   constructor(configService: ConfigService) {
     this.githubApiClient = new GithubClient({
@@ -29,6 +32,8 @@ export class ClaSignService {
 
     this.signersTableName = configService.get('dynamodb.cla.signersTable');
     this.pendingSignersTableName = configService.get('dynamodb.cla.pendingSignersTable');
+    this.claSignId = configService.get('github.claSignId');
+    this.claSignSecret = configService.get('github.claSignSecret');
   }
 
   async handleClaSignature(
@@ -113,5 +118,28 @@ export class ClaSignService {
       issue_number: Number(pendingRequest.pr_number.S),
       labels: [ClaIssueLabel.CLA_RECHECK],
     });
+  }
+
+  async handleClaAuthorize(code: string): Promise<void> {
+    const params = new URLSearchParams({
+      code,
+      client_id: this.claSignId,
+      client_secret: this.claSignSecret,
+    });
+
+    const resp = await fetch(`https://github.com/login/oauth/access_token?${params.toString()}`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    const data = await resp.json();
+    if (!resp.ok || 'error' in data) {
+      throw new ServiceError(data?.error_description || 'Could not authorize', {
+        data: { data },
+        service: 'cla-sign-authorize',
+      });
+    }
+    return data;
   }
 }
