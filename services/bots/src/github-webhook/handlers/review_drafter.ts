@@ -101,5 +101,15 @@ export class ReviewDrafter extends BaseWebhookHandler {
         context.pullRequest({ reviewers: Array.from(reviewers) }),
       );
     }
+
+    // Sometimes GitHub sends it as "bot" and sometimes as "Bot
+    const botReviewes = reviews.filter((review) => review.user.type.toLocaleLowerCase() === 'bot');
+
+    for (const review of botReviewes) {
+      // Dismiss the bot reviews
+      await context.github.pulls.dismissReview(
+        context.pullRequest({ review_id: review.id, message: 'Stale' }),
+      );
+    }
   }
 }
