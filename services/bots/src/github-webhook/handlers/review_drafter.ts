@@ -91,7 +91,14 @@ export class ReviewDrafter extends BaseWebhookHandler {
     );
 
     const requestedChanges = reviews.filter((review) => review.state === 'CHANGES_REQUESTED');
-    const reviewers = new Set(requestedChanges.map((review) => review.user.login));
+    const reviewers = new Set(
+      requestedChanges
+        .filter(
+          // Sometimes GitHub sends it as "bot" and sometimes as "Bot
+          (review) => review.user.type.toLowerCase() !== 'bot',
+        )
+        .map((review) => review.user.login),
+    );
 
     if (reviewers.size) {
       // Request review from all reviewers that have requested changes.
@@ -100,13 +107,13 @@ export class ReviewDrafter extends BaseWebhookHandler {
       );
     }
 
-    // Sometimes GitHub sends it as "bot" and sometimes as "Bot
     const botReviewes = requestedChanges.filter(
+      // Sometimes GitHub sends it as "bot" and sometimes as "Bot
       (review) => review.user.type.toLowerCase() === 'bot',
     );
 
     for (const review of botReviewes) {
-      // Dismiss the bot reviews
+      // Dismiss all bot reviews
       await context.github.pulls.dismissReview(
         context.pullRequest({ review_id: review.id, message: 'Stale' }),
       );
