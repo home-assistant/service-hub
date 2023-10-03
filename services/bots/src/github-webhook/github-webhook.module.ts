@@ -17,6 +17,7 @@ import { IssueCommentCommands } from './handlers/issue_comment_commands/handler'
 import { IssueLinks } from './handlers/issue_links';
 import { LabelBot } from './handlers/label_bot/handler';
 import { LabelCleaner } from './handlers/label_cleaner';
+import { MergeConflictChecker } from './handlers/merge_conflict';
 import { MonthOfWTH } from './handlers/month_of_wth';
 import { NewIntegrationsHandler } from './handlers/new_integrations';
 import { PlatinumReview } from './handlers/platinum_review';
@@ -40,6 +41,7 @@ import { ValidateCla } from './handlers/validate-cla';
     IssueLinks,
     LabelBot,
     LabelCleaner,
+    MergeConflictChecker,
     MonthOfWTH,
     NewIntegrationsHandler,
     PlatinumReview,
