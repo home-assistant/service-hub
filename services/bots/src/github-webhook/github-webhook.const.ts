@@ -15,6 +15,8 @@ export type GetIssueResponse = RestEndpointMethodTypes['issues']['get']['respons
 export type GetIssueLabelParams = RestEndpointMethodTypes['issues']['getLabel']['parameters'];
 export type GetIssueLabelResponse =
   RestEndpointMethodTypes['issues']['getLabel']['response']['data'];
+export type PullRequestCreateReviewParams =
+  RestEndpointMethodTypes['pulls']['createReview']['parameters'];
 
 export type Repository = HomeAssistantRepository;
 
