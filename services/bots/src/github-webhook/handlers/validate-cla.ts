@@ -112,14 +112,16 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (commitsWithoutLogins.length) {
-      context.scheduleIssueComment({
-        handler: botContextName,
-        comment: noLoginOnShaComment(
-          commitsWithoutLogins,
-          context.payload.pull_request.user.login,
-          `https://github.com/${context.payload.repository.full_name}/pull/${context.payload.number}/commits/`,
-        ),
-      });
+      await context.github.pulls.createReview(
+        context.pullRequest({
+          body: noLoginOnShaComment(
+            commitsWithoutLogins,
+            context.payload.pull_request.user.login,
+            `https://github.com/${context.payload.repository.full_name}/pull/${context.payload.number}/commits/`,
+          ),
+          event: 'REQUEST_CHANGES',
+        }),
+      );
 
       context.scheduleIssueLabel(ClaIssueLabel.CLA_ERROR);
 
@@ -137,13 +139,15 @@ export class ValidateCla extends BaseWebhookHandler {
     }
 
     if (authorsNeedingCLA.length) {
-      context.scheduleIssueComment({
-        handler: botContextName,
-        comment: pullRequestComment(
-          uniqueEntries(authorsNeedingCLA.map((entry) => `@${entry.login}`)),
-          `${context.payload.repository.full_name}#${context.payload.number}`,
-        ),
-      });
+      await context.github.pulls.createReview(
+        context.pullRequest({
+          body: pullRequestComment(
+            uniqueEntries(authorsNeedingCLA.map((entry) => `@${entry.login}`)),
+            `${context.payload.repository.full_name}#${context.payload.number}`,
+          ),
+          event: 'REQUEST_CHANGES',
+        }),
+      );
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
       authorsNeedingCLA.forEach((entry) =>
