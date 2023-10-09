@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 import { WebhookContext } from '../../../../../services/bots/src/github-webhook/github-webhook.model';
 import { mockWebhookContext } from '../../../../utils/test_context';
 import { loadJsonFixture } from '../../../../utils/fixture';
@@ -7,17 +5,19 @@ import { IssueCommentCommands } from '../../../../../services/bots/src/github-we
 import { IssueCommentCreatedEvent } from '@octokit/webhooks-types';
 import { EventType } from '../../../../../services/bots/src/github-webhook/github-webhook.const';
 
-// Globally mock fetch
-jest.mock('node-fetch', () => jest.fn());
-fetch.mockImplementation(() =>
-  Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
-);
-
 describe('IssueCommentCommands', () => {
   let handler: IssueCommentCommands;
   let mockContext: WebhookContext<IssueCommentCreatedEvent>;
+  let mockedFetch: ReturnType<typeof jest.fn>;
 
   beforeEach(function () {
+    mockedFetch = jest.fn(global.fetch);
+    mockedFetch.mockImplementation(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({ codeowners: ['@test'] }),
+      } as unknown as Response),
+    );
+    (global.fetch as unknown) = mockedFetch;
     handler = new IssueCommentCommands();
     mockContext = mockWebhookContext<IssueCommentCreatedEvent>({
       eventType: EventType.ISSUE_COMMENT_CREATED,
@@ -54,7 +54,7 @@ describe('IssueCommentCommands', () => {
       );
     });
     it('not by codeowner', async () => {
-      fetch.mockImplementation(() =>
+      mockedFetch.mockImplementation(() =>
         Promise.resolve({ json: () => Promise.resolve({ codeowners: ['@test'] }) }),
       );
       mockContext.payload.comment.user.login = 'other';

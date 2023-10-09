@@ -4,7 +4,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createAppAuth } from '@octokit/auth-app';
 import { DynamoDB } from 'aws-sdk';
-import fetch from 'node-fetch';
 import { GithubClient } from '../github-webhook/github-webhook.model';
 
 export class ServiceRequestError extends ServiceError {}

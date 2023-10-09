@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 export enum QualityScale {
   NO_SCORE = 'no score',
   SILVER = 'silver',
