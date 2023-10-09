@@ -8,9 +8,6 @@ on:
     branches:
       - main
 
-env:
-  NODE_VERSION: '20'
-
 concurrency:
   group: '${{ github.workflow }}-${{ github.head_ref || github.run_id }}'
   cancel-in-progress: true
@@ -31,10 +28,10 @@ jobs:
         with:
           yq-version: v4.25.3
 
-      - name: Use Node.js ${{ env.node-NODE_VERSION }}
+      - name: Use NodeJS
         uses: actions/setup-node@v3.8.1
         with:
-          node-version: ${{ env.node-NODE_VERSION }}
+          node-version-file: '.nvmrc'
           cache: 'yarn'
 
       - name: Lint YAML files
@@ -56,10 +53,10 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4.1.0
 
-      - name: Use Node.js ${{ env.node-NODE_VERSION }}
+      - name: Use NodeJS
         uses: actions/setup-node@v3.8.1
         with:
-          node-version: ${{ env.node-NODE_VERSION }}
+          node-version-file: '.nvmrc'
           cache: 'yarn'
 
       - name: Install dependencies
@@ -76,10 +73,10 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4.1.0
 
-      - name: Use Node.js ${{ env.node-NODE_VERSION }}
+      - name: Use NodeJS
         uses: actions/setup-node@v3.8.1
         with:
-          node-version: ${{ env.node-NODE_VERSION }}
+          node-version-file: '.nvmrc'
           cache: 'yarn'
 
       - name: Install dependencies
