@@ -6,7 +6,7 @@
   "private": true,
   "engineStrict": true,
   "engines": {
-    "node": ">=16.13.2"
+    "node": ">=20"
   },
   "scripts": {
     "build:example": "nest build example",

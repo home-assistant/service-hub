@@ -1,5 +1,4 @@
-FROM mcr.microsoft.com/vscode/devcontainers/typescript-node:16-bullseye
-
+FROM mcr.microsoft.com/vscode/devcontainers/typescript-node:20
 ENV \
     DEBIAN_FRONTEND=noninteractive \
     DEVCONTAINER=true \
