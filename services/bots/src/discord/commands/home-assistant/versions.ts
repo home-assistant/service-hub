@@ -1,6 +1,3 @@
-import fetch from 'node-fetch';
-
-import { getVersionInfo } from '@lib/common';
 import { EmbedBuilder } from 'discord.js';
 import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 import {

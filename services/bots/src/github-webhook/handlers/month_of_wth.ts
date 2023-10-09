@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 import { PullRequest, PullRequestOpenedEvent } from '@octokit/webhooks-types';
 import { EventType, Organization } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';

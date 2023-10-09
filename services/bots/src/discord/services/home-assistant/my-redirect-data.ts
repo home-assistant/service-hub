@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { Injectable } from '@nestjs/common';
 
 interface Redirect {

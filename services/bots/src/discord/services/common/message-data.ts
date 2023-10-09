@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import yaml from 'js-yaml';
 
 import { Injectable } from '@nestjs/common';

@@ -7093,7 +7093,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-fetch@npm:2, node-fetch@npm:^2.6.1, node-fetch@npm:^2.6.7":
+"node-fetch@npm:^2.6.1, node-fetch@npm:^2.6.7":
   version: 2.6.7
   resolution: "node-fetch@npm:2.6.7"
   dependencies:
@@ -8223,7 +8223,6 @@ __metadata:
     jest: ^29.2.1
     js-yaml: ^4.1.0
     nestjs-pino: ^3.1.1
-    node-fetch: 2
     pino: ^8.4.2
     pino-http: ^7.0.0
     pino-pretty: ^9.1.0
