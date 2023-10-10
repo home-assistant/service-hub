@@ -78,12 +78,15 @@ export class ValidateCla extends BaseWebhookHandler {
       }
     }
 
-    const commits = await context.github.pulls.listCommits(context.pullRequest({ per_page: 100 }));
-    const allCommitsIgnored = commits.data.every(
+    const commits = await context.github.paginate(
+      context.github.pulls.listCommits,
+      context.pullRequest({ per_page: 100 }),
+    );
+    const allCommitsIgnored = commits.every(
       (commit) => commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email),
     );
 
-    for await (const commit of commits.data) {
+    for await (const commit of commits) {
       if (commit.author?.type === 'Bot' || ignoredAuthors.has(commit.commit?.author?.email)) {
         continue;
       }
@@ -214,7 +217,7 @@ export class ValidateCla extends BaseWebhookHandler {
       // ignroe missing label
     }
 
-    commits.data.forEach((commit) => {
+    commits.forEach((commit) => {
       context.github.repos.createCommitStatus(
         context.repo({
           sha: commit.sha,
