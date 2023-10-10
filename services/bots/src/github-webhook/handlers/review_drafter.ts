@@ -102,9 +102,20 @@ export class ReviewDrafter extends BaseWebhookHandler {
 
     if (reviewers.size) {
       // Request review from all reviewers that have requested changes.
-      await context.github.pulls.requestReviewers(
-        context.pullRequest({ reviewers: Array.from(reviewers) }),
-      );
+      for (const reviewer of reviewers) {
+        /*
+          Loop over all reviewers and request them seperatly.
+          If we do not do this and there is 1 reviewer in the list that does not have review permissions,
+          the API call will fail.
+        */
+        try {
+          await context.github.pulls.requestReviewers(
+            context.pullRequest({ reviewers: [reviewer] }),
+          );
+        } catch {
+          // Ignore non-member reviewer
+        }
+      }
     }
 
     const botReviewes = requestedChanges.filter(
