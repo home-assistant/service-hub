@@ -1,15 +1,19 @@
 import { IssueCommentCreatedEvent } from '@octokit/webhooks-types';
 import { WebhookContext } from '../../../github-webhook.model';
-import { invokerIsCodeOwner, IssueCommentCommandContext } from '../const';
+import { invokerIsCodeOwner, IssueCommentCommandContext, triggerType } from '../const';
 import { IssueCommentCommandBase } from './base';
 
 export class UnassignIssueCommentCommand implements IssueCommentCommandBase {
   command = 'unassign';
-  description =
-    'Removes the current integration label and assignees on the <type>, add the integration domain after the command.';
   exampleAdditional = '<domain>';
   invokerType = 'code_owner';
   requireAdditional = true;
+
+  description(context: WebhookContext<any>) {
+    return `Removes the current integration label and assignees on the ${triggerType(
+      context,
+    )}, add the integration domain after the command.`;
+  }
 
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,

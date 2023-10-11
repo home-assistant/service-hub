@@ -9,14 +9,19 @@ import { CloseIssueCommentCommand } from './commands/close';
 import { RenameIssueCommentCommand } from './commands/rename';
 import { ReopenIssueCommentCommand } from './commands/reopen';
 import { UnassignIssueCommentCommand } from './commands/unassign';
+import { LabelAddCommentCommand } from './commands/label-add';
+import { LabelRemoveCommentCommand } from './commands/label-remove';
 
-const COMMAND_REGEX: RegExp = /^(?<tagged>@home-assistant)\s(?<command>\w*)(\s(?<additional>.*))?$/;
+const COMMAND_REGEX: RegExp =
+  /^(?<tagged>@home-assistant)\s(?<command>[\w|-]*)(\s(?<additional>.*))?$/;
 
 export const ISSUE_COMMENT_COMMANDS: IssueCommentCommandBase[] = [
   new CloseIssueCommentCommand(),
   new RenameIssueCommentCommand(),
   new ReopenIssueCommentCommand(),
   new UnassignIssueCommentCommand(),
+  new LabelAddCommentCommand(),
+  new LabelRemoveCommentCommand(),
 ];
 
 export class IssueCommentCommands extends BaseWebhookHandler {

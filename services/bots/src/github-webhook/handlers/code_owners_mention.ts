@@ -9,6 +9,7 @@ import { CodeOwnersEntry, matchFile } from 'codeowners-utils';
 import { ISSUE_COMMENT_COMMANDS } from './issue_comment_commands/handler';
 
 const generateCodeOwnersMentionComment = (
+  context: WebhookContext<IssuesLabeledEvent | PullRequestLabeledEvent>,
   integration: string,
   codeOwners: string[],
   triggerLabel: string,
@@ -34,7 +35,7 @@ ${ISSUE_COMMENT_COMMANDS.filter((command) => command.invokerType === 'code_owner
       ]
         .filter((item) => item !== undefined)
         .join(' ')
-        .trim()}\` ${command.description?.replace('<type>', triggerLabel)}`,
+        .trim()}\` ${command.description(context)}`,
   )
   .join('\n')}
 
@@ -119,6 +120,7 @@ export class CodeOwnersMention extends BaseWebhookHandler {
       context.scheduleIssueComment({
         handler: 'CodeOwnersMention',
         comment: generateCodeOwnersMentionComment(
+          context,
           integrationName,
           mentions,
           triggerLabel,

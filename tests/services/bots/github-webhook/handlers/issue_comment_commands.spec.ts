@@ -2,8 +2,13 @@ import { WebhookContext } from '../../../../../services/bots/src/github-webhook/
 import { mockWebhookContext } from '../../../../utils/test_context';
 import { loadJsonFixture } from '../../../../utils/fixture';
 import { IssueCommentCommands } from '../../../../../services/bots/src/github-webhook/handlers/issue_comment_commands/handler';
-import { IssueCommentCreatedEvent } from '@octokit/webhooks-types';
-import { EventType } from '../../../../../services/bots/src/github-webhook/github-webhook.const';
+import { IssueCommentCreatedEvent, Label } from '@octokit/webhooks-types';
+import {
+  EventType,
+  HomeAssistantRepository,
+} from '../../../../../services/bots/src/github-webhook/github-webhook.const';
+
+const mockedLabel = (name: string) => ({ name } as unknown as Label);
 
 describe('IssueCommentCommands', () => {
   let handler: IssueCommentCommands;
@@ -28,10 +33,7 @@ describe('IssueCommentCommands', () => {
             //@ts-ignore
             { login: 'test' },
           ],
-          labels: [
-            //@ts-ignore
-            { name: 'integration: awesome' },
-          ],
+          labels: [mockedLabel('integration: awesome')],
         },
       }),
     });
@@ -172,6 +174,131 @@ describe('IssueCommentCommands', () => {
       expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalledWith(
         expect.objectContaining({ name: 'integration: also_awesome' }),
       );
+    });
+  });
+
+  describe('command: add-label', () => {
+    it('by codeowner with valid label', async () => {
+      mockContext.payload.comment.body = '@home-assistant add-label needs-more-information';
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['needs-more-information'] }),
+      );
+    });
+    it('not by codeowner with valid label', async () => {
+      mockContext.payload.comment.body = '@home-assistant add-label needs-more-information';
+      mockContext.payload.comment.user.login = 'other';
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+    it('by codeowner without label', async () => {
+      mockContext.payload.comment.body = '@home-assistant add-label';
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+    it('not by codeowner without label', async () => {
+      mockContext.payload.comment.body = '@home-assistant add-label';
+      mockContext.payload.comment.user.login = 'other';
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('command: remove-label', () => {
+    it('by codeowner with valid label', async () => {
+      mockContext.payload.comment.body = '@home-assistant remove-label needs-more-information';
+      mockContext.payload.issue.labels.push(mockedLabel('needs-more-information'));
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.removeLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'needs-more-information' }),
+      );
+    });
+    it('by codeowner with invalid label', async () => {
+      mockContext.payload.comment.body = '@home-assistant remove-label some-label';
+      mockContext.payload.issue.labels.push(mockedLabel('needs-more-information'));
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalled();
+    });
+    it('by codeowner with not set label', async () => {
+      mockContext.payload.comment.body = '@home-assistant remove-label some-label';
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalled();
+    });
+    it('not by codeowner with valid label', async () => {
+      mockContext.payload.comment.body = '@home-assistant remove-label needs-more-information';
+      mockContext.payload.comment.user.login = 'other';
+      mockContext.payload.issue.labels.push(mockedLabel('needs-more-information'));
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalled();
+    });
+    it('by codeowner without label', async () => {
+      mockContext.payload.comment.body = '@home-assistant remove-label';
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.payload.issue.labels.push(mockedLabel('needs-more-information'));
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalled();
+    });
+    it('not by codeowner without label', async () => {
+      mockContext.payload.comment.body = '@home-assistant remove-label';
+      mockContext.payload.comment.user.login = 'other';
+      mockContext.payload.issue.labels.push(mockedLabel('needs-more-information'));
+      mockContext.repository = HomeAssistantRepository.CORE;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,12 +1,15 @@
 import { IssueCommentCreatedEvent } from '@octokit/webhooks-types';
 import { WebhookContext } from '../../../github-webhook.model';
-import { invokerIsCodeOwner, IssueCommentCommandContext } from '../const';
+import { invokerIsCodeOwner, IssueCommentCommandContext, triggerType } from '../const';
 import { IssueCommentCommandBase } from './base';
 
 export class ReopenIssueCommentCommand implements IssueCommentCommandBase {
   command = 'reopen';
-  description = 'Reopen the <type>.';
   invokerType = 'code_owner';
+
+  description(context: WebhookContext<any>) {
+    return `Reopen the ${triggerType(context)}.`;
+  }
 
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
