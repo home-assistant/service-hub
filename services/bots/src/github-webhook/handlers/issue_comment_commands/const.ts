@@ -1,23 +1,29 @@
 import { IssueCommentCreatedEvent } from '@octokit/webhooks-types';
 import { WebhookContext } from '../../github-webhook.model';
 import { IntegrationManifest } from '../../utils/integration';
+import { HomeAssistantRepository } from '../../github-webhook.const';
+
+export const ManageableLabels = {
+  [HomeAssistantRepository.CORE]: new Set([
+    'needs-more-information',
+    'problem in dependency',
+    'problem in custom component',
+  ]),
+  [HomeAssistantRepository.HOME_ASSISTANT_IO]: new Set(['needs-more-information']),
+};
+
+export const triggerType = (context: WebhookContext<any>) =>
+  context.repository === HomeAssistantRepository.CORE
+    ? context.eventType.startsWith('issues')
+      ? 'issue'
+      : 'pull request'
+    : 'feedback';
 
 export interface IssueCommentCommandContext {
   invoker: string;
   additional?: string;
   currentLabels: string[];
   integrationManifests: { [domain: string]: IntegrationManifest };
-}
-
-export interface IssueCommentCommand {
-  description: string;
-  exampleAdditional?: string;
-  invokerType?: 'code_owner';
-  requireAdditional?: boolean;
-  handler: (
-    context: WebhookContext<IssueCommentCreatedEvent>,
-    command: IssueCommentCommandContext,
-  ) => Promise<void>;
 }
 
 export const invokerIsCodeOwner = (

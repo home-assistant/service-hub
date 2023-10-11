@@ -2,15 +2,16 @@ import { IssueCommentCreatedEvent } from '@octokit/webhooks-types';
 import { WebhookContext } from '../../../github-webhook.model';
 import { IssueCommentCommandContext } from '../const';
 
-export class IssueCommentCommandBase {
+export abstract class IssueCommentCommandBase {
   command: string;
-  description: string;
   invokerType?: string;
   requireAdditional?: boolean;
   exampleAdditional?: string;
 
-  async handle(
+  abstract description(context: WebhookContext<any>): string;
+
+  abstract handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
-  ) {}
+  ): Promise<void>;
 }

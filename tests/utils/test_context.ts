@@ -15,11 +15,12 @@ export const mockWebhookContext = <T>(params: Partial<WebhookContext<T>>): Webho
         issues: {
           update: jest.fn(),
           removeLabel: jest.fn(),
+          addLabels: jest.fn(),
           removeAssignees: jest.fn(),
         },
         teams: {
           listMembersInOrg: jest.fn(),
-        }
+        },
       },
       { ...params?.github },
     ),

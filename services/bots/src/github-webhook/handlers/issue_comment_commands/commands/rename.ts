@@ -1,14 +1,17 @@
 import { IssueCommentCreatedEvent } from '@octokit/webhooks-types';
 import { WebhookContext } from '../../../github-webhook.model';
-import { invokerIsCodeOwner, IssueCommentCommandContext } from '../const';
+import { invokerIsCodeOwner, IssueCommentCommandContext, triggerType } from '../const';
 import { IssueCommentCommandBase } from './base';
 
 export class RenameIssueCommentCommand implements IssueCommentCommandBase {
   command = 'rename';
-  description = 'Renames the <type>.';
   exampleAdditional = 'Awesome new title';
   invokerType = 'code_owner';
   requireAdditional = true;
+
+  description(context: WebhookContext<any>) {
+    return `Renames the ${triggerType(context)}.`;
+  }
 
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
