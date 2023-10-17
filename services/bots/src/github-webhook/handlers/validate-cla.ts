@@ -25,6 +25,7 @@ const ignoredRepositories: Set<string> = new Set([
   'home-assistant/assets',
   'home-assistant/brands',
   'home-assistant/bthome.io',
+  'home-assistant/buildroot',
   'home-assistant/companion.home-assistant',
   'home-assistant/data.home-assistant',
   'home-assistant/developers.home-assistant',
