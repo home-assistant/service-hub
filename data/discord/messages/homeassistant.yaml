@@ -1001,8 +1001,8 @@ test:
 
     1) Use _Configuration_ ->
     [_Automations_](https://my.home-assistant.io/redirect/automations/) to find
-    the automation and then select _Run_ in the three dots menu. If this fails 
-    your problem is in the `action:` section, and details should be found in 
+    the automation and then select _Run_ in the three dots menu. If this fails
+    your problem is in the `action:` section, and details should be found in
     your log file
 
     2) Use _Developer tools_ ->
@@ -1375,3 +1375,19 @@ chatgpt:
     convincing looking answers... that are either totally garbage or, if you're lucky,
     have subtle flaws. [Don't use them](https://www.home-assistant.io/blog/2023/01/23/help-others-leave-ai-at-the-dor/)
     to "help" others, and don't use them yourself.
+
+safe_mode:
+  description: "Enable safe mode"
+  content: >-
+    You can restart your Home Assistant instance in safe mode.
+    This will disable the loading of anything custom, like custom integrations, custom cards, custom frontend modules, and custom themes.
+
+    This is useful to enable you to rule out potential issues caused by running custom _things_.
+
+    You can enable safe mode by going to [**Settings** > **System**](<https://my.home-assistant.io/redirect/system_dashboard/>)
+    in your Home Assistant UI, then selecting the power button in the top right corner,
+    this will open the restart dialog.
+
+    Under **Advanced options**, you will find the **Restart Home Assistant in safe mode** option.
+
+    **NOTE:** This requires Home Assistant Core 2023.11.0 or newer.
