@@ -1379,15 +1379,11 @@ chatgpt:
 safe_mode:
   description: "Enable safe mode"
   content: >-
-    You can restart your Home Assistant instance in safe mode.
-    This will disable the loading of anything custom, like custom integrations, custom cards, custom frontend modules, and custom themes.
+    You can restart your Home Assistant instance in safe mode. In safe mode, no custom elements are loaded. No custom integrations, custom cards, custom frontend modules, and no custom themes.
 
-    This is useful to enable you to rule out potential issues caused by running custom _things_.
+    Safe mode is used to rule out potential issues caused by custom elements. 
+    
+    To enable safe mode, in your Home Assistant UI, go to [**Settings** > **System**](<https://my.home-assistant.io/redirect/system_dashboard/>). Then, in the top right corner, select the power button. This opens the restart dialog. Open the **Advanced options** and select **Restart Home Assistant in safe mode**. 
 
-    You can enable safe mode by going to [**Settings** > **System**](<https://my.home-assistant.io/redirect/system_dashboard/>)
-    in your Home Assistant UI, then selecting the power button in the top right corner,
-    this will open the restart dialog.
-
-    Under **Advanced options**, you will find the **Restart Home Assistant in safe mode** option.
-
-    **NOTE:** This requires Home Assistant Core 2023.11.0 or newer.
+    **NOTE:** Safe mode comes in Home Assistant Core 2023.11.0 or later.  
+    
