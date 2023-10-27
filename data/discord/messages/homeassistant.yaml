@@ -1384,7 +1384,7 @@ safe_mode:
 
     This is useful to enable you to rule out potential issues caused by running custom _things_.
 
-    You can enable safe mode by going to [Settings -> System](<https://my.home-assistant.io/redirect/system_dashboard/>)
+    You can enable safe mode by going to [**Settings** > **System**](<https://my.home-assistant.io/redirect/system_dashboard/>)
     in your Home Assistant UI, then selecting the power button in the top right corner,
     this will open the restart dialog.
 
