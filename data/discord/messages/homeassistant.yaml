@@ -1388,6 +1388,6 @@ safe_mode:
     in your Home Assistant UI, then selecting the power button in the top right corner,
     this will open the restart dialog.
 
-    Under "Advanced options", you will find the "Restart Home Assistant in safe mode" option.
+    Under **Advanced options**, you will find the **Restart Home Assistant in safe mode** option.
 
     **NOTE:** This requires Home Assistant Core 2023.11.0 or newer.
