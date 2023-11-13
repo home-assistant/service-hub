@@ -2,7 +2,7 @@ format:
   description: "How to format text as code"
   content: >-
     To format your text as code, enter three backticks on the first line, press 
-    Shift+Enter for a new line, paste your code, press Enter again for another
+    Enter for a new line, paste your code, press Enter again for another
     new line, and lastly three more backticks.
 
     \`\`\`yaml
