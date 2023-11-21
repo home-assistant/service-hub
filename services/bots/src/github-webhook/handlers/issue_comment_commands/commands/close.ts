@@ -3,7 +3,7 @@ import { WebhookContext } from '../../../github-webhook.model';
 import { invokerIsCodeOwner, IssueCommentCommandContext, triggerType } from '../const';
 import { IssueCommentCommandBase } from './base';
 
-export class CloseIssueCommentCommand extends IssueCommentCommandBase {
+export class CloseIssueCommentCommand implements IssueCommentCommandBase {
   command = 'close';
   invokerType = 'code_owner';
 
