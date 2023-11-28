@@ -45,6 +45,6 @@ export class CommandCommonPinned implements DiscordTransformedCommand<any> {
 }
 
 const transformConetent = (content: string): string => {
-  const base = content.replace(/\n/g, '');
+  const base = content.replace(/\n/g, ' ');
   return base.length < 64 ? base : `${base.substring(0, 64)}...`;
 };
