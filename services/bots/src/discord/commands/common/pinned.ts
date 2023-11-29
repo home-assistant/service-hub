@@ -29,7 +29,7 @@ export class CommandCommonPinned implements DiscordTransformedCommand<any> {
     await interaction.reply({
       embeds: [
         {
-          title: 'The pinned messages of this channel is:',
+          title: 'The pinned messages of this channel are:',
           description: pinned
             .map(
               (message) =>
