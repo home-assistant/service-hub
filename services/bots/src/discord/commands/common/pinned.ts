@@ -47,5 +47,5 @@ const transformContent = (content: string): string => {
   return (base.length < 64 ? base : `${base.substring(0, 64)}...`)
     .replace(/</g, '')
     .replace(/>/g, '')
-    .replace(/http(s){0,1}:\/\//g, '');
+    .replace(/https?:\/\//g, '');
 };
