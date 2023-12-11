@@ -33,9 +33,7 @@ export class CommandCommonPinned implements DiscordTransformedCommand<any> {
           description: pinned
             .map(
               (message) =>
-                `- ["${transformConetent(message.content) || 'embeded content'}"](<${
-                  message.url
-                }>)`,
+                `- ["${transformContent(message.content) || 'embeded content'}"](<${message.url}>)`,
             )
             .join('\n'),
         },
@@ -44,7 +42,10 @@ export class CommandCommonPinned implements DiscordTransformedCommand<any> {
   }
 }
 
-const transformConetent = (content: string): string => {
+const transformContent = (content: string): string => {
   const base = content.replace(/\n/g, ' ');
-  return base.length < 64 ? base : `${base.substring(0, 64)}...`;
+  return (base.length < 64 ? base : `${base.substring(0, 64)}...`)
+    .replace(/</g, '')
+    .replace(/>/g, '')
+    .replace(/http(s){0,1}:\/\//g, '');
 };
