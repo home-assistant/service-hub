@@ -8,10 +8,17 @@ import { BaseWebhookHandler } from './base';
 
 const MESSAGE_ID = '<!-- ReviewDrafterComment -->';
 
-const REVIEW_COMMENT = `${MESSAGE_ID}
+const MORE_INFO_URL = {
+  [Organization.ESPHOME]:
+    'https://esphome.io/guides/contributing#prs-are-being-drafted-when-changes-are-needed',
+  [Organization.HOME_ASSISTANT]:
+    'https://developers.home-assistant.io/docs/review-process#prs-are-being-drafted-when-changes-are-needed',
+};
+
+const REVIEW_COMMENT = (organization: Organization) => `${MESSAGE_ID}
 Please take a look at the requested changes, and use the **Ready for review** button when you are done, thanks :+1:
 
-[_Learn more about our pull request process._](https://developers.home-assistant.io/docs/review-process#prs-are-being-drafted-when-changes-are-needed)
+[_Learn more about our pull request process._](${MORE_INFO_URL[organization]})
 `;
 
 export class ReviewDrafter extends BaseWebhookHandler {
@@ -19,7 +26,7 @@ export class ReviewDrafter extends BaseWebhookHandler {
     EventType.PULL_REQUEST_REVIEW_SUBMITTED,
     EventType.PULL_REQUEST_READY_FOR_REVIEW,
   ];
-  public allowedOrganizations = [Organization.HOME_ASSISTANT];
+  public allowedOrganizations = [Organization.HOME_ASSISTANT, Organization.ESPHOME];
 
   async handle(
     context: WebhookContext<PullRequestReviewSubmittedEvent | PullRequestReadyForReviewEvent>,
@@ -71,7 +78,7 @@ export class ReviewDrafter extends BaseWebhookHandler {
       // No comment found, add one
       await context.github.issues.createComment(
         context.issue({
-          body: REVIEW_COMMENT,
+          body: REVIEW_COMMENT(context.organization),
         }),
       );
     }
