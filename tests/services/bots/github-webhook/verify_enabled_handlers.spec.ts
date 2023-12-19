@@ -117,7 +117,7 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
-      handlers: [],
+      handlers: ['ReviewDrafter'],
       payload: {
         repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
@@ -145,7 +145,7 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
-      handlers: [],
+      handlers: ['ReviewDrafter'],
       payload: {
         repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },

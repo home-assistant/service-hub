@@ -21,6 +21,7 @@ export type PullRequestCreateReviewParams =
 export type Repository = HomeAssistantRepository;
 
 export enum Organization {
+  ESPHOME = 'esphome',
   HOME_ASSISTANT = 'home-assistant',
 }
 
