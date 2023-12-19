@@ -119,70 +119,70 @@ describe('GithubWebhookModule', () => {
       eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.PULL_REQUEST_OPENED,
       handlers: ['Hacktoberfest'],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.ISSUES_OPENED,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.ISSUES_LABELED,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.ISSUE_COMMENT_CREATED,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.PULL_REQUEST_EDITED,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.PULL_REQUEST_REOPENED,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
     {
       eventType: EventType.PULL_REQUEST_UNLABELED,
       handlers: [],
       payload: {
-        repository: { full_name: 'esphome/core', owner: { login: 'esphome' } },
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
     },
   ] as {
