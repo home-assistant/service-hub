@@ -124,7 +124,7 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.PULL_REQUEST_OPENED,
-      handlers: ['Hacktoberfest'],
+      handlers: [],
       payload: {
         repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
