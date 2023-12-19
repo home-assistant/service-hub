@@ -1,5 +1,5 @@
 import { PullRequestClosedEvent, PullRequestOpenedEvent } from '@octokit/webhooks-types';
-import { EventType } from '../github-webhook.const';
+import { EventType, Organization } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
@@ -7,6 +7,7 @@ export const isHacktoberfestLive = () => new Date().getMonth() === 9;
 
 export class Hacktoberfest extends BaseWebhookHandler {
   public allowedEventTypes = [EventType.PULL_REQUEST_OPENED, EventType.PULL_REQUEST_CLOSED];
+  public allowedOrganizations = [Organization.HOME_ASSISTANT];
 
   async handle(context: WebhookContext<any>) {
     if (
