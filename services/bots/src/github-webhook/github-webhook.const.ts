@@ -18,11 +18,15 @@ export type GetIssueLabelResponse =
 export type PullRequestCreateReviewParams =
   RestEndpointMethodTypes['pulls']['createReview']['parameters'];
 
-export type Repository = HomeAssistantRepository;
+export type Repository = HomeAssistantRepository | ESPHomeRepository;
 
 export enum Organization {
   ESPHOME = 'esphome',
   HOME_ASSISTANT = 'home-assistant',
+}
+
+export enum ESPHomeRepository {
+  ESPHOME = 'esphome/esphome',
 }
 
 export enum HomeAssistantRepository {

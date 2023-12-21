@@ -124,7 +124,7 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.PULL_REQUEST_OPENED,
-      handlers: [],
+      handlers: ['MergeConflictChecker'],
       payload: {
         repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
@@ -173,7 +173,7 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
-      handlers: [],
+      handlers: ['MergeConflictChecker'],
       payload: {
         repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
       },
