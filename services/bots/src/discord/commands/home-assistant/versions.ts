@@ -1,25 +1,14 @@
-import { EmbedBuilder } from 'discord.js';
+import { InteractionEvent } from '@discord-nestjs/core';
+import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
-import {
-  DiscordTransformedCommand,
-  Payload,
-  TransformedCommandExecutionContext,
-  UsePipes,
-} from '@discord-nestjs/core';
-import { TransformPipe } from '@discord-nestjs/common';
-import { BlankDto } from '../../discord.const';
 
 @DiscordCommandClass({
   name: 'versions',
   description: 'Returns version information',
 })
-@UsePipes(TransformPipe)
-export class CommandHomeAssistantVersions implements DiscordTransformedCommand<any> {
+export class CommandHomeAssistantVersions {
   @CommandHandler()
-  async handler(
-    @Payload() handlerDto: BlankDto,
-    { interaction }: TransformedCommandExecutionContext,
-  ): Promise<void> {
+  async handler(@InteractionEvent() interaction: ChatInputCommandInteraction): Promise<void> {
     const [betaResponse, stableResponse] = await Promise.all([
       fetch('https://version.home-assistant.io/beta.json'),
       fetch('https://version.home-assistant.io/stable.json'),

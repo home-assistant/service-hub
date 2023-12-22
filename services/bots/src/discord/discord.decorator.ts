@@ -1,24 +1,44 @@
-import {
-  CommandOptions,
-  COMMAND_DECORATOR,
-  TransformedCommandExecutionContext,
-} from '@discord-nestjs/core';
+import { ChatInputCommandOptions, COMMAND_DECORATOR } from '@discord-nestjs/core';
+import { HANDLER_DECORATOR } from '@discord-nestjs/core/dist/decorators/command/handler/handler.constant';
 
-import { reportException } from '../../../../libs/sentry/src/reporting';
 import {
+  ApplicationCommandType,
   AutocompleteInteraction,
+  ChatInputCommandInteraction,
   Events,
   InteractionType,
   Message,
   PermissionFlagsBits,
 } from 'discord.js';
+import { reportException } from '../../../../libs/sentry/src/reporting';
 
 interface CommandHandlerDecoratorOptions {
   allowChannels?: string[];
 }
 
-export function DiscordCommandClass(options: CommandOptions): ClassDecorator {
+const getInteraction = (params: any[]): ChatInputCommandInteraction | undefined => {
+  // There are several ways the interaction object are attached, this loops over them all untill it's found
+  for (const param of params) {
+    if (param instanceof ChatInputCommandInteraction) {
+      return param;
+    }
+    if (param instanceof Array) {
+      const _check = getInteraction(param);
+      if (_check) {
+        return _check;
+      }
+    }
+  }
+};
+
+export function DiscordCommandClass(options: ChatInputCommandOptions): ClassDecorator {
   return <TFunction extends Function>(target: TFunction): TFunction | void => {
+    if (!options.type) {
+      options.type = ApplicationCommandType.ChatInput;
+    }
+    if (options.type === ApplicationCommandType.ChatInput && !options.include) {
+      options.include = [];
+    }
     Reflect.defineMetadata(
       COMMAND_DECORATOR,
       {
@@ -39,8 +59,14 @@ export const CommandHandler = (options?: CommandHandlerDecoratorOptions): Method
     descriptor: PropertyDescriptor,
   ): PropertyDescriptor => {
     const originalMethod = descriptor.value;
+    Reflect.defineMetadata(HANDLER_DECORATOR, {}, target, propertyKey);
     descriptor.value = async function (...params: any[]) {
-      const { interaction }: TransformedCommandExecutionContext = params[params.length - 1];
+      const interaction = getInteraction(params);
+      if (!interaction) {
+        // This should only happen on dev, so we log it out
+        console.error('Missing interaction, check the method arguments on the command class');
+        return;
+      }
 
       if (
         options?.allowChannels?.length &&

@@ -1,8 +1,6 @@
 import { Transform } from 'class-transformer';
 import { Param, ParamType } from '@discord-nestjs/core';
 
-export class BlankDto {}
-
 export class OptionalUserMentionDto {
   @Transform(({ value }) => (value ? `<@${value}>` : undefined))
   @Param({

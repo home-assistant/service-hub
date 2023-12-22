@@ -643,36 +643,36 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@discord-nestjs/common@npm:^4.0.7":
-  version: 4.0.7
-  resolution: "@discord-nestjs/common@npm:4.0.7"
+"@discord-nestjs/common@npm:^5.2.10":
+  version: 5.2.10
+  resolution: "@discord-nestjs/common@npm:5.2.10"
   dependencies:
-    "@nestjs/mapped-types": 1.1.0
+    "@nestjs/mapped-types": 2.0.3
     class-transformer: 0.5.1
-    class-validator: 0.13.2
+    class-validator: 0.14.0
   peerDependencies:
     "@discord-nestjs/core": "*"
-    "@nestjs/common": 8.* || 9.*
-    "@nestjs/core": 8.* || 9.*
+    "@nestjs/common": 9.* || 10.*
+    "@nestjs/core": 9.* || 10.*
     discord.js: 14.*
     reflect-metadata: ^0.1.13
     rxjs: ^7.*
-  checksum: 4fee4075fb885c58d0e7fa3d9a34c69b4f006859aea003ce11bf8f8be054e42588ff10804d69bf26362df47cfccdf1b00b9320bc0f772703e56bd4db850f616d
+  checksum: ab3016dcffdd439d1ef6348158fd359ba9806b9484326fdbea0cb2f206b8606d175cad413d82a5cba8d4291d2a93ccd0ab6c71fb34d24921c05e4f1b72d4dc77
   languageName: node
   linkType: hard
 
-"@discord-nestjs/core@npm:^4.3.0":
-  version: 4.3.0
-  resolution: "@discord-nestjs/core@npm:4.3.0"
+"@discord-nestjs/core@npm:^5.3.12":
+  version: 5.3.12
+  resolution: "@discord-nestjs/core@npm:5.3.12"
   dependencies:
     class-transformer: 0.5.1
   peerDependencies:
-    "@nestjs/common": 8.* || 9.*
-    "@nestjs/core": 8.* || 9.*
+    "@nestjs/common": 9.* || 10.*
+    "@nestjs/core": 9.* || 10.*
     discord.js: 14.*
     reflect-metadata: ^0.1.13
     rxjs: ^7.*
-  checksum: e4489a128791aaa93dbd45a7d9692af94cdd340d7700545dedd3600c155f92650993a7b2b3119bc4cc41831ee4e0e432c576565bae8ee014cb9a99ad9c472004
+  checksum: d40847f45df69b070d0c6e84083d707034bb5bd5c066170f3cefadb339be46e7fca6b993c1fa6683e238e77f016abfd7bd0698c2abf676ee2c14bfd5f309d5d5
   languageName: node
   linkType: hard
 
@@ -1403,6 +1403,23 @@ __metadata:
     class-validator:
       optional: true
   checksum: 22deac62c44a4c8a491aa2d9e94385092ef4644d6299ddf9b545b87858d4be861479c6e19de860550489f38699bf7cdc28fdedc9b09f5770ea35d347f9743c28
+  languageName: node
+  linkType: hard
+
+"@nestjs/mapped-types@npm:2.0.3":
+  version: 2.0.3
+  resolution: "@nestjs/mapped-types@npm:2.0.3"
+  peerDependencies:
+    "@nestjs/common": ^8.0.0 || ^9.0.0 || ^10.0.0
+    class-transformer: ^0.4.0 || ^0.5.0
+    class-validator: ^0.13.0 || ^0.14.0
+    reflect-metadata: ^0.1.12
+  peerDependenciesMeta:
+    class-transformer:
+      optional: true
+    class-validator:
+      optional: true
+  checksum: 4f9ab9fc753cb2ef4a0f929b5ad93b737bfcbe5a2847e684ff095ed7ea4b4c00d0a980d68249edb2b25874abf4d931274f6dc5ad93b2bd65456f3880938b7cf2
   languageName: node
   linkType: hard
 
@@ -2370,6 +2387,13 @@ __metadata:
   version: 2.0.1
   resolution: "@types/stack-utils@npm:2.0.1"
   checksum: 205fdbe3326b7046d7eaf5e494d8084f2659086a266f3f9cf00bccc549c8e36e407f88168ad4383c8b07099957ad669f75f2532ed4bc70be2b037330f7bae019
+  languageName: node
+  linkType: hard
+
+"@types/validator@npm:^13.7.10":
+  version: 13.11.7
+  resolution: "@types/validator@npm:13.11.7"
+  checksum: 975ad31728f3e32278f090545b879453d5d2b26dd159c6b632efb79e748711bca15e6339b93e85c33b48208b1aee262d3043246118aa3c67a74fb0f89700b1d5
   languageName: node
   linkType: hard
 
@@ -3636,13 +3660,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"class-validator@npm:0.13.2":
-  version: 0.13.2
-  resolution: "class-validator@npm:0.13.2"
+"class-validator@npm:0.14.0":
+  version: 0.14.0
+  resolution: "class-validator@npm:0.14.0"
   dependencies:
-    libphonenumber-js: ^1.9.43
+    "@types/validator": ^13.7.10
+    libphonenumber-js: ^1.10.14
     validator: ^13.7.0
-  checksum: 0deb4c29faa18345f6989fd7eaaaa07b05caae5298603fcd6485531c6daad503e5d2b24cc1342e4fc88ae5ba0acffdc24d0fc333110ef3f21a667cd8a79e1258
+  checksum: f62e4a0ad24cee68f4b2bc70d32b96de90cb598f96bde362b4dbf4234151af8eb6ae225458312a38fc49fa3959844cf61c60e731a8205e9a570454cff8de2710
   languageName: node
   linkType: hard
 
@@ -6524,10 +6549,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"libphonenumber-js@npm:^1.9.43":
-  version: 1.10.13
-  resolution: "libphonenumber-js@npm:1.10.13"
-  checksum: a1740bbed8faa1adb4ae01dda6a7c16b4fd2917efdd9bafac53fa06d9e4b53dc67543d282f7fd0043649edddc0f03359448a17adb837e534358c7ba92c7dc268
+"libphonenumber-js@npm:^1.10.14":
+  version: 1.10.52
+  resolution: "libphonenumber-js@npm:1.10.52"
+  checksum: 4e3fddbdbb17694e86a02ef662e8ab030f14f56a494fd2c928089483bfc663d990dda7dcdab98467e42510a8d92bad890cc1d31b9651f452f8b9e8cb8b0800f9
   languageName: node
   linkType: hard
 
@@ -8184,8 +8209,8 @@ __metadata:
   resolution: "service-hub@workspace:."
   dependencies:
     "@dev-thought/nestjs-github-webhooks": ^1.0.0
-    "@discord-nestjs/common": ^4.0.7
-    "@discord-nestjs/core": ^4.3.0
+    "@discord-nestjs/common": ^5.2.10
+    "@discord-nestjs/core": ^5.3.12
     "@nestjs/cli": ^8.2.5
     "@nestjs/common": ^8.4.4
     "@nestjs/config": ^2.0.0

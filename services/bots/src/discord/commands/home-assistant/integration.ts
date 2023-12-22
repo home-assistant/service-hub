@@ -1,14 +1,14 @@
-import { TransformPipe } from '@discord-nestjs/common';
+import { SlashCommandPipe } from '@discord-nestjs/common';
+import { InteractionEvent, Param } from '@discord-nestjs/core';
 import {
-  DiscordTransformedCommand,
-  Payload,
-  TransformedCommandExecutionContext,
-  Param,
-  UsePipes,
-} from '@discord-nestjs/core';
-import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
-import { AutocompleteInteraction, EmbedBuilder, Events, InteractionType } from 'discord.js';
+  AutocompleteInteraction,
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+  Events,
+  InteractionType,
+} from 'discord.js';
 import { Emoji } from '../../discord.const';
+import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
 import { ServiceHomeassistantIntegrationData } from '../../services/home-assistant/integration-data';
 
 const BETA_CHANNEL_ID = '427516175237382144';
@@ -35,17 +35,15 @@ class IntegrationDto {
   name: 'integration',
   description: 'Returns information about an integration',
 })
-@UsePipes(TransformPipe)
-export class CommandHomeassistantIntegration implements DiscordTransformedCommand<IntegrationDto> {
+export class CommandHomeassistantIntegration {
   constructor(private serviceHomeassistantIntegrationData: ServiceHomeassistantIntegrationData) {}
 
   @CommandHandler()
   async handler(
-    @Payload() handlerDto: IntegrationDto,
-    context: TransformedCommandExecutionContext,
+    @InteractionEvent(SlashCommandPipe) handlerDto: IntegrationDto,
+    @InteractionEvent() interaction: ChatInputCommandInteraction,
   ): Promise<void> {
     const { domain } = handlerDto;
-    const { interaction } = context;
     const channel = interaction.channelId === BETA_CHANNEL_ID ? 'beta' : 'stable';
 
     if (domain === 'reload') {
