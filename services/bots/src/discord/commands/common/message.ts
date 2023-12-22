@@ -1,12 +1,12 @@
-import { TransformPipe } from '@discord-nestjs/common';
+import { SlashCommandPipe } from '@discord-nestjs/common';
+import { InteractionEvent, Param } from '@discord-nestjs/core';
 import {
-  DiscordTransformedCommand,
-  Param,
-  Payload,
-  TransformedCommandExecutionContext,
-  UsePipes,
-} from '@discord-nestjs/core';
-import { AutocompleteInteraction, EmbedBuilder, Events, InteractionType } from 'discord.js';
+  AutocompleteInteraction,
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+  Events,
+  InteractionType,
+} from 'discord.js';
 import { OptionalUserMentionDto } from '../../discord.const';
 import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
 import { ServiceCommonMessageData } from '../../services/common/message-data';
@@ -25,17 +25,15 @@ class MessageDto extends OptionalUserMentionDto {
   name: 'message',
   description: 'Returns a predefined message',
 })
-@UsePipes(TransformPipe)
-export class CommandCommonMessage implements DiscordTransformedCommand<MessageDto> {
+export class CommandCommonMessage {
   constructor(private serviceCommonMessageData: ServiceCommonMessageData) {}
 
   @CommandHandler()
   async handler(
-    @Payload() handlerDto: MessageDto,
-    context: TransformedCommandExecutionContext,
+    @InteractionEvent(SlashCommandPipe) handlerDto: MessageDto,
+    @InteractionEvent() interaction: ChatInputCommandInteraction,
   ): Promise<void> {
     const { messageKey, userMention } = handlerDto;
-    const { interaction } = context;
     if (messageKey === 'reload') {
       await this.serviceCommonMessageData.ensureData(interaction.guildId, true);
 

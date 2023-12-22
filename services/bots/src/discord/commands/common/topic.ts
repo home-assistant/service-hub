@@ -1,10 +1,6 @@
-import { TransformPipe } from '@discord-nestjs/common';
-import {
-  DiscordTransformedCommand,
-  Payload,
-  TransformedCommandExecutionContext,
-  UsePipes,
-} from '@discord-nestjs/core';
+import { SlashCommandPipe } from '@discord-nestjs/common';
+import { InteractionEvent } from '@discord-nestjs/core';
+import { ChatInputCommandInteraction } from 'discord.js';
 import { OptionalUserMentionDto } from '../../discord.const';
 import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 
@@ -12,12 +8,11 @@ import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
   name: 'topic',
   description: 'Returns the topic of the current channel',
 })
-@UsePipes(TransformPipe)
-export class CommandCommonTopic implements DiscordTransformedCommand<any> {
+export class CommandCommonTopic {
   @CommandHandler()
   async handler(
-    @Payload() handlerDto: OptionalUserMentionDto,
-    { interaction }: TransformedCommandExecutionContext,
+    @InteractionEvent(SlashCommandPipe) handlerDto: OptionalUserMentionDto,
+    @InteractionEvent() interaction: ChatInputCommandInteraction,
   ): Promise<void> {
     // @ts-ignore not all channel types have topic
     const topic = interaction.channel.topic;

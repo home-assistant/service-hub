@@ -1,15 +1,9 @@
-import { TransformPipe } from '@discord-nestjs/common';
-import {
-  DiscordTransformedCommand,
-  On,
-  Param,
-  Payload,
-  TransformedCommandExecutionContext,
-  UsePipes,
-} from '@discord-nestjs/core';
+import { SlashCommandPipe } from '@discord-nestjs/common';
+import { InteractionEvent, Param } from '@discord-nestjs/core';
 import {
   ActionRowBuilder,
   AutocompleteInteraction,
+  ChatInputCommandInteraction,
   EmbedBuilder,
   Events,
   ModalActionRowComponentBuilder,
@@ -18,12 +12,12 @@ import {
   TextInputBuilder,
   TextInputStyle,
 } from 'discord.js';
+import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
 import {
   IntegrationData,
   ServiceHomeassistantIntegrationData,
 } from '../../services/home-assistant/integration-data';
 import { ServiceHomeassistantMyRedirectData } from '../../services/home-assistant/my-redirect-data';
-import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
 
 class MyDto {
   @Param({
@@ -39,8 +33,7 @@ class MyDto {
   name: 'my',
   description: 'Returns a my link',
 })
-@UsePipes(TransformPipe)
-export class CommandHomeAssistantMy implements DiscordTransformedCommand<MyDto> {
+export class CommandHomeAssistantMy {
   constructor(
     private serviceHomeassistantIntegrationData: ServiceHomeassistantIntegrationData,
     private serviceHomeassistantMyRedirectData: ServiceHomeassistantMyRedirectData,
@@ -48,11 +41,10 @@ export class CommandHomeAssistantMy implements DiscordTransformedCommand<MyDto> 
 
   @CommandHandler()
   async handler(
-    @Payload() handlerDto: MyDto,
-    context: TransformedCommandExecutionContext,
+    @InteractionEvent(SlashCommandPipe) handlerDto: MyDto,
+    @InteractionEvent() interaction: ChatInputCommandInteraction,
   ): Promise<void> {
     const { redirect } = handlerDto;
-    const { interaction } = context;
     if (redirect === 'reload') {
       await this.serviceHomeassistantMyRedirectData.ensureData(true);
 

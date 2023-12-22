@@ -1,12 +1,6 @@
-import { TransformPipe } from '@discord-nestjs/common';
-import {
-  DiscordTransformedCommand,
-  Payload,
-  TransformedCommandExecutionContext,
-  UsePipes,
-} from '@discord-nestjs/core';
+import { InteractionEvent } from '@discord-nestjs/core';
 import { getVersionInfo } from '@lib/common';
-import { BlankDto } from '../../discord.const';
+import { ChatInputCommandInteraction } from 'discord.js';
 import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
 
 const version = getVersionInfo(__dirname);
@@ -15,13 +9,9 @@ const version = getVersionInfo(__dirname);
   name: 'info',
   description: 'Returns bot information',
 })
-@UsePipes(TransformPipe)
-export class CommandCommonInfo implements DiscordTransformedCommand<any> {
+export class CommandCommonInfo {
   @CommandHandler()
-  async handler(
-    @Payload() handlerDto: BlankDto,
-    { interaction }: TransformedCommandExecutionContext,
-  ): Promise<void> {
+  async handler(@InteractionEvent() interaction: ChatInputCommandInteraction): Promise<void> {
     await interaction.reply({
       embeds: [
         {

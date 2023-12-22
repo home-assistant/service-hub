@@ -25,8 +25,8 @@
   },
   "dependencies": {
     "@dev-thought/nestjs-github-webhooks": "^1.0.0",
-    "@discord-nestjs/common": "^4.0.7",
-    "@discord-nestjs/core": "^4.3.0",
+    "@discord-nestjs/common": "^5.2.10",
+    "@discord-nestjs/core": "^5.3.12",
     "@nestjs/common": "^8.4.4",
     "@nestjs/config": "^2.0.0",
     "@nestjs/core": "^8.4.4",

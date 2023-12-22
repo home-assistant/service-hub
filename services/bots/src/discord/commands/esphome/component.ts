@@ -1,13 +1,13 @@
-import { TransformPipe } from '@discord-nestjs/common';
+import { SlashCommandPipe } from '@discord-nestjs/common';
+import { InteractionEvent, Param } from '@discord-nestjs/core';
 import {
-  DiscordTransformedCommand,
-  Payload,
-  TransformedCommandExecutionContext,
-  Param,
-  UsePipes,
-} from '@discord-nestjs/core';
+  AutocompleteInteraction,
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+  Events,
+  InteractionType,
+} from 'discord.js';
 import { CommandHandler, DiscordCommandClass, OnDiscordEvent } from '../../discord.decorator';
-import { AutocompleteInteraction, EmbedBuilder, Events, InteractionType } from 'discord.js';
 import {
   ServiceEsphomeComponentData,
   sourceWithFallback,
@@ -27,17 +27,15 @@ class ComponentsDto {
   name: 'component',
   description: 'Returns information about an component',
 })
-@UsePipes(TransformPipe)
-export class CommandEsphomeComponent implements DiscordTransformedCommand<ComponentsDto> {
+export class CommandEsphomeComponent {
   constructor(private serviceEsphomeComponentData: ServiceEsphomeComponentData) {}
 
   @CommandHandler()
   async handler(
-    @Payload() handlerDto: ComponentsDto,
-    context: TransformedCommandExecutionContext,
+    @InteractionEvent(SlashCommandPipe) handlerDto: ComponentsDto,
+    @InteractionEvent() interaction: ChatInputCommandInteraction,
   ): Promise<void> {
     const { component } = handlerDto;
-    const { interaction } = context;
     const channel = interaction.channel.id;
 
     if (component === 'reload') {

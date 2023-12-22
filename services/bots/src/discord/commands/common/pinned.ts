@@ -1,24 +1,14 @@
-import { TransformPipe } from '@discord-nestjs/common';
-import {
-  DiscordTransformedCommand,
-  Payload,
-  TransformedCommandExecutionContext,
-  UsePipes,
-} from '@discord-nestjs/core';
+import { InteractionEvent } from '@discord-nestjs/core';
+import { ChatInputCommandInteraction } from 'discord.js';
 import { CommandHandler, DiscordCommandClass } from '../../discord.decorator';
-import { BlankDto } from '../../discord.const';
 
 @DiscordCommandClass({
   name: 'pinned',
   description: 'Returns pinned messages',
 })
-@UsePipes(TransformPipe)
-export class CommandCommonPinned implements DiscordTransformedCommand<any> {
+export class CommandCommonPinned {
   @CommandHandler()
-  async handler(
-    @Payload() handlerDto: BlankDto,
-    { interaction }: TransformedCommandExecutionContext,
-  ): Promise<void> {
+  async handler(@InteractionEvent() interaction: ChatInputCommandInteraction): Promise<void> {
     const pinned = await interaction.channel.messages.fetchPinned();
 
     if (pinned.size === 0) {
