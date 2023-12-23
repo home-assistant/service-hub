@@ -9,6 +9,8 @@ import { EventType, WEBHOOK_HANDLERS } from './github-webhook.const';
 import { GithubClient, WebhookContext } from './github-webhook.model';
 import { uniqueEntries } from './utils/list';
 
+const ignoredEventActions = new Set(['new_permissions_accepted']);
+
 @Injectable()
 export class GithubWebhookService {
   private githubClient: GithubClient;
@@ -51,6 +53,11 @@ export class GithubWebhookService {
   }
 
   async handleWebhook(headers: Record<string, any>, payload: Record<string, any>): Promise<void> {
+    if (ignoredEventActions.has(payload.action)) {
+      // We do not handle these events.
+      return;
+    }
+
     const context = new WebhookContext({
       github: this.githubClient,
       eventType: `${headers['x-github-event']}.${payload.action}` as EventType,
