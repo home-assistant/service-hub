@@ -1,3 +1,4 @@
+import { throttling } from '@octokit/plugin-throttling';
 import { Octokit } from '@octokit/rest';
 import {
   EventType,
@@ -11,9 +12,11 @@ import {
   Organization,
   Repository,
 } from './github-webhook.const';
-import { markdownParser, MarkdownSection } from './utils/markdown';
+import { MarkdownSection, markdownParser } from './utils/markdown';
 
-export class GithubClient extends Octokit {
+const OctokitWithPlugins = Octokit.plugin(throttling);
+
+export class GithubClient extends OctokitWithPlugins {
   async issuesGetLabel(params: GetIssueLabelParams): Promise<GetIssueLabelResponse | undefined> {
     try {
       const labelResponse = await this.issues.getLabel(params);
