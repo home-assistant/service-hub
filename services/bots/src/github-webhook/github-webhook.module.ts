@@ -5,6 +5,7 @@ import { GithubWebhooksModule } from '@dev-thought/nestjs-github-webhooks';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppConfig } from '../config';
 import { GithubWebhookController } from './github-webhook.controller';
+import { BlockingLabels } from './handlers/blocking_labels';
 import { BranchLabels } from './handlers/branch_labels';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
 import { DependencyBump } from './handlers/dependency_bump';
@@ -29,6 +30,7 @@ import { ValidateCla } from './handlers/validate-cla';
 
 @Module({
   providers: [
+    BlockingLabels,
     BranchLabels,
     CodeOwnersMention,
     DependencyBump,
