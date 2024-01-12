@@ -110,9 +110,44 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.PULL_REQUEST_UNLABELED,
-      handlers: ['DocsMissing', 'PlatinumReview'],
+      handlers: ['BlockingLabels', 'DocsMissing', 'PlatinumReview'],
       payload: {
         repository: { full_name: 'home-assistant/core', owner: { login: 'home-assistant' } },
+      },
+    },
+    {
+      eventType: EventType.PULL_REQUEST_LABELED,
+      handlers: [
+        'BlockingLabels',
+        'CodeOwnersMention',
+        'DocsMissing',
+        'NewIntegrationsHandler',
+        'PlatinumReview',
+        'QualityScaleLabeler',
+        'ValidateCla',
+      ],
+      payload: {
+        repository: { full_name: 'home-assistant/core', owner: { login: 'home-assistant' } },
+      },
+    },
+    {
+      eventType: EventType.PULL_REQUEST_UNLABELED,
+      handlers: [],
+      payload: {
+        repository: {
+          full_name: 'home-assistant/home-assistant.io',
+          owner: { login: 'home-assistant' },
+        },
+      },
+    },
+    {
+      eventType: EventType.PULL_REQUEST_LABELED,
+      handlers: ['CodeOwnersMention', 'ValidateCla'],
+      payload: {
+        repository: {
+          full_name: 'home-assistant/home-assistant.io',
+          owner: { login: 'home-assistant' },
+        },
       },
     },
     {
@@ -180,6 +215,13 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.PULL_REQUEST_UNLABELED,
+      handlers: [],
+      payload: {
+        repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
+      },
+    },
+    {
+      eventType: EventType.PULL_REQUEST_LABELED,
       handlers: [],
       payload: {
         repository: { full_name: 'esphome/esphome', owner: { login: 'esphome' } },
