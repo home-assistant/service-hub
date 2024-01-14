@@ -870,8 +870,9 @@ zigbee:
     issue](https://github.com/Koenkk/zigbee-herdsman/issues/319#issuecomment-789757269).
     The known working devices are [well
     documented](https://www.zigbee2mqtt.io/supported-devices/) (which usually
-    includes how to pair them so you don't have to find the manual), and adding
-    unsupported devices is also documented.
+    includes how to pair them so you don't have to find the manual), and as of 1.35.0
+    now has opportunistic support similar to ZHA. This change has simplified
+    [adding support for new devices](https://www.zigbee2mqtt.io/advanced/support-new-devices/01_support_new_devices.html).
 
 
     [deCONZ](https://www.home-assistant.io/integrations/deconz/) is relatively
