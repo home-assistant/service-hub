@@ -151,6 +151,26 @@ describe('GithubWebhookModule', () => {
       },
     },
     {
+      eventType: EventType.PULL_REQUEST_UNLABELED,
+      handlers: ['BlockingLabels'],
+      payload: {
+        repository: {
+          full_name: 'home-assistant/frontend',
+          owner: { login: 'home-assistant' },
+        },
+      },
+    },
+    {
+      eventType: EventType.PULL_REQUEST_LABELED,
+      handlers: ['BlockingLabels', 'ValidateCla'],
+      payload: {
+        repository: {
+          full_name: 'home-assistant/frontend',
+          owner: { login: 'home-assistant' },
+        },
+      },
+    },
+    {
       eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
       handlers: ['ReviewDrafter'],
       payload: {

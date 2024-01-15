@@ -47,7 +47,7 @@ describe('BlockingLabels', () => {
 
           expect(mockContext.github.repos.createCommitStatus).toHaveBeenCalledWith(
             expect.objectContaining({
-              context: `blocking-label-${label}`,
+              context: `blocking-label-${label.toLowerCase().replace(' ', '-')}`,
               description,
               state: result,
             }),
