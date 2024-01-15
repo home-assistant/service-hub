@@ -9,6 +9,9 @@ export const LabelsToCheck: {
   [HomeAssistantRepository.CORE]: {
     'awaiting-frontend': { message: 'This PR is awaiting changes to the frontend' },
   },
+  [HomeAssistantRepository.FRONTEND]: {
+    'wait for backend': { message: 'This PR is awaiting changes to the backend' },
+  },
 };
 
 export class BlockingLabels extends BaseWebhookHandler {
@@ -23,7 +26,7 @@ export class BlockingLabels extends BaseWebhookHandler {
       await context.github.repos.createCommitStatus(
         context.repo({
           sha: context.payload.pull_request.head.sha,
-          context: `blocking-label-${label}`,
+          context: `blocking-label-${label.toLowerCase().replace(' ', '-')}`,
           state: hasBlockingLabel ? 'failure' : 'success',
           description: hasBlockingLabel ? description['message'] : description['success'] || 'OK',
         }),
