@@ -10,7 +10,7 @@ export const LabelsToCheck: {
     'awaiting-frontend': { message: 'This PR is awaiting changes to the frontend' },
   },
   [HomeAssistantRepository.FRONTEND]: {
-    'Backend Change Required': { message: 'This PR is awaiting changes to the backend' },
+    'wait for backend': { message: 'This PR is awaiting changes to the backend' },
   },
 };
 
