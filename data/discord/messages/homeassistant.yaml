@@ -982,9 +982,9 @@ addon:
   description: "What is an add-on"
   content: >-
     An add-on is a Docker container with tweaks to allow it to be configured in
-    the Supervisor UI. It is only available in the Supervised installs
-    (<#330990055533576204> and <#330944238910963714>) since if you've used any
-    other install method you're able to install software already.
+    the Supervisor UI. It is only available in the Supervised installs Home
+    Assistant OS and Home Assistant Supervised (#944337294389805056) since if 
+    you've used any other install method you're able to install software already.
 advanced:
   description: "Advanced mode"
   content: >-
