@@ -829,7 +829,7 @@ irc:
     in mind that every time you tag somebody, they get a notification ping. That
     can very quickly become annoying and people may block you.
 
-    When using Discord's new _Reply_ feature it defaults to pinging the person
+    When using Discord's _Reply_ feature it defaults to pinging the person
     you reply to, click `@ ON` to `@ OFF` to stop this - on the right side of
     the compose bar.
 
