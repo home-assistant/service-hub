@@ -1089,7 +1089,7 @@ features:
   description: "Feature requests"
   content: >-
     If you have a feature request for the frontend you can open [one
-    here](https://github.com/home-assistant/frontend/issues), for Home Assistant
+    here](https://github.com/home-assistant/frontend/discussions), for Home Assistant
     itself please [post on the
     forum](https://community.home-assistant.io/c/feature-requests/13). All other
     feature requests should be made to the developer of that custom
