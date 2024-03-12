@@ -76,6 +76,13 @@ export class CommandHomeassistantIntegration {
           thumbnail: { url: `https://brands.home-assistant.io/${domain}/dark_logo.png` },
           fields: [
             {
+              name: 'Documentation',
+              value: `[View the documentation](https://${
+                channel === 'beta' ? 'rc' : 'www'
+              }.home-assistant.io/integrations/${domain}/)`,
+              inline: true,
+            },
+            {
               name: 'Quality scale',
               value: `[${
                 QualityScale[integrationData.quality_scale] || QualityScale.no_score
@@ -92,13 +99,6 @@ export class CommandHomeassistantIntegration {
             {
               name: 'Integration type',
               value: `[${integrationData.integration_type}](https://developers.home-assistant.io/docs/creating_integration_manifest#integration-type)`,
-              inline: true,
-            },
-            {
-              name: 'Documentation',
-              value: `[View the documentation](https://${
-                channel === 'beta' ? 'rc' : 'www'
-              }.home-assistant.io/integrations/${domain}/)`,
               inline: true,
             },
             {
