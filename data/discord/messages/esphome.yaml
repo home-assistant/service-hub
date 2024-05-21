@@ -6,3 +6,9 @@ dashboard_ha_link:
     Just because you have your device in the ESPHome dashboard,
     does not mean that Home Assistant is connected to it and you still need to
     [add it as a device](https://my.home-assistant.io/redirect/config_flow_start/?domain=esphome)
+
+libretiny:
+  description: "LibreTiny"
+  content: >-
+    [LibreTiny](https://discord.gg/M4jcA2jnDe) brings ESPHome support to the Beken `BK72xx`
+    and Realtek `RTL87xx` series of microcontrollers.
