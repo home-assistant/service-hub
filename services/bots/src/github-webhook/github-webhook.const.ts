@@ -75,7 +75,6 @@ export const entityComponents = new Set([
   'date',
   'datetime',
   'device_tracker',
-  'diagnostics',
   'event',
   'fan',
   'geo_location',
