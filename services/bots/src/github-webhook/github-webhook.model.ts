@@ -43,7 +43,13 @@ export class WebhookContext<E> {
   public organization: Organization;
   public payload: E;
   public parsedMarkdown: MarkdownSection[];
-  public scheduledComments: { handler: string; comment: string; priority?: number }[] = [];
+  public scheduledComments: {
+    handler: string;
+    comment: string;
+    priority?: number;
+    close?: boolean;
+    close_reason?: 'completed' | 'not_planned';
+  }[] = [];
   public scheduledlabels: string[] = [];
 
   public _prFilesCache?: ListPullRequestFiles;
@@ -101,6 +107,8 @@ export class WebhookContext<E> {
     handler: string;
     comment: string;
     priority?: number;
+    close?: boolean;
+    close_reason?: 'completed' | 'not_planned';
   }): void {
     this.scheduledComments.push(params);
   }

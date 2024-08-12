@@ -107,6 +107,17 @@ export class GithubWebhookService {
             .join('\n\n---\n\n'),
         }),
       );
+
+      context.scheduledComments
+        .filter((comment) => comment.close)
+        .map(async (comment) => {
+          await this.githubClient.issues.update(
+            context.issue({
+              state: 'closed',
+              state_reason: comment.close_reason ?? 'completed',
+            }),
+          );
+        });
     }
   }
 }
