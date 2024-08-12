@@ -27,6 +27,7 @@ import { ReviewDrafter } from './handlers/review_drafter';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
 import { ValidateCla } from './handlers/validate-cla';
+import { IssueTrackerHelper } from './handlers/issue_tracker_helper';
 
 @Module({
   providers: [
@@ -53,6 +54,7 @@ import { ValidateCla } from './handlers/validate-cla';
     SetIntegration,
     SetIntentsLanguage,
     ValidateCla,
+    IssueTrackerHelper,
   ],
   imports: [
     GithubWebhooksModule.forRootAsync({
