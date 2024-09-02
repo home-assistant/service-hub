@@ -1388,3 +1388,7 @@ safe_mode:
 
     **NOTE:** Safe mode comes in Home Assistant Core 2023.11.0 or later.  
     
+armbian:
+  description: "Where to get help with Supervised on Armbian"
+  content: >-
+    We can't help you here with the Armbian Supervised installer. Instead please use [their forum](https://forum.armbian.com/topic/33245-armbian-with-preinstalled-home-assistant-supervised/).
