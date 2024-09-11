@@ -23,6 +23,7 @@ import { MonthOfWTH } from './handlers/month_of_wth';
 import { NewIntegrationsHandler } from './handlers/new_integrations';
 import { PlatinumReview } from './handlers/platinum_review';
 import { QualityScaleLabeler } from './handlers/quality_scale';
+import { RequiredLabels } from './handlers/required_labels';
 import { ReviewDrafter } from './handlers/review_drafter';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
@@ -48,6 +49,7 @@ import { ValidateCla } from './handlers/validate-cla';
     NewIntegrationsHandler,
     PlatinumReview,
     QualityScaleLabeler,
+    RequiredLabels,
     ReviewDrafter,
     SetDocumentationSection,
     SetIntegration,
