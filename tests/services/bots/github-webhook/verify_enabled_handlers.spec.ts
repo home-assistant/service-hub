@@ -103,14 +103,20 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
-      handlers: ['DocsMissing', 'MergeConflictChecker', 'PlatinumReview', 'ValidateCla'],
+      handlers: [
+        'DocsMissing',
+        'MergeConflictChecker',
+        'PlatinumReview',
+        'RequiredLabels',
+        'ValidateCla',
+      ],
       payload: {
         repository: { full_name: 'home-assistant/core', owner: { login: 'home-assistant' } },
       },
     },
     {
       eventType: EventType.PULL_REQUEST_UNLABELED,
-      handlers: ['BlockingLabels', 'DocsMissing', 'PlatinumReview'],
+      handlers: ['BlockingLabels', 'DocsMissing', 'RequiredLabels', 'PlatinumReview'],
       payload: {
         repository: { full_name: 'home-assistant/core', owner: { login: 'home-assistant' } },
       },
@@ -124,6 +130,7 @@ describe('GithubWebhookModule', () => {
         'NewIntegrationsHandler',
         'PlatinumReview',
         'QualityScaleLabeler',
+        'RequiredLabels',
         'ValidateCla',
       ],
       payload: {
