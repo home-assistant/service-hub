@@ -3,8 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createAppAuth } from '@octokit/auth-app';
 
-import { Octokit } from '@octokit/rest';
-import type { EndpointDefaults } from '@octokit/types';
 import { EventType, WEBHOOK_HANDLERS } from './github-webhook.const';
 import { GithubClient, WebhookContext } from './github-webhook.model';
 import { uniqueEntries } from './utils/list';
@@ -22,32 +20,6 @@ export class GithubWebhookService {
         appId: Number(configService.get('github.appId')),
         installationId: Number(configService.get('github.installationId')),
         privateKey: configService.get('github.keyContents'),
-      },
-      throttle: {
-        onRateLimit: (
-          retryAfter: number,
-          options: Required<EndpointDefaults>,
-          octokit: Octokit,
-          retryCount: number,
-        ): boolean => {
-          octokit.log.warn(`Request quota exhausted for request ${options.method} ${options.url}`);
-
-          if (retryCount < 2) {
-            // Retry twice after hitting a rate limit error, then give up
-            octokit.log.info(`Retrying after ${retryAfter} seconds!`);
-            return true;
-          }
-        },
-        onSecondaryRateLimit: (
-          retryAfter: number,
-          options: Required<EndpointDefaults>,
-          octokit: Octokit,
-        ) => {
-          // does not retry, only logs a warning
-          octokit.log.warn(
-            `SecondaryRateLimit detected for request ${options.method} ${options.url}`,
-          );
-        },
       },
     });
   }
