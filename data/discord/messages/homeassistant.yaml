@@ -351,12 +351,6 @@ rule4:
     Do not spam, advertise your bots, servers, job hunting queries 
     (looking for a job), or anything else. If you're not sure if 
     something is an advertisement, contact a @Mod.
-rule4:
-  title: "Rule 4"
-  content: >-
-    Do not spam, advertise your bots, servers, job hunting queries 
-    (looking for a job), or anything else. If you're not sure if 
-    something is an advertisement, contact a @Mod.
 rule5:
   title: "Rule 5"
   content: >-
