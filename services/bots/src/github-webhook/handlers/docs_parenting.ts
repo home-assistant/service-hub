@@ -112,9 +112,9 @@ const updateDocsParentStatus = async (
     return;
   }
 
-  const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(
-    context.payload.pull_request.body,
-  ).filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
+  const linksToDocs = extractIssuesOrPullRequestMarkdownLinks(context.payload.pull_request.body)
+    .concat(extractPullRequestURLLinks(context.payload.pull_request.body))
+    .filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
 
   if (linksToDocs.length !== 1) {
     return;
