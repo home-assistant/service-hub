@@ -157,7 +157,15 @@ const updateDocsParentStatus = async (
   }
 
   // Parent state == merged
-  context.scheduleIssueLabel('parent-merged');
+  if (parentState === 'merged') {
+    await context.github.issues.addLabels({
+      owner: docLink.owner,
+      repo: docLink.repo,
+      issue_number: docLink.number,
+      labels: ['parent-merged'],
+    });
+    return;
+  }
 };
 
 const getPRState = (pr: { state: string; merged: boolean }) =>
