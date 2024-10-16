@@ -104,6 +104,7 @@ describe('GithubWebhookModule', () => {
     {
       eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
       handlers: [
+        'BlockingLabels',
         'DocsMissing',
         'MergeConflictChecker',
         'PlatinumReview',
