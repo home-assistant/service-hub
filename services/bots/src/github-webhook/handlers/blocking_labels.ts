@@ -15,7 +15,11 @@ export const LabelsToCheck: {
 };
 
 export class BlockingLabels extends BaseWebhookHandler {
-  public allowedEventTypes = [EventType.PULL_REQUEST_LABELED, EventType.PULL_REQUEST_UNLABELED];
+  public allowedEventTypes = [
+    EventType.PULL_REQUEST_LABELED,
+    EventType.PULL_REQUEST_UNLABELED,
+    EventType.PULL_REQUEST_SYNCHRONIZE,
+  ];
   public allowedRepositories = Object.keys(LabelsToCheck) as Repository[];
 
   async handle(context: WebhookContext<PullRequestLabeledEvent | PullRequestUnlabeledEvent>) {
