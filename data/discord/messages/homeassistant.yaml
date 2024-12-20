@@ -327,80 +327,80 @@ getting_started:
 rule1:
   title: "Rule 1"
   content: >-
-    No harassment, hate speech, racism, sexism, trolling, stereotype-based 
-    attacks, or spreading harmful/false information. 
+    No harassment, hate speech, racism, sexism, trolling, stereotype-based
+    attacks, or spreading harmful/false information.
     You may be banned immediately and without warning or recourse.
 rule2:
   title: "Rule 2"
   content: >-
-    Do not post problematic content or media, nor anything that could be 
-    considered sexual, violent (known as NSFW/NSFL) or political in nature. 
-    This includes memes, anything that could induce epilepsy (without 
-    obstructing the content with a spoiler and making a disclaimer), or 
-    anything that can crash, restart or exploit the Discord client. 
-    If you are unsure if something is considered problematic, 
+    Do not post problematic content or media, nor anything that could be
+    considered sexual, violent (known as NSFW/NSFL) or political in nature.
+    This includes memes, anything that could induce epilepsy (without
+    obstructing the content with a spoiler and making a disclaimer), or
+    anything that can crash, restart or exploit the Discord client.
+    If you are unsure if something is considered problematic,
     you shouldn't post it.
 rule3:
   title: "Rule 3"
   content: >-
-    No typing in any other language than English; we cannot moderate 
+    No typing in any other language than English; we cannot moderate
     different languages.
 rule4:
   title: "Rule 4"
   content: >-
-    Do not spam, advertise your bots, servers, job hunting queries 
-    (looking for a job), or anything else. If you're not sure if 
+    Do not spam, advertise your bots, servers, job hunting queries
+    (looking for a job), or anything else. If you're not sure if
     something is an advertisement, contact a @Mod.
 rule5:
   title: "Rule 5"
   content: >-
-    Do not stir up drama, laugh at others' misfortune or make 
-    unnecessary comments if you or others are punished. If there is 
+    Do not stir up drama, laugh at others' misfortune or make
+    unnecessary comments if you or others are punished. If there is
     a conflict, work to defuse it instead of making it worse.
 rule6:
   title: "Rule 6"
   content: >-
     Do not @ mention or DM Moderators, Nabu Casa employees, Members,
-    Integration owners, or any other community members who aren't 
-    part of the current conversation for any matter, unless you 
-    share a mutual relationship. The exception to this rule is if 
-    you are reporting something that violates these rules; 
+    Integration owners, or any other community members who aren't
+    part of the current conversation for any matter, unless you
+    share a mutual relationship. The exception to this rule is if
+    you are reporting something that violates these rules;
     please contact a @Mod to report any violations.
 rule7:
   title: "Rule 7"
   content: >-
     Use the correct channels or threads for your messages. If there's
     a better place for the current conversation then use it, and don't
-    post or link to the same thing in multiple places. Also check the 
-    description in each channel before posting, as extended rules may 
+    post or link to the same thing in multiple places. Also check the
+    description in each channel before posting, as extended rules may
     exist for that channel.
 rule8:
   title: "Rule 8"
   content: >-
-    Non-contributive or incoherent behavior which is disruptive to 
+    Non-contributive or incoherent behavior which is disruptive to
     the community and conversations will not be tolerated. This includes
-    bumping/unarchiving threads without contributing anything relevant 
+    bumping/unarchiving threads without contributing anything relevant
     to them.
 rule9:
   title: "Rule 9"
   content: >-
-    Users in direct violation of [Discord's Terms of Service](https://discord.com/terms/) may be 
-    banned without warning. This includes the use of userbots or not 
+    Users in direct violation of [Discord's Terms of Service](https://discord.com/terms/) may be
+    banned without warning. This includes the use of userbots or not
     meeting the minimum age requirement.
 rule10:
   title: "Rule 10"
   content: >-
-    Respect and listen to our Moderators' decisions, requests, and 
+    Respect and listen to our Moderators' decisions, requests, and
     wishes; do not waste their time. This includes allowing Moderators
-    to do their job rather than taking the role upon yourself, 
+    to do their job rather than taking the role upon yourself,
     threatening others with punishments, or telling members they broke
     a rule. Instead, report it to a @Mod privately.
 rule11:
   title: "Rule 11"
   content: >-
     Do not discuss punishments given to others or yourself outside of
-    private messages. All communication and audit log details are 
-    private and should not be shared or discussed on the server. If 
+    private messages. All communication and audit log details are
+    private and should not be shared or discussed on the server. If
     you have questions or concerns, contact a @Mod.
 automation:
   description: "What is an automation"
