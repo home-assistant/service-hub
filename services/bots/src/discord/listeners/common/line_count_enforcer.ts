@@ -65,7 +65,7 @@ export class ListenerCommonLineCountEnforcer {
         name: `${[message.channel.name, message.author.username, message.id]
           .join('_')
           .toLowerCase()
-          .replace('-', '_')}.${KNOWN_FILETYPES.has(fileType) ? fileType : 'txt'}`,
+          .replace(/-/g, '_')}.${KNOWN_FILETYPES.has(fileType) ? fileType : 'txt'}`,
       });
       await message.channel.send({
         content: `<@${message.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
