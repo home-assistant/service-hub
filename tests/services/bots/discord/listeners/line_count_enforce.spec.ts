@@ -17,7 +17,8 @@ describe('ListenerCommonLineCountEnforcer', () => {
     sendMessage = {};
     mockMessage = {
       content: '',
-      author: { bot: false, id: '1337' },
+      author: { bot: false, id: '1337', username: 'loremIpsum' },
+      id: '1337',
       member: {
         roles: {
           cache: [{}],
@@ -29,6 +30,7 @@ describe('ListenerCommonLineCountEnforcer', () => {
           sendMessage = content;
         },
         type: ChannelType.GuildText,
+        name: 'The-best-channel',
       },
       // @ts-ignore
       delete: (val) => val,
@@ -42,7 +44,7 @@ describe('ListenerCommonLineCountEnforcer', () => {
       sendMessage.content,
       `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
     );
-    assert.deepStrictEqual(sendMessage.files[0].name, 'message.txt');
+    assert.deepStrictEqual(sendMessage.files[0].name, 'the_best_channel_loremipsum_1337.txt');
   });
   it('Content is not large', async () => {
     mockMessage.content = [...Array(MAX_LINE_LENGTH).keys()].map(() => `hi`).join('\n');
@@ -58,7 +60,7 @@ describe('ListenerCommonLineCountEnforcer', () => {
       sendMessage.content,
       `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
     );
-    assert.deepStrictEqual(sendMessage.files[0].name, 'message.yaml');
+    assert.deepStrictEqual(sendMessage.files[0].name, 'the_best_channel_loremipsum_1337.yaml');
   });
 
   it('Content is large and language is unknown but valid YAML', async () => {
@@ -71,7 +73,7 @@ describe('ListenerCommonLineCountEnforcer', () => {
       sendMessage.content,
       `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
     );
-    assert.deepStrictEqual(sendMessage.files[0].name, 'message.yaml');
+    assert.deepStrictEqual(sendMessage.files[0].name, 'the_best_channel_loremipsum_1337.yaml');
   });
 
   it('Content is large and language is unknown but valid JSON', async () => {
@@ -84,7 +86,7 @@ describe('ListenerCommonLineCountEnforcer', () => {
       sendMessage.content,
       `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
     );
-    assert.deepStrictEqual(sendMessage.files[0].name, 'message.json');
+    assert.deepStrictEqual(sendMessage.files[0].name, 'the_best_channel_loremipsum_1337.json');
   });
 
   it('Content is large and language is unknown', async () => {
@@ -95,7 +97,7 @@ describe('ListenerCommonLineCountEnforcer', () => {
       sendMessage.content,
       `<@${mockMessage.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
     );
-    assert.deepStrictEqual(sendMessage.files[0].name, 'message.txt');
+    assert.deepStrictEqual(sendMessage.files[0].name, 'the_best_channel_loremipsum_1337.txt');
   });
 
   it('Ignore bots', async () => {

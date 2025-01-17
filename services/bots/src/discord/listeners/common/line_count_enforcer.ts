@@ -58,13 +58,14 @@ export class ListenerCommonLineCountEnforcer {
         } else if (!language && contentIsValidYaml(content)) {
           language = 'yaml';
         }
-        fileType = language;
+        fileType = language.toLowerCase();
         messageContent = content;
       }
       const attachment = new AttachmentBuilder(Buffer.from(messageContent, 'utf-8'), {
-        name: `message.${
-          KNOWN_FILETYPES.has(fileType.toLowerCase()) ? fileType.toLowerCase() : 'txt'
-        }`,
+        name: `${[message.channel.name, message.author.username, message.id]
+          .join('_')
+          .toLowerCase()
+          .replace(/-/g, '_')}.${KNOWN_FILETYPES.has(fileType) ? fileType : 'txt'}`,
       });
       await message.channel.send({
         content: `<@${message.author.id}> I converted your message into a file since it's above 15 lines :+1:`,
