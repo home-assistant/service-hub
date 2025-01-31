@@ -11,6 +11,7 @@ RUN \
 FROM node:20-slim
 WORKDIR /app
 COPY --from=builder /app/.yarn /app/.yarn
+COPY --from=builder /app/data /app/data
 COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/libs /app/libs
 COPY --from=builder /usr/bin/git /usr/bin/git

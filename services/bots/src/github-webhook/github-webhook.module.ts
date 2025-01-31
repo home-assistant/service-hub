@@ -15,6 +15,7 @@ import { DocsTargetBranch } from './handlers/docs_target_branch';
 import { Hacktoberfest } from './handlers/hacktoberfest';
 import { SetIntentsLanguage } from './handlers/intents_language';
 import { IssueCommentCommands } from './handlers/issue_comment_commands/handler';
+import { IssueContext } from './handlers/issue_context';
 import { IssueLinks } from './handlers/issue_links';
 import { LabelBot } from './handlers/label_bot/handler';
 import { LabelCleaner } from './handlers/label_cleaner';
@@ -41,6 +42,7 @@ import { ValidateCla } from './handlers/validate-cla';
     GithubWebhookService,
     Hacktoberfest,
     IssueCommentCommands,
+    IssueContext,
     IssueLinks,
     LabelBot,
     LabelCleaner,
