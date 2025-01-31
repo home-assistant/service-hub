@@ -1,2 +1,11 @@
 "integration: demo": >-
   This is a demo integration.
+"integration: zha": >-
+  Please make sure your report includes the following things:
+
+  1. Please enable ZHA debug logging, let it run for 10-15 minutes, and make sure to capture whatever problem you're having in the debug log.
+  2. Download diagnostics JSON for the ZHA Integration for the specific devices you're having problems with.
+  3. Any issues whatsoever with Tuya devices or device support requests in general need to be made in the ZHA quirks repo https://github.com/zigpy/zha-device-handlers/issues, not Core's issue tracker.
+  5. Fill out the issue template and include whether or not you're using a VM/Proxmox with USB passthrough, what addons you have installed, and so on.
+
+  ZHA does not have low-level control over your network, the mesh is self-organizing. If you started having network issues in a specific release, the release probably didn't cause the issue. Check your environment for new sources of 2.4GHz interference and make sure you're using an extension cable, not placing the coordinator near SSDs and USB 3.0 ports, etc. Just because things worked in the past with a bad setup doesn't mean they'll keep working in the future.
