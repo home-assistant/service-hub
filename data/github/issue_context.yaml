@@ -1,3 +1,11 @@
+"integration: bluetooth": >-
+  The make and model of your Bluetooth adapter will significantly influence your Bluetooth experience and [connection times](https://www.home-assistant.io/integrations/bluetooth/#improving-connection-times). Be sure to include it in the report, and check if it's on the [high-performance list](https://www.home-assistant.io/integrations/bluetooth/#known-working-high-performance-adapters).
+
+  If the adapter fails to set up after restarting Home Assistant or upgrading, it's likely a hardware or OS-level kernel issue. You can resolve most set-up problems by powering down and restarting the system. Rebooting the system is not sufficient without powering it down.
+
+  Please enable [Bluetooth debug logging](https://www.home-assistant.io/docs/configuration/troubleshooting/#enabling-debug-logging), let it run for 10-15 minutes, and make sure to capture whatever problem you're having in the debug log.
+
+  Finally, be sure to include [diagnostics](https://www.home-assistant.io/docs/configuration/troubleshooting/#download-diagnostics) for the Bluetooth adapter.
 "integration: demo": >-
   This is a demo integration.
 "integration: zha": >-
