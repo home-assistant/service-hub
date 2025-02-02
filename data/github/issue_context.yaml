@@ -31,7 +31,7 @@
 "integration: shelly": >-
   If your issue is related to Shelly generation 1 device, make sure you have configured [CoIoT peer](https://www.home-assistant.io/integrations/shelly/#shelly-device-configuration-generation-1) correctly.
 
-  If your issue is related to battery powered Shelly generation 2/3/4 devices, make sure you have configured [Outbound WebSocket](https://www.home-assistant.io/integrations/shelly/#shelly-device-configuration-generation-2-and-3) correctly.
+  If your issue is related to **battery powered** Shelly generation 2/3/4 devices, make sure you have configured [Outbound WebSocket](https://www.home-assistant.io/integrations/shelly/#shelly-device-configuration-generation-2-and-3) correctly.
 
   Please enable [Shelly debug logging](https://www.home-assistant.io/docs/configuration/troubleshooting/#enabling-debug-logging), let it run for 10-15 minutes, and make sure to capture whatever problem you're having in the debug log.
   Note: it is better to drag the log file into the comment (which will add it as an attachment) and not copy paste as it is hard to read logs in GitHub.
