@@ -8,6 +8,15 @@
   Finally, be sure to include [diagnostics](https://www.home-assistant.io/docs/configuration/troubleshooting/#download-diagnostics) for the Bluetooth adapter.
 "integration: demo": >-
   This is a demo integration.
+"integration: enphase_envoy": >-
+  Supported Enphase Envoy features vary greatly depending on what solar equipment you have and the firmware version of your Envoy. Enphase may push firmware updates to your Envoy without warning, which has caused issues with the Home Assistant integration in the past.
+
+  To help us troubleshoot please be sure your report includes the following:
+
+  1. Envoy Firmware version
+  2. A brief rundown of what Enphase equipment you have connected to the Envoy (solar panels, batteries, iQ system controller, etc).
+  2. [Diagnostics](https://www.home-assistant.io/docs/configuration/troubleshooting/#download-diagnostics) for the Enphase Envoy integration.
+  3. Enable [Debug logging](https://www.home-assistant.io/docs/configuration/troubleshooting/#enabling-debug-logging), let it run for 5-10 minutes, and include the log file.
 "integration: unifiprotect": >-
   Please make sure this isn't a duplicate issue by searching the existing issues, especially keep an eye on the latest issues and pull requests.
 
