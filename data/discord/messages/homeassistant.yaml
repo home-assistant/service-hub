@@ -1412,4 +1412,10 @@ safe_mode:
     To enable safe mode, in your Home Assistant UI, go to [**Settings** > **System**](<https://my.home-assistant.io/redirect/system_dashboard/>). Then, in the top right corner, select the power button. This opens the restart dialog. Open the **Advanced options** and select **Restart Home Assistant in safe mode**. 
 
     **NOTE:** Safe mode comes in Home Assistant Core 2023.11.0 or later.  
-    
+
+developer:
+  description: Developer Support
+  content: >-
+    For support and questions about contributing to Home Assistant development, join channel <#554842238073700352> or create a thread in <#1257019582112334014>. 
+
+    If you do not have access to these channels, you will need to give yourself the Developer role. Do this by selecting `Channels & Roles` in the sidebar, and selecting "I want to contribute dev skills to Home Assistant" to be granted access.
