@@ -73,7 +73,7 @@ export class PlatinumReview extends BaseWebhookHandler {
         context: 'code-owner-approval',
         state: requiresCodeownerApproval ? 'failure' : 'success',
         description: requiresCodeownerApproval
-          ? `Code owner approval required before merging`
+          ? `Code owner approval required for Platinum integrations before merging`
           : `Code owner approval ok.`,
         target_url:
           'https://developers.home-assistant.io/docs/core/integration-quality-scale/#-platinum',
