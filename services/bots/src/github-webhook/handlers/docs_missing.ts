@@ -25,6 +25,8 @@ export class DocsMissing extends BaseWebhookHandler {
       PullRequestLabeledEvent | PullRequestUnlabeledEvent | PullRequestSynchronizeEvent
     >,
   ) {
+    const isReleasePR = context.payload.pull_request.base.ref === 'master';
+
     const currentLabels = new Set(context.payload.pull_request.labels.map((label) => label.name));
 
     let needsDocumentation = currentLabels.has('docs-missing');
@@ -46,8 +48,12 @@ export class DocsMissing extends BaseWebhookHandler {
       context.repo({
         sha: context.payload.pull_request.head.sha,
         context: 'docs-missing',
-        state: needsDocumentation ? 'failure' : 'success',
-        description: needsDocumentation ? `Please open a documentation PR.` : `Documentation ok.`,
+        state: isReleasePR || !needsDocumentation ? 'success' : 'failure',
+        description: isReleasePR 
+          ? 'Documentation check auto-approved for release PR.' 
+          : needsDocumentation 
+          ? 'Please open a documentation PR.' 
+          : 'Documentation ok.',
       }),
     );
   }
