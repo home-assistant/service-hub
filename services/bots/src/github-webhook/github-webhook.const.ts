@@ -64,13 +64,16 @@ export enum EventType {
 
 export const entityComponents = new Set([
   'air_quality',
+  'ai_task',
   'alarm_control_panel',
+  'assist_satellite',
   'automation',
   'binary_sensor',
   'button',
   'calendar',
   'camera',
   'climate',
+  'conversation',
   'cover',
   'date',
   'datetime',
@@ -102,6 +105,7 @@ export const entityComponents = new Set([
   'update',
   'vacuum',
   'valve',
+  'wake_word',
   'water_heater',
   'weather',
 ]);
@@ -114,7 +118,6 @@ export const coreComponents = new Set([
   'cloud',
   'config',
   'configurator',
-  'conversation',
   'counter',
   'default_config',
   'demo',
