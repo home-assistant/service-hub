@@ -15,6 +15,7 @@ const ignoredAuthors: Set<string> = new Set([
   'ImgBotHelp@gmail.com',
   'support@lokalise.com',
   'github-action@users.noreply.github.com',
+  'cursoragent@cursor.com',
 ]);
 
 const ignoredRepositories: Set<string> = new Set([
@@ -34,6 +35,7 @@ const ignoredRepositories: Set<string> = new Set([
   'home-assistant/partner.home-assistant',
   'home-assistant/people',
   'home-assistant/version',
+  'home-assistant/webawesome',
 ]);
 
 const botContextName = 'cla-bot';
