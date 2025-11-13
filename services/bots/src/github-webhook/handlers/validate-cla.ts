@@ -34,6 +34,7 @@ const ignoredRepositories: Set<string> = new Set([
   'home-assistant/partner.home-assistant',
   'home-assistant/people',
   'home-assistant/version',
+  'home-assistant/webawesome',
 ]);
 
 const botContextName = 'cla-bot';
