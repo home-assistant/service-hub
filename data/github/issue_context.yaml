@@ -17,7 +17,7 @@
   2. A brief rundown of what Enphase equipment you have connected to the Envoy (solar panels, batteries, iQ system controller, etc).
   3. [Diagnostics](https://www.home-assistant.io/docs/configuration/troubleshooting/#download-diagnostics) for the Enphase Envoy integration.
   4. Enable [Debug logging](https://www.home-assistant.io/docs/configuration/troubleshooting/#enabling-debug-logging), let it run for 5-10 minutes, and include the log file.
-'integration: unifiprotect': >-
+"integration: unifiprotect": >-
   @{author} Please make sure this isn't a duplicate issue by searching the existing issues, especially keep an eye on the latest issues and pull requests.
 
 
