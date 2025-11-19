@@ -1,4 +1,4 @@
-"integration: bluetooth": >-
+'integration: bluetooth': >-
   The make and model of your Bluetooth adapter will significantly influence your Bluetooth experience and [connection times](https://www.home-assistant.io/integrations/bluetooth/#improving-connection-times). Be sure to include it in the report, and check if it's on the [high-performance list](https://www.home-assistant.io/integrations/bluetooth/#known-working-high-performance-adapters).
 
   If the adapter fails to set up after restarting Home Assistant or upgrading, it's likely a hardware or OS-level kernel issue. You can resolve most set-up problems by powering down and restarting the system. Rebooting the system is not sufficient without powering it down.
@@ -6,9 +6,9 @@
   Please enable [Bluetooth debug logging](https://www.home-assistant.io/docs/configuration/troubleshooting/#enabling-debug-logging), let it run for 10-15 minutes, and make sure to capture whatever problem you're having in the debug log.
 
   Finally, be sure to include [diagnostics](https://www.home-assistant.io/docs/configuration/troubleshooting/#download-diagnostics) for the Bluetooth adapter.
-"integration: demo": >-
+'integration: demo': >-
   This is a demo integration.
-"integration: enphase_envoy": >-
+'integration: enphase_envoy': >-
   Supported Enphase Envoy features vary greatly depending on what solar equipment you have and the firmware version of your Envoy. Enphase may push firmware updates to your Envoy without warning, which has caused issues with the Home Assistant integration in the past.
 
   To help us troubleshoot please be sure your report includes the following:
@@ -17,18 +17,24 @@
   2. A brief rundown of what Enphase equipment you have connected to the Envoy (solar panels, batteries, iQ system controller, etc).
   3. [Diagnostics](https://www.home-assistant.io/docs/configuration/troubleshooting/#download-diagnostics) for the Enphase Envoy integration.
   4. Enable [Debug logging](https://www.home-assistant.io/docs/configuration/troubleshooting/#enabling-debug-logging), let it run for 5-10 minutes, and include the log file.
-"integration: unifiprotect": >-
-  Please make sure this isn't a duplicate issue by searching the existing issues, especially keep an eye on the latest issues and pull requests.
+'integration: unifiprotect': >-
+  @{author} Please make sure this isn't a duplicate issue by searching the existing issues, especially keep an eye on the latest issues and pull requests.
+
 
   https://github.com/home-assistant/core/issues?q=%20label%3A%22integration%3A%20unifiprotect%22%20
 
+
   Then make sure your report includes the following information:
 
+
   1. UniFi OS version
+
   2. Protect version
+
   3. Hardware running Protect (Cloud Key Gen2+, UDM-Pro, etc.)
+
   4. [If applicable, error logs](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics)
-"integration: zha": >-
+'integration: zha': >-
   Please make sure your report includes the following things:
 
   1. Please enable ZHA debug logging, let it run for 10-15 minutes, and make sure to capture whatever problem you're having in the debug log.
@@ -37,7 +43,7 @@
   5. Fill out the issue template and include whether or not you're using a VM/Proxmox with USB passthrough, what addons you have installed, and so on.
 
   ZHA does not have low-level control over your network, the mesh is self-organizing. If you started having network issues in a specific release, the release probably didn't cause the issue. Check your environment for new sources of 2.4GHz interference and make sure you're using an extension cable, not placing the coordinator near SSDs and USB 3.0 ports, etc. Just because things worked in the past with a bad setup doesn't mean they'll keep working in the future.
-"integration: shelly": >-
+'integration: shelly': >-
   If your issue is related to Shelly generation 1 device, make sure you have configured [CoIoT peer](https://www.home-assistant.io/integrations/shelly/#shelly-device-configuration-generation-1) correctly.
 
   If your issue is related to **battery powered** Shelly generation 2/3/4 devices, make sure you have configured [Outbound WebSocket](https://www.home-assistant.io/integrations/shelly/#shelly-device-configuration-generation-2-and-3) correctly.
