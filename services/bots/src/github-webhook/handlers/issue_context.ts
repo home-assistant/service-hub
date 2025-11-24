@@ -24,9 +24,16 @@ export class IssueContext extends BaseWebhookHandler {
     if (!context.payload.label || !withIssueContext.includes(context.payload.label.name)) {
       return;
     }
+    let comment = issueContext[context.payload.label.name];
+
+    if (comment.includes('{author}')) {
+      const author = context.payload.issue.user.login;
+      comment = comment.replace('{author}', author);
+    }
+
     context.scheduleIssueComment({
       handler: 'IssueContext',
-      comment: issueContext[context.payload.label.name],
+      comment,
     });
   }
 }
