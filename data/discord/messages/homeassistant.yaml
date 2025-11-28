@@ -11,7 +11,7 @@
     - There is not enough space left on the device to download the new
     container.
 
-    - There was a networking issue preventing the image from being downloaded.
+    - There was a networking issue preventing the ifmage from being downloaded.
 '502':
   description: "502"
   content: >-
@@ -1113,12 +1113,10 @@ works:
 features:
   description: "Feature requests"
   content: >-
-    If you have a feature request for the frontend you can open [one
-    here](https://github.com/home-assistant/frontend/discussions), for Home Assistant
-    itself please [post on the
-    forum](https://community.home-assistant.io/c/feature-requests/13). All other
-    feature requests should be made to the developer of that custom
-    card/component.
+    If you have a feature request for Home Assistant you can open [one
+    here](https://github.com/orgs/home-assistant/discussions). Feature requests
+    for custom cards, integrations, etc. should be made to the developer of that
+    custom card/component.
 weather:
   description: "Weather"
   content: >-
