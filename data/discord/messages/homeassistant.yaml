@@ -11,7 +11,7 @@
     - There is not enough space left on the device to download the new
     container.
 
-    - There was a networking issue preventing the ifmage from being downloaded.
+    - There was a networking issue preventing the image from being downloaded.
 '502':
   description: "502"
   content: >-
