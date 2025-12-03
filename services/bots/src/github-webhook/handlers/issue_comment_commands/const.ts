@@ -8,6 +8,9 @@ export const ManageableLabels = {
     'needs-more-information',
     'problem in dependency',
     'problem in custom component',
+    'problem in config',
+    'problem in device',
+    'feature-request',
   ]),
   [HomeAssistantRepository.HOME_ASSISTANT_IO]: new Set(['needs-more-information']),
 };
