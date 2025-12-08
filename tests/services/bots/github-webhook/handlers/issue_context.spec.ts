@@ -15,8 +15,9 @@ describe('IssueContext', () => {
     getLabelResponse = {};
     mockContext = mockWebhookContext({
       eventType: 'issues.labeled',
-      payload: loadJsonFixture('pull_request.opened', {
+      payload: loadJsonFixture('issues.labeled', {
         label: { name: 'integration: demo' },
+        issue: { user: { login: 'testuser' } },
       }),
       github: {
         issues: {
@@ -28,14 +29,54 @@ describe('IssueContext', () => {
     });
   });
 
-  it('Add comment', async () => {
+  it('Add comment with default message and integration context', async () => {
     await handler.handle(mockContext);
 
-    assert.deepStrictEqual(mockContext.scheduledComments, [
-      {
-        handler: 'IssueContext',
-        comment: 'This is a demo integration.',
-      },
-    ]);
+    assert.strictEqual(mockContext.scheduledComments.length, 1);
+    assert.strictEqual(mockContext.scheduledComments[0].handler, 'IssueContext');
+
+    const comment = mockContext.scheduledComments[0].comment;
+    assert.ok(comment.startsWith('@testuser'), 'Should mention the issue author');
+    assert.ok(
+      comment.includes('Thanks for reporting this issue!'),
+      'Should include default message',
+    );
+    assert.ok(comment.includes('integration%3A%20demo'), 'Should include issue search link');
+    assert.ok(
+      comment.includes('This is a demo integration.'),
+      'Should include integration-specific context',
+    );
+  });
+
+  it('Add comment for integration without specific context', async () => {
+    mockContext.payload.label.name = 'integration: unknown';
+
+    await handler.handle(mockContext);
+
+    assert.strictEqual(mockContext.scheduledComments.length, 1);
+
+    const comment = mockContext.scheduledComments[0].comment;
+    assert.ok(comment.startsWith('@testuser'), 'Should mention the issue author');
+    assert.ok(
+      comment.includes('Thanks for reporting this issue!'),
+      'Should include default message',
+    );
+    assert.ok(comment.includes('integration%3A%20unknown'), 'Should include issue search link');
+    assert.ok(
+      !comment.includes('This is a demo integration.'),
+      'Should not include demo-specific context',
+    );
+  });
+
+  it('Skip non-integration labels', async () => {
+    mockContext.payload.label.name = 'bug';
+
+    await handler.handle(mockContext);
+
+    assert.strictEqual(
+      mockContext.scheduledComments.length,
+      0,
+      'Should not add comment for non-integration labels',
+    );
   });
 });
