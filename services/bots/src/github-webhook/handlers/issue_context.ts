@@ -21,15 +21,20 @@ export class IssueContext extends BaseWebhookHandler {
   public allowedRepositories = [HomeAssistantRepository.CORE];
 
   async handle(context: WebhookContext<IssuesLabeledEvent>) {
-    if (!context.payload.label || !withIssueContext.includes(context.payload.label.name)) {
+    if (!context.payload.label || !context.payload.label.name.startsWith('integration: ')) {
       return;
     }
-    let comment = issueContext[context.payload.label.name];
 
-    if (comment.includes('{author}')) {
-      const author = context.payload.issue.user.login;
-      comment = comment.replace('{author}', author);
-    }
+    const author = context.payload.issue.user.login;
+    const integration = context.payload.label.name;
+    const encodedLabel = encodeURIComponent(integration);
+    const defaultMessage = issueContext['_default_message'] || '';
+    const issueLink = `https://github.com/home-assistant/core/issues?q=%20label%3A%22${encodedLabel}%22%20`;
+    const integrationContext = withIssueContext.includes(integration)
+      ? `\n${issueContext[integration]}`
+      : '';
+
+    const comment = `@${author} ${defaultMessage}\n\n${issueLink}${integrationContext}`;
 
     context.scheduleIssueComment({
       handler: 'IssueContext',
