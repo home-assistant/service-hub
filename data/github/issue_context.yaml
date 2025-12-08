@@ -21,11 +21,7 @@
 
   4. Enable [Debug logging](https://www.home-assistant.io/docs/configuration/troubleshooting/#enabling-debug-logging), let it run for 5-10 minutes, and include the log file.
 'integration: unifiprotect': >-
-  Please make sure this isn't a duplicate issue by searching the existing issues, especially keep an eye on the latest issues and pull requests.
-
-  https://github.com/home-assistant/core/issues?q=%20label%3A%22integration%3A%20unifiprotect%22%20
-
-  Then make sure your report includes the following information:
+  Please make sure your report includes the following things:
 
   1. UniFi OS version
 
