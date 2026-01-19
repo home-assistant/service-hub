@@ -15,7 +15,7 @@
 'integration: enphase_envoy': |-
   Supported Enphase Envoy features vary greatly depending on what solar equipment you have and the firmware version of your Envoy. Enphase may push firmware updates to your Envoy without warning, which has caused issues with the Home Assistant integration in the past.
 
-  To help us troubleshoot please be sure your report includes the following:
+  To help us troubleshoot, please include the following information in your report:
 
   1. Envoy Firmware version
   2. A brief rundown of what Enphase equipment you have connected to the Envoy (solar panels, batteries, iQ system controller, etc).
