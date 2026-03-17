@@ -4,6 +4,7 @@ import { WebhookContext } from '../../github-webhook.model';
 import { ParsedPath } from '../../utils/parse_path';
 import { fetchPullRequestFilesFromContext } from '../../utils/pull_request';
 import { BaseWebhookHandler } from '../base';
+import { IntegrationAnalyticsService } from './integration-analytics.service';
 import componentAndPlatform from './strategies/componentAndPlatform';
 import configFlow from './strategies/configFlow';
 import hasTests from './strategies/hasTests';
@@ -30,6 +31,10 @@ export class LabelBot extends BaseWebhookHandler {
   public allowedRepositories = [HomeAssistantRepository.CORE];
   public allowedEventTypes = [EventType.PULL_REQUEST_OPENED];
 
+  constructor(private integrationAnalytics: IntegrationAnalyticsService) {
+    super();
+  }
+
   async handle(context: WebhookContext<PullRequestOpenedEvent>) {
     const files = await fetchPullRequestFilesFromContext(context);
     const parsed = files.map((file) => new ParsedPath(file));
@@ -42,13 +47,17 @@ export class LabelBot extends BaseWebhookHandler {
     });
 
     // componentAndPlatform can create many labels, process them separately
-    const componentLabelSet = new Set();
+    const componentLabelSet = new Set<string>();
     for (const label of componentAndPlatform(context, parsed)) {
       componentLabelSet.add(label);
     }
 
-    if (labelSet.size + componentLabelSet.size <= 9) {
+    if (componentLabelSet.size <= 5) {
       componentLabelSet.forEach(labelSet.add, labelSet);
+
+      for (const label of this.integrationAnalytics.getTopLabels(parsed)) {
+        labelSet.add(label);
+      }
     }
 
     for (const label of labelSet) {
