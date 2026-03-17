@@ -25,6 +25,7 @@ const STRATEGIES = new Set([
   typeOfChange,
   warnOnMergeToMaster,
 ]);
+const MAX_INTEGRATION_LABELS = 5;
 
 export class LabelBot extends BaseWebhookHandler {
   public allowBots = false;
@@ -52,7 +53,7 @@ export class LabelBot extends BaseWebhookHandler {
       componentLabelSet.add(label);
     }
 
-    if (componentLabelSet.size <= 5) {
+    if (componentLabelSet.size <= MAX_INTEGRATION_LABELS) {
       componentLabelSet.forEach(labelSet.add, labelSet);
 
       for (const label of this.integrationAnalytics.getTopLabels(parsed)) {
