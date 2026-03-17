@@ -14,6 +14,7 @@ import removePlatform from './strategies/removePlatform';
 import smallPR from './strategies/smallPR';
 import typeOfChange from './strategies/typeOfChange';
 import warnOnMergeToMaster from './strategies/warnOnMergeToMaster';
+import { Injectable } from '@nestjs/common';
 
 const STRATEGIES = new Set([
   configFlow,
@@ -27,6 +28,7 @@ const STRATEGIES = new Set([
 ]);
 const MAX_INTEGRATION_LABELS = 5;
 
+@Injectable()
 export class LabelBot extends BaseWebhookHandler {
   public allowBots = false;
   public allowedRepositories = [HomeAssistantRepository.CORE];
