@@ -21,9 +21,10 @@ describe('LabelBot', () => {
   let mockContext;
 
   beforeEach(async function () {
-    global.fetch = jest.fn().mockResolvedValue({
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
       json: () => Promise.resolve(mockAnalyticsData),
-    });
+    } as any);
     const analyticsService = new IntegrationAnalyticsService();
     await analyticsService.onModuleInit();
     handler = new LabelBot(analyticsService);

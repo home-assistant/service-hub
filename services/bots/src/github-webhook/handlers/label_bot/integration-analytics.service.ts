@@ -18,8 +18,18 @@ export class IntegrationAnalyticsService implements OnModuleInit {
   async updateAnalytics() {
     try {
       const response = await fetch(ANALYTICS_URL);
+      if (!response.ok) {
+        this.logger.error(
+          `Failed to fetch integration analytics: ${response.status} ${response.statusText}`,
+        );
+        return;
+      }
       const data = await response.json();
       const integrations: Record<string, number> = data.integrations;
+      if (!integrations || typeof integrations !== 'object') {
+        this.logger.error('Unexpected analytics response: missing integrations data');
+        return;
+      }
       const maxCount = Math.max(...TOP_COUNTS);
 
       this.rankedIntegrations = Object.entries(integrations)
@@ -29,7 +39,10 @@ export class IntegrationAnalyticsService implements OnModuleInit {
 
       this.logger.log(`Updated integration analytics (${this.rankedIntegrations.length} entries)`);
     } catch (error) {
-      this.logger.error('Failed to fetch integration analytics', error);
+      this.logger.error(
+        'Failed to fetch integration analytics',
+        error instanceof Error ? error.stack : String(error),
+      );
     }
   }
 
