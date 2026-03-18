@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { ParsedPath } from '../../utils/parse_path';
 
 const ANALYTICS_URL = 'https://analytics.home-assistant.io/current_data.json';
-const TOP_COUNTS = [200];
+const TOP_COUNTS = [50, 100, 200];
 const FETCH_TIMEOUT_MS = 10000;
 
 @Injectable()
