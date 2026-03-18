@@ -4,6 +4,7 @@ import { ParsedPath } from '../../utils/parse_path';
 
 const ANALYTICS_URL = 'https://analytics.home-assistant.io/current_data.json';
 const TOP_COUNTS = [200];
+const FETCH_TIMEOUT_MS = 10000;
 
 @Injectable()
 export class IntegrationAnalyticsService implements OnModuleInit {
@@ -16,8 +17,11 @@ export class IntegrationAnalyticsService implements OnModuleInit {
 
   @Cron(CronExpression.EVERY_12_HOURS)
   async updateAnalytics() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
     try {
-      const response = await fetch(ANALYTICS_URL);
+      const response = await fetch(ANALYTICS_URL, { signal: controller.signal });
       if (!response.ok) {
         this.logger.error(
           `Failed to fetch integration analytics: ${response.status} ${response.statusText}`,
@@ -39,10 +43,18 @@ export class IntegrationAnalyticsService implements OnModuleInit {
 
       this.logger.log(`Updated integration analytics (${this.rankedIntegrations.length} entries)`);
     } catch (error) {
-      this.logger.error(
-        'Failed to fetch integration analytics',
-        error instanceof Error ? error.stack : String(error),
-      );
+      if (error instanceof Error && error.name === 'AbortError') {
+        this.logger.error(
+          `Failed to fetch integration analytics: request timed out after ${FETCH_TIMEOUT_MS}ms`,
+        );
+      } else {
+        this.logger.error(
+          'Failed to fetch integration analytics',
+          error instanceof Error ? error.stack : String(error),
+        );
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
