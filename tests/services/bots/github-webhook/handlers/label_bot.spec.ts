@@ -1,17 +1,46 @@
 // @ts-nocheck
 import * as assert from 'assert';
-import { WebhookContext } from '../../../../../bots/src/github-webhook/github-webhook.model';
-import { LabelBot } from '../../../../../services/bots/src/github-webhook/handlers/label_bot/handler';
 import { mockWebhookContext } from '../../../../utils/test_context';
+import { LabelBot } from '../../../../../services/bots/src/github-webhook/handlers/label_bot/handler';
+import { IntegrationAnalyticsService } from '../../../../../services/bots/src/github-webhook/handlers/label_bot/integration-analytics.service';
+
+const mockAnalyticsData = {
+  integrations: Object.fromEntries([
+    // Ranks 0-1: filler integrations
+    ...Array.from({ length: 2 }, (_, i) => [`top_integration_${i}`, 10000 - i]),
+    // Rank 2: mqtt (inside top 50)
+    ['mqtt', 9998],
+    // Ranks 3-74: fillers
+    ...Array.from({ length: 72 }, (_, i) => [`filler_a_${i}`, 9000 - i]),
+    // Rank 75: tasmota (inside top 100, outside top 50)
+    ['tasmota', 8000],
+    // Ranks 76-98: fillers
+    ...Array.from({ length: 23 }, (_, i) => [`filler_b_${i}`, 7000 - i]),
+    // Rank 99: esphome (exactly last position in top 100)
+    ['esphome', 6500],
+    // Ranks 100-149: fillers
+    ...Array.from({ length: 50 }, (_, i) => [`filler_b2_${i}`, 6400 - i]),
+    // Rank 150: wled (inside top 200, outside top 100)
+    ['wled', 6000],
+    // Ranks 151-199: fillers
+    ...Array.from({ length: 49 }, (_, i) => [`filler_c_${i}`, 5000 - i]),
+    // Rank 200: hue (outside top 200)
+    ['hue', 1],
+  ]),
+};
 
 describe('LabelBot', () => {
   let handler: LabelBot;
-  let mockContext: WebhookContext<any>;
-  let getLabelResponse: any;
+  let mockContext;
 
-  beforeEach(function () {
-    handler = new LabelBot();
-    getLabelResponse = {};
+  beforeEach(async function () {
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockAnalyticsData),
+    } as any);
+    const analyticsService = new IntegrationAnalyticsService();
+    await analyticsService.onModuleInit();
+    handler = new LabelBot(analyticsService);
     mockContext = mockWebhookContext({
       eventType: 'pull_request.opened',
       github: {
@@ -20,7 +49,11 @@ describe('LabelBot', () => {
     });
   });
 
-  it('works', async () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('adds Top 50, Top 100 and Top 200 labels for top 50 integration', async () => {
     mockContext._prFilesCache = [
       {
         filename: 'homeassistant/components/mqtt/climate.py',
@@ -32,7 +65,36 @@ describe('LabelBot', () => {
       'core',
       'merging-to-master',
       'integration: mqtt',
+      'Top 50',
+      'Top 100',
+      'Top 200',
     ]);
+  });
+
+  it('adds Top 100 and Top 200 labels for top 100 integration', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/tasmota/sensor.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+    assert.deepStrictEqual(mockContext.scheduledlabels, [
+      'integration: tasmota',
+      'Top 100',
+      'Top 200',
+    ]);
+  });
+
+  it('adds only Top 200 label for top 200 integration', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/wled/light.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+    assert.deepStrictEqual(mockContext.scheduledlabels, ['integration: wled', 'Top 200']);
   });
 
   it('many labels', async () => {
@@ -87,5 +149,63 @@ describe('LabelBot', () => {
       'breaking-change',
       'merging-to-master',
     ]);
+  });
+
+  it('does not add top labels for non-top integrations', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/hue/light.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
+    assert.ok(mockContext.scheduledlabels.includes('integration: hue'));
+  });
+
+  it('does not add top labels for non-component files', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/core.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
+  });
+
+  it('adds Top 100 and Top 200 labels for integration at exactly rank 100', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/esphome/sensor.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+    assert.deepStrictEqual(mockContext.scheduledlabels, [
+      'integration: esphome',
+      'Top 100',
+      'Top 200',
+    ]);
+  });
+
+  it('uses best rank when PR touches multiple integrations', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/wled/light.py',
+      },
+      {
+        filename: 'homeassistant/components/mqtt/climate.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+    assert.ok(mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(mockContext.scheduledlabels.includes('Top 200'));
   });
 });
