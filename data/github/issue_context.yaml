@@ -49,5 +49,5 @@
 'custom integration': |-
   Hey, thank you for taking the time to report this! 🙏
 
-  After looking into it, this appears to be related to a custom component and is not part of Home Assistant core. 
-  Please report the issue directly in the custom component's repository. Thanks for understanding! 😊
+  After looking into it, this appears to be related to a [custom integration](https://www.home-assistant.io/docs/glossary/#custom-integration) and is not part of Home Assistant core. 
+  Please report the issue directly in the issue tracker of the custom component instead. Thank you for understanding! 😊
