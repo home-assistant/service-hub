@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { GithubWebhookService } from './github-webhook.service';
 
 import { GithubWebhooksModule } from '@dev-thought/nestjs-github-webhooks';
@@ -18,6 +19,7 @@ import { IssueCommentCommands } from './handlers/issue_comment_commands/handler'
 import { IssueContext } from './handlers/issue_context';
 import { IssueLinks } from './handlers/issue_links';
 import { LabelBot } from './handlers/label_bot/handler';
+import { IntegrationAnalyticsService } from './handlers/label_bot/integration-analytics.service';
 import { LabelCleaner } from './handlers/label_cleaner';
 import { MergeConflictChecker } from './handlers/merge_conflict';
 import { MonthOfWTH } from './handlers/month_of_wth';
@@ -44,6 +46,7 @@ import { ValidateCla } from './handlers/validate-cla';
     IssueCommentCommands,
     IssueContext,
     IssueLinks,
+    IntegrationAnalyticsService,
     LabelBot,
     LabelCleaner,
     MergeConflictChecker,
@@ -59,6 +62,7 @@ import { ValidateCla } from './handlers/validate-cla';
     ValidateCla,
   ],
   imports: [
+    ScheduleModule.forRoot(),
     GithubWebhooksModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
