@@ -6,7 +6,7 @@
   Hey, thank you for taking the time to report this! 🙏
 
   The issue appears appears to be related to a [custom integration](https://www.home-assistant.io/docs/glossary/#custom-integration) and is not part of Home Assistant core. 
-  Please report the issue directly in the issue tracker of the custom component instead. Thank you for understanding! 😊
+  Please report the issue directly in the issue tracker of the custom integration instead. Thank you for understanding! 😊
 'integration: bluetooth': |-
   The make and model of your Bluetooth adapter will significantly influence your Bluetooth experience and [connection times](https://www.home-assistant.io/integrations/bluetooth/#improving-connection-times). Be sure to include it in the report, and check if it's on the [high-performance list](https://www.home-assistant.io/integrations/bluetooth/#known-working-high-performance-adapters).
 
