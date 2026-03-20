@@ -68,7 +68,7 @@ describe('IssueContext', () => {
     );
   });
 
-  it('Skip non-integration labels', async () => {
+  it('Skip labels not in the context file', async () => {
     mockContext.payload.label.name = 'bug';
 
     await handler.handle(mockContext);
@@ -76,7 +76,31 @@ describe('IssueContext', () => {
     assert.strictEqual(
       mockContext.scheduledComments.length,
       0,
-      'Should not add comment for non-integration labels',
+      'Should not add comment for labels without context',
+    );
+  });
+
+  it('Add comment for custom integration label', async () => {
+    mockContext.payload.label.name = 'custom integration';
+
+    await handler.handle(mockContext);
+
+    assert.strictEqual(mockContext.scheduledComments.length, 1);
+    assert.strictEqual(mockContext.scheduledComments[0].handler, 'IssueContext');
+
+    const comment = mockContext.scheduledComments[0].comment;
+    assert.ok(comment.startsWith('@testuser'), 'Should mention the issue author');
+    assert.ok(
+      comment.includes('custom integration'),
+      'Should include custom integration context',
+    );
+    assert.ok(
+      !comment.includes('Thanks for reporting this issue!'),
+      'Should not include default message',
+    );
+    assert.ok(
+      !comment.includes('github.com/home-assistant/core/issues'),
+      'Should not include issue search link',
     );
   });
 });

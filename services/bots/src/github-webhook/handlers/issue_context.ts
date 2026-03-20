@@ -21,20 +21,33 @@ export class IssueContext extends BaseWebhookHandler {
   public allowedRepositories = [HomeAssistantRepository.CORE];
 
   async handle(context: WebhookContext<IssuesLabeledEvent>) {
-    if (!context.payload.label || !context.payload.label.name.startsWith('integration: ')) {
+    if (!context.payload.label) {
       return;
     }
 
     const author = context.payload.issue.user.login;
-    const integration = context.payload.label.name;
-    const encodedLabel = encodeURIComponent(integration);
-    const defaultMessage = issueContext['_default_message'] || '';
-    const issueLink = `https://github.com/home-assistant/core/issues?q=%20label%3A%22${encodedLabel}%22%20`;
-    const integrationContext = withIssueContext.includes(integration)
-      ? `\n${issueContext[integration]}`
-      : '';
+    const labelName = context.payload.label.name;
+    const isIntegrationLabel = labelName.startsWith('integration: ');
 
-    const comment = `@${author} ${defaultMessage}\n\n${issueLink}${integrationContext}`;
+    if (!isIntegrationLabel && !withIssueContext.includes(labelName)) {
+      return;
+    }
+
+    const labelContext = withIssueContext.includes(labelName) ? issueContext[labelName] : '';
+
+    let comment: string;
+    if (isIntegrationLabel) {
+      const defaultMessage = issueContext['_integration_default_message'] || '';
+      const encodedLabel = encodeURIComponent(labelName);
+      const issueLink = `https://github.com/home-assistant/core/issues?q=%20label%3A%22${encodedLabel}%22%20`;
+      comment = `@${author} ${defaultMessage}\n\n${issueLink}${
+        labelContext ? `\n${labelContext}` : ''
+      }`;
+    } else if (labelContext) {
+      comment = `@${author} ${labelContext}`;
+    } else {
+      return;
+    }
 
     context.scheduleIssueComment({
       handler: 'IssueContext',
