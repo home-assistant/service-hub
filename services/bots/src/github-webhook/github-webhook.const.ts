@@ -115,6 +115,7 @@ export const coreComponents = new Set([
   'alexa',
   'api',
   'auth',
+  'backup',
   'cloud',
   'config',
   'configurator',
