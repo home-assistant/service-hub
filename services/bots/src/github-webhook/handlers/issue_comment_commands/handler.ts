@@ -77,11 +77,9 @@ export class IssueCommentCommands extends BaseWebhookHandler {
         currentLabels,
         integrationManifests,
       });
-      if (result !== false) {
-        await context.github.reactions.createForIssueComment(
-          context.repo({ comment_id: context.payload.comment.id, content: '+1' }),
-        );
-      }
+      await context.github.reactions.createForIssueComment(
+        context.repo({ comment_id: context.payload.comment.id, content: result ? '+1' : '-1' }),
+      );
     } catch (_) {
       await context.github.reactions.createForIssueComment(
         context.repo({ comment_id: context.payload.comment.id, content: '-1' }),

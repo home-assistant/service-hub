@@ -15,7 +15,7 @@ export class UpdateBranchCommentCommand extends IssueCommentCommandBase {
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
-  ): Promise<void | false> {
+  ): Promise<boolean> {
     if (!invokerIsCodeOwner(command)) {
       return false;
     }
@@ -31,5 +31,6 @@ export class UpdateBranchCommentCommand extends IssueCommentCommandBase {
       );
       throw err;
     }
+    return true;
   }
 }

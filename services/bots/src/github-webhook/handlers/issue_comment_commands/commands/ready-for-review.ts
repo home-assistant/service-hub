@@ -15,11 +15,11 @@ export class ReadyForReviewCommentCommand extends IssueCommentCommandBase {
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
-  ): Promise<void | false> {
+  ): Promise<boolean> {
     const pullRequest = await context.github.pulls.get(context.pullRequest());
 
     if (!pullRequest.data.draft) {
-      return;
+      return true;
     }
 
     if (!invokerIsCodeOwner(command)) {
@@ -27,5 +27,6 @@ export class ReadyForReviewCommentCommand extends IssueCommentCommandBase {
     }
 
     await context.markPullRequestReadyForReview(pullRequest.data.node_id);
+    return true;
   }
 }

@@ -323,7 +323,9 @@ describe('IssueCommentCommands', () => {
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
 
-      expect(mockContext.github.reactions.createForIssueComment).not.toHaveBeenCalled();
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
       expect(mockContext.github.pulls.updateBranch).not.toHaveBeenCalled();
     });
     it('not on a pull request', async () => {
@@ -382,7 +384,9 @@ describe('IssueCommentCommands', () => {
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
 
-      expect(mockContext.github.reactions.createForIssueComment).not.toHaveBeenCalled();
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
     it('already a draft', async () => {
@@ -437,7 +441,9 @@ describe('IssueCommentCommands', () => {
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
 
-      expect(mockContext.github.reactions.createForIssueComment).not.toHaveBeenCalled();
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
     it('not a draft', async () => {

@@ -14,5 +14,5 @@ export abstract class IssueCommentCommandBase {
   abstract handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
-  ): Promise<void | false>;
+  ): Promise<boolean>;
 }

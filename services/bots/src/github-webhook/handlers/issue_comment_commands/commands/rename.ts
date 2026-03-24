@@ -22,5 +22,6 @@ export class RenameIssueCommentCommand implements IssueCommentCommandBase {
     }
 
     await context.github.issues.update(context.issue({ title: command.additional }));
+    return true;
   }
 }
