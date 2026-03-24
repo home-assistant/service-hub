@@ -7,6 +7,7 @@ export abstract class IssueCommentCommandBase {
   invokerType?: string;
   requireAdditional?: boolean;
   exampleAdditional?: string;
+  pullRequestOnly?: boolean;
 
   abstract description(context: WebhookContext<any>): string;
 

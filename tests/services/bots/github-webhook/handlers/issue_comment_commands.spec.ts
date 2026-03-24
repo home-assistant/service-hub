@@ -301,4 +301,166 @@ describe('IssueCommentCommands', () => {
       expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalled();
     });
   });
+
+  describe('command: update-branch', () => {
+    beforeEach(function () {
+      mockContext.payload.comment.body = '@home-assistant update-branch';
+      mockContext.payload.issue.pull_request = { url: 'https://api.github.com/repos/test/test/pulls/1' } as any;
+    });
+
+    it('by codeowner', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.pulls.updateBranch).toHaveBeenCalled();
+    });
+    it('not by codeowner', async () => {
+      mockContext.payload.comment.user.login = 'other';
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.pulls.updateBranch).not.toHaveBeenCalled();
+    });
+    it('not on a pull request', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.payload.issue.pull_request = undefined;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.pulls.updateBranch).not.toHaveBeenCalled();
+    });
+    it('merge conflict posts comment', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      (mockContext.github.pulls.updateBranch as unknown as jest.Mock).mockRejectedValue({
+        response: { data: { message: 'Merge conflict' } },
+      });
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: 'Failed to update branch: Merge conflict',
+        }),
+      );
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+    });
+  });
+
+  describe('command: mark-draft', () => {
+    beforeEach(function () {
+      mockContext.payload.comment.body = '@home-assistant mark-draft';
+      mockContext.payload.issue.pull_request = { url: 'https://api.github.com/repos/test/test/pulls/1' } as any;
+      (mockContext.github.pulls.get as unknown as jest.Mock).mockResolvedValue({
+        data: { node_id: 'PR_node_123', draft: false },
+      });
+    });
+
+    it('by codeowner', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.graphql).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: expect.stringContaining('convertPullRequestToDraft'),
+        }),
+      );
+    });
+    it('not by codeowner', async () => {
+      mockContext.payload.comment.user.login = 'other';
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
+    });
+    it('already a draft', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      (mockContext.github.pulls.get as unknown as jest.Mock).mockResolvedValue({
+        data: { node_id: 'PR_node_123', draft: true },
+      });
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
+    });
+    it('not on a pull request', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.payload.issue.pull_request = undefined;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('command: ready-for-review', () => {
+    beforeEach(function () {
+      mockContext.payload.comment.body = '@home-assistant ready-for-review';
+      mockContext.payload.issue.pull_request = { url: 'https://api.github.com/repos/test/test/pulls/1' } as any;
+      (mockContext.github.pulls.get as unknown as jest.Mock).mockResolvedValue({
+        data: { node_id: 'PR_node_123', draft: true },
+      });
+    });
+
+    it('by codeowner', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.graphql).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: expect.stringContaining('markPullRequestReadyForReview'),
+        }),
+      );
+    });
+    it('not by codeowner', async () => {
+      mockContext.payload.comment.user.login = 'other';
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
+    });
+    it('not a draft', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      (mockContext.github.pulls.get as unknown as jest.Mock).mockResolvedValue({
+        data: { node_id: 'PR_node_123', draft: false },
+      });
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
+    });
+    it('not on a pull request', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.payload.issue.pull_request = undefined;
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
+    });
+  });
 });

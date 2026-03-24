@@ -6,9 +6,12 @@ import { BaseWebhookHandler } from '../base';
 import { IssueCommentCommandBase } from './commands/base';
 
 import { CloseIssueCommentCommand } from './commands/close';
+import { MarkDraftCommentCommand } from './commands/mark-draft';
+import { ReadyForReviewCommentCommand } from './commands/ready-for-review';
 import { RenameIssueCommentCommand } from './commands/rename';
 import { ReopenIssueCommentCommand } from './commands/reopen';
 import { UnassignIssueCommentCommand } from './commands/unassign';
+import { UpdateBranchCommentCommand } from './commands/update-branch';
 import { LabelAddCommentCommand } from './commands/label-add';
 import { LabelRemoveCommentCommand } from './commands/label-remove';
 
@@ -17,9 +20,12 @@ const COMMAND_REGEX: RegExp =
 
 export const ISSUE_COMMENT_COMMANDS: IssueCommentCommandBase[] = [
   new CloseIssueCommentCommand(),
+  new MarkDraftCommentCommand(),
+  new ReadyForReviewCommentCommand(),
   new RenameIssueCommentCommand(),
   new ReopenIssueCommentCommand(),
   new UnassignIssueCommentCommand(),
+  new UpdateBranchCommentCommand(),
   new LabelAddCommentCommand(),
   new LabelRemoveCommentCommand(),
 ];

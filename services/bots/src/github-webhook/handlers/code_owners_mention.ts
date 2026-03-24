@@ -25,7 +25,11 @@ Hey there ${codeOwners.join(
 
 Code owners of \`${integration}\` can trigger bot actions by commenting:
 
-${ISSUE_COMMENT_COMMANDS.filter((command) => command.invokerType === 'code_owner')
+${ISSUE_COMMENT_COMMANDS.filter(
+  (command) =>
+    command.invokerType === 'code_owner' &&
+    (!command.pullRequestOnly || context.eventType.startsWith('pull_request')),
+)
   .map(
     (command) =>
       `- \`${[
