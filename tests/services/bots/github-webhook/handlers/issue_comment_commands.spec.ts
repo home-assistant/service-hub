@@ -305,7 +305,9 @@ describe('IssueCommentCommands', () => {
   describe('command: update-branch', () => {
     beforeEach(function () {
       mockContext.payload.comment.body = '@home-assistant update-branch';
-      mockContext.payload.issue.pull_request = { url: 'https://api.github.com/repos/test/test/pulls/1' } as any;
+      mockContext.payload.issue.pull_request = {
+        url: 'https://api.github.com/repos/test/test/pulls/1',
+      } as any;
     });
 
     it('by codeowner', async () => {
@@ -321,9 +323,7 @@ describe('IssueCommentCommands', () => {
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
 
-      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
-        expect.objectContaining({ content: '-1' }),
-      );
+      expect(mockContext.github.reactions.createForIssueComment).not.toHaveBeenCalled();
       expect(mockContext.github.pulls.updateBranch).not.toHaveBeenCalled();
     });
     it('not on a pull request', async () => {
@@ -357,7 +357,9 @@ describe('IssueCommentCommands', () => {
   describe('command: mark-draft', () => {
     beforeEach(function () {
       mockContext.payload.comment.body = '@home-assistant mark-draft';
-      mockContext.payload.issue.pull_request = { url: 'https://api.github.com/repos/test/test/pulls/1' } as any;
+      mockContext.payload.issue.pull_request = {
+        url: 'https://api.github.com/repos/test/test/pulls/1',
+      } as any;
       (mockContext.github.pulls.get as unknown as jest.Mock).mockResolvedValue({
         data: { node_id: 'PR_node_123', draft: false },
       });
@@ -380,9 +382,7 @@ describe('IssueCommentCommands', () => {
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
 
-      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
-        expect.objectContaining({ content: '-1' }),
-      );
+      expect(mockContext.github.reactions.createForIssueComment).not.toHaveBeenCalled();
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
     it('already a draft', async () => {
@@ -393,7 +393,7 @@ describe('IssueCommentCommands', () => {
       await handler.handle(mockContext);
 
       expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
-        expect.objectContaining({ content: '-1' }),
+        expect.objectContaining({ content: '+1' }),
       );
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
@@ -412,7 +412,9 @@ describe('IssueCommentCommands', () => {
   describe('command: ready-for-review', () => {
     beforeEach(function () {
       mockContext.payload.comment.body = '@home-assistant ready-for-review';
-      mockContext.payload.issue.pull_request = { url: 'https://api.github.com/repos/test/test/pulls/1' } as any;
+      mockContext.payload.issue.pull_request = {
+        url: 'https://api.github.com/repos/test/test/pulls/1',
+      } as any;
       (mockContext.github.pulls.get as unknown as jest.Mock).mockResolvedValue({
         data: { node_id: 'PR_node_123', draft: true },
       });
@@ -435,9 +437,7 @@ describe('IssueCommentCommands', () => {
       mockContext.payload.comment.user.login = 'other';
       await handler.handle(mockContext);
 
-      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
-        expect.objectContaining({ content: '-1' }),
-      );
+      expect(mockContext.github.reactions.createForIssueComment).not.toHaveBeenCalled();
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
     it('not a draft', async () => {
@@ -448,7 +448,7 @@ describe('IssueCommentCommands', () => {
       await handler.handle(mockContext);
 
       expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
-        expect.objectContaining({ content: '-1' }),
+        expect.objectContaining({ content: '+1' }),
       );
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });

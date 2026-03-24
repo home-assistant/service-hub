@@ -15,13 +15,13 @@ export class UpdateBranchCommentCommand extends IssueCommentCommandBase {
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
-  ) {
+  ): Promise<void | false> {
     if (!context.payload.issue.pull_request) {
       throw new Error('This command can only be used on pull requests.');
     }
 
     if (!invokerIsCodeOwner(command)) {
-      throw new Error('Only code owners can update the branch.');
+      return false;
     }
 
     try {

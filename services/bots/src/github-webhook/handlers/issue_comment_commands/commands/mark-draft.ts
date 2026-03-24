@@ -15,19 +15,19 @@ export class MarkDraftCommentCommand extends IssueCommentCommandBase {
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
-  ) {
+  ): Promise<void | false> {
     if (!context.payload.issue.pull_request) {
       throw new Error('This command can only be used on pull requests.');
-    }
-
-    if (!invokerIsCodeOwner(command)) {
-      throw new Error('Only code owners can mark a pull request as draft.');
     }
 
     const pullRequest = await context.github.pulls.get(context.pullRequest());
 
     if (pullRequest.data.draft) {
-      throw new Error('The pull request is already a draft.');
+      return;
+    }
+
+    if (!invokerIsCodeOwner(command)) {
+      return false;
     }
 
     await context.convertPullRequestToDraft(pullRequest.data.node_id);
