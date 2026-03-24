@@ -58,8 +58,11 @@ export class LabelBot extends BaseWebhookHandler {
     if (componentLabelSet.size <= MAX_INTEGRATION_LABELS) {
       componentLabelSet.forEach(labelSet.add, labelSet);
 
-      for (const label of this.integrationAnalytics.getTopLabels(parsed)) {
-        labelSet.add(label);
+      if (!labelSet.has('core')) {
+        // Only add "Top X" labels if we didn't already mark this as core
+        for (const label of this.integrationAnalytics.getTopLabels(parsed)) {
+          labelSet.add(label);
+        }
       }
     }
 
