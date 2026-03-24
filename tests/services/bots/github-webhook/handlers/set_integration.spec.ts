@@ -23,7 +23,7 @@ describe('SetIntegration', () => {
     });
   });
 
-  it('Integration label does exsist', async () => {
+  it('Integration label does exist', async () => {
     mockContext.payload.issue.body = 'Link: https://www.home-assistant.io/integrations/awesome';
     getLabelResponse = { name: 'integration: awesome' };
     await handler.handle(mockContext);
@@ -31,7 +31,7 @@ describe('SetIntegration', () => {
     assert.deepStrictEqual(mockContext.scheduledlabels, ['integration: awesome']);
   });
 
-  it('Integration label does not exsist', async () => {
+  it('Integration label does not exist', async () => {
     mockContext.payload.issue.body = 'Link: https://www.home-assistant.io/integrations/not_valid';
     mockContext.repository = HomeAssistantRepository.CORE;
     getLabelResponse = { status: 404 };

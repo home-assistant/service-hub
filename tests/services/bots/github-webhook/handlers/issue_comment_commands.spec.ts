@@ -535,6 +535,23 @@ describe('IssueCommentCommands', () => {
       );
     });
 
+    it('by issue author with dot-separated entity platform', async () => {
+      mockContext.payload.comment.body = '@home-assistant set-integration sensor.awesome';
+      mockContext.payload.comment.user.login = 'Codertocat';
+      mockContext.payload.issue.labels = [];
+      (mockContext.github.issuesGetLabel as unknown as jest.Mock).mockResolvedValue({
+        name: 'integration: awesome',
+      });
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: awesome'] }),
+      );
+    });
+
     it('by code owner of target integration', async () => {
       mockContext.payload.comment.user.login = 'test';
       mockContext.payload.issue.labels = [];
@@ -648,6 +665,11 @@ describe('IssueCommentCommands', () => {
 
       expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
         expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining('Please provide an integration domain'),
+        }),
       );
       expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
     });

@@ -25,8 +25,23 @@ function parseIntegrationFromInput(input: string): string | undefined {
       ? link.platform
       : link.integration;
   }
-  if (/^\w+$/.test(input.trim())) {
-    return input.trim();
+
+  const trimmed = input.trim();
+
+  // Support dot-separated entity platforms like "sensor.awesome" or "awesome.sensor"
+  const dotParts = trimmed.split('.');
+  if (dotParts.length === 2) {
+    const [first, second] = dotParts;
+    if (entityComponents.has(first) && /^\w+$/.test(second)) {
+      return second;
+    }
+    if (entityComponents.has(second) && /^\w+$/.test(first)) {
+      return first;
+    }
+  }
+
+  if (/^\w+$/.test(trimmed)) {
+    return trimmed;
   }
   return undefined;
 }
@@ -34,7 +49,7 @@ function parseIntegrationFromInput(input: string): string | undefined {
 export class SetIntegrationCommentCommand implements IssueCommentCommandBase {
   command = 'set-integration';
   exampleAdditional = 'zha';
-  requireAdditional = true;
+  requireAdditional = false;
 
   description(_context: WebhookContext<any>) {
     return 'Set the integration label on an issue.';
@@ -50,6 +65,15 @@ export class SetIntegrationCommentCommand implements IssueCommentCommandBase {
         context.issue({ body: 'This command can only be used on issues, not on pull requests.' }),
       );
       throw new Error('Not an issue.');
+    }
+
+    if (!command.additional) {
+      await context.github.issues.createComment(
+        context.issue({
+          body: `Please provide an integration domain or documentation link.\n${USAGE_HINT}`,
+        }),
+      );
+      throw new Error('No integration provided.');
     }
 
     const integration = parseIntegrationFromInput(command.additional)?.toLowerCase();
