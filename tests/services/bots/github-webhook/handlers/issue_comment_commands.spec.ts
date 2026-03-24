@@ -469,4 +469,266 @@ describe('IssueCommentCommands', () => {
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
   });
+
+  describe('command: set-integration', () => {
+    beforeEach(function () {
+      mockContext.payload.comment.body = '@home-assistant set-integration zha';
+      (mockContext.github.issuesGetLabel as unknown as jest.Mock).mockResolvedValue({
+        name: 'integration: zha',
+      });
+    });
+
+    it('by issue author with domain name', async () => {
+      mockContext.payload.comment.user.login = 'Codertocat';
+      mockContext.payload.issue.labels = [];
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+    });
+
+    it('by issue author with uppercase domain name', async () => {
+      mockContext.payload.comment.body = '@home-assistant set-integration ZHA';
+      mockContext.payload.comment.user.login = 'Codertocat';
+      mockContext.payload.issue.labels = [];
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+    });
+
+    it('by issue author with documentation link', async () => {
+      mockContext.payload.comment.body =
+        '@home-assistant set-integration https://www.home-assistant.io/integrations/zha';
+      mockContext.payload.comment.user.login = 'Codertocat';
+      mockContext.payload.issue.labels = [];
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+    });
+
+    it('by issue author with mixed-case documentation link', async () => {
+      mockContext.payload.comment.body =
+        '@home-assistant set-integration https://www.home-assistant.io/integrations/ZHA';
+      mockContext.payload.comment.user.login = 'Codertocat';
+      mockContext.payload.issue.labels = [];
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+    });
+
+    it('by code owner of target integration', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.payload.issue.labels = [];
+      mockedFetch.mockImplementation(() =>
+        Promise.resolve({
+          json: () => Promise.resolve({ codeowners: ['@test'] }),
+        } as unknown as Response),
+      );
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+    });
+
+    it('rejected for non-author non-codeowner', async () => {
+      mockContext.payload.comment.user.login = 'other';
+      mockContext.payload.issue.labels = [];
+      mockedFetch.mockImplementation(() =>
+        Promise.resolve({
+          json: () => Promise.resolve({ codeowners: ['@someone_else'] }),
+        } as unknown as Response),
+      );
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: 'Only the issue author and code owners can use this command.',
+        }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('rejected when manifest fetch fails for non-author', async () => {
+      mockContext.payload.comment.user.login = 'other';
+      mockContext.payload.issue.labels = [];
+      mockedFetch.mockImplementation(() => Promise.reject(new Error('Network error')));
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: 'Only the issue author and code owners can use this command.',
+        }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('rejected for unknown integration', async () => {
+      mockContext.payload.comment.body = '@home-assistant set-integration nonexistent';
+      mockContext.payload.comment.user.login = 'Codertocat';
+      (mockContext.github.issuesGetLabel as unknown as jest.Mock).mockResolvedValue(undefined);
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining('was not found'),
+        }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('rejected on pull request', async () => {
+      mockContext.payload.comment.user.login = 'Codertocat';
+      //@ts-ignore
+      mockContext.payload.issue.pull_request = { url: 'https://api.github.com/...' };
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining('only be used on issues'),
+        }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('rejected for unparseable input', async () => {
+      mockContext.payload.comment.body = '@home-assistant set-integration !!!invalid!!!';
+      mockContext.payload.comment.user.login = 'Codertocat';
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining('Could not determine the integration'),
+        }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('without additional parameter', async () => {
+      mockContext.payload.comment.body = '@home-assistant set-integration';
+      mockContext.payload.comment.user.login = 'Codertocat';
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('no-op when label already set', async () => {
+      mockContext.payload.comment.user.login = 'Codertocat';
+      mockContext.payload.issue.labels.push(mockedLabel('integration: zha'));
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining('already set'),
+        }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('author cannot change existing integration', async () => {
+      mockContext.payload.comment.user.login = 'Codertocat';
+      mockContext.payload.issue.labels = [mockedLabel('integration: other')];
+      mockedFetch.mockImplementation(() =>
+        Promise.resolve({
+          json: () => Promise.resolve({ codeowners: ['@someone_else'] }),
+        } as unknown as Response),
+      );
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining('Only code owners of the currently set integration'),
+        }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('code owner of existing integration can change it', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.payload.issue.labels = [mockedLabel('integration: awesome')];
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '+1' }),
+      );
+      expect(mockContext.github.issues.removeLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'integration: awesome' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+    });
+
+    it('code owner of target integration cannot change existing integration', async () => {
+      mockContext.payload.comment.user.login = 'zha_owner';
+      mockContext.payload.issue.labels = [mockedLabel('integration: other')];
+      mockedFetch.mockImplementation((url: string) =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve(
+              url.includes('/other/')
+                ? { codeowners: ['@other_owner'] }
+                : { codeowners: ['@zha_owner'] },
+            ),
+        } as unknown as Response),
+      );
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content: '-1' }),
+      );
+      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.stringContaining('Only code owners of the currently set integration'),
+        }),
+      );
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+  });
 });
