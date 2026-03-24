@@ -124,13 +124,22 @@ export class WebhookContext<E> {
   }
 
   /**
-   *
-   * @param nodeId The node id of the pull request, this is not the pull request number but the id of the pull request
-   *              in the github graphql api. you can get this from `context.payload.pull_request.node_id`
+   * @param nodeId The node ID of the pull request. This is not the pull request number but the ID of the pull request
+   *              in the GitHub GraphQL API. You can get this from `context.payload.pull_request.node_id`.
    */
   public async convertPullRequestToDraft(nodeId: string): Promise<void> {
     await this.github.graphql({
       query: `mutation { convertPullRequestToDraft(input: {pullRequestId: "${nodeId}"}) {clientMutationId}}`,
+    });
+  }
+
+  /**
+   * @param nodeId The node ID of the pull request. This is not the pull request number but the ID of the pull request
+   *              in the GitHub GraphQL API. You can get this from `context.payload.pull_request.node_id`.
+   */
+  public async markPullRequestReadyForReview(nodeId: string): Promise<void> {
+    await this.github.graphql({
+      query: `mutation { markPullRequestReadyForReview(input: {pullRequestId: "${nodeId}"}) {clientMutationId}}`,
     });
   }
 }

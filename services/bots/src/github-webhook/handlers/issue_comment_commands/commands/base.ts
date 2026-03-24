@@ -7,11 +7,12 @@ export abstract class IssueCommentCommandBase {
   invokerType?: string;
   requireAdditional?: boolean;
   exampleAdditional?: string;
+  pullRequestOnly?: boolean;
 
   abstract description(context: WebhookContext<any>): string;
 
   abstract handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
-  ): Promise<void>;
+  ): Promise<boolean>;
 }

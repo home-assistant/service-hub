@@ -38,5 +38,6 @@ export class LabelRemoveCommentCommand implements IssueCommentCommandBase {
     }
 
     await context.github.issues.removeLabel(context.issue({ name: command.additional }));
+    return true;
   }
 }

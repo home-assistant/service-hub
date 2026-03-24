@@ -24,5 +24,6 @@ export class CloseIssueCommentCommand extends IssueCommentCommandBase {
         state: 'closed',
       }),
     );
+    return true;
   }
 }
