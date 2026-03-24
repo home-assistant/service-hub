@@ -16,10 +16,6 @@ export class ReadyForReviewCommentCommand extends IssueCommentCommandBase {
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
   ): Promise<void | false> {
-    if (!context.payload.issue.pull_request) {
-      throw new Error('This command can only be used on pull requests.');
-    }
-
     const pullRequest = await context.github.pulls.get(context.pullRequest());
 
     if (!pullRequest.data.draft) {

@@ -53,6 +53,13 @@ export class IssueCommentCommands extends BaseWebhookHandler {
       return;
     }
 
+    if (command.pullRequestOnly && !context.payload.issue.pull_request) {
+      await context.github.reactions.createForIssueComment(
+        context.repo({ comment_id: context.payload.comment.id, content: '-1' }),
+      );
+      return;
+    }
+
     const currentLabels = context.payload.issue.labels.map((label) => label.name);
     const currentIntegrationFromLabels = currentLabels
       .filter((label) => label.startsWith('integration: '))
