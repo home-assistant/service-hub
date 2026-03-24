@@ -46,7 +46,7 @@ function parseIntegrationFromInput(input: string): string | undefined {
   return undefined;
 }
 
-export class SetIntegrationCommentCommand implements IssueCommentCommandBase {
+export class SetIntegrationCommentCommand extends IssueCommentCommandBase {
   command = 'set-integration';
   exampleAdditional = 'zha';
   requireAdditional = false;
@@ -58,7 +58,7 @@ export class SetIntegrationCommentCommand implements IssueCommentCommandBase {
   async handle(
     context: WebhookContext<IssueCommentCreatedEvent>,
     command: IssueCommentCommandContext,
-  ) {
+  ): Promise<boolean> {
     // Only allow on issues, not on pull requests
     if (context.payload.issue.pull_request) {
       await context.github.issues.createComment(
@@ -155,5 +155,6 @@ export class SetIntegrationCommentCommand implements IssueCommentCommandBase {
     }
 
     await context.github.issues.addLabels(context.issue({ labels: [label] }));
+    return true;
   }
 }

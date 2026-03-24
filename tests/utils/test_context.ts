@@ -23,7 +23,6 @@ export const mockWebhookContext = <T>(params: Partial<WebhookContext<T>>): Webho
           removeLabel: jest.fn(),
           addLabels: jest.fn(),
           removeAssignees: jest.fn(),
-          createComment: jest.fn(),
         },
         issuesGetLabel: jest.fn(),
         teams: {
