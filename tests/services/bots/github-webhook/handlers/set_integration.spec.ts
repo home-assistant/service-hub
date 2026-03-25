@@ -71,8 +71,6 @@ describe('SetIntegration', () => {
   });
 
   it('Link takes priority over body field', async () => {
-    mockContext.payload.issue.body =
-      '### Integration causing the issue\n\nRain bird\n\n### Link to integration documentation\n\nhttps://www.home-assistant.io/integrations/rainbird';
     getLabelResponse = { name: 'integration: rainbird' };
     let labelCheckCount = 0;
     mockContext = mockWebhookContext({
