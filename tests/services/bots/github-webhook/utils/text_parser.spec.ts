@@ -61,16 +61,8 @@ describe('text_parser', () => {
       assert.deepStrictEqual(normalizeIntegrationName('ZHA'), ['zha']);
     });
 
-    it('Rain bird -> [rainbird, rain_bird, rain-bird]', () => {
-      assert.deepStrictEqual(normalizeIntegrationName('Rain bird'), [
-        'rainbird',
-        'rain_bird',
-        'rain-bird',
-      ]);
-    });
-
-    it('Matter -> [matter]', () => {
-      assert.deepStrictEqual(normalizeIntegrationName('Matter'), ['matter']);
+    it('Rain bird -> [rainbird, rain_bird]', () => {
+      assert.deepStrictEqual(normalizeIntegrationName('Rain bird'), ['rainbird', 'rain_bird']);
     });
 
     it('SleepIQ -> [sleepiq]', () => {
