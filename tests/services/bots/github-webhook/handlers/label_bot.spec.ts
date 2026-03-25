@@ -237,6 +237,7 @@ describe('LabelBot', () => {
     ];
     mockContext.payload.pull_request.base = { ref: 'dev' };
     await handler.handle(mockContext);
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
     assert.ok(mockContext.scheduledlabels.includes('Top 100'));
     assert.ok(mockContext.scheduledlabels.includes('Top 200'));
   });
