@@ -111,8 +111,6 @@ describe('SetIntegration', () => {
   });
 
   it('Body field fallback tries underscore variant', async () => {
-    mockContext.payload.issue.body =
-      '### Integration causing the issue\n\nHome Connect\n\n### Link to integration documentation\n\n_No response_';
     let callIndex = 0;
     mockContext = mockWebhookContext({
       eventType: 'issues.opened',
@@ -131,6 +129,7 @@ describe('SetIntegration', () => {
     await handler.handle(mockContext);
 
     assert.deepStrictEqual(mockContext.scheduledlabels, ['integration: home_connect']);
+    assert.strictEqual(callIndex, 2, 'Should try 2 variants before finding home_connect');
   });
 
   it('No label when body field is _No response_', async () => {
