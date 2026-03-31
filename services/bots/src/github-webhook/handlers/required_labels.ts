@@ -15,6 +15,20 @@ export const LabelsToCheck: {
     'new-feature',
     'new-integration',
   ],
+  [HomeAssistantRepository.SUPERVISOR]: [
+    'breaking-change',
+    'new-feature',
+    'bugfix',
+    'style',
+    'refactor',
+    'performance',
+    'test',
+    'build',
+    'ci',
+    'chore',
+    'revert',
+    'dependencies',
+  ],
 };
 
 export class RequiredLabels extends BaseWebhookHandler {
