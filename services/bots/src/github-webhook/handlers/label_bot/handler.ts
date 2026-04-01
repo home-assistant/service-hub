@@ -27,6 +27,7 @@ const STRATEGIES = new Set([
   warnOnMergeToMaster,
 ]);
 const MAX_INTEGRATION_LABELS = 5;
+const LABELS_PREVENT_TOP_LABELS = new Set(['core', 'new-integration']);
 
 @Injectable()
 export class LabelBot extends BaseWebhookHandler {
@@ -58,8 +59,11 @@ export class LabelBot extends BaseWebhookHandler {
     if (componentLabelSet.size <= MAX_INTEGRATION_LABELS) {
       componentLabelSet.forEach(labelSet.add, labelSet);
 
-      if (!labelSet.has('core')) {
-        // Only add "Top X" labels if we didn't already mark this as core
+      const shouldAddTopLabels = ![...LABELS_PREVENT_TOP_LABELS].some((label) =>
+        labelSet.has(label),
+      );
+      if (shouldAddTopLabels) {
+        // Only add "Top X" labels if we don't have any labels that should prevent them
         for (const label of this.integrationAnalytics.getTopLabels(parsed)) {
           labelSet.add(label);
         }

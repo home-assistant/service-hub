@@ -241,4 +241,29 @@ describe('LabelBot', () => {
     assert.ok(mockContext.scheduledlabels.includes('Top 100'));
     assert.ok(mockContext.scheduledlabels.includes('Top 200'));
   });
+
+  it('does not add Top labels when adding new integration alongside changes to a top 50 integration', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/newintegration/__init__.py',
+        status: 'added',
+      },
+      {
+        filename: 'homeassistant/components/newintegration/sensor.py',
+        status: 'added',
+      },
+      {
+        filename: 'homeassistant/components/sonos/media_player.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+
+    assert.ok(mockContext.scheduledlabels.includes('new-integration'));
+    assert.ok(mockContext.scheduledlabels.includes('integration: newintegration'));
+    assert.ok(mockContext.scheduledlabels.includes('integration: sonos'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
+  });
 });
