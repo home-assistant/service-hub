@@ -41,7 +41,7 @@
   1. UniFi OS version
   2. Access version
   3. Hardware running Access (Cloud Key Gen2+, UDM-Pro, etc.)
-  4. Used hub including firmware version
+  4. UniFi Access Hub model and firmware version
   5. [If applicable, error logs](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics)
 'integration: unifiprotect': |-
   To help us troubleshoot, please include the following information in your report:
