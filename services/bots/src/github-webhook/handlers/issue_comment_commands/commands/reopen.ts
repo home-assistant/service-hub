@@ -24,5 +24,6 @@ export class ReopenIssueCommentCommand implements IssueCommentCommandBase {
         state: 'open',
       }),
     );
+    return true;
   }
 }

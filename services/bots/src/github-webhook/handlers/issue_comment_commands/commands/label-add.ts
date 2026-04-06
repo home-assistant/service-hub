@@ -33,5 +33,6 @@ export class LabelAddCommentCommand implements IssueCommentCommandBase {
       );
     }
     await context.github.issues.addLabels(context.issue({ labels: [command.additional] }));
+    return true;
   }
 }
