@@ -237,11 +237,9 @@ describe('LabelBot', () => {
     assert.ok(mockContext.scheduledlabels.includes('bugfix'));
     assert.ok(mockContext.scheduledlabels.includes('refactor'));
 
-    // Should include test/sizing labels (from Supervisor strategy set)
-    assert.ok(mockContext.scheduledlabels.includes('has-tests'));
-    assert.ok(mockContext.scheduledlabels.includes('small-pr'));
-
     // Must NOT include Core-only labeling behaviors
+    assert.ok(!mockContext.scheduledlabels.includes('has-tests'));
+    assert.ok(!mockContext.scheduledlabels.includes('small-pr'));
     assert.ok(!mockContext.scheduledlabels.includes('core'));
     assert.ok(!mockContext.scheduledlabels.some((l) => l.startsWith('integration: ')));
     assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
