@@ -7,14 +7,8 @@ import { invokerIsCodeOwner, IssueCommentCommandContext } from '../const';
 import { IssueCommentCommandBase } from './base';
 
 const USAGE_HINT = [
-  'Use the integration domain name or a documentation link.',
   'Example: `@home-assistant set-integration zha`',
-  'or: `@home-assistant set-integration https://www.home-assistant.io/integrations/zha`',
-  '',
-  'You can find the domain name in the URL of the integration page on the ' +
-    'Home Assistant website (e.g. `https://www.home-assistant.io/integrations/<domain>`) ' +
-    'or in your local Home Assistant instance under ' +
-    '**Settings → Devices & Services** (e.g. `http://<ip>:8123/config/integrations/integration/<domain>`).',
+  'You can also paste the Home Assistant integration documentation URL.',
 ].join('\n');
 
 function parseIntegrationFromInput(input: string): string | undefined {
