@@ -27,7 +27,7 @@ const CORE_STRATEGIES = new Set([
   warnOnMergeToMaster,
 ]);
 
-const SUPERVISOR_STRATEGIES = new Set([hasTests, smallPR, typeOfChange]);
+const SUPERVISOR_STRATEGIES = new Set([typeOfChange]);
 const MAX_INTEGRATION_LABELS = 5;
 const LABELS_PREVENT_TOP_LABELS = new Set(['core', 'new-integration']);
 
