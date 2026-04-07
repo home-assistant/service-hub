@@ -5,24 +5,26 @@
     "context": ".."
   },
   "postCreateCommand": "yarn install",
-  "runArgs": [
-    "-e",
-    "GIT_EDITOR=\"code --wait\""
-  ],
-  "extensions": [
-    "dbaeumer.vscode-eslint",
-    "ms-vscode.vscode-typescript-tslint-plugin",
-    "esbenp.prettier-vscode",
-    "attilabuti.vscode-mjml",
-    "visualstudioexptteam.vscodeintellicode"
-  ],
-  "settings": {
-    "editor.formatOnPaste": false,
-    "editor.formatOnSave": true,
-    "editor.formatOnType": true,
-    "[typescript]": {
-      "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "files.trimTrailingWhitespace": true
+  "containerEnv": {
+    "GIT_EDITOR": "code --wait"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "attilabuti.vscode-mjml",
+        "GitHub.vscode-pull-request-github"
+      ],
+      "settings": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "files.trimTrailingWhitespace": true
+      }
+    }
   }
 }

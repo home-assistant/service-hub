@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/vscode/devcontainers/typescript-node:20
+FROM mcr.microsoft.com/devcontainers/typescript-node:4-20
 ENV \
     DEBIAN_FRONTEND=noninteractive \
     DEVCONTAINER=true \
