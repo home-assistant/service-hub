@@ -30,6 +30,7 @@ import { RequiredLabels } from './handlers/required_labels';
 import { ReviewDrafter } from './handlers/review_drafter';
 import { SetDocumentationSection } from './handlers/set_documentation_section';
 import { SetIntegration } from './handlers/set_integration';
+import { SmallPRLabelUpdater } from './handlers/small_pr_label_updater';
 import { ValidateCla } from './handlers/validate-cla';
 
 @Module({
@@ -59,6 +60,7 @@ import { ValidateCla } from './handlers/validate-cla';
     SetDocumentationSection,
     SetIntegration,
     SetIntentsLanguage,
+    SmallPRLabelUpdater,
     ValidateCla,
   ],
   imports: [
