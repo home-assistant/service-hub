@@ -6,8 +6,9 @@ import { IntegrationAnalyticsService } from '../../../../../services/bots/src/gi
 
 const mockAnalyticsData = {
   integrations: Object.fromEntries([
-    // Ranks 0-1: filler integrations
-    ...Array.from({ length: 2 }, (_, i) => [`top_integration_${i}`, 10000 - i]),
+    // Ranks 0-1: top integrations used for tests
+    ['sonos', 10000],
+    ['tplink', 9999],
     // Rank 2: mqtt (inside top 50)
     ['mqtt', 9998],
     // Ranks 3-74: fillers
@@ -53,7 +54,7 @@ describe('LabelBot', () => {
     jest.restoreAllMocks();
   });
 
-  it('adds Top 50, Top 100 and Top 200 labels for top 50 integration', async () => {
+  it('does not add Top labels for top 50 integration when it is core', async () => {
     mockContext._prFilesCache = [
       {
         filename: 'homeassistant/components/mqtt/climate.py',
@@ -65,10 +66,42 @@ describe('LabelBot', () => {
       'core',
       'merging-to-master',
       'integration: mqtt',
-      'Top 50',
-      'Top 100',
-      'Top 200',
     ]);
+  });
+
+  it('adds Top 50, Top 100 and Top 200 labels for non-core top 50 integration', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/sonos/sensor.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+
+    assert.ok(!mockContext.scheduledlabels.includes('core'));
+    assert.ok(mockContext.scheduledlabels.includes('integration: sonos'));
+    assert.ok(mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(mockContext.scheduledlabels.includes('Top 200'));
+  });
+
+  it('does not add Top labels when PR is marked core', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/helpers/config_validation.py',
+      },
+      {
+        filename: 'homeassistant/components/mqtt/climate.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+
+    assert.ok(mockContext.scheduledlabels.includes('core'));
+    assert.ok(mockContext.scheduledlabels.includes('integration: mqtt'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
   });
 
   it('adds Top 100 and Top 200 labels for top 100 integration', async () => {
@@ -199,13 +232,38 @@ describe('LabelBot', () => {
         filename: 'homeassistant/components/wled/light.py',
       },
       {
-        filename: 'homeassistant/components/mqtt/climate.py',
+        filename: 'homeassistant/components/tasmota/sensor.py',
       },
     ];
     mockContext.payload.pull_request.base = { ref: 'dev' };
     await handler.handle(mockContext);
-    assert.ok(mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
     assert.ok(mockContext.scheduledlabels.includes('Top 100'));
     assert.ok(mockContext.scheduledlabels.includes('Top 200'));
+  });
+
+  it('does not add Top labels when adding new integration alongside changes to a top 50 integration', async () => {
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/newintegration/__init__.py',
+        status: 'added',
+      },
+      {
+        filename: 'homeassistant/components/newintegration/sensor.py',
+        status: 'added',
+      },
+      {
+        filename: 'homeassistant/components/sonos/media_player.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+
+    assert.ok(mockContext.scheduledlabels.includes('new-integration'));
+    assert.ok(mockContext.scheduledlabels.includes('integration: newintegration'));
+    assert.ok(mockContext.scheduledlabels.includes('integration: sonos'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
   });
 });
