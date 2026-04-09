@@ -16,7 +16,8 @@ export class ParsedPath {
     | 'test'
     | 'services'
     | 'component'
-    | 'platform' = null;
+    | 'platform'
+    | 'brand' = null;
   public component: null | string = null;
   public platform: null | string = null;
   public core = false;
@@ -57,6 +58,8 @@ export class ParsedPath {
       if (entityComponents.has(filename)) {
         this.platform = filename;
       }
+    } else if (filename === 'brand') {
+      this.type = 'brand';
     } else if (filename === 'services.yaml') {
       this.type = 'services';
     } else if (entityComponents.has(filename)) {

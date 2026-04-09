@@ -84,6 +84,7 @@ export const entityComponents = new Set([
   'humidifier',
   'image',
   'image_processing',
+  'infrared',
   'lawn_mower',
   'light',
   'lock',

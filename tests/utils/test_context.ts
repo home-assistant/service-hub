@@ -9,10 +9,16 @@ export const mockWebhookContext = <T>(params: Partial<WebhookContext<T>>): Webho
     //@ts-ignore
     github: deepmerge(
       {
+        graphql: jest.fn(),
+        pulls: {
+          get: jest.fn(),
+          updateBranch: jest.fn(),
+        },
         reactions: {
           createForIssueComment: jest.fn(),
         },
         issues: {
+          createComment: jest.fn(),
           update: jest.fn(),
           removeLabel: jest.fn(),
           addLabels: jest.fn(),

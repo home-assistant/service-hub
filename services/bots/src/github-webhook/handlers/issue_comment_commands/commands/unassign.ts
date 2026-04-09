@@ -38,5 +38,6 @@ export class UnassignIssueCommentCommand implements IssueCommentCommandBase {
         }),
       );
     }
+    return true;
   }
 }

@@ -35,6 +35,14 @@
   Note: it is better to drag the log file into the comment (which will add it as an attachment) and not copy paste as it is hard to read logs in GitHub.
 
   Finally, be sure to include [diagnostics](https://www.home-assistant.io/docs/configuration/troubleshooting/#download-diagnostics) for the Shelly device you're having problems with.
+'integration: unifi_access': |-
+  To help us troubleshoot, please include the following information in your report:
+
+  1. UniFi OS version
+  2. Access version
+  3. Hardware running Access (Cloud Key Gen2+, UDM-Pro, etc.)
+  4. UniFi Access Hub model and firmware version
+  5. [If applicable, error logs](https://www.home-assistant.io/docs/configuration/troubleshooting/#debug-logs-and-diagnostics)
 'integration: unifiprotect': |-
   To help us troubleshoot, please include the following information in your report:
 
