@@ -109,6 +109,7 @@ describe('GithubWebhookModule', () => {
         'MergeConflictChecker',
         'PlatinumReview',
         'RequiredLabels',
+        'SmallPRLabelUpdater',
         'ValidateCla',
       ],
       payload: {
