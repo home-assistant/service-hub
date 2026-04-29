@@ -90,10 +90,7 @@ describe('IssueContext', () => {
 
     const comment = mockContext.scheduledComments[0].comment;
     assert.ok(comment.startsWith('@testuser'), 'Should mention the issue author');
-    assert.ok(
-      comment.includes('custom integration'),
-      'Should include custom integration context',
-    );
+    assert.ok(comment.includes('custom integration'), 'Should include custom integration context');
     assert.ok(
       !comment.includes('Thanks for reporting this issue!'),
       'Should not include default message',

@@ -49,10 +49,10 @@ export class DocsMissing extends BaseWebhookHandler {
         sha: context.payload.pull_request.head.sha,
         context: 'docs-missing',
         state: isReleasePR || !needsDocumentation ? 'success' : 'failure',
-        description: isReleasePR 
-          ? 'Documentation check auto-approved for release PR.' 
-          : needsDocumentation 
-          ? 'Please open a documentation PR.' 
+        description: isReleasePR
+          ? 'Documentation check auto-approved for release PR.'
+          : needsDocumentation
+          ? 'Please open a documentation PR.'
           : 'Documentation ok.',
       }),
     );

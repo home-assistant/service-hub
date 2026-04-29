@@ -17,11 +17,18 @@
     "start:bots:dev": "nest start bots --watch --debug 5496",
     "start:bots:prod": "node dist/services/bots/main",
     "start:bots": "nest start bots --watch",
-    "format": "prettier --write \"services/**/*.ts\" \"libs/**/*.ts\"",
+    "format": "prettier --write \"services/**/*.ts\" \"libs/**/*.ts\" \"tests/**/*.ts\"",
     "lint": "eslint \"{src,services,libs,test}/**/*.ts\" --fix",
     "prebuild": "rimraf dist",
     "test": "jest",
-    "test-watch": "jest --watch"
+    "test-watch": "jest --watch",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   },
   "dependencies": {
     "@dev-thought/nestjs-github-webhooks": "^1.0.0",
@@ -73,7 +80,9 @@
     "eslint": "8.14.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
+    "husky": "^9.1.7",
     "jest": "^29.2.1",
+    "lint-staged": "^15.4.3",
     "prettier": "^2.6.2",
     "sinon": "^14.0.1",
     "source-map-support": "^0.5.21",

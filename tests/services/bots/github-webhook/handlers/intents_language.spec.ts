@@ -35,10 +35,6 @@ describe('SetIntentsLanguage', () => {
       },
     ];
     await handler.handle(mockContext);
-    assert.deepStrictEqual(mockContext.scheduledlabels, [
-      'lang: nb',
-      'lang: nl',
-      'lang: fr',
-    ]);
+    assert.deepStrictEqual(mockContext.scheduledlabels, ['lang: nb', 'lang: nl', 'lang: fr']);
   });
 });
