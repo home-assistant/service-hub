@@ -43,6 +43,9 @@ jobs:
       - name: Install dependencies
         run: yarn install  --immutable
 
+      - name: Check formatting
+        run: yarn prettier --check "services/**/*.ts" "libs/**/*.ts" "tests/**/*.ts"
+
       - name: Run yarn lint
         run: yarn lint
 
