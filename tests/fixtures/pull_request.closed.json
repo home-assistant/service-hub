@@ -1,0 +1,30 @@
+{
+  "action": "closed",
+  "number": 123,
+  "pull_request": {
+    "number": 123,
+    "title": "Example PR title",
+    "html_url": "https://github.com/home-assistant/supervisor/pull/123",
+    "node_id": "PR_node_id",
+    "merged": true,
+    "base": {
+      "ref": "main"
+    },
+    "head": {
+      "sha": "deadbeef"
+    },
+    "labels": []
+  },
+  "repository": {
+    "name": "supervisor",
+    "full_name": "home-assistant/supervisor",
+    "owner": {
+      "login": "home-assistant"
+    }
+  },
+  "sender": {
+    "login": "someone",
+    "type": "User"
+  }
+}
+
