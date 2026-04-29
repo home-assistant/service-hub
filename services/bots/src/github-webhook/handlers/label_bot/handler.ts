@@ -16,7 +16,7 @@ import typeOfChange from './strategies/typeOfChange';
 import warnOnMergeToMaster from './strategies/warnOnMergeToMaster';
 import { Injectable } from '@nestjs/common';
 
-const STRATEGIES = new Set([
+const CORE_STRATEGIES = new Set([
   configFlow,
   hasTests,
   markCore,
@@ -26,13 +26,15 @@ const STRATEGIES = new Set([
   typeOfChange,
   warnOnMergeToMaster,
 ]);
+
+const SUPERVISOR_STRATEGIES = new Set([typeOfChange]);
 const MAX_INTEGRATION_LABELS = 5;
 const LABELS_PREVENT_TOP_LABELS = new Set(['core', 'new-integration']);
 
 @Injectable()
 export class LabelBot extends BaseWebhookHandler {
   public allowBots = false;
-  public allowedRepositories = [HomeAssistantRepository.CORE];
+  public allowedRepositories = [HomeAssistantRepository.CORE, HomeAssistantRepository.SUPERVISOR];
   public allowedEventTypes = [EventType.PULL_REQUEST_OPENED];
 
   constructor(private integrationAnalytics: IntegrationAnalyticsService) {
@@ -44,28 +46,35 @@ export class LabelBot extends BaseWebhookHandler {
     const parsed = files.map((file) => new ParsedPath(file));
     const labelSet: Set<string> = new Set();
 
-    STRATEGIES.forEach((strategy) => {
+    const repo = context.payload.repository?.full_name;
+    const strategies =
+      repo === HomeAssistantRepository.SUPERVISOR ? SUPERVISOR_STRATEGIES : CORE_STRATEGIES;
+
+    strategies.forEach((strategy) => {
       for (const label of strategy(context, parsed)) {
         labelSet.add(label);
       }
     });
 
-    // componentAndPlatform can create many labels, process them separately
-    const componentLabelSet = new Set<string>();
-    for (const label of componentAndPlatform(context, parsed)) {
-      componentLabelSet.add(label);
-    }
+    // Supervisor: skip all integration/component labeling steps.
+    if (repo !== HomeAssistantRepository.SUPERVISOR) {
+      // componentAndPlatform can create many labels, process them separately
+      const componentLabelSet = new Set<string>();
+      for (const label of componentAndPlatform(context, parsed)) {
+        componentLabelSet.add(label);
+      }
 
-    if (componentLabelSet.size <= MAX_INTEGRATION_LABELS) {
-      componentLabelSet.forEach(labelSet.add, labelSet);
+      if (componentLabelSet.size <= MAX_INTEGRATION_LABELS) {
+        componentLabelSet.forEach(labelSet.add, labelSet);
 
-      const shouldAddTopLabels = ![...LABELS_PREVENT_TOP_LABELS].some((label) =>
-        labelSet.has(label),
-      );
-      if (shouldAddTopLabels) {
-        // Only add "Top X" labels if we don't have any labels that should prevent them
-        for (const label of this.integrationAnalytics.getTopLabels(parsed)) {
-          labelSet.add(label);
+        const shouldAddTopLabels = ![...LABELS_PREVENT_TOP_LABELS].some((label) =>
+          labelSet.has(label),
+        );
+        if (shouldAddTopLabels) {
+          // Only add "Top X" labels if we don't have any labels that should prevent them
+          for (const label of this.integrationAnalytics.getTopLabels(parsed)) {
+            labelSet.add(label);
+          }
         }
       }
     }
