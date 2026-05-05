@@ -7,6 +7,8 @@ import { WebhookContext } from '../github-webhook.model';
 import { BaseWebhookHandler } from './base';
 
 const MESSAGE_ID = '<!-- ReviewDrafterComment -->';
+const COPILOT_MESSAGE_ID = '<!-- ReviewDrafterCopilotComment -->';
+const COPILOT_OUTDATED_MESSAGE_ID = '<!-- ReviewDrafterCopilotCommentOutdated -->';
 
 const MORE_INFO_URL = {
   [Organization.ESPHOME]:
@@ -20,6 +22,29 @@ Please take a look at the requested changes, and use the **Ready for review** bu
 
 [_Learn more about our pull request process._](${MORE_INFO_URL[organization]})
 `;
+
+const COPILOT_REVIEW_COMMENT = (findingsCount: number, findingLinks: string[]) =>
+  `${COPILOT_MESSAGE_ID}
+Copilot left ${findingsCount} finding${
+    findingsCount === 1 ? '' : 's'
+  } that still need an author reply.
+
+Please reply to each Copilot finding in-thread before marking this PR as **Ready for review**.
+
+Open finding threads:
+${findingLinks.map((link) => `- ${link}`).join('\n')}
+`;
+
+const COPILOT_OUTDATED_NOTICE = `${COPILOT_OUTDATED_MESSAGE_ID}
+> [!NOTE]
+> This Copilot review tracker is outdated.
+
+`;
+
+interface UnansweredFinding {
+  id: number;
+  url: string;
+}
 
 export class ReviewDrafter extends BaseWebhookHandler {
   public allowedEventTypes = [
@@ -41,6 +66,11 @@ export class ReviewDrafter extends BaseWebhookHandler {
   }
 
   async handleReviewCommentSubmitted(context: WebhookContext<PullRequestReviewSubmittedEvent>) {
+    if (this.isCopilotReview(context)) {
+      await this.handleCopilotReviewSubmitted(context);
+      return;
+    }
+
     if (
       context.payload.pull_request.draft ||
       context.payload.review.state !== 'changes_requested'
@@ -85,9 +115,33 @@ export class ReviewDrafter extends BaseWebhookHandler {
   }
 
   async handleReadyForReview(context: WebhookContext<PullRequestReadyForReviewEvent>) {
+    const unansweredCopilotFindings = await this.findUnansweredCopilotFindings(context);
+
     const currentComments = await context.github.issues.listComments(
       context.issue({ per_page: 100 }),
     );
+
+    // Whenever the PR leaves draft, retire any active Copilot tracker so the
+    // next round of findings (if any) starts with a fresh comment.
+    await this.markCopilotCommentOutdated(context, currentComments.data);
+
+    if (unansweredCopilotFindings.length) {
+      // The @octokit/webhooks-types union for ready_for_review collapses pull_request to `never`,
+      // so we cast through unknown to access node_id, which is always present at runtime.
+      const pullRequest = context.payload.pull_request as unknown as { node_id: string };
+      await context.convertPullRequestToDraft(pullRequest.node_id);
+      // Post a fresh reminder rather than updating in place — the previous tracker is now outdated.
+      await context.github.issues.createComment(
+        context.issue({
+          body: COPILOT_REVIEW_COMMENT(
+            unansweredCopilotFindings.length,
+            unansweredCopilotFindings.slice(0, 10).map((finding) => finding.url),
+          ),
+        }),
+      );
+      return;
+    }
+
     if (!currentComments.data.find((comment) => comment.body.startsWith(MESSAGE_ID))) {
       // We did not add the comment, so we should not request a review
       return;
@@ -136,5 +190,137 @@ export class ReviewDrafter extends BaseWebhookHandler {
         context.pullRequest({ review_id: review.id, message: 'Stale' }),
       );
     }
+  }
+
+  private isCopilotLogin(login: string | undefined | null): boolean {
+    if (!login) {
+      return false;
+    }
+
+    const normalized = login.toLowerCase();
+    if (!normalized.includes('copilot')) {
+      return false;
+    }
+
+    // Bot accounts use a `[bot]` suffix; GitHub's AI Copilot reviewer uses the bare `Copilot`
+    // login (rendered with an "AI" badge in the UI, not "Bot"). Real users with `copilot` in
+    // their login (e.g. `MyCopilot`, `copilot-fan`) are excluded by both branches.
+    return normalized === 'copilot' || normalized.endsWith('[bot]');
+  }
+
+  private isCopilotReview(context: WebhookContext<PullRequestReviewSubmittedEvent>): boolean {
+    return this.isCopilotLogin(context.payload.review.user?.login);
+  }
+
+  private async handleCopilotReviewSubmitted(
+    context: WebhookContext<PullRequestReviewSubmittedEvent>,
+  ): Promise<void> {
+    const unansweredCopilotFindings = await this.findUnansweredCopilotFindings(context);
+
+    if (!unansweredCopilotFindings.length) {
+      return;
+    }
+
+    if (!context.payload.pull_request.draft) {
+      await context.convertPullRequestToDraft(context.payload.pull_request.node_id);
+    }
+
+    await this.createOrUpdateCopilotComment(context, unansweredCopilotFindings);
+  }
+
+  private async findUnansweredCopilotFindings(
+    context: WebhookContext<PullRequestReviewSubmittedEvent | PullRequestReadyForReviewEvent>,
+  ): Promise<UnansweredFinding[]> {
+    const { data: reviewComments } = await context.github.pulls.listReviewComments(
+      context.pullRequest({ per_page: 100 }),
+    );
+
+    const authorLogin = context.payload.pull_request.user.login.toLowerCase();
+    const copilotFindings = reviewComments.filter(
+      (reviewComment) =>
+        !reviewComment.in_reply_to_id && this.isCopilotLogin(reviewComment.user?.login),
+    );
+
+    if (!copilotFindings.length) {
+      return [];
+    }
+
+    const authorReplies = new Set(
+      reviewComments
+        .filter(
+          (reviewComment) =>
+            reviewComment.in_reply_to_id &&
+            reviewComment.user?.login?.toLowerCase() === authorLogin,
+        )
+        .map((reviewComment) => reviewComment.in_reply_to_id as number),
+    );
+
+    // The author can also acknowledge a finding by reacting to it (e.g. :+1: on the implementation).
+    const findingHasAuthorReaction = await Promise.all(
+      copilotFindings.map(async (finding) => {
+        const { data: reactions } = await context.github.reactions.listForPullRequestReviewComment(
+          context.repo({ comment_id: finding.id, per_page: 100 }),
+        );
+        return reactions.some((reaction) => reaction.user?.login?.toLowerCase() === authorLogin);
+      }),
+    );
+
+    return copilotFindings
+      .filter((finding, idx) => !authorReplies.has(finding.id) && !findingHasAuthorReaction[idx])
+      .map((finding) => ({ id: finding.id, url: finding.html_url }));
+  }
+
+  private async markCopilotCommentOutdated(
+    context: WebhookContext<PullRequestReviewSubmittedEvent | PullRequestReadyForReviewEvent>,
+    issueComments: Array<{ id: number; body?: string | null }>,
+  ): Promise<void> {
+    const activeComment = issueComments.find((comment) =>
+      comment.body?.startsWith(COPILOT_MESSAGE_ID),
+    );
+    if (!activeComment) {
+      return;
+    }
+
+    // Drop the active marker so subsequent lookups don't rediscover this comment,
+    // and prepend an outdated banner.
+    const remainingBody = (activeComment.body ?? '').replace(COPILOT_MESSAGE_ID, '').trimStart();
+    const outdatedBody = `${COPILOT_OUTDATED_NOTICE}${remainingBody}`;
+
+    await context.github.issues.updateComment(
+      context.repo({ comment_id: activeComment.id, body: outdatedBody }),
+    );
+  }
+
+  private async createOrUpdateCopilotComment(
+    context: WebhookContext<PullRequestReviewSubmittedEvent | PullRequestReadyForReviewEvent>,
+    unansweredCopilotFindings: UnansweredFinding[],
+  ): Promise<void> {
+    const currentComments = await context.github.issues.listComments(
+      context.issue({ per_page: 100 }),
+    );
+    const existingComment = currentComments.data.find((comment) =>
+      comment.body.startsWith(COPILOT_MESSAGE_ID),
+    );
+
+    const body = COPILOT_REVIEW_COMMENT(
+      unansweredCopilotFindings.length,
+      unansweredCopilotFindings.slice(0, 10).map((finding) => finding.url),
+    );
+
+    if (existingComment) {
+      await context.github.issues.updateComment(
+        context.repo({
+          comment_id: existingComment.id,
+          body,
+        }),
+      );
+      return;
+    }
+
+    await context.github.issues.createComment(
+      context.issue({
+        body,
+      }),
+    );
   }
 }
