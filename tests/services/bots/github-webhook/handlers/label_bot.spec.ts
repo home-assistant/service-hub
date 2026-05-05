@@ -266,4 +266,43 @@ describe('LabelBot', () => {
     assert.ok(!mockContext.scheduledlabels.includes('Top 100'));
     assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
   });
+
+  it('applies Supervisor-only strategy set and skips integration/component labeling', async () => {
+    mockContext.payload.repository = { full_name: 'home-assistant/supervisor' };
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/mqtt/climate.py',
+        additions: 1,
+      },
+      {
+        filename: 'tests/components/mqtt/test_climate.py',
+        additions: 1,
+      },
+    ];
+    mockContext.payload.pull_request = {
+      body:
+        '\n- [x] Bugfix (non-breaking change which fixes an issue)' +
+        '\n- [x] Code quality improvements to existing code or addition of tests' +
+        '\n- [ ] Dependency upgrade' +
+        '\n- [ ] New feature (which adds functionality to the supervisor)' +
+        '\n- [ ] Breaking change (fix/feature causing existing functionality to break)',
+      base: { ref: 'main' },
+    };
+
+    await handler.handle(mockContext);
+
+    // Should include Supervisor type-of-change labels
+    assert.ok(mockContext.scheduledlabels.includes('bugfix'));
+    assert.ok(mockContext.scheduledlabels.includes('refactor'));
+
+    // Must NOT include Core-only labeling behaviors
+    assert.ok(!mockContext.scheduledlabels.includes('has-tests'));
+    assert.ok(!mockContext.scheduledlabels.includes('small-pr'));
+    assert.ok(!mockContext.scheduledlabels.includes('core'));
+    assert.ok(!mockContext.scheduledlabels.some((l) => l.startsWith('integration: ')));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
+    assert.ok(!mockContext.scheduledlabels.includes('merging-to-master'));
+  });
 });
