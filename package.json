@@ -9,10 +9,6 @@
     "node": ">=20"
   },
   "scripts": {
-    "build:example": "nest build example",
-    "start:example:dev": "nest start example --watch --debug 5495",
-    "start:example:prod": "node dist/services/example/main",
-    "start:example": "nest start example --watch",
     "build:bots": "nest build bots",
     "start:bots:dev": "nest start bots --watch --debug 5496",
     "start:bots:prod": "node dist/services/bots/main",
