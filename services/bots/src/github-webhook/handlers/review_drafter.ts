@@ -10,6 +10,11 @@ const MESSAGE_ID = '<!-- ReviewDrafterComment -->';
 const COPILOT_MESSAGE_ID = '<!-- ReviewDrafterCopilotComment -->';
 const COPILOT_OUTDATED_MESSAGE_ID = '<!-- ReviewDrafterCopilotCommentOutdated -->';
 
+const COPILOT_LOGINS = new Set(['copilot']);
+
+// Author reactions that count as "I've acknowledged / agreed with this finding".
+const ACKNOWLEDGMENT_REACTIONS = new Set(['+1', 'heart', 'hooray', 'rocket']);
+
 const MORE_INFO_URL = {
   [Organization.ESPHOME]:
     'https://esphome.io/guides/contributing#prs-are-being-drafted-when-changes-are-needed',
@@ -101,10 +106,11 @@ export class ReviewDrafter extends BaseWebhookHandler {
     // Mark PR as draft, this is not available in the REST API, so we use our helper
     await context.convertPullRequestToDraft(context.payload.pull_request.node_id);
 
-    const currentComments = await context.github.issues.listComments(
+    const currentComments = await context.github.paginate(
+      context.github.issues.listComments,
       context.issue({ per_page: 100 }),
     );
-    if (!currentComments.data.find((comment) => comment.body.startsWith(MESSAGE_ID))) {
+    if (!currentComments.find((comment) => comment.body?.startsWith(MESSAGE_ID))) {
       // No comment found, add one
       await context.github.issues.createComment(
         context.issue({
@@ -117,13 +123,14 @@ export class ReviewDrafter extends BaseWebhookHandler {
   async handleReadyForReview(context: WebhookContext<PullRequestReadyForReviewEvent>) {
     const unansweredCopilotFindings = await this.findUnansweredCopilotFindings(context);
 
-    const currentComments = await context.github.issues.listComments(
+    const currentComments = await context.github.paginate(
+      context.github.issues.listComments,
       context.issue({ per_page: 100 }),
     );
 
     // Whenever the PR leaves draft, retire any active Copilot tracker so the
     // next round of findings (if any) starts with a fresh comment.
-    await this.markCopilotCommentOutdated(context, currentComments.data);
+    await this.markCopilotCommentOutdated(context, currentComments);
 
     if (unansweredCopilotFindings.length) {
       // The @octokit/webhooks-types union for ready_for_review collapses pull_request to `never`,
@@ -142,7 +149,7 @@ export class ReviewDrafter extends BaseWebhookHandler {
       return;
     }
 
-    if (!currentComments.data.find((comment) => comment.body.startsWith(MESSAGE_ID))) {
+    if (!currentComments.find((comment) => comment.body?.startsWith(MESSAGE_ID))) {
       // We did not add the comment, so we should not request a review
       return;
     }
@@ -196,16 +203,7 @@ export class ReviewDrafter extends BaseWebhookHandler {
     if (!login) {
       return false;
     }
-
-    const normalized = login.toLowerCase();
-    if (!normalized.includes('copilot')) {
-      return false;
-    }
-
-    // Bot accounts use a `[bot]` suffix; GitHub's AI Copilot reviewer uses the bare `Copilot`
-    // login (rendered with an "AI" badge in the UI, not "Bot"). Real users with `copilot` in
-    // their login (e.g. `MyCopilot`, `copilot-fan`) are excluded by both branches.
-    return normalized === 'copilot' || normalized.endsWith('[bot]');
+    return COPILOT_LOGINS.has(login.toLowerCase());
   }
 
   private isCopilotReview(context: WebhookContext<PullRequestReviewSubmittedEvent>): boolean {
@@ -231,7 +229,8 @@ export class ReviewDrafter extends BaseWebhookHandler {
   private async findUnansweredCopilotFindings(
     context: WebhookContext<PullRequestReviewSubmittedEvent | PullRequestReadyForReviewEvent>,
   ): Promise<UnansweredFinding[]> {
-    const { data: reviewComments } = await context.github.pulls.listReviewComments(
+    const reviewComments = await context.github.paginate(
+      context.github.pulls.listReviewComments,
       context.pullRequest({ per_page: 100 }),
     );
 
@@ -255,13 +254,20 @@ export class ReviewDrafter extends BaseWebhookHandler {
         .map((reviewComment) => reviewComment.in_reply_to_id as number),
     );
 
-    // The author can also acknowledge a finding by reacting to it (e.g. :+1: on the implementation).
+    // The author can also acknowledge a finding with a positive reaction (e.g. :+1: on the
+    // implementation). Negative or ambiguous reactions (-1, confused, eyes, laugh) are not
+    // treated as acknowledgment.
     const findingHasAuthorReaction = await Promise.all(
       copilotFindings.map(async (finding) => {
-        const { data: reactions } = await context.github.reactions.listForPullRequestReviewComment(
+        const reactions = await context.github.paginate(
+          context.github.reactions.listForPullRequestReviewComment,
           context.repo({ comment_id: finding.id, per_page: 100 }),
         );
-        return reactions.some((reaction) => reaction.user?.login?.toLowerCase() === authorLogin);
+        return reactions.some(
+          (reaction) =>
+            reaction.user?.login?.toLowerCase() === authorLogin &&
+            ACKNOWLEDGMENT_REACTIONS.has(reaction.content),
+        );
       }),
     );
 
@@ -295,11 +301,12 @@ export class ReviewDrafter extends BaseWebhookHandler {
     context: WebhookContext<PullRequestReviewSubmittedEvent | PullRequestReadyForReviewEvent>,
     unansweredCopilotFindings: UnansweredFinding[],
   ): Promise<void> {
-    const currentComments = await context.github.issues.listComments(
+    const currentComments = await context.github.paginate(
+      context.github.issues.listComments,
       context.issue({ per_page: 100 }),
     );
-    const existingComment = currentComments.data.find((comment) =>
-      comment.body.startsWith(COPILOT_MESSAGE_ID),
+    const existingComment = currentComments.find((comment) =>
+      comment.body?.startsWith(COPILOT_MESSAGE_ID),
     );
 
     const body = COPILOT_REVIEW_COMMENT(

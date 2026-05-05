@@ -13,7 +13,7 @@ import { loadJsonFixture } from '../../../../utils/fixture';
 import { mockWebhookContext } from '../../../../utils/test_context';
 
 describe('ReviewDrafter', () => {
-  const copilotLogin = 'copilot-pull-request-reviewer[bot]';
+  const copilotLogin = 'Copilot';
   const authorLogin = 'Codertocat';
 
   let handler: ReviewDrafter;
@@ -393,8 +393,8 @@ describe('ReviewDrafter', () => {
       expect(context.github.issues.createComment).toHaveBeenCalled();
     });
 
-    it('recognizes the bare "Copilot" login (AI agent without [bot] suffix)', async () => {
-      const bareCopilot = 'Copilot';
+    it('recognizes "Copilot" as the official Copilot login', async () => {
+      const recognizedLogin = 'Copilot';
       const context = mockWebhookContext<PullRequestReviewSubmittedEvent>({
         eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
         payload: {
@@ -402,7 +402,7 @@ describe('ReviewDrafter', () => {
           review: {
             id: 14,
             state: 'commented',
-            user: { login: bareCopilot, type: 'Bot' },
+            user: { login: recognizedLogin, type: 'Bot' },
           },
         } as any,
         github: {
@@ -412,7 +412,7 @@ describe('ReviewDrafter', () => {
                 {
                   id: 601,
                   in_reply_to_id: null,
-                  user: { login: bareCopilot },
+                  user: { login: recognizedLogin },
                   html_url: 'https://github.com/home-assistant/core/pull/1#discussion_r601',
                 },
               ],
@@ -437,8 +437,56 @@ describe('ReviewDrafter', () => {
       expect(context.github.issues.createComment).toHaveBeenCalled();
     });
 
-    it.each(['mycopilot', 'copilot-fan', 'copilotuser'])(
-      'treats "%s" (login containing "copilot" without [bot] and not exact match) as a regular user',
+    it.each(['-1', 'confused', 'eyes', 'laugh'])(
+      'does not treat author "%s" reaction as resolution',
+      async (reaction) => {
+        const context = mockWebhookContext<PullRequestReviewSubmittedEvent>({
+          eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
+          payload: {
+            ...basePayload(EventType.PULL_REQUEST_REVIEW_SUBMITTED),
+            review: {
+              id: 15,
+              state: 'commented',
+              user: { login: copilotLogin, type: 'Bot' },
+            },
+          } as any,
+          github: {
+            pulls: {
+              listReviewComments: jest.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: 701,
+                    in_reply_to_id: null,
+                    user: { login: copilotLogin },
+                    html_url: 'https://github.com/home-assistant/core/pull/1#discussion_r701',
+                  },
+                ],
+              }),
+            },
+            reactions: {
+              listForPullRequestReviewComment: reactionsByComment({
+                701: [{ user: { login: authorLogin }, content: reaction }],
+              }),
+            },
+            issues: {
+              listComments: jest.fn().mockResolvedValue({ data: [] }),
+              createComment: jest.fn(),
+              updateComment: jest.fn(),
+            },
+          },
+        });
+
+        (context as any).convertPullRequestToDraft = jest.fn();
+
+        await handler.handle(context as WebhookContext<PullRequestReviewSubmittedEvent>);
+
+        expect((context as any).convertPullRequestToDraft).toHaveBeenCalledWith('PR_NODE_ID');
+        expect(context.github.issues.createComment).toHaveBeenCalled();
+      },
+    );
+
+    it.each(['mycopilot', 'copilot-fan', 'copilotuser', 'mycopilot-helper[bot]', 'copilot-fork[bot]'])(
+      'treats "%s" (login containing "copilot" but not in the known-Copilot set) as a regular user',
       async (fakeCopilot) => {
         const context = mockWebhookContext<PullRequestReviewSubmittedEvent>({
           eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
