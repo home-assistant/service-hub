@@ -1,10 +1,10 @@
+import { verify } from "@octokit/webhooks-methods";
 import { Hono } from "hono";
 import { WebhookContext } from "./context/webhook-context.js";
 import { createDatabase } from "./db/index.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import type { EventType } from "./github/types.js";
-import { verifyWebhookSignature } from "./github/webhook.js";
 import { config, dispatch } from "./handlers/registry.js";
 import { evaluatePR, evaluateRecentPRs } from "./refresh/evaluate.js";
 import { withSentry } from "./sentry.js";
@@ -28,7 +28,7 @@ app.post("/github/webhook", async (c) => {
   const body = await c.req.text();
   const signature = c.req.header("x-hub-signature-256") ?? "";
 
-  if (!(await verifyWebhookSignature(c.env.GITHUB_WEBHOOK_SECRET, body, signature))) {
+  if (!(await verify(c.env.GITHUB_WEBHOOK_SECRET, body, signature))) {
     return c.text("Invalid signature", 401);
   }
 

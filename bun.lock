@@ -5,18 +5,19 @@
     "": {
       "name": "ha-github-bot",
       "dependencies": {
-        "@octokit/auth-app": "latest",
-        "@octokit/rest": "latest",
-        "@octokit/webhooks-types": "latest",
-        "@sentry/cloudflare": "latest",
-        "hono": "latest",
+        "@octokit/auth-app": "^8.2.0",
+        "@octokit/rest": "^22.0.1",
+        "@octokit/webhooks-methods": "^6.0.0",
+        "@octokit/webhooks-types": "^7.6.1",
+        "@sentry/cloudflare": "^10.51.0",
+        "hono": "^4.12.18",
       },
       "devDependencies": {
-        "@biomejs/biome": "latest",
-        "@cloudflare/workers-types": "latest",
-        "typescript": "latest",
-        "vitest": "latest",
-        "wrangler": "latest",
+        "@biomejs/biome": "^2.4.14",
+        "@cloudflare/workers-types": "^4.20260506.1",
+        "typescript": "^6.0.3",
+        "vitest": "^4.1.5",
+        "wrangler": "^4.88.0",
       },
     },
   },
@@ -202,6 +203,8 @@
     "@octokit/rest": ["@octokit/rest@22.0.1", "", { "dependencies": { "@octokit/core": "^7.0.6", "@octokit/plugin-paginate-rest": "^14.0.0", "@octokit/plugin-request-log": "^6.0.0", "@octokit/plugin-rest-endpoint-methods": "^17.0.0" } }, "sha512-Jzbhzl3CEexhnivb1iQ0KJ7s5vvjMWcmRtq5aUsKmKDrRW6z3r84ngmiFKFvpZjpiU/9/S6ITPFRpn5s/3uQJw=="],
 
     "@octokit/types": ["@octokit/types@16.0.0", "", { "dependencies": { "@octokit/openapi-types": "^27.0.0" } }, "sha512-sKq+9r1Mm4efXW1FCk7hFSeJo4QKreL/tTbR0rz/qx/r1Oa2VV83LTA/H/MuCOX7uCIJmQVRKBcbmWoySjAnSg=="],
+
+    "@octokit/webhooks-methods": ["@octokit/webhooks-methods@6.0.0", "", {}, "sha512-MFlzzoDJVw/GcbfzVC1RLR36QqkTLUf79vLVO3D+xn7r0QgxnFoLZgtrzxiQErAjFUOdH6fas2KeQJ1yr/qaXQ=="],
 
     "@octokit/webhooks-types": ["@octokit/webhooks-types@7.6.1", "", {}, "sha512-S8u2cJzklBC0FgTwWVLaM8tMrDuDMVE4xiTK4EYXM9GntyvrdbSoxqDQa+Fh57CCNApyIpyeqPhhFEmHPfrXgw=="],
 
