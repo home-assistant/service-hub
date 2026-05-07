@@ -1,8 +1,13 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { upsertDashboardComment } from "../dashboard/comment.js";
 import type { DashboardSection } from "../dashboard/types.js";
+import { blockingLabelsHandler } from "./blocking-labels.js";
+import { docsMissingHandler } from "./docs-missing.js";
+import { labelCleanerHandler } from "./label-cleaner.js";
 import { requiredLabelsHandler } from "./required-labels.js";
+import { reviewDrafterHandler } from "./review-drafter.js";
 import type { HandlerResult, WebhookHandler } from "./types.js";
+import { validateClaHandler } from "./validate-cla.js";
 
 export interface RegistryConfig {
   organizations: Record<string, WebhookHandler[]>;
@@ -11,13 +16,19 @@ export interface RegistryConfig {
 
 export const config: RegistryConfig = {
   organizations: {
-    // "home-assistant": [validateCla, reviewDrafter],
+    "home-assistant": [validateClaHandler, reviewDrafterHandler],
+    esphome: [reviewDrafterHandler],
   },
   repositories: {
-    "home-assistant/core": [requiredLabelsHandler],
-    // "home-assistant/supervisor": [requiredLabelsHandler],
-    // "home-assistant/home-assistant.io": [branchLabels, docsTargetBranch],
-    // "esphome/esphome": [],
+    "home-assistant/core": [
+      requiredLabelsHandler,
+      blockingLabelsHandler,
+      docsMissingHandler,
+      labelCleanerHandler,
+    ],
+    "home-assistant/supervisor": [requiredLabelsHandler],
+    "home-assistant/frontend": [blockingLabelsHandler],
+    "home-assistant/home-assistant.io": [labelCleanerHandler],
   },
 };
 
