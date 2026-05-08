@@ -19,24 +19,67 @@ describe("dashboard renderer", () => {
   ];
 
   describe("renderDashboard", () => {
-    it("renders sections as a markdown table", () => {
+    it("renders failing checks in the main table", () => {
       const result = renderDashboard(sections);
 
       expect(result).toContain(SENTINEL);
       expect(result).toContain("## Pull Request Checklist");
-      expect(result).toContain(":white_check_mark:");
       expect(result).toContain(":x:");
-      expect(result).toContain("CLA");
       expect(result).toContain("Required Labels");
-      expect(result).toContain("All contributors have signed");
       expect(result).toContain("Missing one of: bugfix, new-feature");
     });
 
-    it("embeds section data as HTML comments for parsing", () => {
+    it("renders passing checks inside a collapsed details block", () => {
       const result = renderDashboard(sections);
 
-      expect(result).toContain('<!-- section:cla:{"id":"cla"');
-      expect(result).toContain('<!-- section:required-labels:{"id":"required-labels"');
+      expect(result).toContain("<details>");
+      expect(result).toContain("<summary>1 check passed</summary>");
+      expect(result).toContain(":white_check_mark:");
+      expect(result).toContain("CLA");
+      expect(result).toContain("</details>");
+    });
+
+    it("pluralizes the passed count", () => {
+      const allPass: DashboardSection[] = [
+        { id: "a", title: "A", status: "pass", message: "ok" },
+        { id: "b", title: "B", status: "pass", message: "ok" },
+      ];
+      const result = renderDashboard(allPass);
+
+      expect(result).toContain("<summary>2 checks passed</summary>");
+      expect(result).not.toContain("| :x:");
+    });
+
+    it("omits details block when nothing passes", () => {
+      const allFail: DashboardSection[] = [{ id: "a", title: "A", status: "fail", message: "bad" }];
+      const result = renderDashboard(allFail);
+
+      expect(result).not.toContain("<details>");
+      expect(result).toContain(":x:");
+    });
+
+    it("omits main table when everything passes", () => {
+      const allPass: DashboardSection[] = [{ id: "a", title: "A", status: "pass", message: "ok" }];
+      const result = renderDashboard(allPass);
+
+      // The only table should be inside details
+      const beforeDetails = result.split("<details>")[0];
+      expect(beforeDetails).not.toContain("| Status |");
+    });
+
+    it("treats pending as failing and info as passing", () => {
+      const mixed: DashboardSection[] = [
+        { id: "a", title: "A", status: "pending", message: "waiting" },
+        { id: "b", title: "B", status: "info", message: "fyi" },
+      ];
+      const result = renderDashboard(mixed);
+
+      // Pending should be in the main table (outside details)
+      const beforeDetails = result.split("<details>")[0];
+      expect(beforeDetails).toContain(":hourglass:");
+
+      // Info should be inside details
+      expect(result).toContain("<summary>1 check passed</summary>");
     });
 
     it("renders title as link when url is provided", () => {
@@ -51,6 +94,13 @@ describe("dashboard renderer", () => {
       ]);
 
       expect(result).toContain("[Documentation](https://example.com)");
+    });
+
+    it("embeds section data as HTML comments", () => {
+      const result = renderDashboard(sections);
+
+      expect(result).toContain('<!-- section:cla:{"id":"cla"');
+      expect(result).toContain('<!-- section:required-labels:{"id":"required-labels"');
     });
   });
 

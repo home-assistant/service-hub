@@ -11,31 +11,44 @@ const STATUS_ICONS: Record<SectionStatus, string> = {
   info: ":information_source:",
 };
 
+function renderRow(s: DashboardSection): string {
+  const icon = STATUS_ICONS[s.status];
+  const title = s.url ? `[${s.title}](${s.url})` : s.title;
+  return `| ${icon} | ${title} | ${s.message} |`;
+}
+
+const TABLE_HEADER = ["| Status | Check | Details |", "|--------|-------|---------|"];
+
 export function renderDashboard(sections: DashboardSection[]): string {
-  const rows = sections.map((s) => {
-    const icon = STATUS_ICONS[s.status];
-    const title = s.url ? `[${s.title}](${s.url})` : s.title;
-    return `| ${icon} | ${title} | ${s.message} |`;
-  });
+  const failing = sections.filter((s) => s.status === "fail" || s.status === "pending");
+  const passing = sections.filter((s) => s.status === "pass" || s.status === "info");
 
   const sectionData = sections.map(
     (s) => `${SECTION_PREFIX}${s.id}:${JSON.stringify(s)}${SECTION_SUFFIX}`,
   );
 
-  return [
-    SENTINEL,
-    "",
-    "## Pull Request Checklist",
-    "",
-    "| Status | Check | Details |",
-    "|--------|-------|---------|",
-    ...rows,
-    "",
-    "---",
-    `<sub>Last updated: ${new Date().toISOString()}</sub>`,
-    "",
-    ...sectionData,
-  ].join("\n");
+  const lines: string[] = [SENTINEL, "", "## Pull Request Checklist", ""];
+
+  if (failing.length > 0) {
+    lines.push(...TABLE_HEADER, ...failing.map(renderRow), "");
+  }
+
+  if (passing.length > 0) {
+    lines.push(
+      "<details>",
+      `<summary>${passing.length} check${passing.length === 1 ? "" : "s"} passed</summary>`,
+      "",
+      ...TABLE_HEADER,
+      ...passing.map(renderRow),
+      "",
+      "</details>",
+      "",
+    );
+  }
+
+  lines.push("---", `<sub>Last updated: ${new Date().toISOString()}</sub>`, "", ...sectionData);
+
+  return lines.join("\n");
 }
 
 export function parseDashboard(body: string): DashboardSection[] {
