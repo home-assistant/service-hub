@@ -1,3 +1,4 @@
+import type { IssuesLabeledEvent, PullRequestLabeledEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -9,11 +10,7 @@ export const issueMentionCodeOwners: Rule = {
   listens: [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      label?: { name: string };
-      issue?: { user: { login: string }; assignees: { login: string }[] };
-      pull_request?: { user: { login: string }; assignees: { login: string }[] };
-    };
+    const payload = context.payload as IssuesLabeledEvent | PullRequestLabeledEvent;
 
     if (!payload.label?.name.startsWith("integration: ")) return;
 
@@ -28,7 +25,9 @@ export const issueMentionCodeOwners: Rule = {
     try {
       const { data } = await context.github.repos.getContent(context.repo({ path: "CODEOWNERS" }));
       if (!("content" in data)) return;
-      codeownersContent = atob(data.content);
+      codeownersContent = new TextDecoder().decode(
+        Uint8Array.from(atob(data.content), (c) => c.charCodeAt(0)),
+      );
     } catch {
       return;
     }
@@ -42,7 +41,8 @@ export const issueMentionCodeOwners: Rule = {
     const owners = match.owners.map((o) => o.substring(1).toLowerCase());
     const codeownersLine = `https://github.com/${context.repository}/blob/HEAD/CODEOWNERS#L${match.line}`;
 
-    const triggerItem = payload.pull_request ?? payload.issue;
+    const triggerItem =
+      "pull_request" in payload ? payload.pull_request : "issue" in payload ? payload.issue : null;
     if (!triggerItem) return;
 
     const payloadUsername = triggerItem.user.login.toLowerCase();

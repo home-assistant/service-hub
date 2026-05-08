@@ -1,3 +1,4 @@
+import type { PullRequestLabeledEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -8,9 +9,7 @@ export const prNewIntegrationValidation: Rule = {
   listens: [EventType.PULL_REQUEST_LABELED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      label?: { name: string };
-    };
+    const payload = context.payload as PullRequestLabeledEvent;
 
     if (payload.label?.name !== "new-integration") return;
 

@@ -32,8 +32,8 @@ describe("pr-draft-on-changes-requested", () => {
   describe("review submitted action", () => {
     it("converts PR to draft on changes_requested from org member", async () => {
       const github = createMockGitHub();
-      (github.paginate as any).mockResolvedValue([]);
-      (github.orgs as any).getMembershipForUser.mockResolvedValue({
+      github.paginate.mockResolvedValue([]);
+      github.orgs.getMembershipForUser.mockResolvedValue({
         data: { role: "member" },
       });
 
@@ -48,7 +48,8 @@ describe("pr-draft-on-changes-requested", () => {
       });
 
       const result = await prDraftOnChangesRequested.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.graphql).toHaveBeenCalledWith(
         expect.stringContaining("convertPullRequestToDraft"),
@@ -70,7 +71,8 @@ describe("pr-draft-on-changes-requested", () => {
       });
 
       const result = await prDraftOnChangesRequested.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
@@ -89,14 +91,15 @@ describe("pr-draft-on-changes-requested", () => {
       });
 
       const result = await prDraftOnChangesRequested.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
 
     it("does nothing for non-org-member reviewers", async () => {
       const github = createMockGitHub();
-      (github.orgs as any).getMembershipForUser.mockRejectedValue(new Error("Not a member"));
+      github.orgs.getMembershipForUser.mockRejectedValue(new Error("Not a member"));
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
@@ -109,7 +112,8 @@ describe("pr-draft-on-changes-requested", () => {
       });
 
       const result = await prDraftOnChangesRequested.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
@@ -118,10 +122,10 @@ describe("pr-draft-on-changes-requested", () => {
   describe("ready for review action", () => {
     it("re-requests reviews from human reviewers", async () => {
       const github = createMockGitHub();
-      (github.paginate as any).mockResolvedValue([
+      github.paginate.mockResolvedValue([
         { id: 1, body: "<!-- ReviewDrafterComment -->\nSome message" },
       ]);
-      (github.pulls.listReviews as any).mockResolvedValue({
+      github.pulls.listReviews.mockResolvedValue({
         data: [
           {
             id: 10,
@@ -140,7 +144,8 @@ describe("pr-draft-on-changes-requested", () => {
       });
 
       const result = await prDraftOnChangesRequested.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.pulls.requestReviewers).toHaveBeenCalledWith(
         expect.objectContaining({ reviewers: ["reviewer"] }),
@@ -149,10 +154,10 @@ describe("pr-draft-on-changes-requested", () => {
 
     it("dismisses stale bot reviews", async () => {
       const github = createMockGitHub();
-      (github.paginate as any).mockResolvedValue([
+      github.paginate.mockResolvedValue([
         { id: 1, body: "<!-- ReviewDrafterComment -->\nSome message" },
       ]);
-      (github.pulls.listReviews as any).mockResolvedValue({
+      github.pulls.listReviews.mockResolvedValue({
         data: [
           {
             id: 20,
@@ -171,7 +176,8 @@ describe("pr-draft-on-changes-requested", () => {
       });
 
       const result = await prDraftOnChangesRequested.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.pulls.dismissReview).toHaveBeenCalledWith(
         expect.objectContaining({ review_id: 20, message: "Stale" }),
@@ -180,11 +186,7 @@ describe("pr-draft-on-changes-requested", () => {
   });
 
   it("listens to review submitted and ready-for-review events", () => {
-    expect(prDraftOnChangesRequested.listens).toContain(
-      EventType.PULL_REQUEST_REVIEW_SUBMITTED,
-    );
-    expect(prDraftOnChangesRequested.listens).toContain(
-      EventType.PULL_REQUEST_READY_FOR_REVIEW,
-    );
+    expect(prDraftOnChangesRequested.listens).toContain(EventType.PULL_REQUEST_REVIEW_SUBMITTED);
+    expect(prDraftOnChangesRequested.listens).toContain(EventType.PULL_REQUEST_READY_FOR_REVIEW);
   });
 });

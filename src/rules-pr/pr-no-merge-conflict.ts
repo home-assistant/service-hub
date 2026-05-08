@@ -10,6 +10,7 @@ export const prNoMergeConflict: Rule = {
     // Re-fetch since webhook payload data may be stale
     const { data: pr } = await context.github.pulls.get(context.pullRequest());
 
+    if (pr.mergeable_state === "unknown") return; // GitHub hasn't computed yet
     if (pr.mergeable_state !== "dirty") return;
 
     return { requestChanges: "There is a merge conflict." };

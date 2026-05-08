@@ -1,3 +1,4 @@
+import type { PullRequestLabeledEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -16,9 +17,7 @@ export const prPlatinumCodeOwnerApproval: Rule = {
   ],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      pull_request: { labels: { name: string }[]; head: { sha: string } };
-    };
+    const payload = context.payload as PullRequestLabeledEvent;
 
     const currentLabels = payload.pull_request.labels.map((l) => l.name);
     const integrations = currentLabels.filter((l) => l.startsWith("integration: "));

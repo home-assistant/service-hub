@@ -1,4 +1,18 @@
 import type { Octokit } from "@octokit/rest";
+import type {
+  IssueCommentCreatedEvent,
+  IssuesLabeledEvent,
+  IssuesOpenedEvent,
+  PullRequestClosedEvent,
+  PullRequestEditedEvent,
+  PullRequestLabeledEvent,
+  PullRequestOpenedEvent,
+  PullRequestReadyForReviewEvent,
+  PullRequestReopenedEvent,
+  PullRequestReviewSubmittedEvent,
+  PullRequestSynchronizeEvent,
+  PullRequestUnlabeledEvent,
+} from "@octokit/webhooks-types";
 import type { Database } from "../db/types.js";
 import type {
   EventType,
@@ -11,22 +25,23 @@ import type {
   Repository,
 } from "../github/types.js";
 
-export interface WebhookPayload {
-  repository: {
-    full_name: string;
-    name: string;
-    owner: { login: string };
-  };
-  sender: { login: string; type: string };
-  number?: number;
-  issue?: { number: number };
-  pull_request?: { number: number; head?: { sha: string } };
-  action?: string;
-}
+export type WebhookEventPayload =
+  | IssueCommentCreatedEvent
+  | IssuesLabeledEvent
+  | IssuesOpenedEvent
+  | PullRequestClosedEvent
+  | PullRequestEditedEvent
+  | PullRequestLabeledEvent
+  | PullRequestOpenedEvent
+  | PullRequestReadyForReviewEvent
+  | PullRequestReopenedEvent
+  | PullRequestReviewSubmittedEvent
+  | PullRequestSynchronizeEvent
+  | PullRequestUnlabeledEvent;
 
 interface WebhookContextParams {
   github: Octokit;
-  payload: WebhookPayload;
+  payload: WebhookEventPayload;
   eventType: EventType;
   db: Database;
 }
@@ -36,10 +51,10 @@ export class WebhookContext {
   readonly eventType: EventType;
   readonly repository: Repository;
   readonly organization: Organization;
-  readonly payload: WebhookPayload;
+  readonly payload: WebhookEventPayload;
   readonly db: Database;
 
-  _prFilesCache?: ListPullRequestFiles;
+  prFilesCache?: ListPullRequestFiles;
   private _issueCache = new Map<string, GetIssueResponse>();
   private _pullRequestCache = new Map<string, GetPullRequestResponse>();
 
@@ -57,7 +72,10 @@ export class WebhookContext {
   }
 
   get headSha(): string {
-    return this.payload.pull_request?.head?.sha ?? "";
+    if ("pull_request" in this.payload && this.payload.pull_request) {
+      return this.payload.pull_request.head.sha;
+    }
+    return "";
   }
 
   repo<T extends Record<string, unknown> = Record<string, never>>(
@@ -74,7 +92,10 @@ export class WebhookContext {
     data?: T,
   ): { issue_number: number; owner: string; repo: string } & T {
     const issueNumber =
-      this.payload.issue?.number ?? this.payload.pull_request?.number ?? this.payload.number ?? 0;
+      ("issue" in this.payload && this.payload.issue?.number) ||
+      ("pull_request" in this.payload && this.payload.pull_request?.number) ||
+      ("number" in this.payload && this.payload.number) ||
+      0;
     return {
       issue_number: issueNumber,
       ...this.repo(data),
@@ -85,7 +106,10 @@ export class WebhookContext {
     data?: T,
   ): { pull_number: number; owner: string; repo: string } & T {
     const pullNumber =
-      (this.payload.issue ?? this.payload.pull_request ?? this.payload)?.number ?? 0;
+      ("issue" in this.payload && this.payload.issue?.number) ||
+      ("pull_request" in this.payload && this.payload.pull_request?.number) ||
+      ("number" in this.payload && this.payload.number) ||
+      0;
     return {
       pull_number: pullNumber,
       ...this.repo(data),
@@ -93,10 +117,13 @@ export class WebhookContext {
   }
 
   async fetchPRFiles(): Promise<ListPullRequestFiles> {
-    if (!this._prFilesCache) {
-      this._prFilesCache = (await this.github.pulls.listFiles(this.pullRequest())).data;
+    if (!this.prFilesCache) {
+      this.prFilesCache = await this.github.paginate(this.github.pulls.listFiles, {
+        ...this.pullRequest(),
+        per_page: 100,
+      });
     }
-    return this._prFilesCache;
+    return this.prFilesCache;
   }
 
   async fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {

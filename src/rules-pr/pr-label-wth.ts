@@ -1,3 +1,4 @@
+import type { PullRequestOpenedEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -10,9 +11,7 @@ export const prLabelWth: Rule = {
   listens: [EventType.PULL_REQUEST_OPENED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      pull_request: { body: string | null };
-    };
+    const payload = context.payload as PullRequestOpenedEvent;
 
     for (const link of extractForumLinks(payload.pull_request.body)) {
       try {

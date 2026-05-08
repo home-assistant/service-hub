@@ -1,3 +1,4 @@
+import { deduplicateByName } from "../utils/deduplicate.js";
 import type { Command, CommandContext } from "./types.js";
 import { updateCommand } from "./update.js";
 
@@ -22,15 +23,7 @@ export function findCommand(
 ): Command | undefined {
   const orgCommands = registryConfig.organizations[organization] ?? [];
   const repoCommands = registryConfig.repositories[repoFullName] ?? [];
-
-  const seen = new Set<string>();
-  const combined: Command[] = [];
-  for (const cmd of [...repoCommands, ...orgCommands]) {
-    if (!seen.has(cmd.name)) {
-      seen.add(cmd.name);
-      combined.push(cmd);
-    }
-  }
+  const combined = deduplicateByName([...repoCommands, ...orgCommands]);
 
   return combined.find((cmd) => cmd.pattern.test(commentBody));
 }

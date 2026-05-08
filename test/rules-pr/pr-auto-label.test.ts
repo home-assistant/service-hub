@@ -3,10 +3,7 @@ import { EventType } from "../../src/github/types.js";
 import { prAutoLabel } from "../../src/rules-pr/pr-auto-label.js";
 import { createMockContext, mockPRFiles } from "../helpers/mock-context.js";
 
-function makeFile(
-  filename: string,
-  overrides: { status?: string; additions?: number } = {},
-) {
+function makeFile(filename: string, overrides: { status?: string; additions?: number } = {}) {
   return {
     filename,
     status: overrides.status ?? "modified",
@@ -300,15 +297,13 @@ describe("pr-auto-label", () => {
 
   describe("top labels", () => {
     it("does not add top labels for core or new-integration", async () => {
-      (globalThis.fetch as any).mockResolvedValue({
+      globalThis.fetch.mockResolvedValue({
         ok: true,
         json: async () => ({ integrations: { mqtt: 100000 } }),
       });
 
       const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
-      mockPRFiles(context, [
-        makeFile("homeassistant/components/mqtt/__init__.py"),
-      ]);
+      mockPRFiles(context, [makeFile("homeassistant/components/mqtt/__init__.py")]);
 
       const result = await prAutoLabel.handle(context);
       // mqtt is a core component, so LABELS_PREVENT_TOP prevents top labels

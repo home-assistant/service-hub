@@ -22,7 +22,8 @@ describe("pr-docs-parenting", () => {
       expect(result?.actions).toHaveLength(1);
 
       // Execute the action
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
       expect(github.issues.addLabels).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: "home-assistant",

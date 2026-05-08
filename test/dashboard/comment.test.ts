@@ -1,8 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import {
-  findDashboardCommentId,
-  upsertDashboardComment,
-} from "../../src/dashboard/comment.js";
+import { describe, expect, it } from "vitest";
+import { findDashboardCommentId, upsertDashboardComment } from "../../src/dashboard/comment.js";
 import { SENTINEL } from "../../src/dashboard/renderer.js";
 import type { DashboardSection } from "../../src/dashboard/types.js";
 import { createMockGitHub } from "../helpers/mock-context.js";
@@ -12,7 +9,7 @@ const params = { owner: "home-assistant", repo: "core", issue_number: 1 };
 describe("findDashboardCommentId", () => {
   it("finds a comment containing the dashboard sentinel", async () => {
     const github = createMockGitHub();
-    (github.paginate as any).mockResolvedValue([
+    github.paginate.mockResolvedValue([
       { id: 1, body: "Regular comment" },
       { id: 2, body: `${SENTINEL}\n## Pull Request Checklist` },
     ]);
@@ -23,9 +20,7 @@ describe("findDashboardCommentId", () => {
 
   it("returns null when no dashboard comment exists", async () => {
     const github = createMockGitHub();
-    (github.paginate as any).mockResolvedValue([
-      { id: 1, body: "Just a comment" },
-    ]);
+    github.paginate.mockResolvedValue([{ id: 1, body: "Just a comment" }]);
 
     const result = await findDashboardCommentId(github, params);
     expect(result).toBeNull();
@@ -33,7 +28,7 @@ describe("findDashboardCommentId", () => {
 
   it("returns null when no comments exist", async () => {
     const github = createMockGitHub();
-    (github.paginate as any).mockResolvedValue([]);
+    github.paginate.mockResolvedValue([]);
 
     const result = await findDashboardCommentId(github, params);
     expect(result).toBeNull();
@@ -47,7 +42,7 @@ describe("upsertDashboardComment", () => {
 
   it("creates a new comment when none exists", async () => {
     const github = createMockGitHub();
-    (github.paginate as any).mockResolvedValue([]);
+    github.paginate.mockResolvedValue([]);
 
     await upsertDashboardComment(github, params, sections);
 
@@ -65,9 +60,7 @@ describe("upsertDashboardComment", () => {
     const github = createMockGitHub();
     const existingBody = `${SENTINEL}\n<!-- section:old:${JSON.stringify({ id: "old", title: "Old", status: "pass", message: "OK" })} -->`;
 
-    (github.paginate as any).mockResolvedValue([
-      { id: 42, body: existingBody },
-    ]);
+    github.paginate.mockResolvedValue([{ id: 42, body: existingBody }]);
 
     await upsertDashboardComment(github, params, sections);
 

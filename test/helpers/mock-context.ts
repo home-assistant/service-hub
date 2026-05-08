@@ -1,8 +1,57 @@
 import type { Octokit } from "@octokit/rest";
+import type { Mock } from "vitest";
 import { vi } from "vitest";
+import type { WebhookEventPayload } from "../../src/context/webhook-context.js";
 import { WebhookContext } from "../../src/context/webhook-context.js";
 import type { Database } from "../../src/db/types.js";
 import { EventType } from "../../src/github/types.js";
+
+export interface MockGitHub {
+  issues: {
+    createComment: Mock;
+    updateComment: Mock;
+    listComments: Mock;
+    addLabels: Mock;
+    removeLabel: Mock;
+    get: Mock;
+    getLabel: Mock;
+    addAssignees: Mock;
+  };
+  pulls: {
+    get: Mock;
+    list: Mock;
+    listFiles: Mock;
+    createReview: Mock;
+    listReviews: Mock;
+    listReviewComments: Mock;
+    update: Mock;
+    requestReviewers: Mock;
+    dismissReview: Mock;
+    listCommits: Mock;
+  };
+  repos: {
+    createCommitStatus: Mock;
+    getContent: Mock;
+  };
+  teams: {
+    listMembersInOrg: Mock;
+  };
+  orgs: {
+    getMembershipForUser: Mock;
+  };
+  reactions: {
+    createForIssueComment: Mock;
+    listForPullRequestReviewComment: Mock;
+  };
+  paginate: Mock;
+  graphql: Mock;
+}
+
+export interface MockDatabase {
+  query: Mock;
+  execute: Mock;
+  queryOne: Mock;
+}
 
 export function createMockPayload(overrides: Record<string, unknown> = {}) {
   return {
@@ -50,7 +99,7 @@ export function createMockIssuePayload(overrides: Record<string, unknown> = {}) 
   };
 }
 
-export function createMockGitHub() {
+export function createMockGitHub(): MockGitHub {
   return {
     issues: {
       createComment: vi.fn().mockResolvedValue({ data: {} }),
@@ -64,6 +113,7 @@ export function createMockGitHub() {
     },
     pulls: {
       get: vi.fn().mockResolvedValue({ data: {} }),
+      list: vi.fn().mockResolvedValue({ data: [] }),
       listFiles: vi.fn().mockResolvedValue({ data: [] }),
       createReview: vi.fn().mockResolvedValue({ data: {} }),
       listReviews: vi.fn().mockResolvedValue({ data: [] }),
@@ -89,10 +139,10 @@ export function createMockGitHub() {
     },
     paginate: vi.fn().mockImplementation(async () => []),
     graphql: vi.fn().mockResolvedValue({}),
-  } as unknown as Octokit;
+  };
 }
 
-export function createMockDb(): Database {
+export function createMockDb(): MockDatabase {
   return {
     query: vi.fn().mockResolvedValue([]),
     execute: vi.fn().mockResolvedValue({ changes: 0 }),
@@ -100,12 +150,22 @@ export function createMockDb(): Database {
   };
 }
 
+/** Cast MockGitHub to Octokit for use in WebhookContext */
+function asOctokit(mock: MockGitHub): Octokit {
+  return mock as unknown as Octokit;
+}
+
+/** Cast MockDatabase to Database for use in WebhookContext */
+function asDatabase(mock: MockDatabase): Database {
+  return mock as unknown as Database;
+}
+
 export function createMockContext(
   overrides: {
     eventType?: EventType;
     payload?: Record<string, unknown>;
-    github?: Octokit;
-    db?: Database;
+    github?: MockGitHub;
+    db?: MockDatabase;
   } = {},
 ): WebhookContext {
   const github = overrides.github ?? createMockGitHub();
@@ -113,15 +173,20 @@ export function createMockContext(
   const eventType = overrides.eventType ?? EventType.PULL_REQUEST_OPENED;
   const payload = createMockPayload(overrides.payload);
 
-  return new WebhookContext({ github, payload, eventType, db });
+  return new WebhookContext({
+    github: asOctokit(github),
+    payload: payload as unknown as WebhookEventPayload,
+    eventType,
+    db: asDatabase(db),
+  });
 }
 
 export function createMockIssueContext(
   overrides: {
     eventType?: EventType;
     payload?: Record<string, unknown>;
-    github?: Octokit;
-    db?: Database;
+    github?: MockGitHub;
+    db?: MockDatabase;
   } = {},
 ): WebhookContext {
   const github = overrides.github ?? createMockGitHub();
@@ -129,10 +194,19 @@ export function createMockIssueContext(
   const eventType = overrides.eventType ?? EventType.ISSUES_OPENED;
   const payload = createMockIssuePayload(overrides.payload);
 
-  return new WebhookContext({ github, payload, eventType, db });
+  return new WebhookContext({
+    github: asOctokit(github),
+    payload: payload as unknown as WebhookEventPayload,
+    eventType,
+    db: asDatabase(db),
+  });
 }
 
 /** Helper to mock fetchPRFiles by pre-populating the cache */
 export function mockPRFiles(context: WebhookContext, files: Record<string, unknown>[]) {
-  context._prFilesCache = files as WebhookContext["_prFilesCache"];
+  context.prFilesCache = files as WebhookContext["prFilesCache"];
+}
+
+export function lastSegment(path: string): string {
+  return path.split("/").pop() ?? path;
 }

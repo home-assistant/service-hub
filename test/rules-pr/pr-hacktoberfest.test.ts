@@ -1,13 +1,16 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prHacktoberfest } from "../../src/rules-pr/pr-hacktoberfest.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 describe("pr-hacktoberfest", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   describe("PR opened", () => {
     it("adds Hacktoberfest label in October when repo has topic", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date(2025, 9, 15)); // October = month 9
+      vi.spyOn(Date.prototype, "getMonth").mockReturnValue(9); // October = 9
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -23,13 +26,10 @@ describe("pr-hacktoberfest", () => {
 
       const result = await prHacktoberfest.handle(context);
       expect(result).toMatchObject({ labels: ["Hacktoberfest"] });
-
-      vi.useRealTimers();
     });
 
     it("does nothing outside October", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date(2025, 5, 15)); // June
+      vi.spyOn(Date.prototype, "getMonth").mockReturnValue(5); // June
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -45,13 +45,10 @@ describe("pr-hacktoberfest", () => {
 
       const result = await prHacktoberfest.handle(context);
       expect(result).toBeUndefined();
-
-      vi.useRealTimers();
     });
 
     it("does nothing when repo lacks hacktoberfest topic", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date(2025, 9, 15));
+      vi.spyOn(Date.prototype, "getMonth").mockReturnValue(9);
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -67,13 +64,10 @@ describe("pr-hacktoberfest", () => {
 
       const result = await prHacktoberfest.handle(context);
       expect(result).toBeUndefined();
-
-      vi.useRealTimers();
     });
 
     it("does nothing for bot senders", async () => {
-      vi.useFakeTimers();
-      vi.setSystemTime(new Date(2025, 9, 15));
+      vi.spyOn(Date.prototype, "getMonth").mockReturnValue(9);
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -90,8 +84,6 @@ describe("pr-hacktoberfest", () => {
 
       const result = await prHacktoberfest.handle(context);
       expect(result).toBeUndefined();
-
-      vi.useRealTimers();
     });
   });
 

@@ -6,8 +6,8 @@ import {
   extractIssuesOrPullRequestMarkdownLinks,
   extractPullRequestURLLinks,
   extractTasks,
-  lastSegment,
 } from "../../src/utils/text-parser.js";
+import { lastSegment } from "../helpers/mock-context.js";
 
 describe("extractIssuesOrPullRequestMarkdownLinks", () => {
   it("extracts a single markdown-style reference", () => {
@@ -55,9 +55,9 @@ describe("extractPullRequestURLLinks", () => {
   });
 
   it("does not match issue URLs", () => {
-    expect(
-      extractPullRequestURLLinks("https://github.com/home-assistant/core/issues/123"),
-    ).toEqual([]);
+    expect(extractPullRequestURLLinks("https://github.com/home-assistant/core/issues/123")).toEqual(
+      [],
+    );
   });
 });
 
@@ -102,9 +102,7 @@ describe("extractIntegrationDocumentationLinks", () => {
 
 describe("extractForumLinks", () => {
   it("extracts a community forum link", () => {
-    const links = extractForumLinks(
-      "See https://community.home-assistant.io/t/some-topic/12345",
-    );
+    const links = extractForumLinks("See https://community.home-assistant.io/t/some-topic/12345");
     expect(links).toEqual(["https://community.home-assistant.io/t/some-topic/12345"]);
   });
 

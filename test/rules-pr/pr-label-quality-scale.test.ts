@@ -41,7 +41,7 @@ describe("pr-label-quality-scale", () => {
   });
 
   it("fetches manifest and adds quality scale label for integration label", async () => {
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         domain: "hue",
@@ -69,7 +69,7 @@ describe("pr-label-quality-scale", () => {
   });
 
   it("uses 'no score' when manifest has no quality_scale", async () => {
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         domain: "mydevice",
@@ -122,7 +122,7 @@ describe("pr-label-quality-scale", () => {
   });
 
   it("handles both quality_scale.yaml and integration label together", async () => {
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         domain: "hue",

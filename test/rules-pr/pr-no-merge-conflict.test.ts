@@ -6,7 +6,7 @@ import { createMockContext, createMockGitHub } from "../helpers/mock-context.js"
 describe("pr-no-merge-conflict", () => {
   it("requests changes when PR has merge conflict", async () => {
     const github = createMockGitHub();
-    (github.pulls.get as any).mockResolvedValue({
+    github.pulls.get.mockResolvedValue({
       data: { mergeable_state: "dirty" },
     });
 
@@ -21,7 +21,7 @@ describe("pr-no-merge-conflict", () => {
 
   it("returns undefined when PR is clean", async () => {
     const github = createMockGitHub();
-    (github.pulls.get as any).mockResolvedValue({
+    github.pulls.get.mockResolvedValue({
       data: { mergeable_state: "clean" },
     });
 
@@ -36,7 +36,7 @@ describe("pr-no-merge-conflict", () => {
 
   it("returns undefined when mergeable state is unstable", async () => {
     const github = createMockGitHub();
-    (github.pulls.get as any).mockResolvedValue({
+    github.pulls.get.mockResolvedValue({
       data: { mergeable_state: "unstable" },
     });
 

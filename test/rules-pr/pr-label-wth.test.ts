@@ -15,7 +15,7 @@ describe("pr-label-wth", () => {
   });
 
   it("labels WTH when forum link has matching category_id", async () => {
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ category_id: 56 }),
     });
@@ -35,7 +35,7 @@ describe("pr-label-wth", () => {
   });
 
   it("labels WTH for alternative category_id 61", async () => {
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ category_id: 61 }),
     });
@@ -55,7 +55,7 @@ describe("pr-label-wth", () => {
   });
 
   it("does not label when category_id does not match", async () => {
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ category_id: 10 }),
     });
@@ -91,7 +91,7 @@ describe("pr-label-wth", () => {
   });
 
   it("handles fetch errors gracefully", async () => {
-    (globalThis.fetch as any).mockRejectedValue(new Error("network error"));
+    globalThis.fetch.mockRejectedValue(new Error("network error"));
 
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_OPENED,
@@ -108,7 +108,7 @@ describe("pr-label-wth", () => {
   });
 
   it("handles non-ok responses gracefully", async () => {
-    (globalThis.fetch as any).mockResolvedValue({ ok: false });
+    globalThis.fetch.mockResolvedValue({ ok: false });
 
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_OPENED,

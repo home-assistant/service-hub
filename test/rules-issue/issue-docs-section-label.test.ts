@@ -6,7 +6,7 @@ import { createMockGitHub, createMockIssueContext } from "../helpers/mock-contex
 describe("issue-docs-section-label", () => {
   it("adds section label when documentation link found", async () => {
     const github = createMockGitHub();
-    (github.issues.getLabel as any).mockResolvedValue({
+    github.issues.getLabel.mockResolvedValue({
       status: 200,
       data: { name: "getting-started" },
     });
@@ -64,7 +64,7 @@ describe("issue-docs-section-label", () => {
 
   it("returns undefined when section label does not exist in repo", async () => {
     const github = createMockGitHub();
-    (github.issues.getLabel as any).mockRejectedValue(new Error("Not found"));
+    github.issues.getLabel.mockRejectedValue(new Error("Not found"));
 
     const context = createMockIssueContext({
       eventType: EventType.ISSUES_OPENED,

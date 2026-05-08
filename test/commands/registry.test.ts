@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
 import type { Octokit } from "@octokit/rest";
+import { describe, expect, it, vi } from "vitest";
 import type { CommandRegistryConfig } from "../../src/commands/registry.js";
 import { dispatchCommand, findCommand } from "../../src/commands/registry.js";
 import type { Command, CommandContext } from "../../src/commands/types.js";
@@ -58,12 +58,7 @@ describe("findCommand", () => {
       repositories: { "home-assistant/core": [sharedCmd] },
     };
 
-    const cmd = findCommand(
-      dupConfig,
-      "home-assistant/core",
-      "home-assistant",
-      "@ha-bot shared",
-    );
+    const cmd = findCommand(dupConfig, "home-assistant/core", "home-assistant", "@ha-bot shared");
     expect(cmd?.name).toBe("shared");
   });
 });

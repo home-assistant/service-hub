@@ -1,3 +1,4 @@
+import type { PullRequestLabeledEvent, PullRequestOpenedEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -41,6 +42,14 @@ interface Commit {
   commit: { author: { email?: string } | null };
 }
 
+interface ClaPayload {
+  action: string;
+  label?: { name: string };
+  number: number;
+  pull_request: { user: { login: string }; head: { sha: string } };
+  repository: { full_name: string; owner: { login: string }; name: string };
+}
+
 export const prClaSigned: Rule = {
   name: "validate-cla",
   listens: [
@@ -53,36 +62,34 @@ export const prClaSigned: Rule = {
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
     if (ignoredRepositories.has(context.repository)) return;
 
-    const payload = context.payload as unknown as {
-      action: string;
-      label?: { name: string };
-      number: number;
-      pull_request: { user: { login: string }; head: { sha: string } };
-      repository: { full_name: string; owner: { login: string }; name: string };
-    };
+    const payload = context.payload as PullRequestOpenedEvent | PullRequestLabeledEvent;
 
     // Only process labeled events if it's a cla-recheck
     if (payload.action === "labeled") {
-      if (payload.label?.name !== CLA_LABEL_RECHECK) return;
+      const labeledPayload = payload as PullRequestLabeledEvent;
+      if (labeledPayload.label?.name !== CLA_LABEL_RECHECK) return;
       // Remove the recheck label
       return {
         removeLabels: [CLA_LABEL_RECHECK],
-        actions: [async (ctx) => runClaCheck(ctx, payload)],
+        actions: [async (ctx) => runClaCheck(ctx, toClaPayload(labeledPayload))],
       };
     }
 
-    return { actions: [async (ctx) => runClaCheck(ctx, payload)] };
+    return { actions: [async (ctx) => runClaCheck(ctx, toClaPayload(payload))] };
   },
 };
 
-async function runClaCheck(
-  context: WebhookContext,
-  payload: {
-    number: number;
-    pull_request: { user: { login: string }; head: { sha: string } };
-    repository: { full_name: string; owner: { login: string }; name: string };
-  },
-): Promise<void> {
+function toClaPayload(payload: PullRequestOpenedEvent | PullRequestLabeledEvent): ClaPayload {
+  return {
+    action: payload.action,
+    label: "label" in payload ? payload.label : undefined,
+    number: payload.number,
+    pull_request: payload.pull_request,
+    repository: payload.repository,
+  };
+}
+
+async function runClaCheck(context: WebhookContext, payload: ClaPayload): Promise<void> {
   const signedAuthors = new Set<string>();
   const authorsNeedingCLA: { sha: string; login: string }[] = [];
   const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];

@@ -1,3 +1,4 @@
+import type { IssuesLabeledEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -8,10 +9,10 @@ const issueContext: Record<string, string> = {
   _integration_default_message: `Thanks for reporting this issue!
 
 Before we dive in, please make sure this isn't a duplicate by searching through existing issues. Also check recently closed issues, as your problem might already be fixed but not yet released.`,
-  "custom integration": `Hey, thank you for taking the time to report this! 🙏
+  "custom integration": `Hey, thank you for taking the time to report this! :pray:
 
 The issue appears to be related to a [custom integration](https://www.home-assistant.io/docs/glossary/#custom-integration) and is not part of Home Assistant core.
-Please report the issue directly in the issue tracker of the custom integration instead. Thank you for understanding! 😊`,
+Please report the issue directly in the issue tracker of the custom integration instead. Thank you for understanding! :blush:`,
 };
 
 const contextLabels = new Set(Object.keys(issueContext).filter((k) => !k.startsWith("_")));
@@ -21,10 +22,7 @@ export const issueContextComment: Rule = {
   listens: [EventType.ISSUES_LABELED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      label?: { name: string };
-      issue: { user: { login: string } };
-    };
+    const payload = context.payload as IssuesLabeledEvent;
 
     if (!payload.label) return;
 

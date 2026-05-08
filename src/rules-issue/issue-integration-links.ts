@@ -1,3 +1,4 @@
+import type { IssuesLabeledEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -7,9 +8,7 @@ export const issueIntegrationLinks: Rule = {
   listens: [EventType.ISSUES_LABELED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      label?: { name: string };
-    };
+    const payload = context.payload as IssuesLabeledEvent;
 
     if (!payload.label?.name.startsWith("integration: ")) return;
 

@@ -20,11 +20,11 @@ describe("issue-mention-code-owners", () => {
     const github = createMockGitHub();
     const codeowners = `homeassistant/components/hue/* @balloob @frenck`;
 
-    (github.repos.getContent as any).mockResolvedValue({
+    github.repos.getContent.mockResolvedValue({
       data: { content: btoa(codeowners) },
     });
-    (github.issues.listComments as any).mockResolvedValue({ data: [] });
-    (github.teams.listMembersInOrg as any).mockResolvedValue({ data: [] });
+    github.issues.listComments.mockResolvedValue({ data: [] });
+    github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
 
     const context = createMockIssueContext({
       eventType: EventType.ISSUES_LABELED,
@@ -52,11 +52,11 @@ describe("issue-mention-code-owners", () => {
     const github = createMockGitHub();
     const codeowners = `homeassistant/components/hue/* @balloob`;
 
-    (github.repos.getContent as any).mockResolvedValue({
+    github.repos.getContent.mockResolvedValue({
       data: { content: btoa(codeowners) },
     });
-    (github.issues.listComments as any).mockResolvedValue({ data: [] });
-    (github.teams.listMembersInOrg as any).mockResolvedValue({ data: [] });
+    github.issues.listComments.mockResolvedValue({ data: [] });
+    github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
 
     const context = createMockIssueContext({
       eventType: EventType.ISSUES_LABELED,
@@ -82,11 +82,11 @@ describe("issue-mention-code-owners", () => {
     const github = createMockGitHub();
     const codeowners = `homeassistant/components/hue/* @reporter`;
 
-    (github.repos.getContent as any).mockResolvedValue({
+    github.repos.getContent.mockResolvedValue({
       data: { content: btoa(codeowners) },
     });
-    (github.issues.listComments as any).mockResolvedValue({ data: [] });
-    (github.teams.listMembersInOrg as any).mockResolvedValue({ data: [] });
+    github.issues.listComments.mockResolvedValue({ data: [] });
+    github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
 
     const context = createMockIssueContext({
       eventType: EventType.ISSUES_LABELED,
@@ -109,7 +109,7 @@ describe("issue-mention-code-owners", () => {
 
   it("returns undefined when CODEOWNERS file is not found", async () => {
     const github = createMockGitHub();
-    (github.repos.getContent as any).mockRejectedValue(new Error("Not found"));
+    github.repos.getContent.mockRejectedValue(new Error("Not found"));
 
     const context = createMockIssueContext({
       eventType: EventType.ISSUES_LABELED,
@@ -127,7 +127,7 @@ describe("issue-mention-code-owners", () => {
     const github = createMockGitHub();
     const codeowners = `homeassistant/components/zwave/* @MartinHjelmare`;
 
-    (github.repos.getContent as any).mockResolvedValue({
+    github.repos.getContent.mockResolvedValue({
       data: { content: btoa(codeowners) },
     });
 

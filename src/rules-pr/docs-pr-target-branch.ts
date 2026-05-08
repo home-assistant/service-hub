@@ -1,3 +1,4 @@
+import type { PullRequestEditedEvent, PullRequestOpenedEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, Organization } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -22,15 +23,7 @@ export const docsPrTargetBranch: Rule = {
   listens: [EventType.PULL_REQUEST_EDITED, EventType.PULL_REQUEST_OPENED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      pull_request: {
-        base: { ref: string };
-        body: string | null;
-        labels: { name: string }[];
-        assignees: { login: string }[];
-      };
-      sender: { login: string };
-    };
+    const payload = context.payload as PullRequestOpenedEvent | PullRequestEditedEvent;
 
     const target = payload.pull_request.base.ref;
     if (IGNORE_BRANCHES.has(target)) return;

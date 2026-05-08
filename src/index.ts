@@ -1,7 +1,9 @@
 import { verify } from "@octokit/webhooks-methods";
+import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
+import { withSentry } from "@sentry/cloudflare";
 import { Hono } from "hono";
 import { commandConfig, dispatchCommand } from "./commands/registry.js";
-import { WebhookContext } from "./context/webhook-context.js";
+import { WebhookContext, type WebhookEventPayload } from "./context/webhook-context.js";
 import { createDatabase } from "./db/index.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
@@ -9,7 +11,6 @@ import type { EventType } from "./github/types.js";
 import { dispatch } from "./rules/dispatch.js";
 import { issueConfig } from "./rules-issue/registry.js";
 import { prConfig } from "./rules-pr/registry.js";
-import { withSentry } from "./sentry.js";
 import { evaluateRecentPRs } from "./utils/evaluate.js";
 
 const CRON_LOOKBACK_MINUTES = 10;
@@ -42,31 +43,41 @@ app.post("/github/webhook", async (c) => {
     return c.text("Invalid signature", 401);
   }
 
-  const payload = JSON.parse(body);
+  let raw: Record<string, unknown>;
+  try {
+    raw = JSON.parse(body);
+  } catch {
+    return c.text("Invalid JSON", 400);
+  }
   const event = c.req.header("x-github-event") ?? "";
-  const action = payload.action ?? "";
+  const action = (raw.action as string) ?? "";
   const eventType = `${event}.${action}` as EventType;
 
   if (action === "new_permissions_accepted") {
     return c.text("OK", 200);
   }
 
+  const payload = raw as unknown as WebhookEventPayload;
+
   const octokit = createOctokit(githubConfig(c.env));
   const db = createDatabase(c.env.DB);
 
   // Handle bot commands on PR comments
-  if (event === "issue_comment" && action === "created" && payload.issue?.pull_request) {
-    const handled = await dispatchCommand(commandConfig, {
-      github: octokit,
-      db,
-      owner: payload.repository.owner.login,
-      repo: payload.repository.name,
-      issueNumber: payload.issue.number,
-      commentId: payload.comment.id,
-      commentBody: payload.comment?.body ?? "",
-      senderLogin: payload.sender?.login ?? "",
-    });
-    if (handled) return c.text("OK", 200);
+  if (event === "issue_comment" && action === "created") {
+    const commentPayload = payload as IssueCommentCreatedEvent;
+    if (commentPayload.issue.pull_request) {
+      const handled = await dispatchCommand(commandConfig, {
+        github: octokit,
+        db,
+        owner: commentPayload.repository.owner.login,
+        repo: commentPayload.repository.name,
+        issueNumber: commentPayload.issue.number,
+        commentId: commentPayload.comment.id,
+        commentBody: commentPayload.comment.body ?? "",
+        senderLogin: commentPayload.sender.login,
+      });
+      if (handled) return c.text("OK", 200);
+    }
   }
 
   const context = new WebhookContext({ github: octokit, payload, eventType, db });

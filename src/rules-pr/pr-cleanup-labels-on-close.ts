@@ -1,3 +1,4 @@
+import type { PullRequestClosedEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, type Repository } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -21,9 +22,7 @@ export const prCleanupLabelsOnClose: Rule = {
     const cleanLabels = labelsToClean[context.repository];
     if (!cleanLabels) return;
 
-    const payload = context.payload as unknown as {
-      pull_request: { labels: { name: string }[] };
-    };
+    const payload = context.payload as PullRequestClosedEvent;
     const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
     const toRemove = cleanLabels.filter((label) => currentLabels.has(label));
 

@@ -1,3 +1,7 @@
+import type {
+  PullRequestReadyForReviewEvent,
+  PullRequestReviewSubmittedEvent,
+} from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { convertPullRequestToDraft } from "../github/client.js";
 import { EventType, Organization } from "../github/types.js";
@@ -74,11 +78,7 @@ function isCopilotLogin(login: string | undefined | null): boolean {
 }
 
 async function handleReviewSubmitted(context: WebhookContext): Promise<void> {
-  const payload = context.payload as unknown as {
-    review: { user: { login: string }; state: string };
-    pull_request: { draft: boolean; node_id: string; user: { login: string } };
-    sender: { type: string };
-  };
+  const payload = context.payload as PullRequestReviewSubmittedEvent;
 
   if (isCopilotLogin(payload.review.user?.login)) {
     await handleCopilotReview(context);
@@ -116,9 +116,7 @@ async function handleReviewSubmitted(context: WebhookContext): Promise<void> {
 }
 
 async function handleReadyForReview(context: WebhookContext): Promise<void> {
-  const payload = context.payload as unknown as {
-    pull_request: { node_id: string; user: { login: string } };
-  };
+  const payload = context.payload as PullRequestReadyForReviewEvent;
 
   const unanswered = await findUnansweredCopilotFindings(context);
 
@@ -175,9 +173,7 @@ async function handleReadyForReview(context: WebhookContext): Promise<void> {
 }
 
 async function handleCopilotReview(context: WebhookContext): Promise<void> {
-  const payload = context.payload as unknown as {
-    pull_request: { draft: boolean; node_id: string; user: { login: string } };
-  };
+  const payload = context.payload as PullRequestReviewSubmittedEvent;
 
   const unanswered = await findUnansweredCopilotFindings(context);
   if (!unanswered.length) return;
@@ -192,9 +188,9 @@ async function handleCopilotReview(context: WebhookContext): Promise<void> {
 async function findUnansweredCopilotFindings(
   context: WebhookContext,
 ): Promise<UnansweredFinding[]> {
-  const payload = context.payload as unknown as {
-    pull_request: { user: { login: string } };
-  };
+  const payload = context.payload as
+    | PullRequestReviewSubmittedEvent
+    | PullRequestReadyForReviewEvent;
   const authorLogin = payload.pull_request.user.login.toLowerCase();
 
   const reviewComments = await context.github.paginate(

@@ -6,7 +6,7 @@ import { createMockGitHub, createMockIssueContext } from "../helpers/mock-contex
 describe("issue-integration-label", () => {
   it("adds integration label when documentation link found and label exists", async () => {
     const github = createMockGitHub();
-    (github.issues.getLabel as any).mockResolvedValue({
+    github.issues.getLabel.mockResolvedValue({
       status: 200,
       data: { name: "integration: hue" },
     });
@@ -47,7 +47,7 @@ describe("issue-integration-label", () => {
 
   it("returns undefined when label does not exist in repo", async () => {
     const github = createMockGitHub();
-    (github.issues.getLabel as any).mockRejectedValue(new Error("Not found"));
+    github.issues.getLabel.mockRejectedValue(new Error("Not found"));
 
     const context = createMockIssueContext({
       eventType: EventType.ISSUES_OPENED,
@@ -70,7 +70,7 @@ describe("issue-integration-label", () => {
     const github = createMockGitHub();
     // "light" is an entity platform, so when integration=light and platform=hue,
     // it resolves to the platform (hue)
-    (github.issues.getLabel as any).mockResolvedValue({
+    github.issues.getLabel.mockResolvedValue({
       status: 200,
       data: { name: "integration: hue" },
     });

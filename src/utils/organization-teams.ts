@@ -11,8 +11,9 @@ export async function expandOrganizationTeams(
 
   const teamPrefix = `${organization}/`;
   const teamNames = normalized.filter((name) => name.startsWith(teamPrefix));
+  const users = normalized.filter((name) => !name.startsWith(teamPrefix));
 
-  const expanded = [...normalized];
+  const expanded = [...users];
   for (const teamName of teamNames) {
     try {
       const members = await github.teams.listMembersInOrg({

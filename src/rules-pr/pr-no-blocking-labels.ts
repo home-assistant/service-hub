@@ -23,12 +23,8 @@ export const prNoBlockingLabels: Rule = {
   ],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as
-      | PullRequestLabeledEvent
-      | PullRequestUnlabeledEvent;
-    const currentLabels = new Set(
-      payload.pull_request.labels.map((label: { name: string }) => label.name),
-    );
+    const payload = context.payload as PullRequestLabeledEvent | PullRequestUnlabeledEvent;
+    const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
     const checks = labelsToCheck[context.repository];
     if (!checks) return;
 
@@ -36,7 +32,7 @@ export const prNoBlockingLabels: Rule = {
 
     for (const [label, description] of Object.entries(checks)) {
       const hasBlockingLabel = currentLabels.has(label);
-      const contextName = `blocking-label-${label.toLowerCase().replace(" ", "-")}`;
+      const contextName = `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`;
 
       actions.push(async (ctx) => {
         await ctx.github.repos.createCommitStatus(

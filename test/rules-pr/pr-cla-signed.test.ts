@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prClaSigned } from "../../src/rules-pr/pr-cla-signed.js";
 import { createMockContext, createMockDb, createMockGitHub } from "../helpers/mock-context.js";
@@ -61,14 +61,14 @@ describe("pr-cla-signed", () => {
       const github = createMockGitHub();
       const db = createMockDb();
 
-      (github.paginate as any).mockResolvedValue([
+      github.paginate.mockResolvedValue([
         {
           sha: "commit1",
           author: { login: "contributor", type: "User" },
           commit: { author: { email: "user@example.com" } },
         },
       ]);
-      (db.queryOne as any).mockResolvedValue({ github_username: "contributor" });
+      db.queryOne.mockResolvedValue({ github_username: "contributor" });
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -77,7 +77,8 @@ describe("pr-cla-signed", () => {
       });
 
       const result = await prClaSigned.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.issues.addLabels).toHaveBeenCalledWith(
         expect.objectContaining({ labels: ["cla-signed"] }),
@@ -88,14 +89,14 @@ describe("pr-cla-signed", () => {
       const github = createMockGitHub();
       const db = createMockDb();
 
-      (github.paginate as any).mockResolvedValue([
+      github.paginate.mockResolvedValue([
         {
           sha: "commit1",
           author: { login: "newcontributor", type: "User" },
           commit: { author: { email: "new@example.com" } },
         },
       ]);
-      (db.queryOne as any).mockResolvedValue(null);
+      db.queryOne.mockResolvedValue(null);
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -104,7 +105,8 @@ describe("pr-cla-signed", () => {
       });
 
       const result = await prClaSigned.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.pulls.createReview).toHaveBeenCalledWith(
         expect.objectContaining({ event: "REQUEST_CHANGES" }),
@@ -118,7 +120,7 @@ describe("pr-cla-signed", () => {
       const github = createMockGitHub();
       const db = createMockDb();
 
-      (github.paginate as any).mockResolvedValue([
+      github.paginate.mockResolvedValue([
         {
           sha: "commit1",
           author: null,
@@ -133,7 +135,8 @@ describe("pr-cla-signed", () => {
       });
 
       const result = await prClaSigned.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(github.pulls.createReview).toHaveBeenCalledWith(
         expect.objectContaining({ event: "REQUEST_CHANGES" }),
@@ -147,7 +150,7 @@ describe("pr-cla-signed", () => {
       const github = createMockGitHub();
       const db = createMockDb();
 
-      (github.paginate as any).mockResolvedValue([
+      github.paginate.mockResolvedValue([
         {
           sha: "commit1",
           author: { login: "github-actions[bot]", type: "Bot" },
@@ -162,7 +165,8 @@ describe("pr-cla-signed", () => {
       });
 
       const result = await prClaSigned.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       // All commits ignored — no CLA labels, but still sets success status
       expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
@@ -174,14 +178,14 @@ describe("pr-cla-signed", () => {
       const github = createMockGitHub();
       const db = createMockDb();
 
-      (github.paginate as any).mockResolvedValue([
+      github.paginate.mockResolvedValue([
         {
           sha: "commit1",
           author: { login: "unsigned", type: "User" },
           commit: { author: { email: "unsigned@example.com" } },
         },
       ]);
-      (db.queryOne as any).mockResolvedValue(null);
+      db.queryOne.mockResolvedValue(null);
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -190,7 +194,8 @@ describe("pr-cla-signed", () => {
       });
 
       const result = await prClaSigned.handle(context);
-      await result!.actions![0](context);
+      expect(result?.actions?.[0]).toBeDefined();
+      if (result?.actions?.[0]) await result.actions[0](context);
 
       expect(db.execute).toHaveBeenCalledWith(
         expect.stringContaining("INSERT OR REPLACE INTO cla_pending_signers"),

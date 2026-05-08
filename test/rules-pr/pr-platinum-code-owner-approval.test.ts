@@ -31,9 +31,9 @@ describe("pr-platinum-code-owner-approval", () => {
 
   it("fails when platinum integration has no code owner approval", async () => {
     const github = createMockGitHub();
-    (github.pulls.listReviews as any).mockResolvedValue({ data: [] });
+    github.pulls.listReviews.mockResolvedValue({ data: [] });
 
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         domain: "hue",
@@ -53,10 +53,7 @@ describe("pr-platinum-code-owner-approval", () => {
       github,
       payload: {
         pull_request: {
-          labels: [
-            { name: "integration: hue" },
-            { name: "Quality Scale: platinum" },
-          ],
+          labels: [{ name: "integration: hue" }, { name: "Quality Scale: platinum" }],
           head: { sha: "abc123" },
         },
       },
@@ -69,12 +66,12 @@ describe("pr-platinum-code-owner-approval", () => {
 
   it("succeeds when code owner has approved", async () => {
     const github = createMockGitHub();
-    (github.pulls.listReviews as any).mockResolvedValue({
+    github.pulls.listReviews.mockResolvedValue({
       data: [{ state: "APPROVED", user: { login: "balloob", type: "User" } }],
     });
-    (github.teams.listMembersInOrg as any).mockResolvedValue({ data: [] });
+    github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
 
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         domain: "hue",
@@ -94,10 +91,7 @@ describe("pr-platinum-code-owner-approval", () => {
       github,
       payload: {
         pull_request: {
-          labels: [
-            { name: "integration: hue" },
-            { name: "Quality Scale: platinum" },
-          ],
+          labels: [{ name: "integration: hue" }, { name: "Quality Scale: platinum" }],
           head: { sha: "abc123" },
         },
       },
@@ -148,9 +142,9 @@ describe("pr-platinum-code-owner-approval", () => {
 
   it("succeeds when manifest has no codeowners", async () => {
     const github = createMockGitHub();
-    (github.pulls.listReviews as any).mockResolvedValue({ data: [] });
+    github.pulls.listReviews.mockResolvedValue({ data: [] });
 
-    (globalThis.fetch as any).mockResolvedValue({
+    globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         domain: "hue",
@@ -170,10 +164,7 @@ describe("pr-platinum-code-owner-approval", () => {
       github,
       payload: {
         pull_request: {
-          labels: [
-            { name: "integration: hue" },
-            { name: "Quality Scale: platinum" },
-          ],
+          labels: [{ name: "integration: hue" }, { name: "Quality Scale: platinum" }],
           head: { sha: "abc123" },
         },
       },

@@ -1,3 +1,4 @@
+import type { PullRequestEditedEvent, PullRequestOpenedEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, type Repository } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -15,9 +16,7 @@ export const docsPrBranchLabel: Rule = {
     const validLabels = branchLabels[context.repository];
     if (!validLabels) return;
 
-    const payload = context.payload as unknown as {
-      pull_request: { base: { ref: string }; labels: { name: string }[] };
-    };
+    const payload = context.payload as PullRequestOpenedEvent | PullRequestEditedEvent;
     const targetBranch = payload.pull_request.base.ref;
     const currentLabels = payload.pull_request.labels.map((l) => l.name);
 

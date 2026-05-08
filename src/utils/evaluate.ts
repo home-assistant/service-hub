@@ -1,5 +1,5 @@
 import type { Octokit } from "@octokit/rest";
-import type { WebhookPayload } from "../context/webhook-context.js";
+import type { PullRequestSynchronizeEvent } from "@octokit/webhooks-types";
 import { WebhookContext } from "../context/webhook-context.js";
 import type { Database } from "../db/types.js";
 import type { GetPullRequestParams } from "../github/types.js";
@@ -7,21 +7,20 @@ import { EventType } from "../github/types.js";
 import type { RegistryConfig } from "../rules/dispatch.js";
 import { dispatch } from "../rules/dispatch.js";
 
-function prToPayload(pr: Awaited<ReturnType<Octokit["pulls"]["get"]>>["data"]): WebhookPayload {
+function prToPayload(
+  pr: Awaited<ReturnType<Octokit["pulls"]["get"]>>["data"],
+): PullRequestSynchronizeEvent {
   return {
     action: "synchronize",
     number: pr.number,
-    repository: {
-      full_name: `${pr.base.repo.owner.login}/${pr.base.repo.name}`,
-      name: pr.base.repo.name,
-      owner: { login: pr.base.repo.owner.login },
-    },
-    sender: { login: pr.user?.login ?? "", type: pr.user?.type ?? "User" },
-    pull_request: {
-      number: pr.number,
-      head: { sha: pr.head.sha },
-    },
-  };
+    before: "",
+    after: pr.head.sha,
+    repository: pr.base.repo,
+    sender: pr.user ?? { login: "", type: "User" },
+    pull_request: pr,
+    installation: undefined,
+    organization: undefined,
+  } as unknown as PullRequestSynchronizeEvent;
 }
 
 export async function evaluatePR(
@@ -60,8 +59,7 @@ export async function evaluateRecentPRs(
     per_page: 100,
   });
 
-  const cutoff = since.toISOString();
-  const recentPRs = prs.data.filter((pr) => pr.updated_at >= cutoff);
+  const recentPRs = prs.data.filter((pr) => new Date(pr.updated_at) >= since);
 
   for (const pr of recentPRs) {
     try {

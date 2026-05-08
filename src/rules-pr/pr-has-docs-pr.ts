@@ -1,3 +1,4 @@
+import type { PullRequestEditedEvent, PullRequestLabeledEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -16,14 +17,7 @@ export const prHasDocsPr: Rule = {
   ],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      pull_request: {
-        labels: { name: string }[];
-        head: { sha: string };
-        body: string | null;
-        base: { ref: string };
-      };
-    };
+    const payload = context.payload as PullRequestEditedEvent | PullRequestLabeledEvent;
 
     const isReleasePR = payload.pull_request.base.ref === "master";
     const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));

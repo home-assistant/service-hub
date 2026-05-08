@@ -38,16 +38,12 @@ export const prHasTypeLabel: Rule = {
   ],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as
-      | PullRequestLabeledEvent
-      | PullRequestUnlabeledEvent;
-    const currentLabels = new Set(
-      payload.pull_request.labels.map((label: { name: string }) => label.name),
-    );
+    const payload = context.payload as PullRequestLabeledEvent | PullRequestUnlabeledEvent;
+    const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
     const requiredLabels = labelsToCheck[context.repository];
     if (!requiredLabels) return;
 
-    const hasRequiredLabel = requiredLabels.some((label: string) => currentLabels.has(label));
+    const hasRequiredLabel = requiredLabels.some((label) => currentLabels.has(label));
 
     return {
       statusCheck: {

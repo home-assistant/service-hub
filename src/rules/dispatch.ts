@@ -1,6 +1,7 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { upsertDashboardComment } from "../dashboard/comment.js";
 import type { DashboardSection } from "../dashboard/types.js";
+import { deduplicateByName } from "../utils/deduplicate.js";
 import type { Rule, RuleResult } from "./types.js";
 
 export interface RegistryConfig {
@@ -11,15 +12,7 @@ export interface RegistryConfig {
 export function matchRules(registryConfig: RegistryConfig, context: WebhookContext): Rule[] {
   const orgRules = registryConfig.organizations[context.organization] ?? [];
   const repoRules = registryConfig.repositories[context.repository] ?? [];
-
-  const seen = new Set<string>();
-  const combined: Rule[] = [];
-  for (const rule of [...repoRules, ...orgRules]) {
-    if (!seen.has(rule.name)) {
-      seen.add(rule.name);
-      combined.push(rule);
-    }
-  }
+  const combined = deduplicateByName([...repoRules, ...orgRules]);
 
   return combined.filter(
     (rule) =>

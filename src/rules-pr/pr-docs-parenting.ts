@@ -1,3 +1,8 @@
+import type {
+  PullRequestClosedEvent,
+  PullRequestEditedEvent,
+  PullRequestOpenedEvent,
+} from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, Organization } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -5,6 +10,11 @@ import {
   extractIssuesOrPullRequestMarkdownLinks,
   extractPullRequestURLLinks,
 } from "../utils/text-parser.js";
+
+type DocsParentingPayload =
+  | PullRequestOpenedEvent
+  | PullRequestEditedEvent
+  | PullRequestClosedEvent;
 
 export const prDocsParenting: Rule = {
   name: "pr-docs-parenting",
@@ -16,14 +26,7 @@ export const prDocsParenting: Rule = {
   ],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as unknown as {
-      action: string;
-      pull_request: {
-        body: string | null;
-        state: string;
-        merged: boolean;
-      };
-    };
+    const payload = context.payload as DocsParentingPayload;
 
     if (
       context.eventType === EventType.PULL_REQUEST_REOPENED ||
@@ -35,16 +38,13 @@ export const prDocsParenting: Rule = {
 
     // opened or edited
     if (context.repository === HomeAssistantRepository.HOME_ASSISTANT_IO) {
-      return handleDocsRepo(context, payload);
+      return handleDocsRepo(payload);
     }
-    return handleCodeRepo(context, payload);
+    return handleCodeRepo(payload);
   },
 };
 
-function handleCodeRepo(
-  _context: WebhookContext,
-  payload: { pull_request: { body: string | null } },
-): RuleResult | undefined {
+function handleCodeRepo(payload: DocsParentingPayload): RuleResult | undefined {
   const linksToDocs = [
     ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
     ...extractPullRequestURLLinks(payload.pull_request.body),
@@ -69,10 +69,7 @@ function handleCodeRepo(
   };
 }
 
-function handleDocsRepo(
-  _context: WebhookContext,
-  payload: { pull_request: { body: string | null } },
-): RuleResult | undefined {
+function handleDocsRepo(payload: DocsParentingPayload): RuleResult | undefined {
   const linksToCode = [
     ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
     ...extractPullRequestURLLinks(payload.pull_request.body),
@@ -89,7 +86,7 @@ function handleDocsRepo(
 
 async function updateDocsParentStatus(
   context: WebhookContext,
-  payload: { pull_request: { body: string | null; state: string; merged: boolean } },
+  payload: DocsParentingPayload,
 ): Promise<void> {
   if (context.repository === HomeAssistantRepository.HOME_ASSISTANT_IO) return;
 
@@ -101,12 +98,13 @@ async function updateDocsParentStatus(
   if (linksToDocs.length !== 1) return;
 
   const docLink = linksToDocs[0];
-  const parentState =
-    payload.pull_request.state === "open"
-      ? "open"
-      : payload.pull_request.merged
-        ? "merged"
-        : "closed";
+
+  const isClosed = "action" in payload && payload.action === "closed";
+  const isMerged =
+    isClosed &&
+    "pull_request" in payload &&
+    (payload as PullRequestClosedEvent).pull_request.merged;
+  const parentState = !isClosed ? "open" : isMerged ? "merged" : "closed";
 
   if (parentState === "open") {
     const docsPR = await context.fetchPullRequestWithCache({

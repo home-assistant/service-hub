@@ -20,10 +20,7 @@ function makeFile(filename: string) {
 describe("pr-label-dependency-bump", () => {
   it("labels when all files are dependency files", async () => {
     const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
-    mockPRFiles(context, [
-      makeFile("requirements_all.txt"),
-      makeFile("requirements_test_all.txt"),
-    ]);
+    mockPRFiles(context, [makeFile("requirements_all.txt"), makeFile("requirements_test_all.txt")]);
 
     const result = await prLabelDependencyBump.handle(context);
     expect(result).toMatchObject({ labels: ["dependency-bump"] });

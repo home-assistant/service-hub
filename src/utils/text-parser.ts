@@ -19,10 +19,6 @@ function groups(m: RegExpMatchArray): Record<string, string> {
   return m.groups as Record<string, string>;
 }
 
-function lastSegment(path: string): string {
-  return path.split("/").pop() ?? path;
-}
-
 export function extractIssuesOrPullRequestMarkdownLinks(body: string | null): IssuePullInfo[] {
   if (!body) return [];
   const re = /([\w\-.]+)\/([\w\-.]+)#(\d+)/g;
@@ -84,5 +80,3 @@ export function extractTasks(body: string | null): Task[] {
       return { checked: Boolean(g.checked?.trim()), description: g.description };
     });
 }
-
-export { lastSegment };

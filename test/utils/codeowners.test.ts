@@ -56,15 +56,17 @@ homeassistant/components/zha/* @dmulcahey
 });
 
 describe("matchCodeOwners", () => {
-  const entries = parseCodeOwners(`
+  const entries = parseCodeOwners(
+    `
 homeassistant/components/hue/* @balloob
 homeassistant/components/zwave/* @MartinHjelmare
-  `.trim());
+  `.trim(),
+  );
 
   it("matches a path to the correct owner", () => {
     const match = matchCodeOwners("homeassistant/components/hue/light.py", entries);
     expect(match).toBeDefined();
-    expect(match!.owners).toEqual(["@balloob"]);
+    expect(match?.owners).toEqual(["@balloob"]);
   });
 
   it("returns undefined for unmatched paths", () => {
@@ -80,7 +82,7 @@ homeassistant/components/hue/* @specific
     const parsed = parseCodeOwners(content);
 
     const match = matchCodeOwners("homeassistant/components/hue/light.py", parsed);
-    expect(match!.owners).toEqual(["@specific"]);
+    expect(match?.owners).toEqual(["@specific"]);
   });
 
   it("matches glob patterns with wildcard", () => {
@@ -93,6 +95,6 @@ homeassistant/components/hue/* @specific
     const parsed = parseCodeOwners("*.js @js-owner");
     const match = matchCodeOwners("src/utils/helpers.js", parsed);
     expect(match).toBeDefined();
-    expect(match!.owners).toEqual(["@js-owner"]);
+    expect(match?.owners).toEqual(["@js-owner"]);
   });
 });
