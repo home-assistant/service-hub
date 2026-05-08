@@ -1,5 +1,5 @@
-import { evaluatePR } from "../refresh/evaluate.js";
 import { prConfig } from "../rules-pr/registry.js";
+import { evaluatePR } from "../utils/evaluate.js";
 import type { Command } from "./types.js";
 
 export const updateCommand: Command = {

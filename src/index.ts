@@ -6,11 +6,11 @@ import { createDatabase } from "./db/index.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import type { EventType } from "./github/types.js";
-import { evaluateRecentPRs } from "./refresh/evaluate.js";
 import { dispatch } from "./rules/dispatch.js";
 import { issueConfig } from "./rules-issue/registry.js";
 import { prConfig } from "./rules-pr/registry.js";
 import { withSentry } from "./sentry.js";
+import { evaluateRecentPRs } from "./utils/evaluate.js";
 
 const CRON_LOOKBACK_MINUTES = 10;
 
