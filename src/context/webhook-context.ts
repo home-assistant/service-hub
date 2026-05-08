@@ -92,6 +92,13 @@ export class WebhookContext {
     } as { pull_number: number; owner: string; repo: string } & T;
   }
 
+  async fetchPRFiles(): Promise<ListPullRequestFiles> {
+    if (!this._prFilesCache) {
+      this._prFilesCache = (await this.github.pulls.listFiles(this.pullRequest())).data;
+    }
+    return this._prFilesCache;
+  }
+
   async fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {
     const key = `${params.owner}/${params.repo}/${params.issue_number}`;
     const cached = this._issueCache.get(key);
