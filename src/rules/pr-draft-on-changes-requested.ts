@@ -1,7 +1,7 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { convertPullRequestToDraft } from "../github/client.js";
 import { EventType, Organization } from "../github/types.js";
-import type { HandlerResult, WebhookHandler } from "./types.js";
+import type { Rule, RuleResult } from "./types.js";
 
 const MESSAGE_ID = "<!-- ReviewDrafterComment -->";
 const COPILOT_MESSAGE_ID = "<!-- ReviewDrafterCopilotComment -->";
@@ -48,11 +48,11 @@ interface UnansweredFinding {
   url: string;
 }
 
-export const reviewDrafterHandler: WebhookHandler = {
+export const prDraftOnChangesRequested: Rule = {
   name: "review-drafter",
   listens: [EventType.PULL_REQUEST_REVIEW_SUBMITTED, EventType.PULL_REQUEST_READY_FOR_REVIEW],
 
-  async handle(_context: WebhookContext): Promise<HandlerResult | undefined> {
+  async handle(_context: WebhookContext): Promise<RuleResult | undefined> {
     // This handler is complex and performs many conditional API calls,
     // so it uses the actions escape hatch.
     return {

@@ -4,9 +4,9 @@ import {
   extractIssuesOrPullRequestMarkdownLinks,
   extractPullRequestURLLinks,
 } from "../utils/text-parser.js";
-import type { HandlerResult, WebhookHandler } from "./types.js";
+import type { Rule, RuleResult } from "./types.js";
 
-export const docsMissingHandler: WebhookHandler = {
+export const prHasDocsPr: Rule = {
   name: "docs-missing",
   listens: [
     EventType.PULL_REQUEST_EDITED,
@@ -15,7 +15,7 @@ export const docsMissingHandler: WebhookHandler = {
     EventType.PULL_REQUEST_SYNCHRONIZE,
   ],
 
-  async handle(context: WebhookContext): Promise<HandlerResult | undefined> {
+  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
     const payload = context.payload as unknown as {
       pull_request: {
         labels: { name: string }[];

@@ -1,15 +1,15 @@
 import { verify } from "@octokit/webhooks-methods";
 import { Hono } from "hono";
+import { commandConfig, dispatchCommand } from "./commands/registry.js";
 import { WebhookContext } from "./context/webhook-context.js";
 import { createDatabase } from "./db/index.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import type { EventType } from "./github/types.js";
-import { config, dispatch } from "./handlers/registry.js";
-import { evaluatePR, evaluateRecentPRs } from "./refresh/evaluate.js";
+import { evaluateRecentPRs } from "./refresh/evaluate.js";
+import { config, dispatch } from "./rules/registry.js";
 import { withSentry } from "./sentry.js";
 
-const BOT_COMMAND_PATTERN = /^@ha-bot\s+update\s*$/im;
 const CRON_LOOKBACK_MINUTES = 10;
 
 function githubConfig(env: Env): GitHubAppConfig {
@@ -44,26 +44,19 @@ app.post("/github/webhook", async (c) => {
   const octokit = createOctokit(githubConfig(c.env));
   const db = createDatabase(c.env.DB);
 
-  // Handle @ha-bot update command
+  // Handle bot commands on PR comments
   if (event === "issue_comment" && action === "created" && payload.issue?.pull_request) {
-    const commentBody: string = payload.comment?.body ?? "";
-    if (BOT_COMMAND_PATTERN.test(commentBody)) {
-      const owner = payload.repository.owner.login;
-      const repo = payload.repository.name;
-      const prNumber = payload.issue.number;
-
-      await evaluatePR(config, octokit, db, { owner, repo, number: prNumber });
-
-      // React with thumbs-up to acknowledge the command
-      await octokit.reactions.createForIssueComment({
-        owner,
-        repo,
-        comment_id: payload.comment.id,
-        content: "+1",
-      });
-
-      return c.text("OK", 200);
-    }
+    const handled = await dispatchCommand(commandConfig, {
+      github: octokit,
+      db,
+      owner: payload.repository.owner.login,
+      repo: payload.repository.name,
+      issueNumber: payload.issue.number,
+      commentId: payload.comment.id,
+      commentBody: payload.comment?.body ?? "",
+      senderLogin: payload.sender?.login ?? "",
+    });
+    if (handled) return c.text("OK", 200);
   }
 
   const context = new WebhookContext({ github: octokit, payload, eventType, db });

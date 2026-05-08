@@ -1,61 +1,58 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { upsertDashboardComment } from "../dashboard/comment.js";
 import type { DashboardSection } from "../dashboard/types.js";
-import { blockingLabelsHandler } from "./blocking-labels.js";
-import { docsMissingHandler } from "./docs-missing.js";
-import { labelCleanerHandler } from "./label-cleaner.js";
-import { requiredLabelsHandler } from "./required-labels.js";
-import { reviewDrafterHandler } from "./review-drafter.js";
-import type { HandlerResult, WebhookHandler } from "./types.js";
-import { validateClaHandler } from "./validate-cla.js";
+import { prClaSigned } from "./pr-cla-signed.js";
+import { prCleanupLabelsOnClose } from "./pr-cleanup-labels-on-close.js";
+import { prDraftOnChangesRequested } from "./pr-draft-on-changes-requested.js";
+import { prHasDocsPr } from "./pr-has-docs-pr.js";
+import { prHasTypeLabel } from "./pr-has-type-label.js";
+import { prNoBlockingLabels } from "./pr-no-blocking-labels.js";
+import type { Rule, RuleResult } from "./types.js";
 
 export interface RegistryConfig {
-  organizations: Record<string, WebhookHandler[]>;
-  repositories: Record<string, WebhookHandler[]>;
+  organizations: Record<string, Rule[]>;
+  repositories: Record<string, Rule[]>;
 }
 
 export const config: RegistryConfig = {
   organizations: {
-    "home-assistant": [validateClaHandler, reviewDrafterHandler],
-    esphome: [reviewDrafterHandler],
+    "home-assistant": [prClaSigned, prDraftOnChangesRequested],
+    esphome: [prDraftOnChangesRequested],
   },
   repositories: {
     "home-assistant/core": [
-      requiredLabelsHandler,
-      blockingLabelsHandler,
-      docsMissingHandler,
-      labelCleanerHandler,
+      prHasTypeLabel,
+      prNoBlockingLabels,
+      prHasDocsPr,
+      prCleanupLabelsOnClose,
     ],
-    "home-assistant/supervisor": [requiredLabelsHandler],
-    "home-assistant/frontend": [blockingLabelsHandler],
-    "home-assistant/home-assistant.io": [labelCleanerHandler],
+    "home-assistant/supervisor": [prHasTypeLabel],
+    "home-assistant/frontend": [prNoBlockingLabels],
+    "home-assistant/home-assistant.io": [prCleanupLabelsOnClose],
   },
 };
 
-export function matchHandlers(
-  registryConfig: RegistryConfig,
-  context: WebhookContext,
-): WebhookHandler[] {
-  const orgHandlers = registryConfig.organizations[context.organization] ?? [];
-  const repoHandlers = registryConfig.repositories[context.repository] ?? [];
+export function matchRules(registryConfig: RegistryConfig, context: WebhookContext): Rule[] {
+  const orgRules = registryConfig.organizations[context.organization] ?? [];
+  const repoRules = registryConfig.repositories[context.repository] ?? [];
 
   const seen = new Set<string>();
-  const combined: WebhookHandler[] = [];
-  for (const handler of [...repoHandlers, ...orgHandlers]) {
-    if (!seen.has(handler.name)) {
-      seen.add(handler.name);
-      combined.push(handler);
+  const combined: Rule[] = [];
+  for (const rule of [...repoRules, ...orgRules]) {
+    if (!seen.has(rule.name)) {
+      seen.add(rule.name);
+      combined.push(rule);
     }
   }
 
   return combined.filter(
-    (handler) =>
-      (handler.allowBots !== false || !context.senderIsBot) &&
-      handler.listens.includes(context.eventType),
+    (rule) =>
+      (rule.allowBots !== false || !context.senderIsBot) &&
+      rule.listens.includes(context.eventType),
   );
 }
 
-async function applyResults(context: WebhookContext, results: HandlerResult[]): Promise<void> {
+async function applyResults(context: WebhookContext, results: RuleResult[]): Promise<void> {
   const labels = new Set<string>();
   const removeLabels = new Set<string>();
   const dashboardSections = new Map<string, DashboardSection>();
@@ -142,15 +139,15 @@ export async function dispatch(
   registryConfig: RegistryConfig,
   context: WebhookContext,
 ): Promise<void> {
-  const matched = matchHandlers(registryConfig, context);
+  const matched = matchRules(registryConfig, context);
 
-  const settled = await Promise.allSettled(matched.map((h) => h.handle(context)));
+  const settled = await Promise.allSettled(matched.map((r) => r.handle(context)));
 
-  const results: HandlerResult[] = [];
+  const results: RuleResult[] = [];
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
     if (outcome.status === "rejected") {
-      console.error(`Handler "${matched[i].name}" failed:`, outcome.reason);
+      console.error(`Rule "${matched[i].name}" failed:`, outcome.reason);
     } else if (outcome.value) {
       results.push(outcome.value);
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { blockingLabelsHandler } from "../../src/handlers/blocking-labels.js";
+import { prNoBlockingLabels } from "../../src/rules/pr-no-blocking-labels.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 describe("blocking-labels handler", () => {
@@ -15,7 +15,7 @@ describe("blocking-labels handler", () => {
       },
     });
 
-    const result = await blockingLabelsHandler.handle(context);
+    const result = await prNoBlockingLabels.handle(context);
     expect(result).toBeDefined();
     expect(result?.actions).toHaveLength(1);
   });
@@ -36,7 +36,7 @@ describe("blocking-labels handler", () => {
       },
     });
 
-    const result = await blockingLabelsHandler.handle(context);
+    const result = await prNoBlockingLabels.handle(context);
     expect(result).toBeUndefined();
   });
 });

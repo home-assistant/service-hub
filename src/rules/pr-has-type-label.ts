@@ -1,7 +1,7 @@
 import type { PullRequestLabeledEvent, PullRequestUnlabeledEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, type Repository } from "../github/types.js";
-import type { HandlerResult, WebhookHandler } from "./types.js";
+import type { Rule, RuleResult } from "./types.js";
 
 const labelsToCheck: Partial<Record<Repository, string[]>> = {
   [HomeAssistantRepository.CORE]: [
@@ -29,7 +29,7 @@ const labelsToCheck: Partial<Record<Repository, string[]>> = {
   ],
 };
 
-export const requiredLabelsHandler: WebhookHandler = {
+export const prHasTypeLabel: Rule = {
   name: "required-labels",
   listens: [
     EventType.PULL_REQUEST_LABELED,
@@ -37,7 +37,7 @@ export const requiredLabelsHandler: WebhookHandler = {
     EventType.PULL_REQUEST_SYNCHRONIZE,
   ],
 
-  async handle(context: WebhookContext): Promise<HandlerResult | undefined> {
+  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
     const payload = context.payload as unknown as
       | PullRequestLabeledEvent
       | PullRequestUnlabeledEvent;

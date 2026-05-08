@@ -1,6 +1,6 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, type Repository } from "../github/types.js";
-import type { HandlerResult, WebhookHandler } from "./types.js";
+import type { Rule, RuleResult } from "./types.js";
 
 const labelsToClean: Partial<Record<Repository, string[]>> = {
   [HomeAssistantRepository.CORE]: ["Ready for review"],
@@ -13,11 +13,11 @@ const labelsToClean: Partial<Record<Repository, string[]>> = {
   ],
 };
 
-export const labelCleanerHandler: WebhookHandler = {
+export const prCleanupLabelsOnClose: Rule = {
   name: "label-cleaner",
   listens: [EventType.PULL_REQUEST_CLOSED],
 
-  async handle(context: WebhookContext): Promise<HandlerResult | undefined> {
+  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
     const cleanLabels = labelsToClean[context.repository];
     if (!cleanLabels) return;
 

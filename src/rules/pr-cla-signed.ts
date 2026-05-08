@@ -1,6 +1,6 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { HandlerResult, WebhookHandler } from "./types.js";
+import type { Rule, RuleResult } from "./types.js";
 
 const CLA_LABEL_SIGNED = "cla-signed";
 const CLA_LABEL_NEEDED = "cla-needed";
@@ -41,7 +41,7 @@ interface Commit {
   commit: { author: { email?: string } | null };
 }
 
-export const validateClaHandler: WebhookHandler = {
+export const prClaSigned: Rule = {
   name: "validate-cla",
   listens: [
     EventType.PULL_REQUEST_OPENED,
@@ -50,7 +50,7 @@ export const validateClaHandler: WebhookHandler = {
     EventType.PULL_REQUEST_LABELED,
   ],
 
-  async handle(context: WebhookContext): Promise<HandlerResult | undefined> {
+  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
     if (ignoredRepositories.has(context.repository)) return;
 
     const payload = context.payload as unknown as {

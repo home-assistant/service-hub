@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { labelCleanerHandler } from "../../src/handlers/label-cleaner.js";
+import { prCleanupLabelsOnClose } from "../../src/rules/pr-cleanup-labels-on-close.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 describe("label-cleaner handler", () => {
@@ -15,7 +15,7 @@ describe("label-cleaner handler", () => {
       },
     });
 
-    const result = await labelCleanerHandler.handle(context);
+    const result = await prCleanupLabelsOnClose.handle(context);
     expect(result).toMatchObject({
       removeLabels: ["Ready for review"],
     });
@@ -32,7 +32,7 @@ describe("label-cleaner handler", () => {
       },
     });
 
-    const result = await labelCleanerHandler.handle(context);
+    const result = await prCleanupLabelsOnClose.handle(context);
     expect(result).toBeUndefined();
   });
 
@@ -52,7 +52,7 @@ describe("label-cleaner handler", () => {
       },
     });
 
-    const result = await labelCleanerHandler.handle(context);
+    const result = await prCleanupLabelsOnClose.handle(context);
     expect(result).toBeUndefined();
   });
 });

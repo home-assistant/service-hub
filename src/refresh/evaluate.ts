@@ -3,8 +3,8 @@ import type { WebhookPayload } from "../context/webhook-context.js";
 import { WebhookContext } from "../context/webhook-context.js";
 import type { Database } from "../db/types.js";
 import { EventType } from "../github/types.js";
-import type { RegistryConfig } from "../handlers/registry.js";
-import { dispatch } from "../handlers/registry.js";
+import type { RegistryConfig } from "../rules/registry.js";
+import { dispatch } from "../rules/registry.js";
 
 interface PRRef {
   owner: string;

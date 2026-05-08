@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { requiredLabelsHandler } from "../../src/handlers/required-labels.js";
+import { prHasTypeLabel } from "../../src/rules/pr-has-type-label.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 describe("required-labels handler", () => {
@@ -15,7 +15,7 @@ describe("required-labels handler", () => {
       },
     });
 
-    const result = await requiredLabelsHandler.handle(context);
+    const result = await prHasTypeLabel.handle(context);
 
     expect(result).toMatchObject({
       statusCheck: {
@@ -40,7 +40,7 @@ describe("required-labels handler", () => {
       },
     });
 
-    const result = await requiredLabelsHandler.handle(context);
+    const result = await prHasTypeLabel.handle(context);
 
     expect(result).toMatchObject({
       statusCheck: {
@@ -70,13 +70,13 @@ describe("required-labels handler", () => {
       },
     });
 
-    const result = await requiredLabelsHandler.handle(context);
+    const result = await prHasTypeLabel.handle(context);
     expect(result).toBeUndefined();
   });
 
   it("listens to label and sync events", () => {
-    expect(requiredLabelsHandler.listens).toContain(EventType.PULL_REQUEST_LABELED);
-    expect(requiredLabelsHandler.listens).toContain(EventType.PULL_REQUEST_UNLABELED);
-    expect(requiredLabelsHandler.listens).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+    expect(prHasTypeLabel.listens).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(prHasTypeLabel.listens).toContain(EventType.PULL_REQUEST_UNLABELED);
+    expect(prHasTypeLabel.listens).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
   });
 });

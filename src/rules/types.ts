@@ -8,7 +8,7 @@ export interface StatusCheck {
   description: string;
 }
 
-export interface HandlerResult {
+export interface RuleResult {
   labels?: string[];
   removeLabels?: string[];
   statusCheck?: StatusCheck;
@@ -19,9 +19,9 @@ export interface HandlerResult {
   actions?: Array<(context: WebhookContext) => Promise<void>>;
 }
 
-export interface WebhookHandler {
+export interface Rule {
   name: string;
   listens: EventType[];
   allowBots?: boolean;
-  handle(context: WebhookContext): Promise<HandlerResult | undefined>;
+  handle(context: WebhookContext): Promise<RuleResult | undefined>;
 }
