@@ -1,16 +1,11 @@
 import type { Octokit } from "@octokit/rest";
+import type { GetIssueParams } from "../github/types.js";
 import { mergeSections, parseDashboard, renderDashboard, SENTINEL } from "./renderer.js";
 import type { DashboardSection } from "./types.js";
 
-interface IssueParams {
-  owner: string;
-  repo: string;
-  issue_number: number;
-}
-
 export async function findDashboardCommentId(
   github: Octokit,
-  params: IssueParams,
+  params: GetIssueParams,
 ): Promise<{ id: number; body: string } | null> {
   const comments = await github.paginate(github.issues.listComments, {
     ...params,
@@ -28,7 +23,7 @@ export async function findDashboardCommentId(
 
 export async function upsertDashboardComment(
   github: Octokit,
-  params: IssueParams,
+  params: GetIssueParams,
   newSections: DashboardSection[],
 ): Promise<void> {
   if (newSections.length === 0) {

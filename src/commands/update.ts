@@ -10,7 +10,7 @@ export const updateCommand: Command = {
     await evaluatePR(config, context.github, context.db, {
       owner: context.owner,
       repo: context.repo,
-      number: context.issueNumber,
+      pull_number: context.issueNumber,
     });
   },
 };

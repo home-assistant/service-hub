@@ -2,15 +2,10 @@ import type { Octokit } from "@octokit/rest";
 import type { WebhookPayload } from "../context/webhook-context.js";
 import { WebhookContext } from "../context/webhook-context.js";
 import type { Database } from "../db/types.js";
+import type { GetPullRequestParams } from "../github/types.js";
 import { EventType } from "../github/types.js";
 import type { RegistryConfig } from "../rules/registry.js";
 import { dispatch } from "../rules/registry.js";
-
-interface PRRef {
-  owner: string;
-  repo: string;
-  number: number;
-}
 
 function prToPayload(pr: Awaited<ReturnType<Octokit["pulls"]["get"]>>["data"]): WebhookPayload {
   return {
@@ -33,13 +28,9 @@ export async function evaluatePR(
   registryConfig: RegistryConfig,
   github: Octokit,
   db: Database,
-  ref: PRRef,
+  params: GetPullRequestParams,
 ): Promise<void> {
-  const { data: pr } = await github.pulls.get({
-    owner: ref.owner,
-    repo: ref.repo,
-    pull_number: ref.number,
-  });
+  const { data: pr } = await github.pulls.get(params);
 
   const payload = prToPayload(pr);
   const context = new WebhookContext({
@@ -77,7 +68,7 @@ export async function evaluateRecentPRs(
       await evaluatePR(registryConfig, github, db, {
         owner,
         repo,
-        number: pr.number,
+        pull_number: pr.number,
       });
     } catch (err) {
       console.error(`Failed to evaluate PR ${repoFullName}#${pr.number}:`, err);
