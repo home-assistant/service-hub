@@ -1,10 +1,10 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, Organization } from "../github/types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 import {
   extractIssuesOrPullRequestMarkdownLinks,
   extractPullRequestURLLinks,
 } from "../utils/text-parser.js";
-import type { Rule, RuleResult } from "./types.js";
 
 export const prDocsParenting: Rule = {
   name: "pr-docs-parenting",

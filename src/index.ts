@@ -7,7 +7,9 @@ import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import type { EventType } from "./github/types.js";
 import { evaluateRecentPRs } from "./refresh/evaluate.js";
-import { config, dispatch } from "./rules/registry.js";
+import { dispatch } from "./rules/dispatch.js";
+import { issueConfig } from "./rules-issue/registry.js";
+import { prConfig } from "./rules-pr/registry.js";
 import { withSentry } from "./sentry.js";
 
 const CRON_LOOKBACK_MINUTES = 10;
@@ -18,6 +20,14 @@ function githubConfig(env: Env): GitHubAppConfig {
     privateKey: env.GITHUB_PRIVATE_KEY,
     installationId: env.GITHUB_INSTALLATION_ID,
   };
+}
+
+function isPullRequestEvent(event: string): boolean {
+  return event === "pull_request" || event === "pull_request_review";
+}
+
+function isIssueEvent(event: string): boolean {
+  return event === "issues";
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -60,7 +70,12 @@ app.post("/github/webhook", async (c) => {
   }
 
   const context = new WebhookContext({ github: octokit, payload, eventType, db });
-  await dispatch(config, context);
+
+  if (isPullRequestEvent(event)) {
+    await dispatch(prConfig, context);
+  } else if (isIssueEvent(event)) {
+    await dispatch(issueConfig, context);
+  }
 
   return c.text("OK", 200);
 });
@@ -70,10 +85,10 @@ async function handleScheduled(env: Env): Promise<void> {
   const db = createDatabase(env.DB);
   const since = new Date(Date.now() - CRON_LOOKBACK_MINUTES * 60 * 1000);
 
-  const repos = Object.keys(config.repositories);
+  const repos = Object.keys(prConfig.repositories);
 
   await Promise.allSettled(
-    repos.map((repo) => evaluateRecentPRs(config, octokit, db, repo, since)),
+    repos.map((repo) => evaluateRecentPRs(prConfig, octokit, db, repo, since)),
   );
 }
 

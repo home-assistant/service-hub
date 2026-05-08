@@ -1,6 +1,6 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "./types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 
 // Embedded from data/github/issue_context.yaml
 // In CF Workers we can't read files — this is small enough to inline.

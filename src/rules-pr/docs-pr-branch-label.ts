@@ -1,6 +1,6 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, type Repository } from "../github/types.js";
-import type { Rule, RuleResult } from "./types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 
 const branchLabels: Partial<Record<Repository, Set<string>>> = {
   [HomeAssistantRepository.HOME_ASSISTANT_IO]: new Set(["current", "rc", "next"]),

@@ -1,8 +1,8 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../utils/integration.js";
 import { expandOrganizationTeams } from "../utils/organization-teams.js";
-import type { Rule, RuleResult } from "./types.js";
 
 export const prPlatinumCodeOwnerApproval: Rule = {
   name: "pr-platinum-code-owner-approval",

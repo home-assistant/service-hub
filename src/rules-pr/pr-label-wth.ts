@@ -1,7 +1,7 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 import { extractForumLinks } from "../utils/text-parser.js";
-import type { Rule, RuleResult } from "./types.js";
 
 const WTH_CATEGORY_IDS = [56, 61];
 

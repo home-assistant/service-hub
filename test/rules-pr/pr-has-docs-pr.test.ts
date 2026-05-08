@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prHasDocsPr } from "../../src/rules/pr-has-docs-pr.js";
+import { prHasDocsPr } from "../../src/rules-pr/pr-has-docs-pr.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 describe("docs-missing handler", () => {

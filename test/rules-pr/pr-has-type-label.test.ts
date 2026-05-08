@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prHasTypeLabel } from "../../src/rules/pr-has-type-label.js";
+import { prHasTypeLabel } from "../../src/rules-pr/pr-has-type-label.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 describe("required-labels handler", () => {

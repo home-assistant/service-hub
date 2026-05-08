@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prNoBlockingLabels } from "../../src/rules/pr-no-blocking-labels.js";
+import { prNoBlockingLabels } from "../../src/rules-pr/pr-no-blocking-labels.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 describe("blocking-labels handler", () => {

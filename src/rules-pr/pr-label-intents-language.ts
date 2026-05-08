@@ -1,6 +1,6 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "./types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 
 const LANGUAGE_FILE_REGEX =
   /(?:sentences|responses|tests)\/(?<language_code>[a-z]{2})\/(?:.+)\.yaml/;

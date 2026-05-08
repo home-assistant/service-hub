@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import type { RegistryConfig } from "../../src/rules/registry.js";
-import { matchRules } from "../../src/rules/registry.js";
+import type { RegistryConfig } from "../../src/rules/dispatch.js";
+import { matchRules } from "../../src/rules/dispatch.js";
 import type { Rule } from "../../src/rules/types.js";
 import { createMockContext } from "../helpers/mock-context.js";
 

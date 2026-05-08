@@ -1,7 +1,7 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 import { ParsedPath } from "../utils/parse-path.js";
-import type { Rule, RuleResult } from "./types.js";
 
 export const prNewIntegrationValidation: Rule = {
   name: "pr-new-integration-validation",

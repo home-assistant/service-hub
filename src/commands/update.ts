@@ -1,5 +1,5 @@
 import { evaluatePR } from "../refresh/evaluate.js";
-import { config } from "../rules/registry.js";
+import { prConfig } from "../rules-pr/registry.js";
 import type { Command } from "./types.js";
 
 export const updateCommand: Command = {
@@ -7,7 +7,7 @@ export const updateCommand: Command = {
   pattern: /^@ha-bot\s+update\s*$/im,
 
   async handle(context) {
-    await evaluatePR(config, context.github, context.db, {
+    await evaluatePR(prConfig, context.github, context.db, {
       owner: context.owner,
       repo: context.repo,
       pull_number: context.issueNumber,

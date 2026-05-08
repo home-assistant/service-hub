@@ -1,6 +1,6 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "./types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 
 export const prNoMergeConflict: Rule = {
   name: "pr-no-merge-conflict",

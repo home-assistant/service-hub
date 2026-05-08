@@ -1,7 +1,7 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { convertPullRequestToDraft } from "../github/client.js";
 import { EventType, Organization } from "../github/types.js";
-import type { Rule, RuleResult } from "./types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 
 const MESSAGE_ID = "<!-- ReviewDrafterComment -->";
 const COPILOT_MESSAGE_ID = "<!-- ReviewDrafterCopilotComment -->";

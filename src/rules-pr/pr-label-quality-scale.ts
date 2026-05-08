@@ -1,7 +1,7 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../utils/integration.js";
-import type { Rule, RuleResult } from "./types.js";
 
 export const prLabelQualityScale: Rule = {
   name: "pr-label-quality-scale",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prCleanupLabelsOnClose } from "../../src/rules/pr-cleanup-labels-on-close.js";
+import { prCleanupLabelsOnClose } from "../../src/rules-pr/pr-cleanup-labels-on-close.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 describe("label-cleaner handler", () => {

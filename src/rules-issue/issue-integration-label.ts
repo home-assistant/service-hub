@@ -1,8 +1,8 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { issuesGetLabel } from "../github/client.js";
 import { EventType, entityPlatforms } from "../github/types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 import { extractIntegrationDocumentationLinks } from "../utils/text-parser.js";
-import type { Rule, RuleResult } from "./types.js";
 
 export const issueIntegrationLabel: Rule = {
   name: "issue-integration-label",

@@ -1,8 +1,8 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository } from "../github/types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 import { matchCodeOwners, parseCodeOwners } from "../utils/codeowners.js";
 import { expandOrganizationTeams } from "../utils/organization-teams.js";
-import type { Rule, RuleResult } from "./types.js";
 
 export const issueMentionCodeOwners: Rule = {
   name: "issue-mention-code-owners",

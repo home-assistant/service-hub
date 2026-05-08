@@ -4,8 +4,8 @@ import { WebhookContext } from "../context/webhook-context.js";
 import type { Database } from "../db/types.js";
 import type { GetPullRequestParams } from "../github/types.js";
 import { EventType } from "../github/types.js";
-import type { RegistryConfig } from "../rules/registry.js";
-import { dispatch } from "../rules/registry.js";
+import type { RegistryConfig } from "../rules/dispatch.js";
+import { dispatch } from "../rules/dispatch.js";
 
 function prToPayload(pr: Awaited<ReturnType<Octokit["pulls"]["get"]>>["data"]): WebhookPayload {
   return {

@@ -1,8 +1,8 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { issuesGetLabel } from "../github/client.js";
 import { EventType } from "../github/types.js";
+import type { Rule, RuleResult } from "../rules/types.js";
 import { extractDocumentationSectionsLinks } from "../utils/text-parser.js";
-import type { Rule, RuleResult } from "./types.js";
 
 export const issueDocsSectionLabel: Rule = {
   name: "issue-docs-section-label",
