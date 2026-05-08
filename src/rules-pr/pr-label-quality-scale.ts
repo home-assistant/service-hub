@@ -6,6 +6,7 @@ import { fetchIntegrationManifest, QualityScale } from "../utils/integration.js"
 
 export const prLabelQualityScale: Rule = {
   name: "pr-label-quality-scale",
+  description: "Labels PRs with integration quality scale when an integration label is added",
   listens: [EventType.PULL_REQUEST_LABELED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {

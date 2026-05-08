@@ -54,6 +54,7 @@ interface UnansweredFinding {
 
 export const prDraftOnChangesRequested: Rule = {
   name: "review-drafter",
+  description: "Converts PR to draft when changes are requested and manages review re-requests",
   listens: [EventType.PULL_REQUEST_REVIEW_SUBMITTED, EventType.PULL_REQUEST_READY_FOR_REVIEW],
 
   async handle(_context: WebhookContext): Promise<RuleResult | undefined> {

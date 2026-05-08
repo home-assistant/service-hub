@@ -5,6 +5,7 @@ import type { Rule, RuleResult } from "../rules/types.js";
 
 export const prHacktoberfest: Rule = {
   name: "pr-hacktoberfest",
+  description: "Labels PRs with 'Hacktoberfest' during October on participating repos",
   listens: [EventType.PULL_REQUEST_OPENED, EventType.PULL_REQUEST_CLOSED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {

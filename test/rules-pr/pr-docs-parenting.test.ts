@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prDocsParenting } from "../../src/rules-pr/pr-docs-parenting.js";
+import { docsParentingCodeSide } from "../../src/rules-pr/pr-docs-parenting.js";
 import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
 
-describe("pr-docs-parenting", () => {
+describe("docs-parenting-code-side", () => {
   describe("code repo opened/edited", () => {
     it("labels linked docs PRs with has-parent", async () => {
       const github = createMockGitHub();
@@ -18,7 +18,7 @@ describe("pr-docs-parenting", () => {
         },
       });
 
-      const result = await prDocsParenting.handle(context);
+      const result = await docsParentingCodeSide.handle(context);
       expect(result?.actions).toHaveLength(1);
 
       // Execute the action
@@ -45,7 +45,7 @@ describe("pr-docs-parenting", () => {
         },
       });
 
-      const result = await prDocsParenting.handle(context);
+      const result = await docsParentingCodeSide.handle(context);
       expect(result).toBeUndefined();
     });
 
@@ -60,69 +60,7 @@ describe("pr-docs-parenting", () => {
         },
       });
 
-      const result = await prDocsParenting.handle(context);
-      expect(result).toBeUndefined();
-    });
-  });
-
-  describe("docs repo opened/edited", () => {
-    it("labels docs PR with has-parent when linking to code repo", async () => {
-      const context = createMockContext({
-        eventType: EventType.PULL_REQUEST_OPENED,
-        payload: {
-          repository: {
-            full_name: "home-assistant/home-assistant.io",
-            name: "home-assistant.io",
-            owner: { login: "home-assistant" },
-          },
-          pull_request: {
-            body: "Parent: home-assistant/core#1234",
-            head: { sha: "abc123" },
-          },
-        },
-      });
-
-      const result = await prDocsParenting.handle(context);
-      expect(result).toMatchObject({ labels: ["has-parent"] });
-    });
-
-    it("does nothing when docs PR has no code links", async () => {
-      const context = createMockContext({
-        eventType: EventType.PULL_REQUEST_OPENED,
-        payload: {
-          repository: {
-            full_name: "home-assistant/home-assistant.io",
-            name: "home-assistant.io",
-            owner: { login: "home-assistant" },
-          },
-          pull_request: {
-            body: "Updated docs formatting",
-            head: { sha: "abc123" },
-          },
-        },
-      });
-
-      const result = await prDocsParenting.handle(context);
-      expect(result).toBeUndefined();
-    });
-
-    it("does not label when linking to self (docs repo)", async () => {
-      const context = createMockContext({
-        eventType: EventType.PULL_REQUEST_OPENED,
-        payload: {
-          repository: {
-            full_name: "home-assistant/home-assistant.io",
-            name: "home-assistant.io",
-            owner: { login: "home-assistant" },
-          },
-          pull_request: {
-            body: "Related: home-assistant/home-assistant.io#500",
-            head: { sha: "abc123" },
-          },
-        },
-      });
-
-      const result = await prDocsParenting.handle(context);
+      const result = await docsParentingCodeSide.handle(context);
       expect(result).toBeUndefined();
     });
   });
@@ -142,7 +80,7 @@ describe("pr-docs-parenting", () => {
         },
       });
 
-      const result = await prDocsParenting.handle(context);
+      const result = await docsParentingCodeSide.handle(context);
       expect(result?.actions).toHaveLength(1);
     });
 
@@ -160,15 +98,15 @@ describe("pr-docs-parenting", () => {
         },
       });
 
-      const result = await prDocsParenting.handle(context);
+      const result = await docsParentingCodeSide.handle(context);
       expect(result?.actions).toHaveLength(1);
     });
   });
 
   it("listens to opened, reopened, closed, and edited events", () => {
-    expect(prDocsParenting.listens).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(prDocsParenting.listens).toContain(EventType.PULL_REQUEST_REOPENED);
-    expect(prDocsParenting.listens).toContain(EventType.PULL_REQUEST_CLOSED);
-    expect(prDocsParenting.listens).toContain(EventType.PULL_REQUEST_EDITED);
+    expect(docsParentingCodeSide.listens).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(docsParentingCodeSide.listens).toContain(EventType.PULL_REQUEST_REOPENED);
+    expect(docsParentingCodeSide.listens).toContain(EventType.PULL_REQUEST_CLOSED);
+    expect(docsParentingCodeSide.listens).toContain(EventType.PULL_REQUEST_EDITED);
   });
 });

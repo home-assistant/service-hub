@@ -4,7 +4,7 @@ import type {
   PullRequestOpenedEvent,
 } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
-import { EventType, HomeAssistantRepository, Organization } from "../github/types.js";
+import { EventType, HomeAssistantRepository } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
 import {
   extractIssuesOrPullRequestMarkdownLinks,
@@ -16,8 +16,9 @@ type DocsParentingPayload =
   | PullRequestEditedEvent
   | PullRequestClosedEvent;
 
-export const prDocsParenting: Rule = {
-  name: "pr-docs-parenting",
+export const docsParentingCodeSide: Rule = {
+  name: "docs-parenting-code-side",
+  description: "Labels linked docs PRs with 'has-parent' and syncs parent status on close/reopen",
   listens: [
     EventType.PULL_REQUEST_OPENED,
     EventType.PULL_REQUEST_REOPENED,
@@ -32,68 +33,46 @@ export const prDocsParenting: Rule = {
       context.eventType === EventType.PULL_REQUEST_REOPENED ||
       context.eventType === EventType.PULL_REQUEST_CLOSED
     ) {
-      // Sync parent/child state — needs direct API calls
       return { actions: [async (ctx) => updateDocsParentStatus(ctx, payload)] };
     }
 
     // opened or edited
-    if (context.repository === HomeAssistantRepository.HOME_ASSISTANT_IO) {
-      return handleDocsRepo(payload);
-    }
-    return handleCodeRepo(payload);
+    const linksToDocs = [
+      ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
+      ...extractPullRequestURLLinks(payload.pull_request.body),
+    ].filter(
+      (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
+    );
+
+    if (linksToDocs.length === 0 || linksToDocs.length > 2) return;
+
+    return {
+      actions: [
+        async (ctx) => {
+          for (const link of linksToDocs) {
+            await ctx.github.issues.addLabels({
+              owner: link.owner,
+              repo: link.repo,
+              issue_number: link.number,
+              labels: ["has-parent"],
+            });
+          }
+        },
+      ],
+    };
   },
 };
-
-function handleCodeRepo(payload: DocsParentingPayload): RuleResult | undefined {
-  const linksToDocs = [
-    ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
-    ...extractPullRequestURLLinks(payload.pull_request.body),
-  ].filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
-
-  if (linksToDocs.length === 0 || linksToDocs.length > 2) return;
-
-  // Label the docs PRs as having a parent
-  return {
-    actions: [
-      async (ctx) => {
-        for (const link of linksToDocs) {
-          await ctx.github.issues.addLabels({
-            owner: link.owner,
-            repo: link.repo,
-            issue_number: link.number,
-            labels: ["has-parent"],
-          });
-        }
-      },
-    ],
-  };
-}
-
-function handleDocsRepo(payload: DocsParentingPayload): RuleResult | undefined {
-  const linksToCode = [
-    ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
-    ...extractPullRequestURLLinks(payload.pull_request.body),
-  ].filter(
-    (link) =>
-      link.owner === Organization.HOME_ASSISTANT &&
-      `${link.owner}/${link.repo}` !== HomeAssistantRepository.HOME_ASSISTANT_IO,
-  );
-
-  if (linksToCode.length === 0) return;
-
-  return { labels: ["has-parent"] };
-}
 
 async function updateDocsParentStatus(
   context: WebhookContext,
   payload: DocsParentingPayload,
 ): Promise<void> {
-  if (context.repository === HomeAssistantRepository.HOME_ASSISTANT_IO) return;
-
   const linksToDocs = [
     ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
     ...extractPullRequestURLLinks(payload.pull_request.body),
-  ].filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
+  ].filter(
+    (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
+  );
 
   if (linksToDocs.length !== 1) return;
 

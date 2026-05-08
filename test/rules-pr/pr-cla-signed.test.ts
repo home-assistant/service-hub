@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prClaSigned } from "../../src/rules-pr/pr-cla-signed.js";
+import { claSigned } from "../../src/rules-pr/pr-cla-signed.js";
 import { createMockContext, createMockDb, createMockGitHub } from "../helpers/mock-context.js";
+
+const rule = claSigned({
+  ignoredRepos: ["home-assistant/brands", "home-assistant/home-assistant.io"],
+});
 
 describe("pr-cla-signed", () => {
   it("skips ignored repositories", async () => {
@@ -16,7 +20,7 @@ describe("pr-cla-signed", () => {
       },
     });
 
-    const result = await prClaSigned.handle(context);
+    const result = await rule.handle(context);
     expect(result).toBeUndefined();
   });
 
@@ -25,7 +29,7 @@ describe("pr-cla-signed", () => {
       eventType: EventType.PULL_REQUEST_OPENED,
     });
 
-    const result = await prClaSigned.handle(context);
+    const result = await rule.handle(context);
     expect(result?.actions).toHaveLength(1);
   });
 
@@ -38,7 +42,7 @@ describe("pr-cla-signed", () => {
       },
     });
 
-    const result = await prClaSigned.handle(context);
+    const result = await rule.handle(context);
     expect(result).toBeUndefined();
   });
 
@@ -51,7 +55,7 @@ describe("pr-cla-signed", () => {
       },
     });
 
-    const result = await prClaSigned.handle(context);
+    const result = await rule.handle(context);
     expect(result?.removeLabels).toContain("cla-recheck");
     expect(result?.actions).toHaveLength(1);
   });
@@ -76,7 +80,7 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await prClaSigned.handle(context);
+      const result = await rule.handle(context);
       expect(result?.actions?.[0]).toBeDefined();
       if (result?.actions?.[0]) await result.actions[0](context);
 
@@ -104,7 +108,7 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await prClaSigned.handle(context);
+      const result = await rule.handle(context);
       expect(result?.actions?.[0]).toBeDefined();
       if (result?.actions?.[0]) await result.actions[0](context);
 
@@ -134,7 +138,7 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await prClaSigned.handle(context);
+      const result = await rule.handle(context);
       expect(result?.actions?.[0]).toBeDefined();
       if (result?.actions?.[0]) await result.actions[0](context);
 
@@ -164,7 +168,7 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await prClaSigned.handle(context);
+      const result = await rule.handle(context);
       expect(result?.actions?.[0]).toBeDefined();
       if (result?.actions?.[0]) await result.actions[0](context);
 
@@ -193,7 +197,7 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await prClaSigned.handle(context);
+      const result = await rule.handle(context);
       expect(result?.actions?.[0]).toBeDefined();
       if (result?.actions?.[0]) await result.actions[0](context);
 
@@ -210,9 +214,9 @@ describe("pr-cla-signed", () => {
   });
 
   it("listens to opened, reopened, synchronize, and labeled events", () => {
-    expect(prClaSigned.listens).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(prClaSigned.listens).toContain(EventType.PULL_REQUEST_REOPENED);
-    expect(prClaSigned.listens).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
-    expect(prClaSigned.listens).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(rule.listens).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(rule.listens).toContain(EventType.PULL_REQUEST_REOPENED);
+    expect(rule.listens).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+    expect(rule.listens).toContain(EventType.PULL_REQUEST_LABELED);
   });
 });

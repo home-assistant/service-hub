@@ -8,6 +8,7 @@ const WTH_CATEGORY_IDS = [56, 61];
 
 export const prLabelWth: Rule = {
   name: "pr-label-wth",
+  description: "Labels PRs that link to 'What the Heck' forum posts",
   listens: [EventType.PULL_REQUEST_OPENED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {

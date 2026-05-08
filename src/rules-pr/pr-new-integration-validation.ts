@@ -6,6 +6,7 @@ import { ParsedPath } from "../utils/parse-path.js";
 
 export const prNewIntegrationValidation: Rule = {
   name: "pr-new-integration-validation",
+  description: "Validates new integration PRs for platform count and brand folder placement",
   listens: [EventType.PULL_REQUEST_LABELED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {

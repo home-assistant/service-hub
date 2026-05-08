@@ -19,6 +19,7 @@ const contextLabels = new Set(Object.keys(issueContext).filter((k) => !k.startsW
 
 export const issueContextComment: Rule = {
   name: "issue-context-comment",
+  description: "Posts context comments when issues are labeled with integration or special labels",
   listens: [EventType.ISSUES_LABELED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {

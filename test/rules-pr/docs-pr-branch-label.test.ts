@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { docsPrBranchLabel } from "../../src/rules-pr/docs-pr-branch-label.js";
+import { branchLabel } from "../../src/rules-pr/docs-pr-branch-label.js";
 import { createMockContext } from "../helpers/mock-context.js";
+
+const rule = branchLabel({ validLabels: ["current", "rc", "next"] });
 
 function docsContext(overrides: Record<string, unknown> = {}) {
   return createMockContext({
@@ -27,7 +29,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await docsPrBranchLabel.handle(context);
+    const result = await rule.handle(context);
     expect(result).toMatchObject({ labels: ["current"] });
   });
 
@@ -40,7 +42,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await docsPrBranchLabel.handle(context);
+    const result = await rule.handle(context);
     expect(result).toMatchObject({
       labels: ["next"],
       removeLabels: ["current"],
@@ -56,23 +58,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await docsPrBranchLabel.handle(context);
-    expect(result).toBeUndefined();
-  });
-
-  it("returns undefined for non-docs repos", async () => {
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_OPENED,
-      payload: {
-        pull_request: {
-          base: { ref: "current" },
-          labels: [],
-          head: { sha: "abc123" },
-        },
-      },
-    });
-
-    const result = await docsPrBranchLabel.handle(context);
+    const result = await rule.handle(context);
     expect(result).toBeUndefined();
   });
 
@@ -85,7 +71,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await docsPrBranchLabel.handle(context);
+    const result = await rule.handle(context);
     expect(result).toMatchObject({ labels: ["rc"] });
   });
 
@@ -98,12 +84,12 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await docsPrBranchLabel.handle(context);
+    const result = await rule.handle(context);
     expect(result?.removeLabels).toEqual(["next"]);
     expect(result?.removeLabels).not.toContain("bugfix");
   });
 
   it("does not allow bots", () => {
-    expect(docsPrBranchLabel.allowBots).toBe(false);
+    expect(rule.allowBots).toBe(false);
   });
 });

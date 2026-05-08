@@ -12,6 +12,7 @@ const DEPENDENCY_FILES = new Set([
 
 export const prLabelDependencyBump: Rule = {
   name: "pr-label-dependency-bump",
+  description: "Labels PRs that only modify dependency files",
   allowBots: false,
   listens: [EventType.PULL_REQUEST_OPENED],
 

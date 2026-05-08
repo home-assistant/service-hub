@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { issueMentionCodeOwners } from "../../src/rules-issue/issue-mention-code-owners.js";
+import { mentionCodeOwners } from "../../src/rules-issue/issue-mention-code-owners.js";
 import { createMockGitHub, createMockIssueContext } from "../helpers/mock-context.js";
 
-describe("issue-mention-code-owners", () => {
+const rule = mentionCodeOwners({
+  pathPattern: (name) => `homeassistant/components/${name}/*`,
+});
+
+describe("mention-code-owners", () => {
   it("returns undefined for non-integration labels", async () => {
     const context = createMockIssueContext({
       eventType: EventType.ISSUES_LABELED,
@@ -12,7 +16,7 @@ describe("issue-mention-code-owners", () => {
       },
     });
 
-    const result = await issueMentionCodeOwners.handle(context);
+    const result = await rule.handle(context);
     expect(result).toBeUndefined();
   });
 
@@ -40,7 +44,7 @@ describe("issue-mention-code-owners", () => {
       },
     });
 
-    const result = await issueMentionCodeOwners.handle(context);
+    const result = await rule.handle(context);
     expect(result?.assignees).toContain("balloob");
     expect(result?.assignees).toContain("frenck");
     expect(result?.comment).toContain("@balloob");
@@ -72,7 +76,7 @@ describe("issue-mention-code-owners", () => {
       },
     });
 
-    const result = await issueMentionCodeOwners.handle(context);
+    const result = await rule.handle(context);
     expect(result?.assignees).toContain("balloob");
     // Comment should be undefined since the only owner is already assigned
     expect(result?.comment).toBeUndefined();
@@ -102,7 +106,7 @@ describe("issue-mention-code-owners", () => {
       },
     });
 
-    const result = await issueMentionCodeOwners.handle(context);
+    const result = await rule.handle(context);
     expect(result?.assignees).toEqual([]);
     expect(result?.labels).toContain("by-code-owner");
   });
@@ -119,7 +123,7 @@ describe("issue-mention-code-owners", () => {
       },
     });
 
-    const result = await issueMentionCodeOwners.handle(context);
+    const result = await rule.handle(context);
     expect(result).toBeUndefined();
   });
 
@@ -139,16 +143,54 @@ describe("issue-mention-code-owners", () => {
       },
     });
 
-    const result = await issueMentionCodeOwners.handle(context);
+    const result = await rule.handle(context);
     expect(result).toBeUndefined();
   });
 
   it("works for PR labeled events too", async () => {
-    expect(issueMentionCodeOwners.listens).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(rule.listens).toContain(EventType.PULL_REQUEST_LABELED);
   });
 
   it("listens to both issues.labeled and pull_request.labeled", () => {
-    expect(issueMentionCodeOwners.listens).toContain(EventType.ISSUES_LABELED);
-    expect(issueMentionCodeOwners.listens).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(rule.listens).toContain(EventType.ISSUES_LABELED);
+    expect(rule.listens).toContain(EventType.PULL_REQUEST_LABELED);
+  });
+
+  it("uses custom itemLabel in comment", async () => {
+    const docsRule = mentionCodeOwners({
+      pathPattern: (name) => `source/_integrations/${name}.markdown`,
+      itemLabel: "feedback",
+    });
+
+    const github = createMockGitHub();
+    const codeowners = `source/_integrations/hue.markdown @balloob`;
+
+    github.repos.getContent.mockResolvedValue({
+      data: { content: btoa(codeowners) },
+    });
+    github.issues.listComments.mockResolvedValue({ data: [] });
+    github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
+
+    const context = createMockIssueContext({
+      eventType: EventType.ISSUES_LABELED,
+      github,
+      payload: {
+        label: { name: "integration: hue" },
+        repository: {
+          full_name: "home-assistant/home-assistant.io",
+          name: "home-assistant.io",
+          owner: { login: "home-assistant" },
+        },
+        issue: {
+          user: { login: "reporter" },
+          assignees: [],
+          body: "",
+          labels: [],
+        },
+      },
+    });
+
+    const result = await docsRule.handle(context);
+    expect(result?.comment).toContain("feedback");
   });
 });

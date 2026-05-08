@@ -4,6 +4,7 @@ import type { Rule, RuleResult } from "../rules/types.js";
 
 export const prNoMergeConflict: Rule = {
   name: "pr-no-merge-conflict",
+  description: "Requests changes when a PR has merge conflicts",
   listens: [EventType.PULL_REQUEST_OPENED, EventType.PULL_REQUEST_SYNCHRONIZE],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {

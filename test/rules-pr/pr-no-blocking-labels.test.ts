@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prNoBlockingLabels } from "../../src/rules-pr/pr-no-blocking-labels.js";
+import { blockingLabels } from "../../src/rules-pr/pr-no-blocking-labels.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
+const rule = blockingLabels({
+  "awaiting-frontend": { message: "This PR is awaiting changes to the frontend" },
+});
+
 describe("blocking-labels handler", () => {
-  it("returns actions for configured repos", async () => {
+  it("returns actions when blocking label is present", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
@@ -15,20 +19,15 @@ describe("blocking-labels handler", () => {
       },
     });
 
-    const result = await prNoBlockingLabels.handle(context);
+    const result = await rule.handle(context);
     expect(result).toBeDefined();
     expect(result?.actions).toHaveLength(1);
   });
 
-  it("returns undefined for unconfigured repos", async () => {
+  it("returns actions even when no blocking labels are present (to set success status)", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
-        repository: {
-          full_name: "home-assistant/brands",
-          name: "brands",
-          owner: { login: "home-assistant" },
-        },
         pull_request: {
           labels: [],
           head: { sha: "abc123" },
@@ -36,7 +35,12 @@ describe("blocking-labels handler", () => {
       },
     });
 
-    const result = await prNoBlockingLabels.handle(context);
-    expect(result).toBeUndefined();
+    const result = await rule.handle(context);
+    expect(result).toBeDefined();
+    expect(result?.actions).toHaveLength(1);
+  });
+
+  it("includes description", () => {
+    expect(rule.description).toContain("awaiting-frontend");
   });
 });

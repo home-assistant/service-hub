@@ -7,6 +7,7 @@ const LANGUAGE_FILE_REGEX =
 
 export const prLabelIntentsLanguage: Rule = {
   name: "pr-label-intents-language",
+  description: "Labels intent PRs with the language codes of modified files",
   allowBots: false,
   listens: [EventType.PULL_REQUEST_OPENED, EventType.PULL_REQUEST_SYNCHRONIZE],
 

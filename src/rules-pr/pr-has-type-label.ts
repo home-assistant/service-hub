@@ -1,66 +1,41 @@
 import type { PullRequestLabeledEvent, PullRequestUnlabeledEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
-import { EventType, HomeAssistantRepository, type Repository } from "../github/types.js";
+import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
 
-const labelsToCheck: Partial<Record<Repository, string[]>> = {
-  [HomeAssistantRepository.CORE]: [
-    "breaking-change",
-    "bugfix",
-    "code-quality",
-    "dependency",
-    "deprecation",
-    "new-feature",
-    "new-integration",
-  ],
-  [HomeAssistantRepository.SUPERVISOR]: [
-    "breaking-change",
-    "new-feature",
-    "bugfix",
-    "style",
-    "refactor",
-    "performance",
-    "test",
-    "build",
-    "ci",
-    "chore",
-    "revert",
-    "dependencies",
-  ],
-};
+export function requiredLabels(config: { labels: string[] }): Rule {
+  return {
+    name: "required-labels",
+    description: `Requires one of: ${config.labels.join(", ")}`,
+    listens: [
+      EventType.PULL_REQUEST_LABELED,
+      EventType.PULL_REQUEST_UNLABELED,
+      EventType.PULL_REQUEST_SYNCHRONIZE,
+    ],
 
-export const prHasTypeLabel: Rule = {
-  name: "required-labels",
-  listens: [
-    EventType.PULL_REQUEST_LABELED,
-    EventType.PULL_REQUEST_UNLABELED,
-    EventType.PULL_REQUEST_SYNCHRONIZE,
-  ],
+    async handle(context: WebhookContext): Promise<RuleResult | undefined> {
+      const payload = context.payload as PullRequestLabeledEvent | PullRequestUnlabeledEvent;
+      const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
 
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as PullRequestLabeledEvent | PullRequestUnlabeledEvent;
-    const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
-    const requiredLabels = labelsToCheck[context.repository];
-    if (!requiredLabels) return;
+      const hasRequiredLabel = config.labels.some((label) => currentLabels.has(label));
 
-    const hasRequiredLabel = requiredLabels.some((label) => currentLabels.has(label));
-
-    return {
-      statusCheck: {
-        context: "required-labels",
-        state: hasRequiredLabel ? "success" : "failure",
-        description: hasRequiredLabel
-          ? `Has at least one of the required labels (${requiredLabels.join(", ")})`
-          : `Missing one of: ${requiredLabels.join(", ")}`,
-      },
-      dashboard: {
-        id: "required-labels",
-        title: "Required Labels",
-        status: hasRequiredLabel ? "pass" : "fail",
-        message: hasRequiredLabel
-          ? "Has a required label"
-          : `Missing one of: ${requiredLabels.join(", ")}`,
-      },
-    };
-  },
-};
+      return {
+        statusCheck: {
+          context: "required-labels",
+          state: hasRequiredLabel ? "success" : "failure",
+          description: hasRequiredLabel
+            ? `Has at least one of the required labels (${config.labels.join(", ")})`
+            : `Missing one of: ${config.labels.join(", ")}`,
+        },
+        dashboard: {
+          id: "required-labels",
+          title: "Required Labels",
+          status: hasRequiredLabel ? "pass" : "fail",
+          message: hasRequiredLabel
+            ? "Has a required label"
+            : `Missing one of: ${config.labels.join(", ")}`,
+        },
+      };
+    },
+  };
+}

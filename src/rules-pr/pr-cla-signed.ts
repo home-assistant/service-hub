@@ -17,25 +17,6 @@ const ignoredAuthors = new Set([
   "noreply@anthropic.com",
 ]);
 
-const ignoredRepositories = new Set([
-  "home-assistant/.github",
-  "home-assistant/1password-teams-open-source",
-  "home-assistant/architecture",
-  "home-assistant/assets",
-  "home-assistant/brands",
-  "home-assistant/bthome.io",
-  "home-assistant/buildroot",
-  "home-assistant/companion.home-assistant",
-  "home-assistant/data.home-assistant",
-  "home-assistant/developers.home-assistant",
-  "home-assistant/home-assistant.io",
-  "home-assistant/organization",
-  "home-assistant/partner.home-assistant",
-  "home-assistant/people",
-  "home-assistant/version",
-  "home-assistant/webawesome",
-]);
-
 interface Commit {
   sha: string;
   author: { login?: string; type?: string } | null;
@@ -50,34 +31,38 @@ interface ClaPayload {
   repository: { full_name: string; owner: { login: string }; name: string };
 }
 
-export const prClaSigned: Rule = {
-  name: "validate-cla",
-  listens: [
-    EventType.PULL_REQUEST_OPENED,
-    EventType.PULL_REQUEST_REOPENED,
-    EventType.PULL_REQUEST_SYNCHRONIZE,
-    EventType.PULL_REQUEST_LABELED,
-  ],
+export function claSigned(config: { ignoredRepos: string[] }): Rule {
+  const ignoredRepositories = new Set(config.ignoredRepos);
+  return {
+    name: "validate-cla",
+    description: "Validates CLA signatures for all PR commit authors",
+    listens: [
+      EventType.PULL_REQUEST_OPENED,
+      EventType.PULL_REQUEST_REOPENED,
+      EventType.PULL_REQUEST_SYNCHRONIZE,
+      EventType.PULL_REQUEST_LABELED,
+    ],
 
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    if (ignoredRepositories.has(context.repository)) return;
+    async handle(context: WebhookContext): Promise<RuleResult | undefined> {
+      if (ignoredRepositories.has(context.repository)) return;
 
-    const payload = context.payload as PullRequestOpenedEvent | PullRequestLabeledEvent;
+      const payload = context.payload as PullRequestOpenedEvent | PullRequestLabeledEvent;
 
-    // Only process labeled events if it's a cla-recheck
-    if (payload.action === "labeled") {
-      const labeledPayload = payload as PullRequestLabeledEvent;
-      if (labeledPayload.label?.name !== CLA_LABEL_RECHECK) return;
-      // Remove the recheck label
-      return {
-        removeLabels: [CLA_LABEL_RECHECK],
-        actions: [async (ctx) => runClaCheck(ctx, toClaPayload(labeledPayload))],
-      };
-    }
+      // Only process labeled events if it's a cla-recheck
+      if (payload.action === "labeled") {
+        const labeledPayload = payload as PullRequestLabeledEvent;
+        if (labeledPayload.label?.name !== CLA_LABEL_RECHECK) return;
+        // Remove the recheck label
+        return {
+          removeLabels: [CLA_LABEL_RECHECK],
+          actions: [async (ctx) => runClaCheck(ctx, toClaPayload(labeledPayload))],
+        };
+      }
 
-    return { actions: [async (ctx) => runClaCheck(ctx, toClaPayload(payload))] };
-  },
-};
+      return { actions: [async (ctx) => runClaCheck(ctx, toClaPayload(payload))] };
+    },
+  };
+}
 
 function toClaPayload(payload: PullRequestOpenedEvent | PullRequestLabeledEvent): ClaPayload {
   return {

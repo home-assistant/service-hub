@@ -9,6 +9,7 @@ import {
 
 export const prHasDocsPr: Rule = {
   name: "docs-missing",
+  description: "Checks new integrations and platforms have a linked documentation PR",
   listens: [
     EventType.PULL_REQUEST_EDITED,
     EventType.PULL_REQUEST_LABELED,

@@ -7,6 +7,7 @@ import { expandOrganizationTeams } from "../utils/organization-teams.js";
 
 export const prPlatinumCodeOwnerApproval: Rule = {
   name: "pr-platinum-code-owner-approval",
+  description: "Requires code owner approval for platinum quality scale integrations",
   listens: [
     EventType.PULL_REQUEST_LABELED,
     EventType.PULL_REQUEST_OPENED,

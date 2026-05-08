@@ -5,6 +5,7 @@ import type { Rule, RuleResult } from "../rules/types.js";
 
 export const issueIntegrationLinks: Rule = {
   name: "issue-integration-links",
+  description: "Comments with documentation and source links when an integration label is added",
   listens: [EventType.ISSUES_LABELED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {

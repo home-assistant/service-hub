@@ -21,6 +21,7 @@ export interface RuleResult {
 
 export interface Rule {
   name: string;
+  description: string;
   listens: EventType[];
   allowBots?: boolean;
   handle(context: WebhookContext): Promise<RuleResult | undefined>;

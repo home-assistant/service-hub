@@ -152,6 +152,7 @@ async function getTopLabels(parsed: ParsedPath[]): Promise<string[]> {
 
 export const prAutoLabel: Rule = {
   name: "pr-auto-label",
+  description: "Auto-labels PRs based on changed files, PR body, and integration analytics",
   allowBots: false,
   listens: [EventType.PULL_REQUEST_OPENED],
 

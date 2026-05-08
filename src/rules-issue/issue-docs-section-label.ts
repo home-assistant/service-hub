@@ -7,6 +7,7 @@ import { extractDocumentationSectionsLinks } from "../utils/text-parser.js";
 
 export const issueDocsSectionLabel: Rule = {
   name: "issue-docs-section-label",
+  description: "Labels docs issues with documentation section labels extracted from the issue body",
   allowBots: false,
   listens: [EventType.ISSUES_OPENED],
 
