@@ -101,7 +101,12 @@ async function applyResults(context: WebhookContext, results: RuleResult[]): Pro
     ops.push(action(context));
   }
 
-  await Promise.all(ops);
+  const settled = await Promise.allSettled(ops);
+  for (const outcome of settled) {
+    if (outcome.status === "rejected") {
+      console.warn("applyResults operation failed:", outcome.reason);
+    }
+  }
 }
 
 export async function dispatch(
