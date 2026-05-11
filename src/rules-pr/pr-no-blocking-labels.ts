@@ -19,13 +19,27 @@ export function blockingLabels(
       const payload = context.payload as PullRequestLabeledEvent | PullRequestUnlabeledEvent;
       const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
 
-      const actions: Array<(ctx: WebhookContext) => Promise<void>> = [];
+      // On labeled/unlabeled, only the affected label's status can change.
+      // On synchronize, head_sha changed so every configured label must be
+      // re-emitted (a missing status leaves required checks in "expected" state).
+      const affectedLabel =
+        payload.action === "labeled" || payload.action === "unlabeled"
+          ? payload.label?.name
+          : undefined;
 
-      for (const [label, description] of Object.entries(config)) {
+      const labelsToEmit = Object.keys(config).filter((label) => {
+        if (payload.action === "synchronize") return true;
+        if (affectedLabel && affectedLabel === label) return true;
+        return false;
+      });
+
+      if (labelsToEmit.length === 0) return;
+
+      const actions: Array<(ctx: WebhookContext) => Promise<void>> = labelsToEmit.map((label) => {
+        const description = config[label];
         const hasBlockingLabel = currentLabels.has(label);
         const contextName = `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`;
-
-        actions.push(async (ctx) => {
+        return async (ctx) => {
           await ctx.github.repos.createCommitStatus(
             ctx.repo({
               sha: payload.pull_request.head.sha,
@@ -34,8 +48,8 @@ export function blockingLabels(
               description: hasBlockingLabel ? description.message : (description.success ?? "OK"),
             }),
           );
-        });
-      }
+        };
+      });
 
       return { actions };
     },
