@@ -2,7 +2,7 @@ node_modules/
 dist/
 coverage/
 package-lock.json
-*.local-command-caveatcaveat-*.txt
+*local-command-caveatcaveat-*.txt
 .wrangler/
 .dev.vars
 .devenv/
