@@ -126,16 +126,18 @@ async function runClaCheck(context: WebhookContext, payload: ClaPayload): Promis
     );
     await context.github.issues.addLabels(context.issue({ labels: ["cla-error"] }));
 
-    for (const commit of commitsWithoutLogins) {
-      await context.github.repos.createCommitStatus(
-        context.repo({
-          sha: commit.sha,
-          state: "failure" as const,
-          description: "Commit(s) are missing a linked GitHub user.",
-          context: CLA_CONTEXT,
-        }),
-      );
-    }
+    await Promise.all(
+      commitsWithoutLogins.map((commit) =>
+        context.github.repos.createCommitStatus(
+          context.repo({
+            sha: commit.sha,
+            state: "failure" as const,
+            description: "Commit(s) are missing a linked GitHub user.",
+            context: CLA_CONTEXT,
+          }),
+        ),
+      ),
+    );
     return;
   }
 
@@ -151,18 +153,19 @@ async function runClaCheck(context: WebhookContext, payload: ClaPayload): Promis
     );
     await context.github.issues.addLabels(context.issue({ labels: [CLA_LABEL_NEEDED] }));
 
-    for (const entry of authorsNeedingCLA) {
-      await context.github.repos.createCommitStatus(
-        context.repo({
-          sha: entry.sha,
-          state: "failure" as const,
-          description: "At least one contributor needs to sign the CLA",
-          context: CLA_CONTEXT,
-        }),
-      );
-    }
+    await Promise.all(
+      authorsNeedingCLA.map((entry) =>
+        context.github.repos.createCommitStatus(
+          context.repo({
+            sha: entry.sha,
+            state: "failure" as const,
+            description: "At least one contributor needs to sign the CLA",
+            context: CLA_CONTEXT,
+          }),
+        ),
+      ),
+    );
 
-    // Record pending signers in DB
     const grouped: Record<string, string[]> = {};
     for (const entry of authorsNeedingCLA) {
       if (!grouped[entry.login]) {
@@ -171,19 +174,21 @@ async function runClaCheck(context: WebhookContext, payload: ClaPayload): Promis
       grouped[entry.login].push(entry.sha);
     }
 
-    for (const [author, shas] of Object.entries(grouped)) {
-      await context.db.execute(
-        `INSERT OR REPLACE INTO cla_pending_signers
+    await Promise.all(
+      Object.entries(grouped).map(([author, shas]) =>
+        context.db.execute(
+          `INSERT OR REPLACE INTO cla_pending_signers
          (github_username, commits, pr, repository_owner, repository, pr_number)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        author,
-        JSON.stringify(shas),
-        `${payload.repository.full_name}#${payload.number}`,
-        payload.repository.owner.login,
-        payload.repository.name,
-        String(payload.number),
-      );
-    }
+          author,
+          JSON.stringify(shas),
+          `${payload.repository.full_name}#${payload.number}`,
+          payload.repository.owner.login,
+          payload.repository.name,
+          String(payload.number),
+        ),
+      ),
+    );
     return;
   }
 
@@ -198,18 +203,20 @@ async function runClaCheck(context: WebhookContext, payload: ClaPayload): Promis
     // label may not exist
   }
 
-  for (const commit of commits) {
-    await context.github.repos.createCommitStatus(
-      context.repo({
-        sha: commit.sha,
-        state: "success" as const,
-        description: allCommitsIgnored
-          ? "Everyone involved are ignored"
-          : "Everyone has signed the CLA",
-        context: CLA_CONTEXT,
-      }),
-    );
-  }
+  await Promise.all(
+    commits.map((commit) =>
+      context.github.repos.createCommitStatus(
+        context.repo({
+          sha: commit.sha,
+          state: "success" as const,
+          description: allCommitsIgnored
+            ? "Everyone involved are ignored"
+            : "Everyone has signed the CLA",
+          context: CLA_CONTEXT,
+        }),
+      ),
+    ),
+  );
 }
 
 const noLoginComment = (
