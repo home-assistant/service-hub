@@ -11,10 +11,15 @@ const STATUS_ICONS: Record<SectionStatus, string> = {
   info: ":information_source:",
 };
 
+function escapeTableCell(s: string): string {
+  return s.replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
+}
+
 function renderRow(s: DashboardSection): string {
   const icon = STATUS_ICONS[s.status];
-  const title = s.url ? `[${s.title}](${s.url})` : s.title;
-  return `| ${icon} | ${title} | ${s.message} |`;
+  const titleText = escapeTableCell(s.title);
+  const title = s.url ? `[${titleText}](${s.url})` : titleText;
+  return `| ${icon} | ${title} | ${escapeTableCell(s.message)} |`;
 }
 
 const TABLE_HEADER = ["| Status | Check | Details |", "|--------|-------|---------|"];
