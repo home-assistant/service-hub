@@ -1,10 +1,15 @@
 import type { PullRequestOpenedEvent } from "@octokit/webhooks-types";
+import { z } from "zod";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
 import { fetchWithTimeout } from "../utils/fetch.js";
 import { ParsedPath } from "../utils/parse-path.js";
 import { extractTasks } from "../utils/text-parser.js";
+
+const AnalyticsSchema = z.object({
+  integrations: z.record(z.string(), z.number()).optional(),
+});
 
 const MAX_INTEGRATION_LABELS = 5;
 const SMALL_PR_THRESHOLD = 30;
@@ -127,7 +132,12 @@ async function getTopLabels(parsed: ParsedPath[]): Promise<string[]> {
   try {
     const res = await fetchWithTimeout(ANALYTICS_URL);
     if (!res.ok) return [];
-    const data = (await res.json()) as { integrations?: Record<string, number> };
+    const parsedData = AnalyticsSchema.safeParse(await res.json());
+    if (!parsedData.success) {
+      console.warn("getTopLabels: analytics schema mismatch:", parsedData.error.issues);
+      return [];
+    }
+    const data = parsedData.data;
     if (!data.integrations) return [];
 
     const ranked = Object.entries(data.integrations)

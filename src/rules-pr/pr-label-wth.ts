@@ -1,4 +1,5 @@
 import type { PullRequestOpenedEvent } from "@octokit/webhooks-types";
+import { z } from "zod";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -6,6 +7,8 @@ import { fetchWithTimeout } from "../utils/fetch.js";
 import { extractForumLinks } from "../utils/text-parser.js";
 
 const WTH_CATEGORY_IDS = [56, 61];
+
+const ForumPostSchema = z.object({ category_id: z.number().optional() });
 
 export const prLabelWth: Rule = {
   name: "pr-label-wth",
@@ -19,8 +22,13 @@ export const prLabelWth: Rule = {
       try {
         const res = await fetchWithTimeout(`${link}.json`);
         if (!res.ok) continue;
-        const data = (await res.json()) as { category_id?: number };
-        if (data.category_id && WTH_CATEGORY_IDS.includes(data.category_id)) {
+        const parsed = ForumPostSchema.safeParse(await res.json());
+        if (!parsed.success) {
+          console.warn(`prLabelWth: schema mismatch on ${link}:`, parsed.error.issues);
+          continue;
+        }
+        const categoryId = parsed.data.category_id;
+        if (categoryId && WTH_CATEGORY_IDS.includes(categoryId)) {
           return { labels: ["WTH"] };
         }
       } catch (err) {

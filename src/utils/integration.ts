@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { fetchWithTimeout } from "./fetch.js";
 
 export enum QualityScale {
@@ -8,17 +9,19 @@ export enum QualityScale {
   INTERNAL = "internal",
 }
 
-export interface IntegrationManifest {
-  codeowners?: string[];
-  domain: string;
-  name: string;
-  quality_scale?: QualityScale;
-  config_flow: boolean;
-  dependencies: string[];
-  documentation: string;
-  requirements: string[];
-  iot_class: string;
-}
+const IntegrationManifestSchema = z.object({
+  codeowners: z.array(z.string()).optional(),
+  domain: z.string(),
+  name: z.string(),
+  quality_scale: z.nativeEnum(QualityScale).optional(),
+  config_flow: z.boolean().default(false),
+  dependencies: z.array(z.string()).default([]),
+  documentation: z.string().default(""),
+  requirements: z.array(z.string()).default([]),
+  iot_class: z.string().default(""),
+});
+
+export type IntegrationManifest = z.infer<typeof IntegrationManifestSchema>;
 
 export async function fetchIntegrationManifest(
   domain: string,
@@ -28,7 +31,12 @@ export async function fetchIntegrationManifest(
       `https://raw.githubusercontent.com/home-assistant/core/dev/homeassistant/components/${domain}/manifest.json`,
     );
     if (!res.ok) return;
-    return (await res.json()) as IntegrationManifest;
+    const parsed = IntegrationManifestSchema.safeParse(await res.json());
+    if (!parsed.success) {
+      console.warn(`fetchIntegrationManifest(${domain}) schema mismatch:`, parsed.error.issues);
+      return;
+    }
+    return parsed.data;
   } catch (err) {
     console.warn(`fetchIntegrationManifest(${domain}) failed:`, err);
   }
