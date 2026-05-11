@@ -88,16 +88,24 @@ export class WebhookContext {
     } as { owner: string; repo: string } & T;
   }
 
+  /**
+   * The issue or pull-request number in scope for this event. PRs and
+   * issues share a numbering space on GitHub (a PR is a kind of issue),
+   * so `issue_number` and `pull_number` always refer to the same value.
+   */
+  get number(): number {
+    if ("issue" in this.payload && this.payload.issue) return this.payload.issue.number;
+    if ("pull_request" in this.payload && this.payload.pull_request) {
+      return this.payload.pull_request.number;
+    }
+    throw new Error(`WebhookContext.number: event ${this.eventType} has no issue or PR number`);
+  }
+
   issue<T extends Record<string, unknown> = Record<string, never>>(
     data?: T,
   ): { issue_number: number; owner: string; repo: string } & T {
-    const issueNumber =
-      ("issue" in this.payload && this.payload.issue?.number) ||
-      ("pull_request" in this.payload && this.payload.pull_request?.number) ||
-      ("number" in this.payload && this.payload.number) ||
-      0;
     return {
-      issue_number: issueNumber,
+      issue_number: this.number,
       ...this.repo(data),
     } as { issue_number: number; owner: string; repo: string } & T;
   }
@@ -105,13 +113,8 @@ export class WebhookContext {
   pullRequest<T extends Record<string, unknown> = Record<string, never>>(
     data?: T,
   ): { pull_number: number; owner: string; repo: string } & T {
-    const pullNumber =
-      ("issue" in this.payload && this.payload.issue?.number) ||
-      ("pull_request" in this.payload && this.payload.pull_request?.number) ||
-      ("number" in this.payload && this.payload.number) ||
-      0;
     return {
-      pull_number: pullNumber,
+      pull_number: this.number,
       ...this.repo(data),
     } as { pull_number: number; owner: string; repo: string } & T;
   }
