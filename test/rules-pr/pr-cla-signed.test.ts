@@ -3,27 +3,9 @@ import { EventType } from "../../src/github/types.js";
 import { claSigned } from "../../src/rules-pr/pr-cla-signed.js";
 import { createMockContext, createMockDb, createMockGitHub } from "../helpers/mock-context.js";
 
-const rule = claSigned({
-  ignoredRepos: ["home-assistant/brands", "home-assistant/home-assistant.io"],
-});
+const rule = claSigned;
 
 describe("pr-cla-signed", () => {
-  it("skips ignored repositories", async () => {
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_OPENED,
-      payload: {
-        repository: {
-          full_name: "home-assistant/brands",
-          name: "brands",
-          owner: { login: "home-assistant" },
-        },
-      },
-    });
-
-    const result = await rule.handle(context);
-    expect(result).toBeUndefined();
-  });
-
   it("returns action for opened events", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_OPENED,

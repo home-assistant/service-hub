@@ -31,38 +31,33 @@ interface ClaPayload {
   repository: { full_name: string; owner: { login: string }; name: string };
 }
 
-export function claSigned(config: { ignoredRepos: string[] }): Rule {
-  const ignoredRepositories = new Set(config.ignoredRepos);
-  return {
-    name: "validate-cla",
-    description: "Validates CLA signatures for all PR commit authors",
-    listens: [
-      EventType.PULL_REQUEST_OPENED,
-      EventType.PULL_REQUEST_REOPENED,
-      EventType.PULL_REQUEST_SYNCHRONIZE,
-      EventType.PULL_REQUEST_LABELED,
-    ],
+export const claSigned: Rule = {
+  name: "validate-cla",
+  description: "Validates CLA signatures for all PR commit authors",
+  listens: [
+    EventType.PULL_REQUEST_OPENED,
+    EventType.PULL_REQUEST_REOPENED,
+    EventType.PULL_REQUEST_SYNCHRONIZE,
+    EventType.PULL_REQUEST_LABELED,
+  ],
 
-    async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-      if (ignoredRepositories.has(context.repository)) return;
+  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
+    const payload = context.payload as PullRequestOpenedEvent | PullRequestLabeledEvent;
 
-      const payload = context.payload as PullRequestOpenedEvent | PullRequestLabeledEvent;
+    // Only process labeled events if it's a cla-recheck
+    if (payload.action === "labeled") {
+      const labeledPayload = payload as PullRequestLabeledEvent;
+      if (labeledPayload.label?.name !== CLA_LABEL_RECHECK) return;
+      // Remove the recheck label
+      return {
+        removeLabels: [CLA_LABEL_RECHECK],
+        actions: [async (ctx) => runClaCheck(ctx, toClaPayload(labeledPayload))],
+      };
+    }
 
-      // Only process labeled events if it's a cla-recheck
-      if (payload.action === "labeled") {
-        const labeledPayload = payload as PullRequestLabeledEvent;
-        if (labeledPayload.label?.name !== CLA_LABEL_RECHECK) return;
-        // Remove the recheck label
-        return {
-          removeLabels: [CLA_LABEL_RECHECK],
-          actions: [async (ctx) => runClaCheck(ctx, toClaPayload(labeledPayload))],
-        };
-      }
-
-      return { actions: [async (ctx) => runClaCheck(ctx, toClaPayload(payload))] };
-    },
-  };
-}
+    return { actions: [async (ctx) => runClaCheck(ctx, toClaPayload(payload))] };
+  },
+};
 
 function toClaPayload(payload: PullRequestOpenedEvent | PullRequestLabeledEvent): ClaPayload {
   return {

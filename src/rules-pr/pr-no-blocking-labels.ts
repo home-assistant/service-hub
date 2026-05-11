@@ -1,4 +1,8 @@
-import type { PullRequestLabeledEvent, PullRequestUnlabeledEvent } from "@octokit/webhooks-types";
+import type {
+  PullRequestLabeledEvent,
+  PullRequestSynchronizeEvent,
+  PullRequestUnlabeledEvent,
+} from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
@@ -16,7 +20,10 @@ export function blockingLabels(
     ],
 
     async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-      const payload = context.payload as PullRequestLabeledEvent | PullRequestUnlabeledEvent;
+      const payload = context.payload as
+        | PullRequestLabeledEvent
+        | PullRequestUnlabeledEvent
+        | PullRequestSynchronizeEvent;
       const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
 
       // On labeled/unlabeled, only the affected label's status can change.

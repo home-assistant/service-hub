@@ -22,35 +22,12 @@ import { prPlatinumCodeOwnerApproval } from "./pr-platinum-code-owner-approval.j
 
 export const prConfig: RegistryConfig = {
   organizations: {
-    "home-assistant": [
-      claSigned({
-        ignoredRepos: [
-          "home-assistant/.github",
-          "home-assistant/1password-teams-open-source",
-          "home-assistant/architecture",
-          "home-assistant/assets",
-          "home-assistant/brands",
-          "home-assistant/bthome.io",
-          "home-assistant/buildroot",
-          "home-assistant/companion.home-assistant",
-          "home-assistant/data.home-assistant",
-          "home-assistant/developers.home-assistant",
-          "home-assistant/home-assistant.io",
-          "home-assistant/organization",
-          "home-assistant/partner.home-assistant",
-          "home-assistant/people",
-          "home-assistant/version",
-          "home-assistant/webawesome",
-        ],
-      }),
-      prDraftOnChangesRequested,
-      prHacktoberfest,
-      prLabelWth,
-    ],
+    "home-assistant": [prDraftOnChangesRequested, prHacktoberfest, prLabelWth],
     esphome: [prDraftOnChangesRequested],
   },
   repositories: {
     "home-assistant/core": [
+      claSigned,
       prAutoLabel,
       requiredLabels({
         labels: [
@@ -79,6 +56,7 @@ export const prConfig: RegistryConfig = {
       }),
     ],
     "home-assistant/supervisor": [
+      claSigned,
       requiredLabels({
         labels: [
           "breaking-change",
@@ -97,6 +75,7 @@ export const prConfig: RegistryConfig = {
       }),
     ],
     "home-assistant/frontend": [
+      claSigned,
       blockingLabels({
         "wait for backend": { message: "This PR is awaiting changes to the backend" },
       }),
@@ -123,7 +102,7 @@ export const prConfig: RegistryConfig = {
         itemLabel: "feedback",
       }),
     ],
-    "home-assistant/intents": [prLabelIntentsLanguage],
+    "home-assistant/intents": [claSigned, prLabelIntentsLanguage],
     "esphome/esphome": [prNoMergeConflict],
   },
 };
