@@ -6,15 +6,18 @@ import type {
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
-import {
-  extractIssuesOrPullRequestMarkdownLinks,
-  extractPullRequestURLLinks,
-} from "../utils/text-parser.js";
+import { extractAllLinks } from "../utils/text-parser.js";
 
 type DocsParentingPayload =
   | PullRequestOpenedEvent
   | PullRequestEditedEvent
   | PullRequestClosedEvent;
+
+function findDocsLinks(body: string | null) {
+  return extractAllLinks(body).filter(
+    (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
+  );
+}
 
 export const docsParentingCodeSide: Rule = {
   name: "docs-parenting-code-side",
@@ -37,10 +40,7 @@ export const docsParentingCodeSide: Rule = {
     }
 
     // opened or edited
-    const linksToDocs = [
-      ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
-      ...extractPullRequestURLLinks(payload.pull_request.body),
-    ].filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
+    const linksToDocs = findDocsLinks(payload.pull_request.body);
 
     if (linksToDocs.length === 0 || linksToDocs.length > 2) return;
 
@@ -65,10 +65,7 @@ async function updateDocsParentStatus(
   context: WebhookContext,
   payload: DocsParentingPayload,
 ): Promise<void> {
-  const linksToDocs = [
-    ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
-    ...extractPullRequestURLLinks(payload.pull_request.body),
-  ].filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
+  const linksToDocs = findDocsLinks(payload.pull_request.body);
 
   if (linksToDocs.length !== 1) return;
 

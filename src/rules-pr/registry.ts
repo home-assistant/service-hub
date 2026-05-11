@@ -1,8 +1,8 @@
 import type { RegistryConfig } from "../rules/dispatch.js";
 import { mentionCodeOwners } from "../rules-issue/issue-mention-code-owners.js";
-import { docsParentingDocsSide } from "./docs-parenting-docs-side.js";
 import { branchLabel } from "./docs-pr-branch-label.js";
 import { docsPrTargetBranch } from "./docs-pr-target-branch.js";
+import { linkedParentLabel } from "./linked-parent-label.js";
 import { prAutoLabel } from "./pr-auto-label.js";
 import { claSigned } from "./pr-cla-signed.js";
 import { cleanupLabelsOnClose } from "./pr-cleanup-labels-on-close.js";
@@ -114,7 +114,10 @@ export const prConfig: RegistryConfig = {
       }),
       branchLabel({ validLabels: ["current", "rc", "next"] }),
       docsPrTargetBranch,
-      docsParentingDocsSide,
+      linkedParentLabel({
+        isParent: (link) =>
+          link.owner === "home-assistant" && link.repo !== "home-assistant.io",
+      }),
       mentionCodeOwners({
         pathPattern: (name) => `source/_integrations/${name}.markdown`,
         itemLabel: "feedback",

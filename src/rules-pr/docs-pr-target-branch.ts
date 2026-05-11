@@ -2,10 +2,7 @@ import type { PullRequestEditedEvent, PullRequestOpenedEvent } from "@octokit/we
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository, Organization } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
-import {
-  extractIssuesOrPullRequestMarkdownLinks,
-  extractPullRequestURLLinks,
-} from "../utils/text-parser.js";
+import { extractAllLinks } from "../utils/text-parser.js";
 
 const IGNORE_REPOS = new Set([
   HomeAssistantRepository.BRANDS,
@@ -30,10 +27,7 @@ export const docsPrTargetBranch: Rule = {
     const target = payload.pull_request.base.ref;
     if (IGNORE_BRANCHES.has(target)) return;
 
-    const links = [
-      ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
-      ...extractPullRequestURLLinks(payload.pull_request.body),
-    ].filter(
+    const links = extractAllLinks(payload.pull_request.body).filter(
       (link) =>
         link.owner === Organization.HOME_ASSISTANT &&
         !IGNORE_REPOS.has(`${link.owner}/${link.repo}` as HomeAssistantRepository),

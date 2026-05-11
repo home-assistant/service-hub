@@ -2,10 +2,7 @@ import type { PullRequestEditedEvent, PullRequestLabeledEvent } from "@octokit/w
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
-import {
-  extractIssuesOrPullRequestMarkdownLinks,
-  extractPullRequestURLLinks,
-} from "../utils/text-parser.js";
+import { extractAllLinks } from "../utils/text-parser.js";
 
 export const prHasDocsPr: Rule = {
   name: "docs-missing",
@@ -29,10 +26,7 @@ export const prHasDocsPr: Rule = {
       !needsDocumentation &&
       (currentLabels.has("new-integration") || currentLabels.has("new-platform"))
     ) {
-      const linksToDocs = [
-        ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
-        ...extractPullRequestURLLinks(payload.pull_request.body),
-      ].filter(
+      const linksToDocs = extractAllLinks(payload.pull_request.body).filter(
         (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
       );
 

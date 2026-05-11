@@ -19,6 +19,27 @@ function groups(m: RegExpMatchArray): Record<string, string> {
   return m.groups as Record<string, string>;
 }
 
+/**
+ * Returns every issue/PR reference in `body` from both `owner/repo#123`
+ * and `https://github.com/owner/repo/pull/123` forms, in the order they
+ * appear. Deduplicated by (owner, repo, number).
+ */
+export function extractAllLinks(body: string | null): IssuePullInfo[] {
+  const all = [
+    ...extractIssuesOrPullRequestMarkdownLinks(body),
+    ...extractPullRequestURLLinks(body),
+  ];
+  const seen = new Set<string>();
+  const result: IssuePullInfo[] = [];
+  for (const link of all) {
+    const key = `${link.owner}/${link.repo}#${link.number}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(link);
+  }
+  return result;
+}
+
 export function extractIssuesOrPullRequestMarkdownLinks(body: string | null): IssuePullInfo[] {
   if (!body) return [];
   const re = /([\w\-.]+)\/([\w\-.]+)#(\d+)/g;
