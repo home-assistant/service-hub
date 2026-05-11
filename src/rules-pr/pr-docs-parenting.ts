@@ -40,9 +40,7 @@ export const docsParentingCodeSide: Rule = {
     const linksToDocs = [
       ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
       ...extractPullRequestURLLinks(payload.pull_request.body),
-    ].filter(
-      (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
-    );
+    ].filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
 
     if (linksToDocs.length === 0 || linksToDocs.length > 2) return;
 
@@ -70,9 +68,7 @@ async function updateDocsParentStatus(
   const linksToDocs = [
     ...extractIssuesOrPullRequestMarkdownLinks(payload.pull_request.body),
     ...extractPullRequestURLLinks(payload.pull_request.body),
-  ].filter(
-    (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
-  );
+  ].filter((link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO);
 
   if (linksToDocs.length !== 1) return;
 

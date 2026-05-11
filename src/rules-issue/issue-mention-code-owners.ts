@@ -74,8 +74,7 @@ export function mentionCodeOwners(config: {
 
       if (mentions.length > 0) {
         const triggerLabel =
-          config.itemLabel ??
-          (context.eventType.startsWith("issues") ? "issue" : "pull request");
+          config.itemLabel ?? (context.eventType.startsWith("issues") ? "issue" : "pull request");
 
         result.comment = `Hey there ${mentions.join(", ")}, mind taking a look at this ${triggerLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!`;
       }

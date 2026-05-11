@@ -4,7 +4,15 @@ import { requiredLabels } from "../../src/rules-pr/pr-has-type-label.js";
 import { createMockContext } from "../helpers/mock-context.js";
 
 const rule = requiredLabels({
-  labels: ["breaking-change", "bugfix", "code-quality", "dependency", "deprecation", "new-feature", "new-integration"],
+  labels: [
+    "breaking-change",
+    "bugfix",
+    "code-quality",
+    "dependency",
+    "deprecation",
+    "new-feature",
+    "new-integration",
+  ],
 });
 
 describe("required-labels handler", () => {

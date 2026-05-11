@@ -20,7 +20,8 @@ const SHOULD_TARGET_NEXT =
 
 export const docsPrTargetBranch: Rule = {
   name: "docs-pr-target-branch",
-  description: "Validates docs PRs target the correct branch based on whether they have a parent code PR",
+  description:
+    "Validates docs PRs target the correct branch based on whether they have a parent code PR",
   listens: [EventType.PULL_REQUEST_EDITED, EventType.PULL_REQUEST_OPENED],
 
   async handle(context: WebhookContext): Promise<RuleResult | undefined> {

@@ -1,7 +1,7 @@
 import type { RegistryConfig } from "../rules/dispatch.js";
 import { mentionCodeOwners } from "../rules-issue/issue-mention-code-owners.js";
-import { branchLabel } from "./docs-pr-branch-label.js";
 import { docsParentingDocsSide } from "./docs-parenting-docs-side.js";
+import { branchLabel } from "./docs-pr-branch-label.js";
 import { docsPrTargetBranch } from "./docs-pr-target-branch.js";
 import { prAutoLabel } from "./pr-auto-label.js";
 import { claSigned } from "./pr-cla-signed.js";
@@ -104,7 +104,13 @@ export const prConfig: RegistryConfig = {
     ],
     "home-assistant/home-assistant.io": [
       cleanupLabelsOnClose({
-        labels: ["needs-rebase", "in-progress", "awaits-parent", "ready-for-review", "parent-merged"],
+        labels: [
+          "needs-rebase",
+          "in-progress",
+          "awaits-parent",
+          "ready-for-review",
+          "parent-merged",
+        ],
       }),
       branchLabel({ validLabels: ["current", "rc", "next"] }),
       docsPrTargetBranch,

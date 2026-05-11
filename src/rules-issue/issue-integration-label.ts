@@ -7,7 +7,8 @@ import { extractIntegrationDocumentationLinks } from "../utils/text-parser.js";
 
 export const issueIntegrationLabel: Rule = {
   name: "issue-integration-label",
-  description: "Labels issues with integration labels extracted from documentation links in the body",
+  description:
+    "Labels issues with integration labels extracted from documentation links in the body",
   allowBots: false,
   listens: [EventType.ISSUES_OPENED],
 
