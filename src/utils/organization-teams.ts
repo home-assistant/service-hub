@@ -21,8 +21,11 @@ export async function expandOrganizationTeams(
         team_slug: teamName.split("/")[1],
       });
       expanded.push(...members.data.map((m) => m.login.toLowerCase()));
-    } catch {
-      // Team may not exist or bot lacks permission
+    } catch (err) {
+      console.warn(
+        `expandOrganizationTeams: listMembersInOrg ${organization}/${teamName} failed:`,
+        err,
+      );
     }
   }
 

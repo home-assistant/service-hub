@@ -32,7 +32,8 @@ export function mentionCodeOwners(config: {
         codeownersContent = new TextDecoder().decode(
           Uint8Array.from(atob(data.content), (c) => c.charCodeAt(0)),
         );
-      } catch {
+      } catch (err) {
+        console.warn(`mentionCodeOwners: CODEOWNERS fetch for ${context.repository} failed:`, err);
         return;
       }
 

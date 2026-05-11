@@ -97,7 +97,11 @@ async function handleReviewSubmitted(context: WebhookContext): Promise<void> {
         username: payload.review.user.login,
       });
       if (!["admin", "member"].includes(membership.role)) return;
-    } catch {
+    } catch (err) {
+      console.warn(
+        `prDraftOnChangesRequested: org membership check for ${payload.review.user.login} failed:`,
+        err,
+      );
       return;
     }
   }
@@ -160,8 +164,8 @@ async function handleReadyForReview(context: WebhookContext): Promise<void> {
   for (const reviewer of humanReviewers) {
     try {
       await context.github.pulls.requestReviewers(context.pullRequest({ reviewers: [reviewer] }));
-    } catch {
-      // Ignore non-member reviewer
+    } catch (err) {
+      console.warn(`prDraftOnChangesRequested: requestReviewers(${reviewer}) failed:`, err);
     }
   }
 

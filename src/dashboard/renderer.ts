@@ -63,8 +63,8 @@ export function parseDashboard(body: string): DashboardSection[] {
       if (colonIndex !== -1) {
         try {
           sections.push(JSON.parse(content.slice(colonIndex + 1)));
-        } catch {
-          // Skip malformed section data
+        } catch (err) {
+          console.warn(`parseDashboard: malformed section data:`, err);
         }
       }
     }
