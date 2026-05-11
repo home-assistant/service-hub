@@ -1,20 +1,28 @@
 import type { ListPullRequestFiles } from "../github/types.js";
 import { coreComponents, entityPlatforms } from "../github/types.js";
 
-export type FileType =
-  | "core"
-  | "auth"
-  | "auth_providers"
-  | "generated"
-  | "scripts"
-  | "helpers"
-  | "util"
-  | "test"
-  | "services"
-  | "component"
-  | "platform"
-  | "brand"
-  | null;
+const FILE_TYPES = [
+  "core",
+  "auth",
+  "auth_providers",
+  "generated",
+  "scripts",
+  "helpers",
+  "util",
+  "test",
+  "services",
+  "component",
+  "platform",
+  "brand",
+] as const;
+
+export type FileType = (typeof FILE_TYPES)[number] | null;
+
+const FILE_TYPE_SET: Set<string> = new Set(FILE_TYPES);
+
+function asFileType(value: string): FileType {
+  return FILE_TYPE_SET.has(value) ? (value as FileType) : null;
+}
 
 export class ParsedPath {
   readonly file: ListPullRequestFiles[0];
@@ -37,7 +45,17 @@ export class ParsedPath {
 
     if (!["components", "fixtures", "generated"].includes(subfolder)) {
       this.core = true;
-      this.type = subfolder.endsWith(".py") ? "core" : (subfolder as FileType);
+      if (subfolder.endsWith(".py")) {
+        this.type = "core";
+      } else {
+        const validated = asFileType(subfolder);
+        if (validated === null) {
+          console.warn(
+            `parse-path: unrecognized top-level subfolder "${subfolder}" in ${file.filename}; FileType set to null`,
+          );
+        }
+        this.type = validated;
+      }
       return;
     }
 
