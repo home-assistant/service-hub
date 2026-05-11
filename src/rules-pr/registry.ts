@@ -94,8 +94,7 @@ export const prConfig: RegistryConfig = {
       branchLabel({ validLabels: ["current", "rc", "next"] }),
       docsPrTargetBranch,
       linkedParentLabel({
-        isParent: (link) =>
-          link.owner === "home-assistant" && link.repo !== "home-assistant.io",
+        isParent: (link) => link.owner === "home-assistant" && link.repo !== "home-assistant.io",
       }),
       mentionCodeOwners({
         pathPattern: (name) => `source/_integrations/${name}.markdown`,

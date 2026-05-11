@@ -1,7 +1,12 @@
-import type { PullRequestLabeledEvent, PullRequestOpenedEvent } from "@octokit/webhooks-types";
+import type {
+  PullRequestLabeledEvent,
+  PullRequestOpenedEvent,
+  PullRequestReopenedEvent,
+  PullRequestSynchronizeEvent,
+} from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Effect, Rule } from "../rules/types.js";
 
 const CLA_LABEL_SIGNED = "cla-signed";
 const CLA_LABEL_NEEDED = "cla-needed";
@@ -23,60 +28,21 @@ interface Commit {
   commit: { author: { email?: string } | null };
 }
 
-interface ClaPayload {
-  action: string;
-  label?: { name: string };
-  number: number;
-  pull_request: { user: { login: string }; head: { sha: string } };
-  repository: { full_name: string; owner: { login: string }; name: string };
-}
+type ClaEventPayload =
+  | PullRequestOpenedEvent
+  | PullRequestReopenedEvent
+  | PullRequestSynchronizeEvent
+  | PullRequestLabeledEvent;
 
-export const claSigned: Rule = {
-  name: "validate-cla",
-  description: "Validates CLA signatures for all PR commit authors",
-  listens: [
-    EventType.PULL_REQUEST_OPENED,
-    EventType.PULL_REQUEST_REOPENED,
-    EventType.PULL_REQUEST_SYNCHRONIZE,
-    EventType.PULL_REQUEST_LABELED,
-  ],
-
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as PullRequestOpenedEvent | PullRequestLabeledEvent;
-
-    // Only process labeled events if it's a cla-recheck
-    if (payload.action === "labeled") {
-      const labeledPayload = payload as PullRequestLabeledEvent;
-      if (labeledPayload.label?.name !== CLA_LABEL_RECHECK) return;
-      // Remove the recheck label
-      return {
-        removeLabels: [CLA_LABEL_RECHECK],
-        actions: [async (ctx) => runClaCheck(ctx, toClaPayload(labeledPayload))],
-      };
-    }
-
-    return { actions: [async (ctx) => runClaCheck(ctx, toClaPayload(payload))] };
-  },
-};
-
-function toClaPayload(payload: PullRequestOpenedEvent | PullRequestLabeledEvent): ClaPayload {
-  return {
-    action: payload.action,
-    label: "label" in payload ? payload.label : undefined,
-    number: payload.number,
-    pull_request: payload.pull_request,
-    repository: payload.repository,
-  };
-}
-
-async function runClaCheck(context: WebhookContext, payload: ClaPayload): Promise<void> {
+async function runClaCheck(ctx: WebhookContext<ClaEventPayload>): Promise<Effect[]> {
+  const payload = ctx.payload;
   const signedAuthors = new Set<string>();
   const authorsNeedingCLA: { sha: string; login: string }[] = [];
   const commitsWithoutLogins: { sha: string; maybeText: string }[] = [];
 
-  const commits: Commit[] = await context.github.paginate(
-    context.github.pulls.listCommits,
-    context.pullRequest({ per_page: 100 }),
+  const commits: Commit[] = await ctx.github.paginate(
+    ctx.github.pulls.listCommits,
+    ctx.pullRequest({ per_page: 100 }),
   );
 
   const allCommitsIgnored = commits.every(
@@ -98,7 +64,7 @@ async function runClaCheck(context: WebhookContext, payload: ClaPayload): Promis
           : "No email found attached to the commit.",
       });
     } else if (!signedAuthors.has(commit.author.login)) {
-      const row = await context.db.queryOne<{ github_username: string }>(
+      const row = await ctx.db.queryOne<{ github_username: string }>(
         "SELECT github_username FROM cla_signers WHERE github_username = ?",
         commit.author.login,
       );
@@ -113,106 +79,105 @@ async function runClaCheck(context: WebhookContext, payload: ClaPayload): Promis
 
   if (commitsWithoutLogins.length) {
     const commitUrl = `https://github.com/${payload.repository.full_name}/pull/${payload.number}/commits/`;
-    await context.github.pulls.createReview(
-      context.pullRequest({
+    const effects: Effect[] = [
+      {
+        type: "requestChanges",
         body: noLoginComment(commitsWithoutLogins, payload.pull_request.user.login, commitUrl),
-        event: "REQUEST_CHANGES" as const,
-      }),
-    );
-    await context.github.issues.addLabels(context.issue({ labels: ["cla-error"] }));
-
-    await Promise.all(
-      commitsWithoutLogins.map((commit) =>
-        context.github.repos.createCommitStatus(
-          context.repo({
-            sha: commit.sha,
-            state: "failure" as const,
-            description: "Commit(s) are missing a linked GitHub user.",
-            context: CLA_CONTEXT,
-          }),
-        ),
-      ),
-    );
-    return;
+      },
+      { type: "addLabels", labels: ["cla-error"] },
+    ];
+    for (const commit of commitsWithoutLogins) {
+      effects.push({
+        type: "statusCheck",
+        sha: commit.sha,
+        state: "failure",
+        description: "Commit(s) are missing a linked GitHub user.",
+        context: CLA_CONTEXT,
+      });
+    }
+    return effects;
   }
 
   if (authorsNeedingCLA.length) {
     const prRef = `${payload.repository.full_name}#${payload.number}`;
     const users = [...new Set(authorsNeedingCLA.map((e) => `@${e.login}`))];
 
-    await context.github.pulls.createReview(
-      context.pullRequest({
-        body: claNeededComment(users, prRef),
-        event: "REQUEST_CHANGES" as const,
-      }),
-    );
-    await context.github.issues.addLabels(context.issue({ labels: [CLA_LABEL_NEEDED] }));
-
-    await Promise.all(
-      authorsNeedingCLA.map((entry) =>
-        context.github.repos.createCommitStatus(
-          context.repo({
-            sha: entry.sha,
-            state: "failure" as const,
-            description: "At least one contributor needs to sign the CLA",
-            context: CLA_CONTEXT,
-          }),
-        ),
-      ),
-    );
+    const effects: Effect[] = [
+      { type: "requestChanges", body: claNeededComment(users, prRef) },
+      { type: "addLabels", labels: [CLA_LABEL_NEEDED] },
+    ];
+    for (const entry of authorsNeedingCLA) {
+      effects.push({
+        type: "statusCheck",
+        sha: entry.sha,
+        state: "failure",
+        description: "At least one contributor needs to sign the CLA",
+        context: CLA_CONTEXT,
+      });
+    }
 
     const grouped: Record<string, string[]> = {};
     for (const entry of authorsNeedingCLA) {
-      if (!grouped[entry.login]) {
-        grouped[entry.login] = [];
-      }
+      if (!grouped[entry.login]) grouped[entry.login] = [];
       grouped[entry.login].push(entry.sha);
     }
-
-    await Promise.all(
-      Object.entries(grouped).map(([author, shas]) =>
-        context.db.execute(
-          `INSERT OR REPLACE INTO cla_pending_signers
-         (github_username, commits, pr, repository_owner, repository, pr_number)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+    for (const [author, shas] of Object.entries(grouped)) {
+      effects.push({
+        type: "dbExecute",
+        sql: `INSERT OR REPLACE INTO cla_pending_signers
+              (github_username, commits, pr, repository_owner, repository, pr_number)
+              VALUES (?, ?, ?, ?, ?, ?)`,
+        params: [
           author,
           JSON.stringify(shas),
           `${payload.repository.full_name}#${payload.number}`,
           payload.repository.owner.login,
           payload.repository.name,
           String(payload.number),
-        ),
-      ),
-    );
-    return;
+        ],
+      });
+    }
+    return effects;
   }
 
   // All good — everyone has signed
+  const effects: Effect[] = [{ type: "removeLabel", label: CLA_LABEL_NEEDED }];
   if (!allCommitsIgnored) {
-    await context.github.issues.addLabels(context.issue({ labels: [CLA_LABEL_SIGNED] }));
+    effects.push({ type: "addLabels", labels: [CLA_LABEL_SIGNED] });
   }
-
-  try {
-    await context.github.issues.removeLabel(context.issue({ name: CLA_LABEL_NEEDED }));
-  } catch {
-    // label may not exist
+  for (const commit of commits) {
+    effects.push({
+      type: "statusCheck",
+      sha: commit.sha,
+      state: "success",
+      description: allCommitsIgnored
+        ? "Everyone involved are ignored"
+        : "Everyone has signed the CLA",
+      context: CLA_CONTEXT,
+    });
   }
-
-  await Promise.all(
-    commits.map((commit) =>
-      context.github.repos.createCommitStatus(
-        context.repo({
-          sha: commit.sha,
-          state: "success" as const,
-          description: allCommitsIgnored
-            ? "Everyone involved are ignored"
-            : "Everyone has signed the CLA",
-          context: CLA_CONTEXT,
-        }),
-      ),
-    ),
-  );
+  return effects;
 }
+
+async function handleLabeled(
+  ctx: WebhookContext<PullRequestLabeledEvent>,
+): Promise<Effect[] | undefined> {
+  if (ctx.payload.label?.name !== CLA_LABEL_RECHECK) return;
+  const effects = await runClaCheck(ctx);
+  effects.unshift({ type: "removeLabel", label: CLA_LABEL_RECHECK });
+  return effects;
+}
+
+export const claSigned: Rule = {
+  name: "validate-cla",
+  description: "Validates CLA signatures for all PR commit authors",
+  events: {
+    [EventType.PULL_REQUEST_OPENED]: async (ctx) => runClaCheck(ctx),
+    [EventType.PULL_REQUEST_REOPENED]: async (ctx) => runClaCheck(ctx),
+    [EventType.PULL_REQUEST_SYNCHRONIZE]: async (ctx) => runClaCheck(ctx),
+    [EventType.PULL_REQUEST_LABELED]: handleLabeled,
+  },
+};
 
 const noLoginComment = (
   commits: { sha: string; maybeText: string }[],

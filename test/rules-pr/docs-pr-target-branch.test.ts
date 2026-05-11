@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { docsPrTargetBranch } from "../../src/rules-pr/docs-pr-target-branch.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 function docsContext(overrides: Record<string, unknown> = {}) {
   return createMockContext({
@@ -29,7 +29,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     expect(result).toBeUndefined();
   });
 
@@ -44,7 +44,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     expect(result?.labels).toContain("needs-rebase");
     expect(result?.labels).toContain("in-progress");
     expect(result?.comment).toContain("target the `current` branch");
@@ -61,7 +61,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     expect(result).toBeUndefined();
   });
 
@@ -76,7 +76,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     expect(result?.labels).toContain("needs-rebase");
     expect(result?.comment).toContain("target the `next` branch");
   });
@@ -92,7 +92,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     expect(result).toBeUndefined();
   });
 
@@ -107,7 +107,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     expect(result).toBeUndefined();
   });
 
@@ -122,7 +122,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     expect(result).toMatchObject({ removeLabels: ["needs-rebase"] });
   });
 
@@ -137,7 +137,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     // brands is in IGNORE_REPOS, so this is treated as no parent
     expect(result).toBeUndefined();
   });
@@ -154,7 +154,7 @@ describe("docs-pr-target-branch", () => {
       },
     });
 
-    const result = await docsPrTargetBranch.handle(context);
+    const result = await runRule(docsPrTargetBranch, context);
     expect(result?.assignees).toContain("contributor");
   });
 });

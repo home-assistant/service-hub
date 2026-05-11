@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { branchLabel } from "../../src/rules-pr/docs-pr-branch-label.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 const rule = branchLabel({ validLabels: ["current", "rc", "next"] });
 
@@ -29,7 +29,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toMatchObject({ labels: ["current"] });
   });
 
@@ -42,7 +42,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toMatchObject({
       labels: ["next"],
       removeLabels: ["current"],
@@ -58,7 +58,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeUndefined();
   });
 
@@ -71,7 +71,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toMatchObject({ labels: ["rc"] });
   });
 
@@ -84,7 +84,7 @@ describe("docs-pr-branch-label", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result?.removeLabels).toEqual(["next"]);
     expect(result?.removeLabels).not.toContain("bugfix");
   });

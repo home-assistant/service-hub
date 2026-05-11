@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prLabelQualityScale } from "../../src/rules-pr/pr-label-quality-scale.js";
-import { createMockContext, mockPRFiles } from "../helpers/mock-context.js";
+import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 describe("pr-label-quality-scale", () => {
   const originalFetch = globalThis.fetch;
@@ -36,7 +36,7 @@ describe("pr-label-quality-scale", () => {
       },
     ]);
 
-    const result = await prLabelQualityScale.handle(context);
+    const result = await runRule(prLabelQualityScale, context);
     expect(result?.labels).toContain("quality-scale");
   });
 
@@ -64,7 +64,7 @@ describe("pr-label-quality-scale", () => {
     });
     mockPRFiles(context, []);
 
-    const result = await prLabelQualityScale.handle(context);
+    const result = await runRule(prLabelQualityScale, context);
     expect(result?.labels).toContain("Quality Scale: platinum");
   });
 
@@ -91,7 +91,7 @@ describe("pr-label-quality-scale", () => {
     });
     mockPRFiles(context, []);
 
-    const result = await prLabelQualityScale.handle(context);
+    const result = await runRule(prLabelQualityScale, context);
     expect(result?.labels).toContain("Quality Scale: no score");
   });
 
@@ -117,7 +117,7 @@ describe("pr-label-quality-scale", () => {
       },
     ]);
 
-    const result = await prLabelQualityScale.handle(context);
+    const result = await runRule(prLabelQualityScale, context);
     expect(result).toBeUndefined();
   });
 
@@ -157,7 +157,7 @@ describe("pr-label-quality-scale", () => {
       },
     ]);
 
-    const result = await prLabelQualityScale.handle(context);
+    const result = await runRule(prLabelQualityScale, context);
     expect(result?.labels).toContain("quality-scale");
     expect(result?.labels).toContain("Quality Scale: gold");
   });

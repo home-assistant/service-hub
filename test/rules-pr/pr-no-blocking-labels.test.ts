@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { blockingLabels } from "../../src/rules-pr/pr-no-blocking-labels.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 const rule = blockingLabels({
   "awaiting-frontend": { message: "This PR is awaiting changes to the frontend" },
@@ -23,9 +23,9 @@ describe("blocking-labels handler", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeDefined();
-    expect(result?.actions).toHaveLength(1);
+    expect(result?.statusChecks).toHaveLength(1);
   });
 
   it("emits success status when a configured label is removed", async () => {
@@ -42,9 +42,9 @@ describe("blocking-labels handler", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeDefined();
-    expect(result?.actions).toHaveLength(1);
+    expect(result?.statusChecks).toHaveLength(1);
   });
 
   it("emits no status when a non-blocking label is added/removed", async () => {
@@ -61,7 +61,7 @@ describe("blocking-labels handler", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeUndefined();
   });
 
@@ -78,8 +78,8 @@ describe("blocking-labels handler", () => {
       },
     });
 
-    const result = await rule.handle(context);
-    expect(result?.actions).toHaveLength(2);
+    const result = await runRule(rule, context);
+    expect(result?.statusChecks).toHaveLength(2);
   });
 
   it("includes description", () => {

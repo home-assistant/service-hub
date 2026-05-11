@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { issueIntegrationLabel } from "../../src/rules-issue/issue-integration-label.js";
-import { createMockGitHub, createMockIssueContext } from "../helpers/mock-context.js";
+import { createMockGitHub, createMockIssueContext, runRule } from "../helpers/mock-context.js";
 
 describe("issue-integration-label", () => {
   it("adds integration label when documentation link found and label exists", async () => {
@@ -24,7 +24,7 @@ describe("issue-integration-label", () => {
       },
     });
 
-    const result = await issueIntegrationLabel.handle(context);
+    const result = await runRule(issueIntegrationLabel, context);
     expect(result?.labels).toContain("integration: hue");
   });
 
@@ -41,7 +41,7 @@ describe("issue-integration-label", () => {
       },
     });
 
-    const result = await issueIntegrationLabel.handle(context);
+    const result = await runRule(issueIntegrationLabel, context);
     expect(result).toBeUndefined();
   });
 
@@ -62,7 +62,7 @@ describe("issue-integration-label", () => {
       },
     });
 
-    const result = await issueIntegrationLabel.handle(context);
+    const result = await runRule(issueIntegrationLabel, context);
     expect(result).toBeUndefined();
   });
 
@@ -88,7 +88,7 @@ describe("issue-integration-label", () => {
       },
     });
 
-    const result = await issueIntegrationLabel.handle(context);
+    const result = await runRule(issueIntegrationLabel, context);
     expect(result?.labels).toContain("integration: hue");
   });
 
@@ -97,6 +97,6 @@ describe("issue-integration-label", () => {
   });
 
   it("listens only to issues.opened", () => {
-    expect(issueIntegrationLabel.listens).toEqual([EventType.ISSUES_OPENED]);
+    expect(Object.keys(issueIntegrationLabel.events)).toEqual([EventType.ISSUES_OPENED]);
   });
 });

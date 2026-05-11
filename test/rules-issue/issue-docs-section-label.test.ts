@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { issueDocsSectionLabel } from "../../src/rules-issue/issue-docs-section-label.js";
-import { createMockGitHub, createMockIssueContext } from "../helpers/mock-context.js";
+import { createMockGitHub, createMockIssueContext, runRule } from "../helpers/mock-context.js";
 
 describe("issue-docs-section-label", () => {
   it("adds section label when documentation link found", async () => {
@@ -24,7 +24,7 @@ describe("issue-docs-section-label", () => {
       },
     });
 
-    const result = await issueDocsSectionLabel.handle(context);
+    const result = await runRule(issueDocsSectionLabel, context);
     expect(result?.labels).toContain("getting-started");
   });
 
@@ -41,7 +41,7 @@ describe("issue-docs-section-label", () => {
       },
     });
 
-    const result = await issueDocsSectionLabel.handle(context);
+    const result = await runRule(issueDocsSectionLabel, context);
     expect(result).toBeUndefined();
   });
 
@@ -58,7 +58,7 @@ describe("issue-docs-section-label", () => {
       },
     });
 
-    const result = await issueDocsSectionLabel.handle(context);
+    const result = await runRule(issueDocsSectionLabel, context);
     expect(result).toBeUndefined();
   });
 
@@ -79,7 +79,7 @@ describe("issue-docs-section-label", () => {
       },
     });
 
-    const result = await issueDocsSectionLabel.handle(context);
+    const result = await runRule(issueDocsSectionLabel, context);
     expect(result).toBeUndefined();
   });
 
@@ -88,6 +88,6 @@ describe("issue-docs-section-label", () => {
   });
 
   it("listens only to issues.opened", () => {
-    expect(issueDocsSectionLabel.listens).toEqual([EventType.ISSUES_OPENED]);
+    expect(Object.keys(issueDocsSectionLabel.events)).toEqual([EventType.ISSUES_OPENED]);
   });
 });

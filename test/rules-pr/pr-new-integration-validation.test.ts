@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prNewIntegrationValidation } from "../../src/rules-pr/pr-new-integration-validation.js";
-import { createMockContext, mockPRFiles } from "../helpers/mock-context.js";
+import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string, status = "added") {
   return {
@@ -27,7 +27,7 @@ describe("pr-new-integration-validation", () => {
       },
     });
 
-    const result = await prNewIntegrationValidation.handle(context);
+    const result = await runRule(prNewIntegrationValidation, context);
     expect(result).toBeUndefined();
   });
 
@@ -45,7 +45,7 @@ describe("pr-new-integration-validation", () => {
       makeFile("homeassistant/components/mydevice/config_flow.py"),
     ]);
 
-    const result = await prNewIntegrationValidation.handle(context);
+    const result = await runRule(prNewIntegrationValidation, context);
     expect(result).toBeUndefined();
   });
 
@@ -63,7 +63,7 @@ describe("pr-new-integration-validation", () => {
       makeFile("homeassistant/components/mydevice/light.py"),
     ]);
 
-    const result = await prNewIntegrationValidation.handle(context);
+    const result = await runRule(prNewIntegrationValidation, context);
     expect(result?.requestChanges).toContain("limit included platforms to a single platform");
   });
 
@@ -80,7 +80,7 @@ describe("pr-new-integration-validation", () => {
       makeFile("homeassistant/components/mydevice/brand/icon.png"),
     ]);
 
-    const result = await prNewIntegrationValidation.handle(context);
+    const result = await runRule(prNewIntegrationValidation, context);
     expect(result?.requestChanges).toContain("Brand assets should not be part of the core");
   });
 
@@ -99,12 +99,14 @@ describe("pr-new-integration-validation", () => {
       makeFile("homeassistant/components/mydevice/brand/icon.png"),
     ]);
 
-    const result = await prNewIntegrationValidation.handle(context);
+    const result = await runRule(prNewIntegrationValidation, context);
     expect(result?.requestChanges).toContain("limit included platforms");
     expect(result?.requestChanges).toContain("Brand assets");
   });
 
   it("listens only to labeled events", () => {
-    expect(prNewIntegrationValidation.listens).toEqual([EventType.PULL_REQUEST_LABELED]);
+    expect(Object.keys(prNewIntegrationValidation.events)).toEqual([
+      EventType.PULL_REQUEST_LABELED,
+    ]);
   });
 });

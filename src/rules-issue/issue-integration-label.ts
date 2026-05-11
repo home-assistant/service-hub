@@ -1,8 +1,6 @@
-import type { IssuesOpenedEvent } from "@octokit/webhooks-types";
-import type { WebhookContext } from "../context/webhook-context.js";
 import { issuesGetLabel } from "../github/client.js";
 import { EventType, entityPlatforms } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Rule } from "../rules/types.js";
 import { extractIntegrationDocumentationLinks } from "../utils/text-parser.js";
 
 export const issueIntegrationLabel: Rule = {
@@ -10,28 +8,23 @@ export const issueIntegrationLabel: Rule = {
   description:
     "Labels issues with integration labels extracted from documentation links in the body",
   allowBots: false,
-  listens: [EventType.ISSUES_OPENED],
+  events: {
+    [EventType.ISSUES_OPENED]: async (ctx) => {
+      const labels: string[] = [];
 
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as IssuesOpenedEvent;
-
-    const labels: string[] = [];
-
-    for (const link of extractIntegrationDocumentationLinks(payload.issue.body)) {
-      const integration =
-        link.platform && entityPlatforms.has(link.integration) ? link.platform : link.integration;
-      const label = `integration: ${integration}`;
-      const exists = await issuesGetLabel(
-        context.github,
-        context.issue({ name: label, repo: "core" }),
-      );
-      if (exists?.name === label) {
-        labels.push(label);
+      for (const link of extractIntegrationDocumentationLinks(ctx.payload.issue.body)) {
+        const integration =
+          link.platform && entityPlatforms.has(link.integration) ? link.platform : link.integration;
+        const label = `integration: ${integration}`;
+        const exists = await issuesGetLabel(ctx.github, ctx.issue({ name: label, repo: "core" }));
+        if (exists?.name === label) {
+          labels.push(label);
+        }
       }
-    }
 
-    if (labels.length > 0) {
-      return { labels };
-    }
+      if (labels.length > 0) {
+        return [{ type: "addLabels", labels }];
+      }
+    },
   },
 };

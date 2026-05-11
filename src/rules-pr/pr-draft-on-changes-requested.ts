@@ -3,9 +3,8 @@ import type {
   PullRequestReviewSubmittedEvent,
 } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
-import { convertPullRequestToDraft } from "../github/client.js";
 import { EventType, Organization } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Effect, Rule } from "../rules/types.js";
 
 const MESSAGE_ID = "<!-- ReviewDrafterComment -->";
 const COPILOT_MESSAGE_ID = "<!-- ReviewDrafterCopilotComment -->";
@@ -52,155 +51,18 @@ interface UnansweredFinding {
   url: string;
 }
 
-export const prDraftOnChangesRequested: Rule = {
-  name: "review-drafter",
-  description: "Converts PR to draft when changes are requested and manages review re-requests",
-  listens: [EventType.PULL_REQUEST_REVIEW_SUBMITTED, EventType.PULL_REQUEST_READY_FOR_REVIEW],
-
-  async handle(_context: WebhookContext): Promise<RuleResult | undefined> {
-    // This handler is complex and performs many conditional API calls,
-    // so it uses the actions escape hatch.
-    return {
-      actions: [
-        async (ctx) => {
-          if (ctx.eventType === EventType.PULL_REQUEST_REVIEW_SUBMITTED) {
-            await handleReviewSubmitted(ctx);
-          } else if (ctx.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
-            await handleReadyForReview(ctx);
-          }
-        },
-      ],
-    };
-  },
-};
-
 function isCopilotLogin(login: string | undefined | null): boolean {
   return !!login && COPILOT_LOGINS.has(login.toLowerCase());
 }
 
-async function handleReviewSubmitted(context: WebhookContext): Promise<void> {
-  const payload = context.payload as PullRequestReviewSubmittedEvent;
-
-  if (isCopilotLogin(payload.review.user?.login)) {
-    await handleCopilotReview(context);
-    return;
-  }
-
-  if (payload.pull_request.draft || payload.review.state !== "changes_requested") {
-    return;
-  }
-
-  if (payload.sender.type !== "Bot") {
-    try {
-      const { data: membership } = await context.github.orgs.getMembershipForUser({
-        org: context.organization,
-        username: payload.review.user.login,
-      });
-      if (!["admin", "member"].includes(membership.role)) return;
-    } catch (err) {
-      console.warn(
-        `prDraftOnChangesRequested: org membership check for ${payload.review.user.login} failed:`,
-        err,
-      );
-      return;
-    }
-  }
-
-  await convertPullRequestToDraft(context.github, payload.pull_request.node_id);
-
-  const comments = await context.github.paginate(context.github.issues.listComments, {
-    ...context.issue(),
-    per_page: 100,
-  });
-
-  if (!comments.find((c) => c.body?.startsWith(MESSAGE_ID))) {
-    await context.github.issues.createComment(
-      context.issue({ body: reviewComment(context.organization) }),
-    );
-  }
-}
-
-async function handleReadyForReview(context: WebhookContext): Promise<void> {
-  const payload = context.payload as PullRequestReadyForReviewEvent;
-
-  const unanswered = await findUnansweredCopilotFindings(context);
-
-  const comments = await context.github.paginate(context.github.issues.listComments, {
-    ...context.issue(),
-    per_page: 100,
-  });
-
-  await markCopilotCommentOutdated(context, comments);
-
-  if (unanswered.length) {
-    await convertPullRequestToDraft(context.github, payload.pull_request.node_id);
-    await context.github.issues.createComment(
-      context.issue({
-        body: copilotReviewComment(
-          unanswered.length,
-          unanswered.slice(0, 10).map((f) => f.url),
-        ),
-      }),
-    );
-    return;
-  }
-
-  if (!comments.find((c) => c.body?.startsWith(MESSAGE_ID))) {
-    return;
-  }
-
-  const { data: reviews } = await context.github.pulls.listReviews(
-    context.pullRequest({ per_page: 100 }),
-  );
-
-  const requestedChanges = reviews.filter((r) => r.state === "CHANGES_REQUESTED");
-  const humanReviewers = new Set(
-    requestedChanges
-      .filter((r) => r.user?.type?.toLowerCase() !== "bot")
-      .map((r) => r.user?.login)
-      .filter(Boolean) as string[],
-  );
-
-  for (const reviewer of humanReviewers) {
-    try {
-      await context.github.pulls.requestReviewers(context.pullRequest({ reviewers: [reviewer] }));
-    } catch (err) {
-      console.warn(`prDraftOnChangesRequested: requestReviewers(${reviewer}) failed:`, err);
-    }
-  }
-
-  const botReviews = requestedChanges.filter((r) => r.user?.type?.toLowerCase() === "bot");
-  for (const review of botReviews) {
-    await context.github.pulls.dismissReview(
-      context.pullRequest({ review_id: review.id, message: "Stale" }),
-    );
-  }
-}
-
-async function handleCopilotReview(context: WebhookContext): Promise<void> {
-  const payload = context.payload as PullRequestReviewSubmittedEvent;
-
-  const unanswered = await findUnansweredCopilotFindings(context);
-  if (!unanswered.length) return;
-
-  if (!payload.pull_request.draft) {
-    await convertPullRequestToDraft(context.github, payload.pull_request.node_id);
-  }
-
-  await createOrUpdateCopilotComment(context, unanswered);
-}
-
 async function findUnansweredCopilotFindings(
-  context: WebhookContext,
+  ctx: WebhookContext<PullRequestReviewSubmittedEvent | PullRequestReadyForReviewEvent>,
 ): Promise<UnansweredFinding[]> {
-  const payload = context.payload as
-    | PullRequestReviewSubmittedEvent
-    | PullRequestReadyForReviewEvent;
-  const authorLogin = payload.pull_request.user.login.toLowerCase();
+  const authorLogin = ctx.payload.pull_request.user.login.toLowerCase();
 
-  const reviewComments = await context.github.paginate(
-    context.github.pulls.listReviewComments,
-    context.pullRequest({ per_page: 100 }),
+  const reviewComments = await ctx.github.paginate(
+    ctx.github.pulls.listReviewComments,
+    ctx.pullRequest({ per_page: 100 }),
   );
 
   const copilotFindings = reviewComments.filter(
@@ -216,9 +78,9 @@ async function findUnansweredCopilotFindings(
 
   const findingHasReaction = await Promise.all(
     copilotFindings.map(async (finding) => {
-      const reactions = await context.github.paginate(
-        context.github.reactions.listForPullRequestReviewComment,
-        context.repo({ comment_id: finding.id, per_page: 100 }),
+      const reactions = await ctx.github.paginate(
+        ctx.github.reactions.listForPullRequestReviewComment,
+        ctx.repo({ comment_id: finding.id, per_page: 100 }),
       );
       return reactions.some(
         (r) =>
@@ -232,28 +94,19 @@ async function findUnansweredCopilotFindings(
     .map((finding) => ({ id: finding.id, url: finding.html_url }));
 }
 
-async function markCopilotCommentOutdated(
-  context: WebhookContext,
-  issueComments: Array<{ id: number; body?: string | null }>,
-): Promise<void> {
-  const activeComment = issueComments.find((c) => c.body?.startsWith(COPILOT_MESSAGE_ID));
-  if (!activeComment) return;
+async function handleCopilotReview(
+  ctx: WebhookContext<PullRequestReviewSubmittedEvent>,
+): Promise<Effect[] | undefined> {
+  const unanswered = await findUnansweredCopilotFindings(ctx);
+  if (!unanswered.length) return;
 
-  const remainingBody = (activeComment.body ?? "").replace(COPILOT_MESSAGE_ID, "").trimStart();
-  await context.github.issues.updateComment(
-    context.repo({
-      comment_id: activeComment.id,
-      body: `${COPILOT_OUTDATED_NOTICE}${remainingBody}`,
-    }),
-  );
-}
+  const effects: Effect[] = [];
+  if (!ctx.payload.pull_request.draft) {
+    effects.push({ type: "convertPullRequestToDraft", node_id: ctx.payload.pull_request.node_id });
+  }
 
-async function createOrUpdateCopilotComment(
-  context: WebhookContext,
-  unanswered: UnansweredFinding[],
-): Promise<void> {
-  const comments = await context.github.paginate(context.github.issues.listComments, {
-    ...context.issue(),
+  const comments = await ctx.github.paginate(ctx.github.issues.listComments, {
+    ...ctx.issue(),
     per_page: 100,
   });
   const existing = comments.find((c) => c.body?.startsWith(COPILOT_MESSAGE_ID));
@@ -263,8 +116,124 @@ async function createOrUpdateCopilotComment(
   );
 
   if (existing) {
-    await context.github.issues.updateComment(context.repo({ comment_id: existing.id, body }));
+    effects.push({ type: "updateComment", comment_id: existing.id, body });
   } else {
-    await context.github.issues.createComment(context.issue({ body }));
+    effects.push({ type: "comment", body });
   }
+  return effects;
 }
+
+async function handleReviewSubmitted(
+  ctx: WebhookContext<PullRequestReviewSubmittedEvent>,
+): Promise<Effect[] | undefined> {
+  const payload = ctx.payload;
+
+  if (isCopilotLogin(payload.review.user?.login)) {
+    return handleCopilotReview(ctx);
+  }
+
+  if (payload.pull_request.draft || payload.review.state !== "changes_requested") {
+    return;
+  }
+
+  if (payload.sender.type !== "Bot") {
+    try {
+      const { data: membership } = await ctx.github.orgs.getMembershipForUser({
+        org: ctx.organization,
+        username: payload.review.user.login,
+      });
+      if (!["admin", "member"].includes(membership.role)) return;
+    } catch (err) {
+      console.warn(
+        `prDraftOnChangesRequested: org membership check for ${payload.review.user.login} failed:`,
+        err,
+      );
+      return;
+    }
+  }
+
+  const effects: Effect[] = [
+    { type: "convertPullRequestToDraft", node_id: payload.pull_request.node_id },
+  ];
+
+  const comments = await ctx.github.paginate(ctx.github.issues.listComments, {
+    ...ctx.issue(),
+    per_page: 100,
+  });
+
+  if (!comments.find((c) => c.body?.startsWith(MESSAGE_ID))) {
+    effects.push({ type: "comment", body: reviewComment(ctx.organization) });
+  }
+  return effects;
+}
+
+async function handleReadyForReview(
+  ctx: WebhookContext<PullRequestReadyForReviewEvent>,
+): Promise<Effect[] | undefined> {
+  const payload = ctx.payload;
+  const unanswered = await findUnansweredCopilotFindings(ctx);
+
+  const comments = await ctx.github.paginate(ctx.github.issues.listComments, {
+    ...ctx.issue(),
+    per_page: 100,
+  });
+
+  const effects: Effect[] = [];
+  const outdatedTracker = comments.find((c) => c.body?.startsWith(COPILOT_MESSAGE_ID));
+  if (outdatedTracker) {
+    const remainingBody = (outdatedTracker.body ?? "").replace(COPILOT_MESSAGE_ID, "").trimStart();
+    effects.push({
+      type: "updateComment",
+      comment_id: outdatedTracker.id,
+      body: `${COPILOT_OUTDATED_NOTICE}${remainingBody}`,
+    });
+  }
+
+  if (unanswered.length) {
+    effects.push(
+      { type: "convertPullRequestToDraft", node_id: payload.pull_request.node_id },
+      {
+        type: "comment",
+        body: copilotReviewComment(
+          unanswered.length,
+          unanswered.slice(0, 10).map((f) => f.url),
+        ),
+      },
+    );
+    return effects;
+  }
+
+  if (!comments.find((c) => c.body?.startsWith(MESSAGE_ID))) {
+    return effects.length ? effects : undefined;
+  }
+
+  const { data: reviews } = await ctx.github.pulls.listReviews(ctx.pullRequest({ per_page: 100 }));
+
+  const requestedChanges = reviews.filter((r) => r.state === "CHANGES_REQUESTED");
+  const humanReviewers = new Set(
+    requestedChanges
+      .filter((r) => r.user?.type?.toLowerCase() !== "bot")
+      .map((r) => r.user?.login)
+      .filter(Boolean) as string[],
+  );
+
+  for (const reviewer of humanReviewers) {
+    effects.push({ type: "requestReviewers", reviewers: [reviewer] });
+  }
+
+  const botReviews = requestedChanges.filter((r) => r.user?.type?.toLowerCase() === "bot");
+  for (const review of botReviews) {
+    effects.push({ type: "dismissReview", review_id: review.id, message: "Stale" });
+  }
+
+  return effects.length ? effects : undefined;
+}
+
+export const prDraftOnChangesRequested: Rule = {
+  name: "review-drafter",
+  description: "Converts PR to draft when changes are requested and manages review re-requests",
+  events: {
+    [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: handleReviewSubmitted,
+    [EventType.PULL_REQUEST_READY_FOR_REVIEW]: handleReadyForReview,
+  },
+};

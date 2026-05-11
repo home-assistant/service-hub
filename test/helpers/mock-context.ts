@@ -3,8 +3,10 @@ import type { Mock } from "vitest";
 import { vi } from "vitest";
 import type { WebhookEventPayload } from "../../src/context/webhook-context.js";
 import { WebhookContext } from "../../src/context/webhook-context.js";
+import type { DashboardSection } from "../../src/dashboard/types.js";
 import type { Database } from "../../src/db/types.js";
 import { EventType } from "../../src/github/types.js";
+import type { Effect, EventPayloadMap, Rule } from "../../src/rules/types.js";
 
 export interface MockGitHub {
   issues: {
@@ -209,4 +211,102 @@ export function mockPRFiles(context: WebhookContext, files: Record<string, unkno
 
 export function lastSegment(path: string): string {
   return path.split("/").pop() ?? path;
+}
+
+export interface StatusCheckLike {
+  context: string;
+  state: "success" | "failure" | "pending";
+  description: string;
+  sha?: string;
+}
+
+/**
+ * Backward-compatible result summary surfaced to existing tests so they
+ * can keep asserting against fields like `labels`, `statusCheck`, etc.
+ * The `effects` field exposes the raw array for new-style assertions.
+ */
+export interface RuleSummary {
+  effects: Effect[];
+  labels?: string[];
+  removeLabels?: string[];
+  comment?: string;
+  comments: string[];
+  requestChanges?: string;
+  assignees?: string[];
+  statusCheck?: StatusCheckLike;
+  statusChecks: StatusCheckLike[];
+  dashboard?: DashboardSection;
+}
+
+export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | undefined {
+  if (!effects) return undefined;
+
+  const labels: string[] = [];
+  const removeLabels: string[] = [];
+  const comments: string[] = [];
+  const reviewBodies: string[] = [];
+  const assignees: string[] = [];
+  const statusChecks: StatusCheckLike[] = [];
+  let dashboard: DashboardSection | undefined;
+
+  for (const e of effects) {
+    switch (e.type) {
+      case "addLabels":
+        labels.push(...e.labels);
+        break;
+      case "removeLabel":
+        removeLabels.push(e.label);
+        break;
+      case "comment":
+        comments.push(e.body);
+        break;
+      case "requestChanges":
+        reviewBodies.push(e.body);
+        break;
+      case "addAssignees":
+        assignees.push(...e.assignees);
+        break;
+      case "statusCheck":
+        statusChecks.push({
+          context: e.context,
+          state: e.state,
+          description: e.description,
+          sha: e.sha,
+        });
+        break;
+      case "dashboardSection":
+        dashboard = e.section;
+        break;
+    }
+  }
+
+  return {
+    effects,
+    labels: labels.length ? labels : undefined,
+    removeLabels: removeLabels.length ? removeLabels : undefined,
+    comment: comments[0],
+    comments,
+    requestChanges: reviewBodies[0],
+    assignees: assignees.length ? assignees : undefined,
+    statusCheck: statusChecks[0],
+    statusChecks,
+    dashboard,
+  };
+}
+
+/**
+ * Invokes the rule's handler registered for `context.eventType` and
+ * returns a `RuleSummary` view of the effects (or `undefined` if the
+ * handler returned nothing or the rule does not handle this event).
+ */
+export async function runRule(
+  rule: Rule,
+  context: WebhookContext,
+): Promise<RuleSummary | undefined> {
+  const handler = rule.events[context.eventType as keyof EventPayloadMap];
+  if (!handler) return undefined;
+  const effects = await (handler as (ctx: WebhookContext) => Promise<Effect[] | undefined>)(
+    context,
+  );
+  return summarizeEffects(effects);
 }

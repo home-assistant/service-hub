@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prHacktoberfest } from "../../src/rules-pr/pr-hacktoberfest.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("pr-hacktoberfest", () => {
   afterEach(() => {
@@ -24,7 +24,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await prHacktoberfest.handle(context);
+      const result = await runRule(prHacktoberfest, context);
       expect(result).toMatchObject({ labels: ["Hacktoberfest"] });
     });
 
@@ -43,7 +43,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await prHacktoberfest.handle(context);
+      const result = await runRule(prHacktoberfest, context);
       expect(result).toBeUndefined();
     });
 
@@ -62,7 +62,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await prHacktoberfest.handle(context);
+      const result = await runRule(prHacktoberfest, context);
       expect(result).toBeUndefined();
     });
 
@@ -82,7 +82,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await prHacktoberfest.handle(context);
+      const result = await runRule(prHacktoberfest, context);
       expect(result).toBeUndefined();
     });
   });
@@ -100,7 +100,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await prHacktoberfest.handle(context);
+      const result = await runRule(prHacktoberfest, context);
       expect(result).toMatchObject({ removeLabels: ["Hacktoberfest"] });
     });
 
@@ -116,7 +116,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await prHacktoberfest.handle(context);
+      const result = await runRule(prHacktoberfest, context);
       expect(result).toBeUndefined();
     });
 
@@ -132,13 +132,13 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await prHacktoberfest.handle(context);
+      const result = await runRule(prHacktoberfest, context);
       expect(result).toBeUndefined();
     });
   });
 
   it("listens to opened and closed events", () => {
-    expect(prHacktoberfest.listens).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(prHacktoberfest.listens).toContain(EventType.PULL_REQUEST_CLOSED);
+    expect(Object.keys(prHacktoberfest.events)).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(Object.keys(prHacktoberfest.events)).toContain(EventType.PULL_REQUEST_CLOSED);
   });
 });

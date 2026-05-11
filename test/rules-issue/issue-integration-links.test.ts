@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { issueIntegrationLinks } from "../../src/rules-issue/issue-integration-links.js";
-import { createMockIssueContext } from "../helpers/mock-context.js";
+import { createMockIssueContext, runRule } from "../helpers/mock-context.js";
 
 describe("issue-integration-links", () => {
   it("posts documentation and source links for integration label", async () => {
@@ -12,7 +12,7 @@ describe("issue-integration-links", () => {
       },
     });
 
-    const result = await issueIntegrationLinks.handle(context);
+    const result = await runRule(issueIntegrationLinks, context);
     expect(result?.comment).toContain(
       "[hue documentation](https://www.home-assistant.io/integrations/hue)",
     );
@@ -29,7 +29,7 @@ describe("issue-integration-links", () => {
       },
     });
 
-    const result = await issueIntegrationLinks.handle(context);
+    const result = await runRule(issueIntegrationLinks, context);
     expect(result).toBeUndefined();
   });
 
@@ -38,7 +38,7 @@ describe("issue-integration-links", () => {
       eventType: EventType.ISSUES_LABELED,
     });
 
-    const result = await issueIntegrationLinks.handle(context);
+    const result = await runRule(issueIntegrationLinks, context);
     expect(result).toBeUndefined();
   });
 
@@ -50,12 +50,12 @@ describe("issue-integration-links", () => {
       },
     });
 
-    const result = await issueIntegrationLinks.handle(context);
+    const result = await runRule(issueIntegrationLinks, context);
     expect(result?.comment).toContain("/integrations/zwave_js");
     expect(result?.comment).toContain("/components/zwave_js");
   });
 
   it("listens only to issues.labeled", () => {
-    expect(issueIntegrationLinks.listens).toEqual([EventType.ISSUES_LABELED]);
+    expect(Object.keys(issueIntegrationLinks.events)).toEqual([EventType.ISSUES_LABELED]);
   });
 });

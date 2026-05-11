@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prHasDocsPr } from "../../src/rules-pr/pr-has-docs-pr.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("docs-missing handler", () => {
   it("passes when no docs-requiring labels are present", async () => {
@@ -17,7 +17,7 @@ describe("docs-missing handler", () => {
       },
     });
 
-    const result = await prHasDocsPr.handle(context);
+    const result = await runRule(prHasDocsPr, context);
     expect(result).toMatchObject({
       statusCheck: { state: "success" },
       dashboard: { status: "pass" },
@@ -37,7 +37,7 @@ describe("docs-missing handler", () => {
       },
     });
 
-    const result = await prHasDocsPr.handle(context);
+    const result = await runRule(prHasDocsPr, context);
     expect(result).toMatchObject({
       statusCheck: { state: "failure" },
       dashboard: { status: "fail" },
@@ -57,7 +57,7 @@ describe("docs-missing handler", () => {
       },
     });
 
-    const result = await prHasDocsPr.handle(context);
+    const result = await runRule(prHasDocsPr, context);
     expect(result).toMatchObject({
       statusCheck: { state: "success" },
       dashboard: { status: "pass" },
@@ -77,7 +77,7 @@ describe("docs-missing handler", () => {
       },
     });
 
-    const result = await prHasDocsPr.handle(context);
+    const result = await runRule(prHasDocsPr, context);
     expect(result).toMatchObject({
       statusCheck: { state: "success" },
     });
@@ -96,7 +96,7 @@ describe("docs-missing handler", () => {
       },
     });
 
-    const result = await prHasDocsPr.handle(context);
+    const result = await runRule(prHasDocsPr, context);
     expect(result).toMatchObject({
       statusCheck: { state: "success" },
     });

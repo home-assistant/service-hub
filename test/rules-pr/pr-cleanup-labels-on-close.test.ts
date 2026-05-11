@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { cleanupLabelsOnClose } from "../../src/rules-pr/pr-cleanup-labels-on-close.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 const rule = cleanupLabelsOnClose({ labels: ["Ready for review"] });
 
@@ -17,7 +17,7 @@ describe("label-cleaner handler", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toMatchObject({
       removeLabels: ["Ready for review"],
     });
@@ -34,7 +34,7 @@ describe("label-cleaner handler", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeUndefined();
   });
 

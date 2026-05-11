@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prLabelIntentsLanguage } from "../../src/rules-pr/pr-label-intents-language.js";
-import { createMockContext, mockPRFiles } from "../helpers/mock-context.js";
+import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string) {
   return {
@@ -22,7 +22,7 @@ describe("pr-label-intents-language", () => {
     const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
     mockPRFiles(context, [makeFile("sentences/en/weather.yaml")]);
 
-    const result = await prLabelIntentsLanguage.handle(context);
+    const result = await runRule(prLabelIntentsLanguage, context);
     expect(result).toMatchObject({ labels: ["lang: en"] });
   });
 
@@ -30,7 +30,7 @@ describe("pr-label-intents-language", () => {
     const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
     mockPRFiles(context, [makeFile("responses/fr/something.yaml")]);
 
-    const result = await prLabelIntentsLanguage.handle(context);
+    const result = await runRule(prLabelIntentsLanguage, context);
     expect(result).toMatchObject({ labels: ["lang: fr"] });
   });
 
@@ -38,7 +38,7 @@ describe("pr-label-intents-language", () => {
     const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
     mockPRFiles(context, [makeFile("tests/de/test_weather.yaml")]);
 
-    const result = await prLabelIntentsLanguage.handle(context);
+    const result = await runRule(prLabelIntentsLanguage, context);
     expect(result).toMatchObject({ labels: ["lang: de"] });
   });
 
@@ -49,7 +49,7 @@ describe("pr-label-intents-language", () => {
       makeFile("sentences/en/lights.yaml"),
     ]);
 
-    const result = await prLabelIntentsLanguage.handle(context);
+    const result = await runRule(prLabelIntentsLanguage, context);
     expect(result?.labels).toHaveLength(1);
     expect(result?.labels).toContain("lang: en");
   });
@@ -61,7 +61,7 @@ describe("pr-label-intents-language", () => {
       makeFile("sentences/fr/weather.yaml"),
     ]);
 
-    const result = await prLabelIntentsLanguage.handle(context);
+    const result = await runRule(prLabelIntentsLanguage, context);
     expect(result?.labels).toHaveLength(2);
     expect(result?.labels).toContain("lang: en");
     expect(result?.labels).toContain("lang: fr");
@@ -71,7 +71,7 @@ describe("pr-label-intents-language", () => {
     const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
     mockPRFiles(context, [makeFile("README.md")]);
 
-    const result = await prLabelIntentsLanguage.handle(context);
+    const result = await runRule(prLabelIntentsLanguage, context);
     expect(result).toBeUndefined();
   });
 
@@ -79,7 +79,7 @@ describe("pr-label-intents-language", () => {
     const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
     mockPRFiles(context, [makeFile("sentences/en/something.json")]);
 
-    const result = await prLabelIntentsLanguage.handle(context);
+    const result = await runRule(prLabelIntentsLanguage, context);
     expect(result).toBeUndefined();
   });
 

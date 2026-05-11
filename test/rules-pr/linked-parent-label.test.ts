@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { linkedParentLabel } from "../../src/rules-pr/linked-parent-label.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 const docsSideRule = linkedParentLabel({
   isParent: (link) => link.owner === "home-assistant" && link.repo !== "home-assistant.io",
@@ -31,7 +31,7 @@ describe("linked-parent-label (docs-side configuration)", () => {
       },
     });
 
-    const result = await docsSideRule.handle(context);
+    const result = await runRule(docsSideRule, context);
     expect(result).toMatchObject({ labels: ["has-parent"] });
   });
 
@@ -44,7 +44,7 @@ describe("linked-parent-label (docs-side configuration)", () => {
       },
     });
 
-    const result = await docsSideRule.handle(context);
+    const result = await runRule(docsSideRule, context);
     expect(result).toBeUndefined();
   });
 
@@ -57,13 +57,13 @@ describe("linked-parent-label (docs-side configuration)", () => {
       },
     });
 
-    const result = await docsSideRule.handle(context);
+    const result = await runRule(docsSideRule, context);
     expect(result).toBeUndefined();
   });
 
   it("listens to opened and edited events", () => {
-    expect(docsSideRule.listens).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(docsSideRule.listens).toContain(EventType.PULL_REQUEST_EDITED);
+    expect(Object.keys(docsSideRule.events)).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(Object.keys(docsSideRule.events)).toContain(EventType.PULL_REQUEST_EDITED);
   });
 
   it("supports custom label", async () => {
@@ -78,7 +78,7 @@ describe("linked-parent-label (docs-side configuration)", () => {
         number: 2,
       },
     });
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toMatchObject({ labels: ["linked-acme"] });
   });
 });

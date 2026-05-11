@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prPlatinumCodeOwnerApproval } from "../../src/rules-pr/pr-platinum-code-owner-approval.js";
-import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
+import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 describe("pr-platinum-code-owner-approval", () => {
   const originalFetch = globalThis.fetch;
@@ -25,7 +25,7 @@ describe("pr-platinum-code-owner-approval", () => {
       },
     });
 
-    const result = await prPlatinumCodeOwnerApproval.handle(context);
+    const result = await runRule(prPlatinumCodeOwnerApproval, context);
     expect(result?.statusCheck?.state).toBe("success");
   });
 
@@ -59,7 +59,7 @@ describe("pr-platinum-code-owner-approval", () => {
       },
     });
 
-    const result = await prPlatinumCodeOwnerApproval.handle(context);
+    const result = await runRule(prPlatinumCodeOwnerApproval, context);
     expect(result?.statusCheck?.state).toBe("failure");
     expect(result?.statusCheck?.description).toContain("Code owner approval required");
   });
@@ -97,7 +97,7 @@ describe("pr-platinum-code-owner-approval", () => {
       },
     });
 
-    const result = await prPlatinumCodeOwnerApproval.handle(context);
+    const result = await runRule(prPlatinumCodeOwnerApproval, context);
     expect(result?.statusCheck?.state).toBe("success");
     expect(result?.labels).toContain("code-owner-approved");
   });
@@ -117,7 +117,7 @@ describe("pr-platinum-code-owner-approval", () => {
       },
     });
 
-    const result = await prPlatinumCodeOwnerApproval.handle(context);
+    const result = await runRule(prPlatinumCodeOwnerApproval, context);
     expect(result?.statusCheck?.state).toBe("success");
   });
 
@@ -136,7 +136,7 @@ describe("pr-platinum-code-owner-approval", () => {
       },
     });
 
-    const result = await prPlatinumCodeOwnerApproval.handle(context);
+    const result = await runRule(prPlatinumCodeOwnerApproval, context);
     expect(result?.statusCheck?.state).toBe("success");
   });
 
@@ -170,13 +170,19 @@ describe("pr-platinum-code-owner-approval", () => {
       },
     });
 
-    const result = await prPlatinumCodeOwnerApproval.handle(context);
+    const result = await runRule(prPlatinumCodeOwnerApproval, context);
     expect(result?.statusCheck?.state).toBe("success");
   });
 
   it("listens to many PR events", () => {
-    expect(prPlatinumCodeOwnerApproval.listens).toContain(EventType.PULL_REQUEST_LABELED);
-    expect(prPlatinumCodeOwnerApproval.listens).toContain(EventType.PULL_REQUEST_REVIEW_SUBMITTED);
-    expect(prPlatinumCodeOwnerApproval.listens).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+    expect(Object.keys(prPlatinumCodeOwnerApproval.events)).toContain(
+      EventType.PULL_REQUEST_LABELED,
+    );
+    expect(Object.keys(prPlatinumCodeOwnerApproval.events)).toContain(
+      EventType.PULL_REQUEST_REVIEW_SUBMITTED,
+    );
+    expect(Object.keys(prPlatinumCodeOwnerApproval.events)).toContain(
+      EventType.PULL_REQUEST_SYNCHRONIZE,
+    );
   });
 });

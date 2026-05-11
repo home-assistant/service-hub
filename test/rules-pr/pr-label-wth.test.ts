@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prLabelWth } from "../../src/rules-pr/pr-label-wth.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("pr-label-wth", () => {
   const originalFetch = globalThis.fetch;
@@ -30,7 +30,7 @@ describe("pr-label-wth", () => {
       },
     });
 
-    const result = await prLabelWth.handle(context);
+    const result = await runRule(prLabelWth, context);
     expect(result).toMatchObject({ labels: ["WTH"] });
   });
 
@@ -50,7 +50,7 @@ describe("pr-label-wth", () => {
       },
     });
 
-    const result = await prLabelWth.handle(context);
+    const result = await runRule(prLabelWth, context);
     expect(result).toMatchObject({ labels: ["WTH"] });
   });
 
@@ -70,7 +70,7 @@ describe("pr-label-wth", () => {
       },
     });
 
-    const result = await prLabelWth.handle(context);
+    const result = await runRule(prLabelWth, context);
     expect(result).toBeUndefined();
   });
 
@@ -85,7 +85,7 @@ describe("pr-label-wth", () => {
       },
     });
 
-    const result = await prLabelWth.handle(context);
+    const result = await runRule(prLabelWth, context);
     expect(result).toBeUndefined();
     expect(globalThis.fetch).not.toHaveBeenCalled();
   });
@@ -103,7 +103,7 @@ describe("pr-label-wth", () => {
       },
     });
 
-    const result = await prLabelWth.handle(context);
+    const result = await runRule(prLabelWth, context);
     expect(result).toBeUndefined();
   });
 
@@ -120,7 +120,7 @@ describe("pr-label-wth", () => {
       },
     });
 
-    const result = await prLabelWth.handle(context);
+    const result = await runRule(prLabelWth, context);
     expect(result).toBeUndefined();
   });
 });

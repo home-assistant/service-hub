@@ -1,21 +1,24 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { claSigned } from "../../src/rules-pr/pr-cla-signed.js";
-import { createMockContext, createMockDb, createMockGitHub } from "../helpers/mock-context.js";
+import {
+  createMockContext,
+  createMockDb,
+  createMockGitHub,
+  runRule,
+} from "../helpers/mock-context.js";
 
 const rule = claSigned;
 
 describe("pr-cla-signed", () => {
-  it("returns action for opened events", async () => {
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_OPENED,
-    });
-
-    const result = await rule.handle(context);
-    expect(result?.actions).toHaveLength(1);
+  it("returns effects for opened events", async () => {
+    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
+    const result = await runRule(rule, context);
+    // No commits in mock → all-commits-ignored path: emits success-only effects
+    expect(result?.effects).toBeDefined();
   });
 
-  it("only processes labeled events for cla-recheck label", async () => {
+  it("does nothing for non-cla-recheck labeled events", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
@@ -24,11 +27,11 @@ describe("pr-cla-signed", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeUndefined();
   });
 
-  it("removes recheck label and returns action for cla-recheck", async () => {
+  it("removes recheck label and runs CLA check on cla-recheck", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
@@ -37,16 +40,14 @@ describe("pr-cla-signed", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result?.removeLabels).toContain("cla-recheck");
-    expect(result?.actions).toHaveLength(1);
   });
 
-  describe("CLA check action", () => {
+  describe("CLA check effects", () => {
     it("adds cla-signed label when all authors signed", async () => {
       const github = createMockGitHub();
       const db = createMockDb();
-
       github.paginate.mockResolvedValue([
         {
           sha: "commit1",
@@ -62,19 +63,15 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await rule.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.issues.addLabels).toHaveBeenCalledWith(
-        expect.objectContaining({ labels: ["cla-signed"] }),
-      );
+      const result = await runRule(rule, context);
+      expect(result?.labels).toContain("cla-signed");
+      expect(result?.removeLabels).toContain("cla-needed");
+      expect(result?.statusChecks.every((s) => s.state === "success")).toBe(true);
     });
 
     it("requests changes when author has not signed CLA", async () => {
       const github = createMockGitHub();
       const db = createMockDb();
-
       github.paginate.mockResolvedValue([
         {
           sha: "commit1",
@@ -90,22 +87,15 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await rule.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.pulls.createReview).toHaveBeenCalledWith(
-        expect.objectContaining({ event: "REQUEST_CHANGES" }),
-      );
-      expect(github.issues.addLabels).toHaveBeenCalledWith(
-        expect.objectContaining({ labels: ["cla-needed"] }),
-      );
+      const result = await runRule(rule, context);
+      expect(result?.requestChanges).toBeDefined();
+      expect(result?.labels).toContain("cla-needed");
+      expect(result?.statusChecks[0]?.state).toBe("failure");
     });
 
     it("requests changes for commits without linked GitHub user", async () => {
       const github = createMockGitHub();
       const db = createMockDb();
-
       github.paginate.mockResolvedValue([
         {
           sha: "commit1",
@@ -120,22 +110,14 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await rule.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.pulls.createReview).toHaveBeenCalledWith(
-        expect.objectContaining({ event: "REQUEST_CHANGES" }),
-      );
-      expect(github.issues.addLabels).toHaveBeenCalledWith(
-        expect.objectContaining({ labels: ["cla-error"] }),
-      );
+      const result = await runRule(rule, context);
+      expect(result?.requestChanges).toBeDefined();
+      expect(result?.labels).toContain("cla-error");
     });
 
     it("skips bot commits", async () => {
       const github = createMockGitHub();
       const db = createMockDb();
-
       github.paginate.mockResolvedValue([
         {
           sha: "commit1",
@@ -150,20 +132,15 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await rule.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      // All commits ignored — no CLA labels, but still sets success status
-      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-        expect.objectContaining({ state: "success" }),
-      );
+      const result = await runRule(rule, context);
+      // All commits ignored — success status, no cla-signed label
+      expect(result?.statusChecks[0]?.state).toBe("success");
+      expect(result?.labels).toBeUndefined();
     });
 
-    it("records pending signers in database", async () => {
+    it("records pending signers via dbExecute effect", async () => {
       const github = createMockGitHub();
       const db = createMockDb();
-
       github.paginate.mockResolvedValue([
         {
           sha: "commit1",
@@ -179,26 +156,21 @@ describe("pr-cla-signed", () => {
         db,
       });
 
-      const result = await rule.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(db.execute).toHaveBeenCalledWith(
-        expect.stringContaining("INSERT OR REPLACE INTO cla_pending_signers"),
-        "unsigned",
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-        expect.any(String),
-      );
+      const result = await runRule(rule, context);
+      const dbEffect = result?.effects.find((e) => e.type === "dbExecute");
+      expect(dbEffect).toBeDefined();
+      if (dbEffect && dbEffect.type === "dbExecute") {
+        expect(dbEffect.sql).toContain("INSERT OR REPLACE INTO cla_pending_signers");
+        expect(dbEffect.params[0]).toBe("unsigned");
+      }
     });
   });
 
   it("listens to opened, reopened, synchronize, and labeled events", () => {
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_REOPENED);
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_LABELED);
+    const events = Object.keys(rule.events);
+    expect(events).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(events).toContain(EventType.PULL_REQUEST_REOPENED);
+    expect(events).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+    expect(events).toContain(EventType.PULL_REQUEST_LABELED);
   });
 });

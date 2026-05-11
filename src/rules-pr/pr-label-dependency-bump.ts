@@ -1,6 +1,5 @@
-import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Rule } from "../rules/types.js";
 
 const DEPENDENCY_FILES = new Set([
   "package_constraints.txt",
@@ -14,14 +13,13 @@ export const prLabelDependencyBump: Rule = {
   name: "pr-label-dependency-bump",
   description: "Labels PRs that only modify dependency files",
   allowBots: false,
-  listens: [EventType.PULL_REQUEST_OPENED],
-
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const files = await context.fetchPRFiles();
-    const filenames = files.map((f) => f.filename.split("/").pop() ?? "");
-
-    if (filenames.length > 0 && filenames.every((name) => DEPENDENCY_FILES.has(name))) {
-      return { labels: ["dependency-bump"] };
-    }
+  events: {
+    [EventType.PULL_REQUEST_OPENED]: async (ctx) => {
+      const files = await ctx.fetchPRFiles();
+      const filenames = files.map((f) => f.filename.split("/").pop() ?? "");
+      if (filenames.length > 0 && filenames.every((name) => DEPENDENCY_FILES.has(name))) {
+        return [{ type: "addLabels", labels: ["dependency-bump"] }];
+      }
+    },
   },
 };

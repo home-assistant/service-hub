@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { mentionCodeOwners } from "../../src/rules-issue/issue-mention-code-owners.js";
-import { createMockGitHub, createMockIssueContext } from "../helpers/mock-context.js";
+import { createMockGitHub, createMockIssueContext, runRule } from "../helpers/mock-context.js";
 
 const rule = mentionCodeOwners({
   pathPattern: (name) => `homeassistant/components/${name}/*`,
@@ -16,7 +16,7 @@ describe("mention-code-owners", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeUndefined();
   });
 
@@ -44,7 +44,7 @@ describe("mention-code-owners", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result?.assignees).toContain("balloob");
     expect(result?.assignees).toContain("frenck");
     expect(result?.comment).toContain("@balloob");
@@ -76,7 +76,7 @@ describe("mention-code-owners", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result?.assignees).toContain("balloob");
     // Comment should be undefined since the only owner is already assigned
     expect(result?.comment).toBeUndefined();
@@ -106,8 +106,8 @@ describe("mention-code-owners", () => {
       },
     });
 
-    const result = await rule.handle(context);
-    expect(result?.assignees).toEqual([]);
+    const result = await runRule(rule, context);
+    expect(result?.assignees).toBeUndefined();
     expect(result?.labels).toContain("by-code-owner");
   });
 
@@ -123,7 +123,7 @@ describe("mention-code-owners", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeUndefined();
   });
 
@@ -143,17 +143,17 @@ describe("mention-code-owners", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
     expect(result).toBeUndefined();
   });
 
   it("works for PR labeled events too", async () => {
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_LABELED);
   });
 
   it("listens to both issues.labeled and pull_request.labeled", () => {
-    expect(rule.listens).toContain(EventType.ISSUES_LABELED);
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(Object.keys(rule.events)).toContain(EventType.ISSUES_LABELED);
+    expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_LABELED);
   });
 
   it("uses custom itemLabel in comment", async () => {
@@ -190,7 +190,7 @@ describe("mention-code-owners", () => {
       },
     });
 
-    const result = await docsRule.handle(context);
+    const result = await runRule(docsRule, context);
     expect(result?.comment).toContain("feedback");
   });
 });

@@ -1,41 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prDraftOnChangesRequested } from "../../src/rules-pr/pr-draft-on-changes-requested.js";
-import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
+import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 describe("pr-draft-on-changes-requested", () => {
-  it("returns an action for review submitted events", async () => {
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
-      payload: {
-        review: { user: { login: "reviewer" }, state: "changes_requested" },
-        pull_request: { draft: false, node_id: "PR_1", user: { login: "author" } },
-      },
-    });
-
-    const result = await prDraftOnChangesRequested.handle(context);
-    expect(result?.actions).toHaveLength(1);
-  });
-
-  it("returns an action for ready-for-review events", async () => {
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
-      payload: {
-        pull_request: { node_id: "PR_1", user: { login: "author" } },
-      },
-    });
-
-    const result = await prDraftOnChangesRequested.handle(context);
-    expect(result?.actions).toHaveLength(1);
-  });
-
-  describe("review submitted action", () => {
-    it("converts PR to draft on changes_requested from org member", async () => {
+  describe("review submitted", () => {
+    it("emits convertPullRequestToDraft on changes_requested from org member", async () => {
       const github = createMockGitHub();
       github.paginate.mockResolvedValue([]);
-      github.orgs.getMembershipForUser.mockResolvedValue({
-        data: { role: "member" },
-      });
+      github.orgs.getMembershipForUser.mockResolvedValue({ data: { role: "member" } });
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
@@ -47,19 +20,13 @@ describe("pr-draft-on-changes-requested", () => {
         },
       });
 
-      const result = await prDraftOnChangesRequested.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.graphql).toHaveBeenCalledWith(
-        expect.stringContaining("convertPullRequestToDraft"),
-        expect.objectContaining({ id: "PR_1" }),
-      );
+      const result = await runRule(prDraftOnChangesRequested, context);
+      const convertEffect = result?.effects.find((e) => e.type === "convertPullRequestToDraft");
+      expect(convertEffect).toMatchObject({ node_id: "PR_1" });
     });
 
     it("does nothing when PR is already a draft", async () => {
       const github = createMockGitHub();
-
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
         github,
@@ -70,16 +37,12 @@ describe("pr-draft-on-changes-requested", () => {
         },
       });
 
-      const result = await prDraftOnChangesRequested.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.graphql).not.toHaveBeenCalled();
+      const result = await runRule(prDraftOnChangesRequested, context);
+      expect(result).toBeUndefined();
     });
 
     it("does nothing for approved reviews", async () => {
       const github = createMockGitHub();
-
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
         github,
@@ -90,11 +53,8 @@ describe("pr-draft-on-changes-requested", () => {
         },
       });
 
-      const result = await prDraftOnChangesRequested.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.graphql).not.toHaveBeenCalled();
+      const result = await runRule(prDraftOnChangesRequested, context);
+      expect(result).toBeUndefined();
     });
 
     it("does nothing for non-org-member reviewers", async () => {
@@ -111,28 +71,19 @@ describe("pr-draft-on-changes-requested", () => {
         },
       });
 
-      const result = await prDraftOnChangesRequested.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.graphql).not.toHaveBeenCalled();
+      const result = await runRule(prDraftOnChangesRequested, context);
+      expect(result).toBeUndefined();
     });
   });
 
-  describe("ready for review action", () => {
-    it("re-requests reviews from human reviewers", async () => {
+  describe("ready for review", () => {
+    it("emits requestReviewers for human reviewers", async () => {
       const github = createMockGitHub();
       github.paginate.mockResolvedValue([
         { id: 1, body: "<!-- ReviewDrafterComment -->\nSome message" },
       ]);
       github.pulls.listReviews.mockResolvedValue({
-        data: [
-          {
-            id: 10,
-            state: "CHANGES_REQUESTED",
-            user: { login: "reviewer", type: "User" },
-          },
-        ],
+        data: [{ id: 10, state: "CHANGES_REQUESTED", user: { login: "reviewer", type: "User" } }],
       });
 
       const context = createMockContext({
@@ -143,28 +94,18 @@ describe("pr-draft-on-changes-requested", () => {
         },
       });
 
-      const result = await prDraftOnChangesRequested.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.pulls.requestReviewers).toHaveBeenCalledWith(
-        expect.objectContaining({ reviewers: ["reviewer"] }),
-      );
+      const result = await runRule(prDraftOnChangesRequested, context);
+      const reviewRequest = result?.effects.find((e) => e.type === "requestReviewers");
+      expect(reviewRequest).toMatchObject({ reviewers: ["reviewer"] });
     });
 
-    it("dismisses stale bot reviews", async () => {
+    it("emits dismissReview for stale bot reviews", async () => {
       const github = createMockGitHub();
       github.paginate.mockResolvedValue([
         { id: 1, body: "<!-- ReviewDrafterComment -->\nSome message" },
       ]);
       github.pulls.listReviews.mockResolvedValue({
-        data: [
-          {
-            id: 20,
-            state: "CHANGES_REQUESTED",
-            user: { login: "some-bot", type: "Bot" },
-          },
-        ],
+        data: [{ id: 20, state: "CHANGES_REQUESTED", user: { login: "some-bot", type: "Bot" } }],
       });
 
       const context = createMockContext({
@@ -175,18 +116,18 @@ describe("pr-draft-on-changes-requested", () => {
         },
       });
 
-      const result = await prDraftOnChangesRequested.handle(context);
-      expect(result?.actions?.[0]).toBeDefined();
-      if (result?.actions?.[0]) await result.actions[0](context);
-
-      expect(github.pulls.dismissReview).toHaveBeenCalledWith(
-        expect.objectContaining({ review_id: 20, message: "Stale" }),
-      );
+      const result = await runRule(prDraftOnChangesRequested, context);
+      const dismiss = result?.effects.find((e) => e.type === "dismissReview");
+      expect(dismiss).toMatchObject({ review_id: 20, message: "Stale" });
     });
   });
 
   it("listens to review submitted and ready-for-review events", () => {
-    expect(prDraftOnChangesRequested.listens).toContain(EventType.PULL_REQUEST_REVIEW_SUBMITTED);
-    expect(prDraftOnChangesRequested.listens).toContain(EventType.PULL_REQUEST_READY_FOR_REVIEW);
+    expect(Object.keys(prDraftOnChangesRequested.events)).toContain(
+      EventType.PULL_REQUEST_REVIEW_SUBMITTED,
+    );
+    expect(Object.keys(prDraftOnChangesRequested.events)).toContain(
+      EventType.PULL_REQUEST_READY_FOR_REVIEW,
+    );
   });
 });

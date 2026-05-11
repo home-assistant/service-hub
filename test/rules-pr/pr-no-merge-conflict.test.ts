@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prNoMergeConflict } from "../../src/rules-pr/pr-no-merge-conflict.js";
-import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
+import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 describe("pr-no-merge-conflict", () => {
   it("requests changes when PR has merge conflict", async () => {
@@ -15,7 +15,7 @@ describe("pr-no-merge-conflict", () => {
       github,
     });
 
-    const result = await prNoMergeConflict.handle(context);
+    const result = await runRule(prNoMergeConflict, context);
     expect(result).toMatchObject({ requestChanges: "There is a merge conflict." });
   });
 
@@ -30,7 +30,7 @@ describe("pr-no-merge-conflict", () => {
       github,
     });
 
-    const result = await prNoMergeConflict.handle(context);
+    const result = await runRule(prNoMergeConflict, context);
     expect(result).toBeUndefined();
   });
 
@@ -45,12 +45,12 @@ describe("pr-no-merge-conflict", () => {
       github,
     });
 
-    const result = await prNoMergeConflict.handle(context);
+    const result = await runRule(prNoMergeConflict, context);
     expect(result).toBeUndefined();
   });
 
   it("listens to opened and synchronize events", () => {
-    expect(prNoMergeConflict.listens).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(prNoMergeConflict.listens).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+    expect(Object.keys(prNoMergeConflict.events)).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(Object.keys(prNoMergeConflict.events)).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
   });
 });

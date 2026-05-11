@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prAutoLabel } from "../../src/rules-pr/pr-auto-label.js";
-import { createMockContext, mockPRFiles } from "../helpers/mock-context.js";
+import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string, overrides: { status?: string; additions?: number } = {}) {
   return {
@@ -37,7 +37,7 @@ describe("pr-auto-label", () => {
       const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("integration: hue");
     });
 
@@ -52,7 +52,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/f/__init__.py"),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       const integrationLabels = result?.labels?.filter((l) => l.startsWith("integration: "));
       expect(integrationLabels).toBeUndefined();
     });
@@ -66,7 +66,7 @@ describe("pr-auto-label", () => {
         makeFile("tests/components/hue/test_init.py"),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("has-tests");
     });
 
@@ -74,7 +74,7 @@ describe("pr-auto-label", () => {
       const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).not.toContain("has-tests");
     });
   });
@@ -84,7 +84,7 @@ describe("pr-auto-label", () => {
       const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
       mockPRFiles(context, [makeFile("homeassistant/components/mqtt/__init__.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("core");
     });
 
@@ -92,7 +92,7 @@ describe("pr-auto-label", () => {
       const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
       mockPRFiles(context, [makeFile("homeassistant/helpers/entity.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("core");
     });
   });
@@ -104,7 +104,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/newdevice/__init__.py", { status: "added" }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("new-integration");
     });
 
@@ -114,7 +114,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/hue/sensor.py", { status: "added" }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("new-platform");
     });
 
@@ -125,7 +125,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/newdevice/sensor.py", { status: "added" }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("new-integration");
       expect(result?.labels).not.toContain("new-platform");
     });
@@ -138,7 +138,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/hue/sensor.py", { status: "removed" }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("remove-platform");
     });
   });
@@ -150,7 +150,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/hue/__init__.py", { additions: 5 }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("small-pr");
     });
 
@@ -160,7 +160,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/hue/__init__.py", { additions: 50 }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).not.toContain("small-pr");
     });
 
@@ -171,7 +171,7 @@ describe("pr-auto-label", () => {
         makeFile("tests/components/hue/test_init.py", { additions: 200 }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("small-pr");
     });
   });
@@ -190,7 +190,7 @@ describe("pr-auto-label", () => {
       });
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("bugfix");
     });
 
@@ -207,7 +207,7 @@ describe("pr-auto-label", () => {
       });
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).not.toContain("bugfix");
     });
   });
@@ -226,7 +226,7 @@ describe("pr-auto-label", () => {
       });
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("merging-to-master");
     });
 
@@ -243,7 +243,7 @@ describe("pr-auto-label", () => {
       });
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("merging-to-rc");
     });
   });
@@ -256,7 +256,7 @@ describe("pr-auto-label", () => {
         makeFile("CODEOWNERS"),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("metadata-only");
     });
 
@@ -267,7 +267,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/hue/__init__.py"),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).not.toContain("metadata-only");
     });
   });
@@ -279,7 +279,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/hue/config_flow.py", { status: "added" }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).toContain("config-flow");
     });
 
@@ -290,7 +290,7 @@ describe("pr-auto-label", () => {
         makeFile("homeassistant/components/hue/config_flow.py", { status: "added" }),
       ]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       expect(result?.labels).not.toContain("config-flow");
     });
   });
@@ -305,7 +305,7 @@ describe("pr-auto-label", () => {
       const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
       mockPRFiles(context, [makeFile("homeassistant/components/mqtt/__init__.py")]);
 
-      const result = await prAutoLabel.handle(context);
+      const result = await runRule(prAutoLabel, context);
       // mqtt is a core component, so LABELS_PREVENT_TOP prevents top labels
       expect(result?.labels).not.toContain("Top 50");
     });
@@ -316,7 +316,7 @@ describe("pr-auto-label", () => {
     const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
     mockPRFiles(context, []);
 
-    const result = await prAutoLabel.handle(context);
+    const result = await runRule(prAutoLabel, context);
     expect(result?.labels).toContain("small-pr");
     expect(result?.labels).toContain("metadata-only");
   });

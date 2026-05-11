@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { requiredLabels } from "../../src/rules-pr/pr-has-type-label.js";
-import { createMockContext } from "../helpers/mock-context.js";
+import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 const rule = requiredLabels({
   labels: [
@@ -27,7 +27,7 @@ describe("required-labels handler", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
 
     expect(result).toMatchObject({
       statusCheck: {
@@ -52,7 +52,7 @@ describe("required-labels handler", () => {
       },
     });
 
-    const result = await rule.handle(context);
+    const result = await runRule(rule, context);
 
     expect(result).toMatchObject({
       statusCheck: {
@@ -67,9 +67,9 @@ describe("required-labels handler", () => {
   });
 
   it("listens to label and sync events", () => {
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_LABELED);
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_UNLABELED);
-    expect(rule.listens).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+    expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_UNLABELED);
+    expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
   });
 
   it("includes description", () => {

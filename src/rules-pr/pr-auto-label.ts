@@ -1,8 +1,6 @@
-import type { PullRequestOpenedEvent } from "@octokit/webhooks-types";
 import { z } from "zod";
-import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Rule } from "../rules/types.js";
 import { fetchWithTimeout } from "../utils/fetch.js";
 import { ParsedPath } from "../utils/parse-path.js";
 import { extractTasks } from "../utils/text-parser.js";
@@ -166,39 +164,33 @@ export const prAutoLabel: Rule = {
   name: "pr-auto-label",
   description: "Auto-labels PRs based on changed files, PR body, and integration analytics",
   allowBots: false,
-  listens: [EventType.PULL_REQUEST_OPENED],
+  events: {
+    [EventType.PULL_REQUEST_OPENED]: async (ctx) => {
+      const files = await ctx.fetchPRFiles();
+      const parsed = files.map((f) => new ParsedPath(f));
 
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as PullRequestOpenedEvent;
+      const labels = new Set<string>();
+      for (const label of configFlow(parsed)) labels.add(label);
+      for (const label of hasTests(parsed)) labels.add(label);
+      for (const label of markCore(parsed)) labels.add(label);
+      for (const label of newIntegrationOrPlatform(parsed)) labels.add(label);
+      for (const label of removePlatform(parsed)) labels.add(label);
+      for (const label of smallPR(parsed)) labels.add(label);
+      for (const label of typeOfChange(ctx.payload.pull_request.body)) labels.add(label);
+      for (const label of warnOnMergeTarget(ctx.payload.pull_request.base.ref)) labels.add(label);
+      for (const label of metadataOnly(parsed)) labels.add(label);
 
-    const files = await context.fetchPRFiles();
-    const parsed = files.map((f) => new ParsedPath(f));
-
-    const labels = new Set<string>();
-
-    // Run all strategies
-    for (const label of configFlow(parsed)) labels.add(label);
-    for (const label of hasTests(parsed)) labels.add(label);
-    for (const label of markCore(parsed)) labels.add(label);
-    for (const label of newIntegrationOrPlatform(parsed)) labels.add(label);
-    for (const label of removePlatform(parsed)) labels.add(label);
-    for (const label of smallPR(parsed)) labels.add(label);
-    for (const label of typeOfChange(payload.pull_request.body)) labels.add(label);
-    for (const label of warnOnMergeTarget(payload.pull_request.base.ref)) labels.add(label);
-    for (const label of metadataOnly(parsed)) labels.add(label);
-
-    // Component/platform labels — cap at MAX_INTEGRATION_LABELS
-    const componentLabels = componentAndPlatform(parsed);
-    if (componentLabels.length <= MAX_INTEGRATION_LABELS) {
-      for (const label of componentLabels) labels.add(label);
-
-      if (![...LABELS_PREVENT_TOP].some((l) => labels.has(l))) {
-        for (const label of await getTopLabels(parsed)) labels.add(label);
+      const componentLabels = componentAndPlatform(parsed);
+      if (componentLabels.length <= MAX_INTEGRATION_LABELS) {
+        for (const label of componentLabels) labels.add(label);
+        if (![...LABELS_PREVENT_TOP].some((l) => labels.has(l))) {
+          for (const label of await getTopLabels(parsed)) labels.add(label);
+        }
       }
-    }
 
-    if (labels.size > 0) {
-      return { labels: [...labels] };
-    }
+      if (labels.size > 0) {
+        return [{ type: "addLabels", labels: [...labels] }];
+      }
+    },
   },
 };

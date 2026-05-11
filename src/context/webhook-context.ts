@@ -39,26 +39,26 @@ export type WebhookEventPayload =
   | PullRequestSynchronizeEvent
   | PullRequestUnlabeledEvent;
 
-interface WebhookContextParams {
+interface WebhookContextParams<P extends WebhookEventPayload> {
   github: Octokit;
-  payload: WebhookEventPayload;
+  payload: P;
   eventType: EventType;
   db: Database;
 }
 
-export class WebhookContext {
+export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload> {
   readonly github: Octokit;
   readonly eventType: EventType;
   readonly repository: Repository;
   readonly organization: Organization;
-  readonly payload: WebhookEventPayload;
+  readonly payload: P;
   readonly db: Database;
 
   prFilesCache?: ListPullRequestFiles;
   private _issueCache = new Map<string, GetIssueResponse>();
   private _pullRequestCache = new Map<string, GetPullRequestResponse>();
 
-  constructor(params: WebhookContextParams) {
+  constructor(params: WebhookContextParams<P>) {
     this.github = params.github;
     this.eventType = params.eventType;
     this.payload = params.payload;
@@ -78,16 +78,6 @@ export class WebhookContext {
     return "";
   }
 
-  repo<T extends Record<string, unknown> = Record<string, never>>(
-    data?: T,
-  ): { owner: string; repo: string } & T {
-    return {
-      owner: this.payload.repository.owner.login,
-      repo: this.payload.repository.name,
-      ...data,
-    } as { owner: string; repo: string } & T;
-  }
-
   /**
    * The issue or pull-request number in scope for this event. PRs and
    * issues share a numbering space on GitHub (a PR is a kind of issue),
@@ -99,6 +89,16 @@ export class WebhookContext {
       return this.payload.pull_request.number;
     }
     throw new Error(`WebhookContext.number: event ${this.eventType} has no issue or PR number`);
+  }
+
+  repo<T extends Record<string, unknown> = Record<string, never>>(
+    data?: T,
+  ): { owner: string; repo: string } & T {
+    return {
+      owner: this.payload.repository.owner.login,
+      repo: this.payload.repository.name,
+      ...data,
+    } as { owner: string; repo: string } & T;
   }
 
   issue<T extends Record<string, unknown> = Record<string, never>>(

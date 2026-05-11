@@ -1,35 +1,31 @@
-import type { PullRequestLabeledEvent } from "@octokit/webhooks-types";
-import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Rule } from "../rules/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../utils/integration.js";
 
 export const prLabelQualityScale: Rule = {
   name: "pr-label-quality-scale",
   description: "Labels PRs with integration quality scale when an integration label is added",
-  listens: [EventType.PULL_REQUEST_LABELED],
+  events: {
+    [EventType.PULL_REQUEST_LABELED]: async (ctx) => {
+      const labels: string[] = [];
 
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as PullRequestLabeledEvent;
-
-    const labels: string[] = [];
-
-    const files = await context.fetchPRFiles();
-    const filenames = files.map((f) => f.filename.split("/").pop() ?? "");
-    if (filenames.includes("quality_scale.yaml")) {
-      labels.push("quality-scale");
-    }
-
-    if (payload.label?.name.startsWith("integration: ")) {
-      const domain = payload.label.name.split("integration: ")[1];
-      const manifest = await fetchIntegrationManifest(domain);
-      if (manifest) {
-        labels.push(`Quality Scale: ${manifest.quality_scale || QualityScale.NO_SCORE}`);
+      const files = await ctx.fetchPRFiles();
+      const filenames = files.map((f) => f.filename.split("/").pop() ?? "");
+      if (filenames.includes("quality_scale.yaml")) {
+        labels.push("quality-scale");
       }
-    }
 
-    if (labels.length > 0) {
-      return { labels };
-    }
+      if (ctx.payload.label?.name.startsWith("integration: ")) {
+        const domain = ctx.payload.label.name.split("integration: ")[1];
+        const manifest = await fetchIntegrationManifest(domain);
+        if (manifest) {
+          labels.push(`Quality Scale: ${manifest.quality_scale || QualityScale.NO_SCORE}`);
+        }
+      }
+
+      if (labels.length > 0) {
+        return [{ type: "addLabels", labels }];
+      }
+    },
   },
 };

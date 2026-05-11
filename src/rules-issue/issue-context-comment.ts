@@ -1,7 +1,5 @@
-import type { IssuesLabeledEvent } from "@octokit/webhooks-types";
-import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Rule } from "../rules/types.js";
 
 // Embedded from data/github/issue_context.yaml
 // In CF Workers we can't read files — this is small enough to inline.
@@ -20,33 +18,29 @@ const contextLabels = new Set(Object.keys(issueContext).filter((k) => !k.startsW
 export const issueContextComment: Rule = {
   name: "issue-context-comment",
   description: "Posts context comments when issues are labeled with integration or special labels",
-  listens: [EventType.ISSUES_LABELED],
+  events: {
+    [EventType.ISSUES_LABELED]: async (ctx) => {
+      if (!ctx.payload.label) return;
+      const labelName = ctx.payload.label.name;
+      const isIntegration = labelName.startsWith("integration: ");
+      if (!isIntegration && !contextLabels.has(labelName)) return;
 
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as IssuesLabeledEvent;
+      const author = ctx.payload.issue.user.login;
+      const labelContext = issueContext[labelName] ?? "";
 
-    if (!payload.label) return;
+      let comment: string;
+      if (isIntegration) {
+        const defaultMessage = issueContext._integration_default_message ?? "";
+        const encodedLabel = encodeURIComponent(labelName);
+        const issueLink = `https://github.com/home-assistant/core/issues?q=%20label%3A%22${encodedLabel}%22%20`;
+        comment = `@${author} ${defaultMessage}\n\n${issueLink}${labelContext ? `\n${labelContext}` : ""}`;
+      } else if (labelContext) {
+        comment = `@${author} ${labelContext}`;
+      } else {
+        return;
+      }
 
-    const labelName = payload.label.name;
-    const isIntegration = labelName.startsWith("integration: ");
-
-    if (!isIntegration && !contextLabels.has(labelName)) return;
-
-    const author = payload.issue.user.login;
-    const labelContext = issueContext[labelName] ?? "";
-
-    let comment: string;
-    if (isIntegration) {
-      const defaultMessage = issueContext._integration_default_message ?? "";
-      const encodedLabel = encodeURIComponent(labelName);
-      const issueLink = `https://github.com/home-assistant/core/issues?q=%20label%3A%22${encodedLabel}%22%20`;
-      comment = `@${author} ${defaultMessage}\n\n${issueLink}${labelContext ? `\n${labelContext}` : ""}`;
-    } else if (labelContext) {
-      comment = `@${author} ${labelContext}`;
-    } else {
-      return;
-    }
-
-    return { comment };
+      return [{ type: "comment", body: comment }];
+    },
   },
 };

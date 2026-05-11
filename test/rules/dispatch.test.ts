@@ -2,26 +2,26 @@ import { describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import type { RegistryConfig } from "../../src/rules/dispatch.js";
 import { dispatch, matchRules } from "../../src/rules/dispatch.js";
-import type { Rule, RuleResult } from "../../src/rules/types.js";
+import type { Rule } from "../../src/rules/types.js";
 import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
 
 const testRule: Rule = {
   name: "test-rule",
-  listens: [EventType.PULL_REQUEST_OPENED],
-  async handle() {},
+  description: "",
+  events: { [EventType.PULL_REQUEST_OPENED]: async () => undefined },
 };
 
 const noBotRule: Rule = {
   name: "no-bot-rule",
+  description: "",
   allowBots: false,
-  listens: [EventType.PULL_REQUEST_OPENED],
-  async handle() {},
+  events: { [EventType.PULL_REQUEST_OPENED]: async () => undefined },
 };
 
 const orgRule: Rule = {
   name: "org-rule",
-  listens: [EventType.PULL_REQUEST_OPENED],
-  async handle() {},
+  description: "",
+  events: { [EventType.PULL_REQUEST_OPENED]: async () => undefined },
 };
 
 describe("matchRules", () => {
@@ -70,8 +70,8 @@ describe("matchRules", () => {
   it("combines repo and org rules without duplicates", () => {
     const sharedRule: Rule = {
       name: "shared",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle() {},
+      description: "",
+      events: { [EventType.PULL_REQUEST_OPENED]: async () => undefined },
     };
     const config: RegistryConfig = {
       organizations: { "home-assistant": [sharedRule] },
@@ -121,13 +121,15 @@ describe("matchRules", () => {
 });
 
 describe("dispatch", () => {
-  it("adds labels from rule results", async () => {
+  it("adds labels from rule effects", async () => {
     const github = createMockGitHub();
     const labelRule: Rule = {
       name: "labeler",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { labels: ["bugfix", "has-tests"] };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "addLabels", labels: ["bugfix", "has-tests"] },
+        ],
       },
     };
 
@@ -144,13 +146,15 @@ describe("dispatch", () => {
     );
   });
 
-  it("removes labels from rule results", async () => {
+  it("removes labels from rule effects", async () => {
     const github = createMockGitHub();
     const removerRule: Rule = {
       name: "remover",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { removeLabels: ["needs-rebase"] };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "removeLabel", label: "needs-rebase" },
+        ],
       },
     };
 
@@ -171,9 +175,12 @@ describe("dispatch", () => {
     const github = createMockGitHub();
     const conflictRule: Rule = {
       name: "conflict",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { labels: ["keep-me"], removeLabels: ["keep-me"] };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "addLabels", labels: ["keep-me"] },
+          { type: "removeLabel", label: "keep-me" },
+        ],
       },
     };
 
@@ -189,19 +196,21 @@ describe("dispatch", () => {
     expect(github.issues.removeLabel).not.toHaveBeenCalled();
   });
 
-  it("creates status checks from rule results", async () => {
+  it("creates status checks from rule effects", async () => {
     const github = createMockGitHub();
     const statusRule: Rule = {
       name: "status-checker",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return {
-          statusCheck: {
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          {
+            type: "statusCheck",
+            sha: "abc123",
             context: "ci/test",
             state: "success",
             description: "All tests passed",
           },
-        };
+        ],
       },
     };
 
@@ -222,13 +231,15 @@ describe("dispatch", () => {
     );
   });
 
-  it("creates comments from rule results", async () => {
+  it("creates comments from rule effects", async () => {
     const github = createMockGitHub();
     const commentRule: Rule = {
       name: "commenter",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { comment: "Hello from the bot!" };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "comment", body: "Hello from the bot!" },
+        ],
       },
     };
 
@@ -245,13 +256,15 @@ describe("dispatch", () => {
     );
   });
 
-  it("creates review requests from rule results", async () => {
+  it("creates review requests from requestChanges effect", async () => {
     const github = createMockGitHub();
     const reviewRule: Rule = {
       name: "reviewer",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { requestChanges: "Please fix this." };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "requestChanges", body: "Please fix this." },
+        ],
       },
     };
 
@@ -268,13 +281,15 @@ describe("dispatch", () => {
     );
   });
 
-  it("adds assignees from rule results", async () => {
+  it("adds assignees from rule effects", async () => {
     const github = createMockGitHub();
     const assignRule: Rule = {
       name: "assigner",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { assignees: ["balloob", "frenck"] };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "addAssignees", assignees: ["balloob", "frenck"] },
+        ],
       },
     };
 
@@ -291,44 +306,26 @@ describe("dispatch", () => {
     );
   });
 
-  it("executes custom actions from rule results", async () => {
-    const github = createMockGitHub();
-    const actionFn = vi.fn();
-    const actionRule: Rule = {
-      name: "action-runner",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { actions: [actionFn] };
-      },
-    };
-
-    const config: RegistryConfig = {
-      organizations: {},
-      repositories: { "home-assistant/core": [actionRule] },
-    };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
-
-    await dispatch(config, context);
-
-    expect(actionFn).toHaveBeenCalledWith(context);
-  });
-
   it("continues processing when a rule throws", async () => {
     const github = createMockGitHub();
     const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const failingRule: Rule = {
       name: "failing",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        throw new Error("Rule exploded");
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => {
+          throw new Error("Rule exploded");
+        },
       },
     };
     const succeedingRule: Rule = {
       name: "succeeding",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { labels: ["still-works"] };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "addLabels", labels: ["still-works"] },
+        ],
       },
     };
 
@@ -365,20 +362,20 @@ describe("dispatch", () => {
     expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
   });
 
-  it("merges results from multiple rules", async () => {
+  it("merges effects from multiple rules", async () => {
     const github = createMockGitHub();
     const rule1: Rule = {
       name: "rule1",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { labels: ["label-a"] };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["label-a"] }],
       },
     };
     const rule2: Rule = {
       name: "rule2",
-      listens: [EventType.PULL_REQUEST_OPENED],
-      async handle(): Promise<RuleResult> {
-        return { labels: ["label-b"] };
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["label-b"] }],
       },
     };
 

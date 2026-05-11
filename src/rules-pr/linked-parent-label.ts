@@ -1,7 +1,6 @@
-import type { PullRequestEditedEvent, PullRequestOpenedEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 import { extractAllLinks } from "../utils/text-parser.js";
 
 export interface LinkedParentLabelConfig {
@@ -19,16 +18,24 @@ export interface LinkedParentLabelConfig {
 export function linkedParentLabel(config: LinkedParentLabelConfig): Rule {
   const label = config.label ?? "has-parent";
   const describe = config.describe ?? "linked PR/issue";
+
+  function evaluate(
+    ctx: WebhookContext<
+      | EventPayloadMap[EventType.PULL_REQUEST_OPENED]
+      | EventPayloadMap[EventType.PULL_REQUEST_EDITED]
+    >,
+  ): Effect[] | undefined {
+    const hasParent = extractAllLinks(ctx.payload.pull_request.body).some(config.isParent);
+    if (!hasParent) return;
+    return [{ type: "addLabels", labels: [label] }];
+  }
+
   return {
     name: "linked-parent-label",
     description: `Labels PRs with '${label}' when their body links to a ${describe}`,
-    listens: [EventType.PULL_REQUEST_OPENED, EventType.PULL_REQUEST_EDITED],
-
-    async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-      const payload = context.payload as PullRequestOpenedEvent | PullRequestEditedEvent;
-      const hasParent = extractAllLinks(payload.pull_request.body).some(config.isParent);
-      if (!hasParent) return;
-      return { labels: [label] };
+    events: {
+      [EventType.PULL_REQUEST_OPENED]: async (ctx) => evaluate(ctx),
+      [EventType.PULL_REQUEST_EDITED]: async (ctx) => evaluate(ctx),
     },
   };
 }

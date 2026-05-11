@@ -1,24 +1,23 @@
-import type { IssuesLabeledEvent } from "@octokit/webhooks-types";
-import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Rule, RuleResult } from "../rules/types.js";
+import type { Rule } from "../rules/types.js";
 
 export const issueIntegrationLinks: Rule = {
   name: "issue-integration-links",
   description: "Comments with documentation and source links when an integration label is added",
-  listens: [EventType.ISSUES_LABELED],
+  events: {
+    [EventType.ISSUES_LABELED]: async (ctx) => {
+      if (!ctx.payload.label?.name.startsWith("integration: ")) return;
 
-  async handle(context: WebhookContext): Promise<RuleResult | undefined> {
-    const payload = context.payload as IssuesLabeledEvent;
+      const domain = ctx.payload.label.name.split("integration: ")[1];
+      const docLink = `https://www.home-assistant.io/integrations/${domain}`;
+      const codeLink = `https://github.com/home-assistant/core/tree/dev/homeassistant/components/${domain}`;
 
-    if (!payload.label?.name.startsWith("integration: ")) return;
-
-    const domain = payload.label.name.split("integration: ")[1];
-    const docLink = `https://www.home-assistant.io/integrations/${domain}`;
-    const codeLink = `https://github.com/home-assistant/core/tree/dev/homeassistant/components/${domain}`;
-
-    return {
-      comment: `[${domain} documentation](${docLink})\n[${domain} source](${codeLink})`,
-    };
+      return [
+        {
+          type: "comment",
+          body: `[${domain} documentation](${docLink})\n[${domain} source](${codeLink})`,
+        },
+      ];
+    },
   },
 };
