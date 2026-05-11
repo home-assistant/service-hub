@@ -53,7 +53,10 @@ app.post("/github/webhook", async (c) => {
   const action = (raw.action as string) ?? "";
   const eventType = `${event}.${action}` as EventType;
 
-  if (action === "new_permissions_accepted") {
+  // Skip events without repository scope (installation, marketplace, etc.).
+  // The `installation` event with action=new_permissions_accepted is the
+  // canonical example; rules in this codebase all require a repository.
+  if (!raw.repository || typeof raw.repository !== "object") {
     return c.text("OK", 200);
   }
 
