@@ -2,6 +2,7 @@ import type { PullRequestOpenedEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
+import { fetchWithTimeout } from "../utils/fetch.js";
 import { extractForumLinks } from "../utils/text-parser.js";
 
 const WTH_CATEGORY_IDS = [56, 61];
@@ -16,14 +17,14 @@ export const prLabelWth: Rule = {
 
     for (const link of extractForumLinks(payload.pull_request.body)) {
       try {
-        const res = await fetch(`${link}.json`);
+        const res = await fetchWithTimeout(`${link}.json`);
         if (!res.ok) continue;
         const data = (await res.json()) as { category_id?: number };
         if (data.category_id && WTH_CATEGORY_IDS.includes(data.category_id)) {
           return { labels: ["WTH"] };
         }
-      } catch {
-        // Bad link
+      } catch (err) {
+        console.warn(`prLabelWth: fetch ${link}.json failed:`, err);
       }
     }
   },

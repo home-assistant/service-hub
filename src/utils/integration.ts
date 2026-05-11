@@ -1,3 +1,5 @@
+import { fetchWithTimeout } from "./fetch.js";
+
 export enum QualityScale {
   NO_SCORE = "no score",
   SILVER = "silver",
@@ -22,12 +24,12 @@ export async function fetchIntegrationManifest(
   domain: string,
 ): Promise<IntegrationManifest | undefined> {
   try {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `https://raw.githubusercontent.com/home-assistant/core/dev/homeassistant/components/${domain}/manifest.json`,
     );
     if (!res.ok) return;
     return (await res.json()) as IntegrationManifest;
-  } catch {
-    // File doesn't exist or network error
+  } catch (err) {
+    console.warn(`fetchIntegrationManifest(${domain}) failed:`, err);
   }
 }

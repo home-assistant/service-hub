@@ -2,6 +2,7 @@ import type { PullRequestOpenedEvent } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Rule, RuleResult } from "../rules/types.js";
+import { fetchWithTimeout } from "../utils/fetch.js";
 import { ParsedPath } from "../utils/parse-path.js";
 import { extractTasks } from "../utils/text-parser.js";
 
@@ -124,7 +125,7 @@ function metadataOnly(parsed: ParsedPath[]): string[] {
 
 async function getTopLabels(parsed: ParsedPath[]): Promise<string[]> {
   try {
-    const res = await fetch(ANALYTICS_URL);
+    const res = await fetchWithTimeout(ANALYTICS_URL);
     if (!res.ok) return [];
     const data = (await res.json()) as { integrations?: Record<string, number> };
     if (!data.integrations) return [];
@@ -143,7 +144,8 @@ async function getTopLabels(parsed: ParsedPath[]): Promise<string[]> {
     }
 
     return TOP_COUNTS.filter((count) => bestRank < count).map((count) => `Top ${count}`);
-  } catch {
+  } catch (err) {
+    console.warn("getTopLabels: analytics fetch failed:", err);
     return [];
   }
 }
