@@ -9,6 +9,7 @@ import { GithubWebhookController } from './github-webhook.controller';
 import { BlockingLabels } from './handlers/blocking_labels';
 import { BranchLabels } from './handlers/branch_labels';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
+import { CommunityApproved } from './handlers/community_approved';
 import { DependencyBump } from './handlers/dependency_bump';
 import { DocsMissing } from './handlers/docs_missing';
 import { DocsParenting } from './handlers/docs_parenting';
@@ -37,6 +38,7 @@ import { ValidateCla } from './handlers/validate-cla';
     BlockingLabels,
     BranchLabels,
     CodeOwnersMention,
+    CommunityApproved,
     DependencyBump,
     DocsMissing,
     DocsParenting,
