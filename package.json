@@ -10,9 +10,7 @@
     "format": "biome check --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest",
-    "db:migrate:local": "wrangler d1 migrations apply ha-github-bot-db --local",
-    "db:migrate:remote": "wrangler d1 migrations apply ha-github-bot-db --remote"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@octokit/auth-app": "^8.2.0",

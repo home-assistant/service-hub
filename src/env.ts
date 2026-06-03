@@ -8,9 +8,6 @@ export interface Env {
   // Bot
   BOT_LOGIN: string; // e.g. "ha-bot[bot]"
 
-  // Cloudflare D1
-  DB: D1Database;
-
   // Sentry
   SENTRY_DSN: string;
 

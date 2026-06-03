@@ -13,7 +13,6 @@ import type {
   PullRequestSynchronizeEvent,
   PullRequestUnlabeledEvent,
 } from "@octokit/webhooks-types";
-import type { Database } from "../db/types.js";
 import type {
   EventType,
   GetIssueParams,
@@ -43,7 +42,6 @@ interface WebhookContextParams<P extends WebhookEventPayload> {
   github: Octokit;
   payload: P;
   eventType: EventType;
-  db: Database;
   dryRun?: boolean;
 }
 
@@ -53,7 +51,6 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
   readonly repository: Repository;
   readonly organization: Organization;
   readonly payload: P;
-  readonly db: Database;
   readonly dryRun: boolean;
 
   prFilesCache?: ListPullRequestFiles;
@@ -64,7 +61,6 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
     this.github = params.github;
     this.eventType = params.eventType;
     this.payload = params.payload;
-    this.db = params.db;
     this.dryRun = params.dryRun ?? false;
     this.repository = params.payload.repository.full_name as Repository;
     this.organization = params.payload.repository.owner.login as Organization;

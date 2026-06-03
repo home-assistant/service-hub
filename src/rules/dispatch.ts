@@ -112,9 +112,6 @@ async function applyEffects(context: WebhookContext, effects: Effect[]): Promise
           ),
         );
         break;
-      case "dbExecute":
-        ops.push(context.db.execute(effect.sql, ...effect.params));
-        break;
     }
   }
 

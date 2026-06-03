@@ -1,10 +1,9 @@
 import type { RegistryConfig } from "../rules/dispatch.js";
 import { mentionCodeOwners } from "../rules-issue/issue-mention-code-owners.js";
-import { branchLabel } from "./docs-pr-branch-label.js";
-import { docsPrTargetBranch } from "./docs-pr-target-branch.js";
-import { linkedParentLabel } from "./linked-parent-label.js";
+// import { branchLabel } from "./docs-pr-branch-label.js";
+// import { docsPrTargetBranch } from "./docs-pr-target-branch.js";
+// import { linkedParentLabel } from "./linked-parent-label.js";
 import { prAutoLabel } from "./pr-auto-label.js";
-import { claSigned } from "./pr-cla-signed.js";
 import { cleanupLabelsOnClose } from "./pr-cleanup-labels-on-close.js";
 import { docsParentingCodeSide } from "./pr-docs-parenting.js";
 import { prDraftOnChangesRequested } from "./pr-draft-on-changes-requested.js";
@@ -12,7 +11,7 @@ import { prHacktoberfest } from "./pr-hacktoberfest.js";
 import { prHasDocsPr } from "./pr-has-docs-pr.js";
 import { requiredLabels } from "./pr-has-type-label.js";
 import { prLabelDependencyBump } from "./pr-label-dependency-bump.js";
-import { prLabelIntentsLanguage } from "./pr-label-intents-language.js";
+// import { prLabelIntentsLanguage } from "./pr-label-intents-language.js";
 import { prLabelQualityScale } from "./pr-label-quality-scale.js";
 import { prLabelWth } from "./pr-label-wth.js";
 import { prNewIntegrationValidation } from "./pr-new-integration-validation.js";
@@ -22,12 +21,15 @@ import { prPlatinumCodeOwnerApproval } from "./pr-platinum-code-owner-approval.j
 
 export const prConfig: RegistryConfig = {
   organizations: {
-    "home-assistant": [prDraftOnChangesRequested, prHacktoberfest, prLabelWth],
-    esphome: [prDraftOnChangesRequested],
+    // "home-assistant": [prDraftOnChangesRequested, prHacktoberfest, prLabelWth],
+    // esphome: [prDraftOnChangesRequested],
   },
   repositories: {
     "home-assistant/core": [
-      claSigned,
+      prDraftOnChangesRequested,
+      prHacktoberfest,
+      prLabelWth,
+
       prAutoLabel,
       requiredLabels({
         labels: [
@@ -55,53 +57,51 @@ export const prConfig: RegistryConfig = {
         pathPattern: (name) => `homeassistant/components/${name}/*`,
       }),
     ],
-    "home-assistant/supervisor": [
-      claSigned,
-      requiredLabels({
-        labels: [
-          "breaking-change",
-          "new-feature",
-          "bugfix",
-          "style",
-          "refactor",
-          "performance",
-          "test",
-          "build",
-          "ci",
-          "chore",
-          "revert",
-          "dependencies",
-        ],
-      }),
-    ],
-    "home-assistant/frontend": [
-      claSigned,
-      blockingLabels({
-        "wait for backend": { message: "This PR is awaiting changes to the backend" },
-      }),
-      docsParentingCodeSide,
-    ],
-    "home-assistant/home-assistant.io": [
-      cleanupLabelsOnClose({
-        labels: [
-          "needs-rebase",
-          "in-progress",
-          "awaits-parent",
-          "ready-for-review",
-          "parent-merged",
-        ],
-      }),
-      branchLabel({ validLabels: ["current", "rc", "next"] }),
-      docsPrTargetBranch,
-      linkedParentLabel({
-        isParent: (link) => link.owner === "home-assistant" && link.repo !== "home-assistant.io",
-      }),
-      mentionCodeOwners({
-        pathPattern: (name) => `source/_integrations/${name}.markdown`,
-        itemLabel: "feedback",
-      }),
-    ],
-    "home-assistant/intents": [claSigned, prLabelIntentsLanguage],
-    "esphome/esphome": [prNoMergeConflict],
+    // "home-assistant/supervisor": [
+    //   requiredLabels({
+    //     labels: [
+    //       "breaking-change",
+    //       "new-feature",
+    //       "bugfix",
+    //       "style",
+    //       "refactor",
+    //       "performance",
+    //       "test",
+    //       "build",
+    //       "ci",
+    //       "chore",
+    //       "revert",
+    //       "dependencies",
+    //     ],
+    //   }),
+    // ],
+    // "home-assistant/frontend": [
+    //   blockingLabels({
+    //     "wait for backend": { message: "This PR is awaiting changes to the backend" },
+    //   }),
+    //   docsParentingCodeSide,
+    // ],
+    // "home-assistant/home-assistant.io": [
+    //   cleanupLabelsOnClose({
+    //     labels: [
+    //       "needs-rebase",
+    //       "in-progress",
+    //       "awaits-parent",
+    //       "ready-for-review",
+    //       "parent-merged",
+    //     ],
+    //   }),
+    //   branchLabel({ validLabels: ["current", "rc", "next"] }),
+    //   docsPrTargetBranch,
+    //   linkedParentLabel({
+    //     isParent: (link) => link.owner === "home-assistant" && link.repo !== "home-assistant.io",
+    //   }),
+    //   mentionCodeOwners({
+    //     pathPattern: (name) => `source/_integrations/${name}.markdown`,
+    //     itemLabel: "feedback",
+    //   }),
+    // ],
+    // "home-assistant/intents": [prLabelIntentsLanguage],
+    // "esphome/esphome": [prNoMergeConflict],
   },
 };

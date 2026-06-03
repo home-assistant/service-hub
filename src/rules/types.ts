@@ -78,8 +78,7 @@ export type Effect =
       type: "requestReviewers";
       reviewers: string[];
     }
-  | { type: "dismissReview"; review_id: number; message: string }
-  | { type: "dbExecute"; sql: string; params: unknown[] };
+  | { type: "dismissReview"; review_id: number; message: string };
 
 export type EventHandler<E extends keyof EventPayloadMap> = (
   context: WebhookContext<EventPayloadMap[E]>,

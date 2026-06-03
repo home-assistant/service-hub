@@ -30,11 +30,8 @@ vi.mock("../src/github/app.js", () => ({
   createOctokit: vi.fn().mockReturnValue({}),
 }));
 
-vi.mock("../src/db/index.js", () => ({
-  createDatabase: vi.fn().mockReturnValue({}),
-}));
-
 vi.mock("../src/utils/evaluate.js", () => ({
+  evaluatePR: vi.fn().mockResolvedValue([]),
   evaluateRecentPRs: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -70,7 +67,6 @@ const env = {
   SENTRY_DSN: "",
   ENVIRONMENT: "test",
   BOT_LOGIN: "ha-bot[bot]",
-  DB: {},
 } as Record<string, unknown>;
 
 const ctx = { waitUntil: vi.fn() } as unknown as ExecutionContext;

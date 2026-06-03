@@ -3,7 +3,7 @@ import { EventType } from "../../src/github/types.js";
 import type { RegistryConfig } from "../../src/rules/dispatch.js";
 import { dispatch, matchRules } from "../../src/rules/dispatch.js";
 import type { Rule } from "../../src/rules/types.js";
-import { createMockContext, createMockDb, createMockGitHub } from "../helpers/mock-context.js";
+import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
 
 const testRule: Rule = {
   name: "test-rule",
@@ -410,9 +410,8 @@ describe("dispatch", () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it("in dry-run, returns effects but does not call GitHub or DB", async () => {
+  it("in dry-run, returns effects but does not call GitHub", async () => {
     const github = createMockGitHub();
-    const db = createMockDb();
     const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
     const rule: Rule = {
@@ -428,7 +427,6 @@ describe("dispatch", () => {
             state: "success",
             description: "ok",
           },
-          { type: "dbExecute", sql: "INSERT INTO x VALUES (?)", params: ["v"] },
         ],
       },
     };
@@ -440,16 +438,14 @@ describe("dispatch", () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
-      db,
       dryRun: true,
     });
 
     const effects = await dispatch(config, context);
 
-    expect(effects).toHaveLength(3);
+    expect(effects).toHaveLength(2);
     expect(github.issues.addLabels).not.toHaveBeenCalled();
     expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
-    expect(db.execute).not.toHaveBeenCalled();
     expect(consoleLogSpy).toHaveBeenCalled();
 
     consoleLogSpy.mockRestore();

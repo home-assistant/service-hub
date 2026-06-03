@@ -4,7 +4,6 @@ import { vi } from "vitest";
 import type { WebhookEventPayload } from "../../src/context/webhook-context.js";
 import { WebhookContext } from "../../src/context/webhook-context.js";
 import type { DashboardSection } from "../../src/dashboard/types.js";
-import type { Database } from "../../src/db/types.js";
 import { EventType } from "../../src/github/types.js";
 import type { Effect, EventPayloadMap, Rule } from "../../src/rules/types.js";
 
@@ -47,12 +46,6 @@ export interface MockGitHub {
   };
   paginate: Mock;
   graphql: Mock;
-}
-
-export interface MockDatabase {
-  query: Mock;
-  execute: Mock;
-  queryOne: Mock;
 }
 
 export function createMockPayload(overrides: Record<string, unknown> = {}) {
@@ -144,22 +137,9 @@ export function createMockGitHub(): MockGitHub {
   };
 }
 
-export function createMockDb(): MockDatabase {
-  return {
-    query: vi.fn().mockResolvedValue([]),
-    execute: vi.fn().mockResolvedValue({ changes: 0 }),
-    queryOne: vi.fn().mockResolvedValue(null),
-  };
-}
-
 /** Cast MockGitHub to Octokit for use in WebhookContext */
 function asOctokit(mock: MockGitHub): Octokit {
   return mock as unknown as Octokit;
-}
-
-/** Cast MockDatabase to Database for use in WebhookContext */
-function asDatabase(mock: MockDatabase): Database {
-  return mock as unknown as Database;
 }
 
 export function createMockContext(
@@ -167,12 +147,10 @@ export function createMockContext(
     eventType?: EventType;
     payload?: Record<string, unknown>;
     github?: MockGitHub;
-    db?: MockDatabase;
     dryRun?: boolean;
   } = {},
 ): WebhookContext {
   const github = overrides.github ?? createMockGitHub();
-  const db = overrides.db ?? createMockDb();
   const eventType = overrides.eventType ?? EventType.PULL_REQUEST_OPENED;
   const payload = createMockPayload(overrides.payload);
 
@@ -180,21 +158,14 @@ export function createMockContext(
     github: asOctokit(github),
     payload: payload as unknown as WebhookEventPayload,
     eventType,
-    db: asDatabase(db),
     dryRun: overrides.dryRun,
   });
 }
 
 export function createMockIssueContext(
-  overrides: {
-    eventType?: EventType;
-    payload?: Record<string, unknown>;
-    github?: MockGitHub;
-    db?: MockDatabase;
-  } = {},
+  overrides: { eventType?: EventType; payload?: Record<string, unknown>; github?: MockGitHub } = {},
 ): WebhookContext {
   const github = overrides.github ?? createMockGitHub();
-  const db = overrides.db ?? createMockDb();
   const eventType = overrides.eventType ?? EventType.ISSUES_OPENED;
   const payload = createMockIssuePayload(overrides.payload);
 
@@ -202,7 +173,6 @@ export function createMockIssueContext(
     github: asOctokit(github),
     payload: payload as unknown as WebhookEventPayload,
     eventType,
-    db: asDatabase(db),
   });
 }
 

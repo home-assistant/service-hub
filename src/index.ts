@@ -5,7 +5,6 @@ import { Hono } from "hono";
 import { dispatchCommand, isBotCommand } from "./commands/dispatch.js";
 import { commandConfig } from "./commands/registry.js";
 import { WebhookContext, type WebhookEventPayload } from "./context/webhook-context.js";
-import { createDatabase } from "./db/index.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import type { EventType } from "./github/types.js";
@@ -68,7 +67,6 @@ app.post("/github/webhook", async (c) => {
   const payload = raw as unknown as WebhookEventPayload;
 
   const octokit = createOctokit(githubConfig(c.env));
-  const db = createDatabase(c.env.DB);
 
   // Handle bot commands on PR comments
   if (event === "issue_comment" && action === "created") {
@@ -77,7 +75,6 @@ app.post("/github/webhook", async (c) => {
     if (commentPayload.issue.pull_request && isBotCommand(commentBody)) {
       await dispatchCommand(commandConfig, {
         github: octokit,
-        db,
         owner: commentPayload.repository.owner.login,
         repo: commentPayload.repository.name,
         issueNumber: commentPayload.issue.number,
@@ -93,7 +90,6 @@ app.post("/github/webhook", async (c) => {
     github: octokit,
     payload,
     eventType,
-    db,
     dryRun: isDryRun(c.env),
   });
 
@@ -121,7 +117,6 @@ app.get("/replay", async (c) => {
   if (!owner || !repo) return c.text("invalid repo", 400);
 
   const octokit = createOctokit(githubConfig(c.env));
-  const db = createDatabase(c.env.DB);
 
   const { data: prs } = await octokit.pulls.list({
     owner,
@@ -138,7 +133,6 @@ app.get("/replay", async (c) => {
       const effects = await evaluatePR(
         prConfig,
         octokit,
-        db,
         { owner, repo, pull_number: pr.number },
         { dryRun: true },
       );
@@ -159,14 +153,13 @@ app.get("/replay", async (c) => {
 
 async function handleScheduled(env: Env): Promise<void> {
   const octokit = createOctokit(githubConfig(env));
-  const db = createDatabase(env.DB);
   const since = new Date(Date.now() - CRON_LOOKBACK_MINUTES * 60 * 1000);
   const dryRun = isDryRun(env);
 
   const repos = Object.keys(prConfig.repositories);
 
   await Promise.allSettled(
-    repos.map((repo) => evaluateRecentPRs(prConfig, octokit, db, repo, since, { dryRun })),
+    repos.map((repo) => evaluateRecentPRs(prConfig, octokit, repo, since, { dryRun })),
   );
 }
 

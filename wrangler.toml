@@ -2,12 +2,6 @@ name = "ha-github-bot"
 main = "src/index.ts"
 compatibility_date = "2025-05-06"
 
-[[d1_databases]]
-binding = "DB"
-database_name = "ha-github-bot-db"
-database_id = "REPLACE_ME"
-migrations_dir = "src/db/migrations"
-
 [triggers]
 crons = ["*/5 * * * *"]
 

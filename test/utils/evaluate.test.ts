@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RegistryConfig } from "../../src/rules/dispatch.js";
 import { evaluatePR, evaluateRecentPRs } from "../../src/utils/evaluate.js";
-import { createMockDb, createMockGitHub } from "../helpers/mock-context.js";
+import { createMockGitHub } from "../helpers/mock-context.js";
 
 vi.mock("../../src/rules/dispatch.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/rules/dispatch.js")>();
@@ -21,7 +21,6 @@ const config: RegistryConfig = {
 describe("evaluatePR", () => {
   it("fetches PR and dispatches rules", async () => {
     const github = createMockGitHub();
-    const db = createMockDb();
 
     github.pulls.get.mockResolvedValue({
       data: {
@@ -32,7 +31,7 @@ describe("evaluatePR", () => {
       },
     });
 
-    await evaluatePR(config, github as never, db as never, {
+    await evaluatePR(config, github as never, {
       owner: "home-assistant",
       repo: "core",
       pull_number: 42,
@@ -46,7 +45,6 @@ describe("evaluatePR", () => {
 describe("evaluateRecentPRs", () => {
   it("evaluates recently updated PRs", async () => {
     const github = createMockGitHub();
-    const db = createMockDb();
     const now = new Date();
 
     github.pulls.list.mockResolvedValue({
@@ -80,7 +78,7 @@ describe("evaluateRecentPRs", () => {
     );
 
     const since = new Date(now.getTime() - 10 * 60 * 1000); // 10 min ago
-    await evaluateRecentPRs(config, github as never, db as never, "home-assistant/core", since);
+    await evaluateRecentPRs(config, github as never, "home-assistant/core", since);
 
     // Only PR #1 was updated within the last 10 minutes
     expect(github.pulls.get).toHaveBeenCalledTimes(1);
@@ -89,7 +87,6 @@ describe("evaluateRecentPRs", () => {
 
   it("continues when a single PR evaluation fails", async () => {
     const github = createMockGitHub();
-    const db = createMockDb();
     const now = new Date();
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -116,7 +113,7 @@ describe("evaluateRecentPRs", () => {
     });
 
     const since = new Date(now.getTime() - 10 * 60 * 1000);
-    await evaluateRecentPRs(config, github as never, db as never, "home-assistant/core", since);
+    await evaluateRecentPRs(config, github as never, "home-assistant/core", since);
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("#1"), expect.any(Error));
     // PR #2 should still have been evaluated

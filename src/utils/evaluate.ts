@@ -1,7 +1,6 @@
 import type { Octokit } from "@octokit/rest";
 import type { PullRequestSynchronizeEvent } from "@octokit/webhooks-types";
 import { WebhookContext } from "../context/webhook-context.js";
-import type { Database } from "../db/types.js";
 import type { GetPullRequestParams } from "../github/types.js";
 import { EventType } from "../github/types.js";
 import type { RegistryConfig } from "../rules/dispatch.js";
@@ -31,7 +30,6 @@ export interface EvaluateOptions {
 export async function evaluatePR(
   registryConfig: RegistryConfig,
   github: Octokit,
-  db: Database,
   params: GetPullRequestParams,
   options: EvaluateOptions = {},
 ): Promise<Effect[]> {
@@ -42,7 +40,6 @@ export async function evaluatePR(
     github,
     payload,
     eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
-    db,
     dryRun: options.dryRun,
   });
 
@@ -52,7 +49,6 @@ export async function evaluatePR(
 export async function evaluateRecentPRs(
   registryConfig: RegistryConfig,
   github: Octokit,
-  db: Database,
   repoFullName: string,
   since: Date,
   options: EvaluateOptions = {},
@@ -71,13 +67,7 @@ export async function evaluateRecentPRs(
 
   for (const pr of recentPRs) {
     try {
-      await evaluatePR(
-        registryConfig,
-        github,
-        db,
-        { owner, repo, pull_number: pr.number },
-        options,
-      );
+      await evaluatePR(registryConfig, github, { owner, repo, pull_number: pr.number }, options);
     } catch (err) {
       console.error(`Failed to evaluate PR ${repoFullName}#${pr.number}:`, err);
     }
