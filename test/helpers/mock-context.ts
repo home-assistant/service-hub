@@ -168,6 +168,7 @@ export function createMockContext(
     payload?: Record<string, unknown>;
     github?: MockGitHub;
     db?: MockDatabase;
+    dryRun?: boolean;
   } = {},
 ): WebhookContext {
   const github = overrides.github ?? createMockGitHub();
@@ -180,6 +181,7 @@ export function createMockContext(
     payload: payload as unknown as WebhookEventPayload,
     eventType,
     db: asDatabase(db),
+    dryRun: overrides.dryRun,
   });
 }
 

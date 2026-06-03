@@ -23,12 +23,26 @@ export function matchRules(registryConfig: RegistryConfig, context: WebhookConte
 }
 
 async function applyEffects(context: WebhookContext, effects: Effect[]): Promise<void> {
+  if (context.dryRun) {
+    console.log(
+      JSON.stringify({
+        dryRun: true,
+        repository: context.repository,
+        eventType: context.eventType,
+        number: tryNumber(context),
+        effects,
+      }),
+    );
+    return;
+  }
+
   const labels = new Set<string>();
   const removeLabels = new Set<string>();
   const dashboardSections = new Map<string, DashboardSection>();
   const comments: string[] = [];
   const reviewBodies: string[] = [];
   const assignees = new Set<string>();
+  const statusChecks = new Map<string, Extract<Effect, { type: "statusCheck" }>>();
   const ops: Promise<unknown>[] = [];
 
   for (const effect of effects) {
@@ -52,16 +66,7 @@ async function applyEffects(context: WebhookContext, effects: Effect[]): Promise
         dashboardSections.set(effect.section.id, effect.section);
         break;
       case "statusCheck":
-        ops.push(
-          context.github.repos.createCommitStatus(
-            context.repo({
-              sha: effect.sha,
-              context: effect.context,
-              state: effect.state,
-              description: effect.description,
-            }),
-          ),
-        );
+        statusChecks.set(`${effect.sha}\0${effect.context}`, effect);
         break;
       case "crossRepoAddLabels":
         ops.push(
@@ -113,6 +118,19 @@ async function applyEffects(context: WebhookContext, effects: Effect[]): Promise
     }
   }
 
+  for (const effect of statusChecks.values()) {
+    ops.push(
+      context.github.repos.createCommitStatus(
+        context.repo({
+          sha: effect.sha,
+          context: effect.context,
+          state: effect.state,
+          description: effect.description,
+        }),
+      ),
+    );
+  }
+
   if (labels.size > 0) {
     ops.push(context.github.issues.addLabels(context.issue({ labels: [...labels] })));
   }
@@ -152,10 +170,18 @@ async function applyEffects(context: WebhookContext, effects: Effect[]): Promise
   }
 }
 
+function tryNumber(context: WebhookContext): number | undefined {
+  try {
+    return context.number;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function dispatch(
   registryConfig: RegistryConfig,
   context: WebhookContext,
-): Promise<void> {
+): Promise<Effect[]> {
   const matched = matchRules(registryConfig, context);
 
   const settled = await Promise.allSettled(
@@ -179,4 +205,5 @@ export async function dispatch(
   }
 
   await applyEffects(context, effects);
+  return effects;
 }

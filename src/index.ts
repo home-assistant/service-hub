@@ -2,7 +2,8 @@ import { verify } from "@octokit/webhooks-methods";
 import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
 import { withSentry } from "@sentry/cloudflare";
 import { Hono } from "hono";
-import { commandConfig, dispatchCommand } from "./commands/registry.js";
+import { dispatchCommand, isBotCommand } from "./commands/dispatch.js";
+import { commandConfig } from "./commands/registry.js";
 import { WebhookContext, type WebhookEventPayload } from "./context/webhook-context.js";
 import { createDatabase } from "./db/index.js";
 import type { Env } from "./env.js";
@@ -11,9 +12,13 @@ import type { EventType } from "./github/types.js";
 import { dispatch } from "./rules/dispatch.js";
 import { issueConfig } from "./rules-issue/registry.js";
 import { prConfig } from "./rules-pr/registry.js";
-import { evaluateRecentPRs } from "./utils/evaluate.js";
+import { evaluatePR, evaluateRecentPRs } from "./utils/evaluate.js";
 
 const CRON_LOOKBACK_MINUTES = 10;
+
+function isDryRun(env: Env): boolean {
+  return env.DRY_RUN === "1";
+}
 
 function githubConfig(env: Env): GitHubAppConfig {
   return {
@@ -68,22 +73,29 @@ app.post("/github/webhook", async (c) => {
   // Handle bot commands on PR comments
   if (event === "issue_comment" && action === "created") {
     const commentPayload = payload as IssueCommentCreatedEvent;
-    if (commentPayload.issue.pull_request) {
-      const handled = await dispatchCommand(commandConfig, {
+    const commentBody = commentPayload.comment.body ?? "";
+    if (commentPayload.issue.pull_request && isBotCommand(commentBody)) {
+      await dispatchCommand(commandConfig, {
         github: octokit,
         db,
         owner: commentPayload.repository.owner.login,
         repo: commentPayload.repository.name,
         issueNumber: commentPayload.issue.number,
         commentId: commentPayload.comment.id,
-        commentBody: commentPayload.comment.body ?? "",
+        commentBody,
         senderLogin: commentPayload.sender.login,
       });
-      if (handled) return c.text("OK", 200);
+      return c.text("OK", 200);
     }
   }
 
-  const context = new WebhookContext({ github: octokit, payload, eventType, db });
+  const context = new WebhookContext({
+    github: octokit,
+    payload,
+    eventType,
+    db,
+    dryRun: isDryRun(c.env),
+  });
 
   if (isPullRequestEvent(event)) {
     await dispatch(prConfig, context);
@@ -94,15 +106,67 @@ app.post("/github/webhook", async (c) => {
   return c.text("OK", 200);
 });
 
+app.get("/replay", async (c) => {
+  // Replay rules against recent PRs without mutating anything. Requires
+  // DRY_RUN=1 so it cannot be invoked in production by accident.
+  if (!isDryRun(c.env)) {
+    return c.text("DRY_RUN=1 required", 403);
+  }
+
+  const repoFullName = c.req.query("repo") ?? "home-assistant/core";
+  const count = Math.min(Number(c.req.query("count") ?? "20"), 100);
+  const state = (c.req.query("state") ?? "all") as "open" | "closed" | "all";
+
+  const [owner, repo] = repoFullName.split("/");
+  if (!owner || !repo) return c.text("invalid repo", 400);
+
+  const octokit = createOctokit(githubConfig(c.env));
+  const db = createDatabase(c.env.DB);
+
+  const { data: prs } = await octokit.pulls.list({
+    owner,
+    repo,
+    state,
+    sort: "updated",
+    direction: "desc",
+    per_page: count,
+  });
+
+  const results: Array<Record<string, unknown>> = [];
+  for (const pr of prs) {
+    try {
+      const effects = await evaluatePR(
+        prConfig,
+        octokit,
+        db,
+        { owner, repo, pull_number: pr.number },
+        { dryRun: true },
+      );
+      results.push({
+        pr: pr.number,
+        title: pr.title,
+        state: pr.state,
+        url: pr.html_url,
+        effects,
+      });
+    } catch (err) {
+      results.push({ pr: pr.number, title: pr.title, error: String(err) });
+    }
+  }
+
+  return c.json({ repo: repoFullName, count: results.length, results });
+});
+
 async function handleScheduled(env: Env): Promise<void> {
   const octokit = createOctokit(githubConfig(env));
   const db = createDatabase(env.DB);
   const since = new Date(Date.now() - CRON_LOOKBACK_MINUTES * 60 * 1000);
+  const dryRun = isDryRun(env);
 
   const repos = Object.keys(prConfig.repositories);
 
   await Promise.allSettled(
-    repos.map((repo) => evaluateRecentPRs(prConfig, octokit, db, repo, since)),
+    repos.map((repo) => evaluateRecentPRs(prConfig, octokit, db, repo, since, { dryRun })),
   );
 }
 

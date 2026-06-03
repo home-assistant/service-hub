@@ -3,7 +3,7 @@ import { EventType } from "../../src/github/types.js";
 import type { RegistryConfig } from "../../src/rules/dispatch.js";
 import { dispatch, matchRules } from "../../src/rules/dispatch.js";
 import type { Rule } from "../../src/rules/types.js";
-import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
+import { createMockContext, createMockDb, createMockGitHub } from "../helpers/mock-context.js";
 
 const testRule: Rule = {
   name: "test-rule",
@@ -231,6 +231,68 @@ describe("dispatch", () => {
     );
   });
 
+  it("dedupes status checks by (sha, context) — last effect wins", async () => {
+    const github = createMockGitHub();
+    const rule1: Rule = {
+      name: "rule1",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          {
+            type: "statusCheck",
+            sha: "abc123",
+            context: "ci/test",
+            state: "pending",
+            description: "from rule1",
+          },
+        ],
+      },
+    };
+    const rule2: Rule = {
+      name: "rule2",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          {
+            type: "statusCheck",
+            sha: "abc123",
+            context: "ci/test",
+            state: "success",
+            description: "from rule2",
+          },
+          {
+            type: "statusCheck",
+            sha: "abc123",
+            context: "ci/other",
+            state: "success",
+            description: "different context",
+          },
+        ],
+      },
+    };
+
+    const config: RegistryConfig = {
+      organizations: {},
+      repositories: { "home-assistant/core": [rule1, rule2] },
+    };
+    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+
+    await dispatch(config, context);
+
+    expect(github.repos.createCommitStatus).toHaveBeenCalledTimes(2);
+    expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sha: "abc123",
+        context: "ci/test",
+        state: "success",
+        description: "from rule2",
+      }),
+    );
+    expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+      expect.objectContaining({ sha: "abc123", context: "ci/other" }),
+    );
+  });
+
   it("creates comments from rule effects", async () => {
     const github = createMockGitHub();
     const commentRule: Rule = {
@@ -346,6 +408,51 @@ describe("dispatch", () => {
     );
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it("in dry-run, returns effects but does not call GitHub or DB", async () => {
+    const github = createMockGitHub();
+    const db = createMockDb();
+    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const rule: Rule = {
+      name: "rule",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "addLabels", labels: ["bugfix"] },
+          {
+            type: "statusCheck",
+            sha: "abc",
+            context: "ci/test",
+            state: "success",
+            description: "ok",
+          },
+          { type: "dbExecute", sql: "INSERT INTO x VALUES (?)", params: ["v"] },
+        ],
+      },
+    };
+
+    const config: RegistryConfig = {
+      organizations: {},
+      repositories: { "home-assistant/core": [rule] },
+    };
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+      db,
+      dryRun: true,
+    });
+
+    const effects = await dispatch(config, context);
+
+    expect(effects).toHaveLength(3);
+    expect(github.issues.addLabels).not.toHaveBeenCalled();
+    expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
+    expect(db.execute).not.toHaveBeenCalled();
+    expect(consoleLogSpy).toHaveBeenCalled();
+
+    consoleLogSpy.mockRestore();
   });
 
   it("does nothing when no rules match", async () => {

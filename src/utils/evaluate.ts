@@ -6,6 +6,7 @@ import type { GetPullRequestParams } from "../github/types.js";
 import { EventType } from "../github/types.js";
 import type { RegistryConfig } from "../rules/dispatch.js";
 import { dispatch } from "../rules/dispatch.js";
+import type { Effect } from "../rules/types.js";
 
 function prToPayload(
   pr: Awaited<ReturnType<Octokit["pulls"]["get"]>>["data"],
@@ -23,12 +24,17 @@ function prToPayload(
   } as unknown as PullRequestSynchronizeEvent;
 }
 
+export interface EvaluateOptions {
+  dryRun?: boolean;
+}
+
 export async function evaluatePR(
   registryConfig: RegistryConfig,
   github: Octokit,
   db: Database,
   params: GetPullRequestParams,
-): Promise<void> {
+  options: EvaluateOptions = {},
+): Promise<Effect[]> {
   const { data: pr } = await github.pulls.get(params);
 
   const payload = prToPayload(pr);
@@ -37,9 +43,10 @@ export async function evaluatePR(
     payload,
     eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
     db,
+    dryRun: options.dryRun,
   });
 
-  await dispatch(registryConfig, context);
+  return dispatch(registryConfig, context);
 }
 
 export async function evaluateRecentPRs(
@@ -48,6 +55,7 @@ export async function evaluateRecentPRs(
   db: Database,
   repoFullName: string,
   since: Date,
+  options: EvaluateOptions = {},
 ): Promise<void> {
   const [owner, repo] = repoFullName.split("/");
   const prs = await github.pulls.list({
@@ -63,11 +71,13 @@ export async function evaluateRecentPRs(
 
   for (const pr of recentPRs) {
     try {
-      await evaluatePR(registryConfig, github, db, {
-        owner,
-        repo,
-        pull_number: pr.number,
-      });
+      await evaluatePR(
+        registryConfig,
+        github,
+        db,
+        { owner, repo, pull_number: pr.number },
+        options,
+      );
     } catch (err) {
       console.error(`Failed to evaluate PR ${repoFullName}#${pr.number}:`, err);
     }

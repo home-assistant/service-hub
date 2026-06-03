@@ -44,6 +44,7 @@ interface WebhookContextParams<P extends WebhookEventPayload> {
   payload: P;
   eventType: EventType;
   db: Database;
+  dryRun?: boolean;
 }
 
 export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload> {
@@ -53,6 +54,7 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
   readonly organization: Organization;
   readonly payload: P;
   readonly db: Database;
+  readonly dryRun: boolean;
 
   prFilesCache?: ListPullRequestFiles;
   private _issueCache = new Map<string, GetIssueResponse>();
@@ -63,6 +65,7 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
     this.eventType = params.eventType;
     this.payload = params.payload;
     this.db = params.db;
+    this.dryRun = params.dryRun ?? false;
     this.repository = params.payload.repository.full_name as Repository;
     this.organization = params.payload.repository.owner.login as Organization;
   }

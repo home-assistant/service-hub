@@ -16,4 +16,8 @@ export interface Env {
 
   // Environment
   ENVIRONMENT: string;
+
+  // When "1", applyEffects logs effects instead of executing them.
+  // Reads (GitHub/DB) still happen so rules produce realistic effects.
+  DRY_RUN?: string;
 }
