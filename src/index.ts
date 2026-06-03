@@ -1,13 +1,16 @@
+import type { Octokit } from "@octokit/rest";
 import { verify } from "@octokit/webhooks-methods";
 import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
 import { withSentry } from "@sentry/cloudflare";
 import { Hono } from "hono";
 import { dispatchCommand, isBotCommand } from "./commands/dispatch.js";
+import type { CommandRegistryConfig } from "./commands/registry.js";
 import { commandConfig } from "./commands/registry.js";
 import { WebhookContext, type WebhookEventPayload } from "./context/webhook-context.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import type { EventType } from "./github/types.js";
+import type { RegistryConfig } from "./rules/dispatch.js";
 import { dispatch } from "./rules/dispatch.js";
 import { issueConfig } from "./rules-issue/registry.js";
 import { prConfig } from "./rules-pr/registry.js";
@@ -35,133 +38,156 @@ function isIssueEvent(event: string): boolean {
   return event === "issues";
 }
 
-const app = new Hono<{ Bindings: Env }>();
+export interface BotDeps {
+  prConfig: RegistryConfig;
+  issueConfig: RegistryConfig;
+  commandConfig: CommandRegistryConfig;
+  createOctokit: (env: Env) => Octokit;
+}
 
-app.get("/health", (c) => c.text("OK"));
+export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
+  const app = new Hono<{ Bindings: Env }>();
 
-app.post("/github/webhook", async (c) => {
-  const body = await c.req.text();
-  const signature = c.req.header("x-hub-signature-256") ?? "";
+  app.get("/health", (c) => c.text("OK"));
 
-  if (!(await verify(c.env.GITHUB_WEBHOOK_SECRET, body, signature))) {
-    return c.text("Invalid signature", 401);
-  }
+  app.post("/github/webhook", async (c) => {
+    const body = await c.req.text();
+    const signature = c.req.header("x-hub-signature-256") ?? "";
 
-  let raw: Record<string, unknown>;
-  try {
-    raw = JSON.parse(body);
-  } catch {
-    return c.text("Invalid JSON", 400);
-  }
-  const event = c.req.header("x-github-event") ?? "";
-  const action = (raw.action as string) ?? "";
-  const eventType = `${event}.${action}` as EventType;
+    if (!(await verify(c.env.GITHUB_WEBHOOK_SECRET, body, signature))) {
+      return c.text("Invalid signature", 401);
+    }
 
-  // Skip events without repository scope (installation, marketplace, etc.).
-  // The `installation` event with action=new_permissions_accepted is the
-  // canonical example; rules in this codebase all require a repository.
-  if (!raw.repository || typeof raw.repository !== "object") {
-    return c.text("OK", 200);
-  }
+    let raw: Record<string, unknown>;
+    try {
+      raw = JSON.parse(body);
+    } catch {
+      return c.text("Invalid JSON", 400);
+    }
+    const event = c.req.header("x-github-event") ?? "";
+    const action = (raw.action as string) ?? "";
+    const eventType = `${event}.${action}` as EventType;
 
-  const payload = raw as unknown as WebhookEventPayload;
-
-  const octokit = createOctokit(githubConfig(c.env));
-
-  // Handle bot commands on PR comments
-  if (event === "issue_comment" && action === "created") {
-    const commentPayload = payload as IssueCommentCreatedEvent;
-    const commentBody = commentPayload.comment.body ?? "";
-    if (commentPayload.issue.pull_request && isBotCommand(commentBody)) {
-      await dispatchCommand(commandConfig, {
-        github: octokit,
-        owner: commentPayload.repository.owner.login,
-        repo: commentPayload.repository.name,
-        issueNumber: commentPayload.issue.number,
-        commentId: commentPayload.comment.id,
-        commentBody,
-        senderLogin: commentPayload.sender.login,
-      });
+    // Skip events without repository scope (installation, marketplace, etc.).
+    // The `installation` event with action=new_permissions_accepted is the
+    // canonical example; rules in this codebase all require a repository.
+    if (!raw.repository || typeof raw.repository !== "object") {
       return c.text("OK", 200);
     }
-  }
 
-  const context = new WebhookContext({
-    github: octokit,
-    payload,
-    eventType,
-    dryRun: isDryRun(c.env),
-  });
+    const payload = raw as unknown as WebhookEventPayload;
 
-  if (isPullRequestEvent(event)) {
-    await dispatch(prConfig, context);
-  } else if (isIssueEvent(event)) {
-    await dispatch(issueConfig, context);
-  }
+    const octokit = deps.createOctokit(c.env);
 
-  return c.text("OK", 200);
-});
-
-app.get("/replay", async (c) => {
-  // Replay rules against recent PRs without mutating anything. Requires
-  // DRY_RUN=1 so it cannot be invoked in production by accident.
-  if (!isDryRun(c.env)) {
-    return c.text("DRY_RUN=1 required", 403);
-  }
-
-  const repoFullName = c.req.query("repo") ?? "home-assistant/core";
-  const count = Math.min(Number(c.req.query("count") ?? "20"), 100);
-  const state = (c.req.query("state") ?? "all") as "open" | "closed" | "all";
-
-  const [owner, repo] = repoFullName.split("/");
-  if (!owner || !repo) return c.text("invalid repo", 400);
-
-  const octokit = createOctokit(githubConfig(c.env));
-
-  const { data: prs } = await octokit.pulls.list({
-    owner,
-    repo,
-    state,
-    sort: "updated",
-    direction: "desc",
-    per_page: count,
-  });
-
-  const results: Array<Record<string, unknown>> = [];
-  for (const pr of prs) {
-    try {
-      const effects = await evaluatePR(
-        prConfig,
-        octokit,
-        { owner, repo, pull_number: pr.number },
-        { dryRun: true },
-      );
-      results.push({
-        pr: pr.number,
-        title: pr.title,
-        state: pr.state,
-        url: pr.html_url,
-        effects,
-      });
-    } catch (err) {
-      results.push({ pr: pr.number, title: pr.title, error: String(err) });
+    // Handle bot commands on PR comments
+    if (event === "issue_comment" && action === "created") {
+      const commentPayload = payload as IssueCommentCreatedEvent;
+      const commentBody = commentPayload.comment.body ?? "";
+      if (commentPayload.issue.pull_request && isBotCommand(commentBody)) {
+        await dispatchCommand(deps.commandConfig, {
+          github: octokit,
+          owner: commentPayload.repository.owner.login,
+          repo: commentPayload.repository.name,
+          issueNumber: commentPayload.issue.number,
+          commentId: commentPayload.comment.id,
+          commentBody,
+          senderLogin: commentPayload.sender.login,
+        });
+        return c.text("OK", 200);
+      }
     }
-  }
 
-  return c.json({ repo: repoFullName, count: results.length, results });
-});
+    const context = new WebhookContext({
+      github: octokit,
+      payload,
+      eventType,
+      dryRun: isDryRun(c.env),
+    });
 
-async function handleScheduled(env: Env): Promise<void> {
-  const octokit = createOctokit(githubConfig(env));
-  const since = new Date(Date.now() - CRON_LOOKBACK_MINUTES * 60 * 1000);
-  const dryRun = isDryRun(env);
+    if (isPullRequestEvent(event)) {
+      await dispatch(deps.prConfig, context);
+    } else if (isIssueEvent(event)) {
+      await dispatch(deps.issueConfig, context);
+    }
 
-  const repos = Object.keys(prConfig.repositories);
+    return c.text("OK", 200);
+  });
 
-  await Promise.allSettled(
-    repos.map((repo) => evaluateRecentPRs(prConfig, octokit, repo, since, { dryRun })),
-  );
+  app.get("/replay", async (c) => {
+    // Replay rules against recent PRs without mutating anything. Requires
+    // DRY_RUN=1 so it cannot be invoked in production by accident.
+    if (!isDryRun(c.env)) {
+      return c.text("DRY_RUN=1 required", 403);
+    }
+
+    const repoFullName = c.req.query("repo") ?? "home-assistant/core";
+    const count = Math.min(Number(c.req.query("count") ?? "20"), 100);
+    const state = (c.req.query("state") ?? "all") as "open" | "closed" | "all";
+
+    const [owner, repo] = repoFullName.split("/");
+    if (!owner || !repo) return c.text("invalid repo", 400);
+
+    const octokit = deps.createOctokit(c.env);
+
+    const { data: prs } = await octokit.pulls.list({
+      owner,
+      repo,
+      state,
+      sort: "updated",
+      direction: "desc",
+      per_page: count,
+    });
+
+    const results: Array<Record<string, unknown>> = [];
+    for (const pr of prs) {
+      try {
+        const effects = await evaluatePR(
+          deps.prConfig,
+          octokit,
+          { owner, repo, pull_number: pr.number },
+          { dryRun: true },
+        );
+        results.push({
+          pr: pr.number,
+          title: pr.title,
+          state: pr.state,
+          url: pr.html_url,
+          effects,
+        });
+      } catch (err) {
+        results.push({ pr: pr.number, title: pr.title, error: String(err) });
+      }
+    }
+
+    return c.json({ repo: repoFullName, count: results.length, results });
+  });
+
+  return app;
 }
+
+export function createScheduledHandler(deps: BotDeps): (env: Env) => Promise<void> {
+  return async (env) => {
+    const octokit = deps.createOctokit(env);
+    const since = new Date(Date.now() - CRON_LOOKBACK_MINUTES * 60 * 1000);
+    const dryRun = isDryRun(env);
+
+    const repos = Object.keys(deps.prConfig.repositories);
+
+    await Promise.allSettled(
+      repos.map((repo) => evaluateRecentPRs(deps.prConfig, octokit, repo, since, { dryRun })),
+    );
+  };
+}
+
+const defaultDeps: BotDeps = {
+  prConfig,
+  issueConfig,
+  commandConfig,
+  createOctokit: (env) => createOctokit(githubConfig(env)),
+};
+
+const app = createBotApp(defaultDeps);
+const handleScheduled = createScheduledHandler(defaultDeps);
 
 export default withSentry<Env>(
   (env) => ({
