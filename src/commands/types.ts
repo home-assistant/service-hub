@@ -14,6 +14,5 @@ export interface CommandContext {
 
 export interface Command {
   name: string;
-  pattern: RegExp;
   handle(context: CommandContext): Promise<void>;
 }
