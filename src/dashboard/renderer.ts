@@ -18,8 +18,7 @@ function escapeTableCell(s: string): string {
 
 function renderRow(s: DashboardSection): string {
   const icon = STATUS_ICONS[s.status];
-  const titleText = escapeTableCell(s.title);
-  const title = s.url ? `[${titleText}](${s.url})` : titleText;
+  const title = escapeTableCell(s.title);
   return `| ${icon} | ${title} | ${escapeTableCell(s.message)} |`;
 }
 

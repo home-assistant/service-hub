@@ -95,20 +95,6 @@ describe("dashboard renderer", () => {
       expect(result).toContain(":heavy_minus_sign:");
     });
 
-    it("renders title as link when url is provided", () => {
-      const result = renderDashboard([
-        {
-          id: "docs",
-          title: "Documentation",
-          status: "info",
-          message: "Link provided",
-          url: "https://example.com",
-        },
-      ]);
-
-      expect(result).toContain("[Documentation](https://example.com)");
-    });
-
     it("embeds section data as HTML comments", () => {
       const result = renderDashboard(sections);
 

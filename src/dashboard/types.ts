@@ -5,5 +5,4 @@ export interface DashboardSection {
   title: string;
   status: SectionStatus;
   message: string;
-  url?: string;
 }
