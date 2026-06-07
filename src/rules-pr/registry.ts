@@ -1,7 +1,6 @@
 import type { RegistryConfig } from "../rules/dispatch.js";
 import type { Rule } from "../rules/types.js";
 import { mentionCodeOwners } from "../rules-issue/issue-mention-code-owners.js";
-import { cleanupLabelsOnClose } from "./pr-cleanup-labels-on-close.js";
 import { prCorePrTypeLabel } from "./pr-core-pr-type-label.js";
 import { docsParentingCodeSide } from "./pr-docs-parenting.js";
 import { prDraftOnChangesRequested } from "./pr-draft-on-changes-requested.js";
@@ -25,7 +24,6 @@ const coreRules: Rule[] = [
     "awaiting-frontend": { message: "This PR is awaiting changes to the frontend" },
   }),
   prHasDocsPr,
-  cleanupLabelsOnClose({ labels: ["Ready for review"] }),
   prLabelDependencyBump,
   docsParentingCodeSide,
   prNewIntegrationValidation,
