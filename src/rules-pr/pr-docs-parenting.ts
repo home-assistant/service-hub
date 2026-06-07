@@ -6,7 +6,7 @@ import type {
 } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType, HomeAssistantRepository } from "../github/types.js";
-import type { Effect, Rule } from "../rules/types.js";
+import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 import { extractAllLinks } from "../utils/text-parser.js";
 
 function findDocsLinks(body: string | null) {
@@ -85,6 +85,40 @@ async function handleClosedOrReopened(
   ];
 }
 
+/**
+ * On-demand re-runs the labeling logic against the PR's current state.
+ * Re-tagging docs PRs with `has-parent` is idempotent.
+ * To not interfere with manual user intervention, we do not open/close
+ * the docs PR here.
+ */
+async function handleOnDemand(
+  ctx: WebhookContext<EventPayloadMap[EventType.ON_DEMAND]>,
+): Promise<Effect[] | undefined> {
+  const links = findDocsLinks(ctx.payload.pull_request.body);
+  if (links.length === 0 || links.length > 2) return;
+
+  const effects: Effect[] = links.map<Effect>((link) => ({
+    type: "addLabelsCrossRepo",
+    owner: link.owner,
+    repo: link.repo,
+    issue_number: link.number,
+    labels: ["has-parent"],
+  }));
+
+  // For a merged code PR with a single docs link, surface `parent-merged`.
+  if (links.length === 1 && ctx.payload.pull_request.merged_at) {
+    effects.push({
+      type: "addLabelsCrossRepo",
+      owner: links[0].owner,
+      repo: links[0].repo,
+      issue_number: links[0].number,
+      labels: ["parent-merged"],
+    });
+  }
+
+  return effects;
+}
+
 export const docsParentingCodeSide: Rule = {
   name: "docs-parenting-code-side",
   description: "Labels linked docs PRs with 'has-parent' and syncs parent status on close/reopen",
@@ -93,5 +127,6 @@ export const docsParentingCodeSide: Rule = {
     [EventType.PULL_REQUEST_EDITED]: async (ctx) => handleOpenedOrEdited(ctx),
     [EventType.PULL_REQUEST_CLOSED]: async (ctx) => handleClosedOrReopened(ctx),
     [EventType.PULL_REQUEST_REOPENED]: async (ctx) => handleClosedOrReopened(ctx),
+    [EventType.ON_DEMAND]: handleOnDemand,
   },
 };
