@@ -9,6 +9,7 @@ const STATUS_ICONS: Record<SectionStatus, string> = {
   fail: ":x:",
   pending: ":hourglass:",
   info: ":information_source:",
+  skip: ":heavy_minus_sign:",
 };
 
 function escapeTableCell(s: string): string {
@@ -27,6 +28,7 @@ const TABLE_HEADER = ["| Status | Check | Details |", "|--------|-------|-------
 export function renderDashboard(sections: DashboardSection[]): string {
   const failing = sections.filter((s) => s.status === "fail" || s.status === "pending");
   const passing = sections.filter((s) => s.status === "pass" || s.status === "info");
+  const skipped = sections.filter((s) => s.status === "skip");
 
   const sectionData = sections.map(
     (s) => `${SECTION_PREFIX}${s.id}:${JSON.stringify(s)}${SECTION_SUFFIX}`,
@@ -45,6 +47,19 @@ export function renderDashboard(sections: DashboardSection[]): string {
       "",
       ...TABLE_HEADER,
       ...passing.map(renderRow),
+      "",
+      "</details>",
+      "",
+    );
+  }
+
+  if (skipped.length > 0) {
+    lines.push(
+      "<details>",
+      `<summary>${skipped.length} check${skipped.length === 1 ? "" : "s"} skipped</summary>`,
+      "",
+      ...TABLE_HEADER,
+      ...skipped.map(renderRow),
       "",
       "</details>",
       "",

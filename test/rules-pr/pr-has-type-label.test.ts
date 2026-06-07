@@ -30,10 +30,6 @@ describe("required-labels handler", () => {
     const result = await runRule(rule, context);
 
     expect(result).toMatchObject({
-      statusCheck: {
-        context: "required-labels",
-        state: "failure",
-      },
       dashboard: {
         id: "required-labels",
         status: "fail",
@@ -55,10 +51,6 @@ describe("required-labels handler", () => {
     const result = await runRule(rule, context);
 
     expect(result).toMatchObject({
-      statusCheck: {
-        context: "required-labels",
-        state: "success",
-      },
       dashboard: {
         id: "required-labels",
         status: "pass",

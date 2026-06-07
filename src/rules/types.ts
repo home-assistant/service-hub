@@ -92,5 +92,13 @@ export interface Rule {
   name: string;
   description: string;
   allowBots?: boolean;
+  /**
+   * Dashboard section IDs this rule may emit. The dispatcher takes the union
+   * across all rules registered for the repo/org and uses it to sweep stale
+   * sections out of the dashboard comment — any section in the existing
+   * comment whose ID isn't claimed by some live rule gets removed on the
+   * next dashboard write.
+   */
+  dashboardSections?: readonly string[];
   events: EventHandlers;
 }

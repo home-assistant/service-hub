@@ -1,4 +1,4 @@
-export type SectionStatus = "pass" | "fail" | "pending" | "info";
+export type SectionStatus = "pass" | "fail" | "pending" | "info" | "skip";
 
 export interface DashboardSection {
   id: string;

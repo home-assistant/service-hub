@@ -14,15 +14,6 @@ export function requiredLabels(config: { labels: string[] }): Rule {
 
     return [
       {
-        type: "statusCheck",
-        sha: context.payload.pull_request.head.sha,
-        context: "required-labels",
-        state: hasRequiredLabel ? "success" : "failure",
-        description: hasRequiredLabel
-          ? `Has at least one of the required labels (${config.labels.join(", ")})`
-          : `Missing one of: ${config.labels.join(", ")}`,
-      },
-      {
         type: "dashboardSection",
         section: {
           id: "required-labels",
@@ -39,6 +30,7 @@ export function requiredLabels(config: { labels: string[] }): Rule {
   return {
     name: "required-labels",
     description: `Requires one of: ${config.labels.join(", ")}`,
+    dashboardSections: ["required-labels"],
     events: {
       [EventType.PULL_REQUEST_LABELED]: async (ctx) => evaluate(ctx),
       [EventType.PULL_REQUEST_UNLABELED]: async (ctx) => evaluate(ctx),

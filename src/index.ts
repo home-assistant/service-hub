@@ -77,6 +77,19 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
 
     const payload = raw as unknown as WebhookEventPayload;
 
+    console.log(
+      JSON.stringify({
+        webhook: eventType,
+        repo: payload.repository.full_name,
+        sender: payload.sender?.login,
+        number:
+          ("pull_request" in payload && payload.pull_request?.number) ||
+          ("issue" in payload && payload.issue?.number) ||
+          undefined,
+        delivery: c.req.header("x-github-delivery"),
+      }),
+    );
+
     const octokit = deps.createOctokit(c.env);
 
     // Handle bot commands on PR comments

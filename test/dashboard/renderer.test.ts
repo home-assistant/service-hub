@@ -82,6 +82,19 @@ describe("dashboard renderer", () => {
       expect(result).toContain("<summary>1 check passed</summary>");
     });
 
+    it("renders skipped checks in their own details block with a minus icon", () => {
+      const mixed: DashboardSection[] = [
+        { id: "a", title: "A", status: "pass", message: "ok" },
+        { id: "b", title: "B", status: "skip", message: "not applicable" },
+        { id: "c", title: "C", status: "skip", message: "label not set" },
+      ];
+      const result = renderDashboard(mixed);
+
+      expect(result).toContain("<summary>1 check passed</summary>");
+      expect(result).toContain("<summary>2 checks skipped</summary>");
+      expect(result).toContain(":heavy_minus_sign:");
+    });
+
     it("renders title as link when url is provided", () => {
       const result = renderDashboard([
         {

@@ -1,15 +1,18 @@
 import type { RegistryConfig } from "../rules/dispatch.js";
+import type { Rule } from "../rules/types.js";
 import { mentionCodeOwners } from "../rules-issue/issue-mention-code-owners.js";
 // import { branchLabel } from "./docs-pr-branch-label.js";
 // import { docsPrTargetBranch } from "./docs-pr-target-branch.js";
 // import { linkedParentLabel } from "./linked-parent-label.js";
-import { prAutoLabel } from "./pr-auto-label.js";
 import { cleanupLabelsOnClose } from "./pr-cleanup-labels-on-close.js";
+import { prCorePrTypeLabel } from "./pr-core-pr-type-label.js";
 import { docsParentingCodeSide } from "./pr-docs-parenting.js";
 import { prDraftOnChangesRequested } from "./pr-draft-on-changes-requested.js";
 import { prHacktoberfest } from "./pr-hacktoberfest.js";
 import { prHasDocsPr } from "./pr-has-docs-pr.js";
-import { requiredLabels } from "./pr-has-type-label.js";
+// `requiredLabels` factory is still used by the commented-out supervisor entry below;
+// re-enable the import when you uncomment that block.
+// import { requiredLabels } from "./pr-has-type-label.js";
 import { prLabelDependencyBump } from "./pr-label-dependency-bump.js";
 // import { prLabelIntentsLanguage } from "./pr-label-intents-language.js";
 import { prLabelQualityScale } from "./pr-label-quality-scale.js";
@@ -19,44 +22,37 @@ import { blockingLabels } from "./pr-no-blocking-labels.js";
 import { prNoMergeConflict } from "./pr-no-merge-conflict.js";
 import { prPlatinumCodeOwnerApproval } from "./pr-platinum-code-owner-approval.js";
 
+const coreRules: Rule[] = [
+  prDraftOnChangesRequested,
+  prHacktoberfest,
+  prLabelWth,
+
+  prCorePrTypeLabel,
+  blockingLabels({
+    "awaiting-frontend": { message: "This PR is awaiting changes to the frontend" },
+  }),
+  prHasDocsPr,
+  cleanupLabelsOnClose({ labels: ["Ready for review"] }),
+  prLabelDependencyBump,
+  docsParentingCodeSide,
+  prNewIntegrationValidation,
+  prLabelQualityScale,
+  prPlatinumCodeOwnerApproval,
+  prNoMergeConflict,
+  mentionCodeOwners({
+    pathPattern: (name) => `homeassistant/components/${name}/*`,
+  }),
+];
+
 export const prConfig: RegistryConfig = {
   organizations: {
     // "home-assistant": [prDraftOnChangesRequested, prHacktoberfest, prLabelWth],
     // esphome: [prDraftOnChangesRequested],
   },
   repositories: {
-    "home-assistant/core": [
-      prDraftOnChangesRequested,
-      prHacktoberfest,
-      prLabelWth,
-
-      prAutoLabel,
-      requiredLabels({
-        labels: [
-          "breaking-change",
-          "bugfix",
-          "code-quality",
-          "dependency",
-          "deprecation",
-          "new-feature",
-          "new-integration",
-        ],
-      }),
-      blockingLabels({
-        "awaiting-frontend": { message: "This PR is awaiting changes to the frontend" },
-      }),
-      prHasDocsPr,
-      cleanupLabelsOnClose({ labels: ["Ready for review"] }),
-      prLabelDependencyBump,
-      docsParentingCodeSide,
-      prNewIntegrationValidation,
-      prLabelQualityScale,
-      prPlatinumCodeOwnerApproval,
-      prNoMergeConflict,
-      mentionCodeOwners({
-        pathPattern: (name) => `homeassistant/components/${name}/*`,
-      }),
-    ],
+    "home-assistant/core": coreRules,
+    // Test fork — drives the live bot until we have permission on real core.
+    "justanotherariel/hass_core": coreRules,
     // "home-assistant/supervisor": [
     //   requiredLabels({
     //     labels: [

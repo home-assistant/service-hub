@@ -14,7 +14,7 @@ describe("pr-platinum-code-owner-approval", () => {
     globalThis.fetch = originalFetch;
   });
 
-  it("succeeds when PR has no platinum label", async () => {
+  it("skips when PR has no platinum label", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
@@ -26,7 +26,7 @@ describe("pr-platinum-code-owner-approval", () => {
     });
 
     const result = await runRule(prPlatinumCodeOwnerApproval, context);
-    expect(result?.statusCheck?.state).toBe("success");
+    expect(result?.dashboard?.status).toBe("skip");
   });
 
   it("fails when platinum integration has no code owner approval", async () => {
@@ -60,8 +60,8 @@ describe("pr-platinum-code-owner-approval", () => {
     });
 
     const result = await runRule(prPlatinumCodeOwnerApproval, context);
-    expect(result?.statusCheck?.state).toBe("failure");
-    expect(result?.statusCheck?.description).toContain("Code owner approval required");
+    expect(result?.dashboard?.status).toBe("fail");
+    expect(result?.dashboard?.message).toContain("needs approval from a code owner");
   });
 
   it("succeeds when code owner has approved", async () => {
@@ -98,7 +98,7 @@ describe("pr-platinum-code-owner-approval", () => {
     });
 
     const result = await runRule(prPlatinumCodeOwnerApproval, context);
-    expect(result?.statusCheck?.state).toBe("success");
+    expect(result?.dashboard?.status).toBe("pass");
     expect(result?.labels).toContain("code-owner-approved");
   });
 
@@ -118,10 +118,10 @@ describe("pr-platinum-code-owner-approval", () => {
     });
 
     const result = await runRule(prPlatinumCodeOwnerApproval, context);
-    expect(result?.statusCheck?.state).toBe("success");
+    expect(result?.dashboard?.status).toBe("pass");
   });
 
-  it("succeeds when multiple integration labels (not single integration)", async () => {
+  it("skips when multiple integration labels (not single integration)", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
@@ -137,10 +137,10 @@ describe("pr-platinum-code-owner-approval", () => {
     });
 
     const result = await runRule(prPlatinumCodeOwnerApproval, context);
-    expect(result?.statusCheck?.state).toBe("success");
+    expect(result?.dashboard?.status).toBe("skip");
   });
 
-  it("succeeds when manifest has no codeowners", async () => {
+  it("skips when manifest has no codeowners", async () => {
     const github = createMockGitHub();
     github.pulls.listReviews.mockResolvedValue({ data: [] });
 
@@ -171,7 +171,7 @@ describe("pr-platinum-code-owner-approval", () => {
     });
 
     const result = await runRule(prPlatinumCodeOwnerApproval, context);
-    expect(result?.statusCheck?.state).toBe("success");
+    expect(result?.dashboard?.status).toBe("skip");
   });
 
   it("listens to many PR events", () => {

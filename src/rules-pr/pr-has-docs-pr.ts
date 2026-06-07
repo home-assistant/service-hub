@@ -14,43 +14,57 @@ function evaluate(ctx: WebhookContext<EventPayloadMap[DocsCheckEvent]>): Effect[
   const isReleasePR = payload.pull_request.base.ref === "master";
   const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
 
-  let needsDocumentation = currentLabels.has("docs-missing");
+  const hasNewIntegrationOrPlatform =
+    currentLabels.has("new-integration") || currentLabels.has("new-platform");
+  const hasDocsMissingLabel = currentLabels.has("docs-missing");
+  const docsApplies = hasNewIntegrationOrPlatform || hasDocsMissingLabel;
 
-  if (
-    !needsDocumentation &&
-    (currentLabels.has("new-integration") || currentLabels.has("new-platform"))
-  ) {
+  // Skip when there's no signal that docs are needed.
+  if (!docsApplies && !isReleasePR) {
+    return [
+      {
+        type: "dashboardSection",
+        section: {
+          id: "docs-missing",
+          title: "Documentation",
+          status: "skip",
+          message: "Not a new integration or platform — no documentation PR required.",
+        },
+      },
+    ];
+  }
+
+  // Release PRs auto-approve regardless of docs link.
+  if (isReleasePR) {
+    return [
+      {
+        type: "dashboardSection",
+        section: {
+          id: "docs-missing",
+          title: "Documentation",
+          status: "skip",
+          message: "Auto-approved — release PR.",
+        },
+      },
+    ];
+  }
+
+  let needsDocumentation = hasDocsMissingLabel;
+  if (!needsDocumentation && hasNewIntegrationOrPlatform) {
     const linksToDocs = extractAllLinks(payload.pull_request.body).filter(
       (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
     );
     needsDocumentation = linksToDocs.length === 0;
   }
 
-  const ok = isReleasePR || !needsDocumentation;
-
   return [
-    {
-      type: "statusCheck",
-      sha: payload.pull_request.head.sha,
-      context: "docs-missing",
-      state: ok ? "success" : "failure",
-      description: isReleasePR
-        ? "Documentation check auto-approved for release PR."
-        : needsDocumentation
-          ? "Please open a documentation PR."
-          : "Documentation ok.",
-    },
     {
       type: "dashboardSection",
       section: {
         id: "docs-missing",
         title: "Documentation",
-        status: ok ? "pass" : "fail",
-        message: isReleasePR
-          ? "Auto-approved for release PR"
-          : needsDocumentation
-            ? "Missing documentation PR"
-            : "Documentation PR linked",
+        status: needsDocumentation ? "fail" : "pass",
+        message: needsDocumentation ? "Missing documentation PR" : "Documentation PR linked",
       },
     },
   ];
@@ -59,6 +73,7 @@ function evaluate(ctx: WebhookContext<EventPayloadMap[DocsCheckEvent]>): Effect[
 export const prHasDocsPr: Rule = {
   name: "docs-missing",
   description: "Checks new integrations and platforms have a linked documentation PR",
+  dashboardSections: ["docs-missing"],
   events: {
     [EventType.PULL_REQUEST_EDITED]: async (ctx) => evaluate(ctx),
     [EventType.PULL_REQUEST_LABELED]: async (ctx) => evaluate(ctx),

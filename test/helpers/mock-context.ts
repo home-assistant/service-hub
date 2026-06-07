@@ -33,6 +33,7 @@ export interface MockGitHub {
   repos: {
     createCommitStatus: Mock;
     getContent: Mock;
+    listCommitStatusesForRef: Mock;
   };
   teams: {
     listMembersInOrg: Mock;
@@ -49,6 +50,7 @@ export interface MockGitHub {
 }
 
 export function createMockPayload(overrides: Record<string, unknown> = {}) {
+  const { pull_request: prOverride, ...restOverrides } = overrides;
   return {
     action: "opened",
     number: 1,
@@ -66,13 +68,14 @@ export function createMockPayload(overrides: Record<string, unknown> = {}) {
       labels: [],
       body: "",
       user: { login: "testuser" },
-      ...(overrides.pull_request as Record<string, unknown>),
+      ...(prOverride as Record<string, unknown>),
     },
-    ...overrides,
+    ...restOverrides,
   };
 }
 
 export function createMockIssuePayload(overrides: Record<string, unknown> = {}) {
+  const { issue: issueOverride, ...restOverrides } = overrides;
   return {
     action: "opened",
     number: 1,
@@ -88,9 +91,9 @@ export function createMockIssuePayload(overrides: Record<string, unknown> = {}) 
       user: { login: "testuser" },
       assignees: [] as { login: string }[],
       labels: [] as { name: string }[],
-      ...(overrides.issue as Record<string, unknown>),
+      ...(issueOverride as Record<string, unknown>),
     },
-    ...overrides,
+    ...restOverrides,
   };
 }
 
@@ -121,6 +124,7 @@ export function createMockGitHub(): MockGitHub {
     repos: {
       createCommitStatus: vi.fn().mockResolvedValue({ data: {} }),
       getContent: vi.fn().mockResolvedValue({ data: {} }),
+      listCommitStatusesForRef: vi.fn().mockResolvedValue({ data: [] }),
     },
     teams: {
       listMembersInOrg: vi.fn().mockResolvedValue({ data: [] }),
@@ -210,6 +214,7 @@ export interface RuleSummary {
   statusCheck?: StatusCheckLike;
   statusChecks: StatusCheckLike[];
   dashboard?: DashboardSection;
+  dashboards: DashboardSection[];
 }
 
 export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | undefined {
@@ -221,7 +226,7 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
   const reviewBodies: string[] = [];
   const assignees: string[] = [];
   const statusChecks: StatusCheckLike[] = [];
-  let dashboard: DashboardSection | undefined;
+  const dashboards: DashboardSection[] = [];
 
   for (const e of effects) {
     switch (e.type) {
@@ -249,7 +254,7 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
         });
         break;
       case "dashboardSection":
-        dashboard = e.section;
+        dashboards.push(e.section);
         break;
     }
   }
@@ -264,7 +269,8 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
     assignees: assignees.length ? assignees : undefined,
     statusCheck: statusChecks[0],
     statusChecks,
-    dashboard,
+    dashboard: dashboards[0],
+    dashboards,
   };
 }
 

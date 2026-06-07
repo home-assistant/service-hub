@@ -21,30 +21,42 @@ export async function findDashboardCommentId(
   return null;
 }
 
+export interface UpsertedDashboard {
+  comment: { id: number; url: string };
+  /** All sections currently on the comment (existing merged with new). */
+  sections: DashboardSection[];
+}
+
 export async function upsertDashboardComment(
   github: Octokit,
   params: GetIssueParams,
   newSections: DashboardSection[],
-): Promise<void> {
+  knownSectionIds?: ReadonlySet<string>,
+): Promise<UpsertedDashboard | null> {
   if (newSections.length === 0) {
-    return;
+    return null;
   }
 
   const existing = await findDashboardCommentId(github, params);
 
   if (existing) {
-    const existingSections = parseDashboard(existing.body);
+    let existingSections = parseDashboard(existing.body);
+    // Sweep stale sections — anything no live rule claims gets dropped.
+    if (knownSectionIds) {
+      existingSections = existingSections.filter((s) => knownSectionIds.has(s.id));
+    }
     const merged = mergeSections(existingSections, newSections);
-    await github.issues.updateComment({
+    const { data } = await github.issues.updateComment({
       owner: params.owner,
       repo: params.repo,
       comment_id: existing.id,
       body: renderDashboard(merged),
     });
-  } else {
-    await github.issues.createComment({
-      ...params,
-      body: renderDashboard(newSections),
-    });
+    return { comment: { id: data.id, url: data.html_url }, sections: merged };
   }
+  const { data } = await github.issues.createComment({
+    ...params,
+    body: renderDashboard(newSections),
+  });
+  return { comment: { id: data.id, url: data.html_url }, sections: newSections };
 }

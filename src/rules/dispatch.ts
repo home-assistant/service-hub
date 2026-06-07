@@ -22,7 +22,34 @@ export function matchRules(registryConfig: RegistryConfig, context: WebhookConte
   );
 }
 
-async function applyEffects(context: WebhookContext, effects: Effect[]): Promise<void> {
+/**
+ * Collect every dashboardSection ID claimed by some rule in this repo/org's
+ * registry. Used to sweep stale sections written by older deploys.
+ */
+function collectKnownDashboardSectionIds(
+  registryConfig: RegistryConfig,
+  context: WebhookContext,
+): Set<string> {
+  const ids = new Set<string>();
+  const rules = [
+    ...(registryConfig.repositories[context.repository] ?? []),
+    ...(registryConfig.organizations[context.organization] ?? []),
+  ];
+  for (const rule of rules) {
+    if (rule.dashboardSections) for (const id of rule.dashboardSections) ids.add(id);
+  }
+  return ids;
+}
+
+interface ApplyEffectsConfig {
+  knownSectionIds: ReadonlySet<string>;
+}
+
+async function applyEffects(
+  context: WebhookContext,
+  effects: Effect[],
+  config: ApplyEffectsConfig,
+): Promise<void> {
   if (context.dryRun) {
     console.log(
       JSON.stringify({
@@ -138,9 +165,7 @@ async function applyEffects(context: WebhookContext, effects: Effect[]): Promise
   }
 
   if (dashboardSections.size > 0) {
-    ops.push(
-      upsertDashboardComment(context.github, context.issue(), [...dashboardSections.values()]),
-    );
+    ops.push(syncDashboardAndStatus(context, [...dashboardSections.values()], config));
   }
 
   for (const body of comments) {
@@ -175,6 +200,125 @@ function tryNumber(context: WebhookContext): number | undefined {
   }
 }
 
+const HA_BOT_STATUS_CONTEXT = "ha-bot";
+
+function aggregateDashboardStatus(sections: DashboardSection[]): {
+  state: "success" | "failure" | "pending";
+  description: string;
+} {
+  const fails = sections.filter((s) => s.status === "fail").length;
+  const pending = sections.filter((s) => s.status === "pending").length;
+  const skipped = sections.filter((s) => s.status === "skip").length;
+  if (pending > 0) {
+    return { state: "pending", description: `${pending} check${pending === 1 ? "" : "s"} pending` };
+  }
+  if (fails > 0) {
+    return { state: "failure", description: `${fails} check${fails === 1 ? "" : "s"} failing` };
+  }
+  return {
+    state: "success",
+    description: skipped > 0 ? `All checks passed (${skipped} skipped)` : "All checks passed",
+  };
+}
+
+/**
+ * Upsert the dashboard comment, then write a single aggregate `ha-bot` commit
+ * status whose target_url deep-links to the comment. Sequential — we need the
+ * comment URL before posting the status. Rules emit `dashboardSection` effects;
+ * the status check is synthesized here so individual rules don't have to.
+ *
+ * Also sweeps stale dashboard sections and stale commit statuses written by
+ * older deploys (any IDs/contexts no live rule claims).
+ */
+async function syncDashboardAndStatus(
+  context: WebhookContext,
+  newSections: DashboardSection[],
+  config: ApplyEffectsConfig,
+): Promise<void> {
+  const result = await upsertDashboardComment(
+    context.github,
+    context.issue(),
+    newSections,
+    config.knownSectionIds,
+  );
+  if (!result) return;
+  if (!context.headSha) return;
+
+  const aggregate = aggregateDashboardStatus(result.sections);
+  // Sweep stale status checks (best-effort; failures here shouldn't sink the
+  // primary write below). The bot writes only the `ha-bot` aggregate going
+  // forward — anything else we created on this commit is from an older deploy.
+  const sweep = sweepStaleStatusChecks(context).catch((err) => {
+    console.warn("sweepStaleStatusChecks failed:", err);
+  });
+  await context.github.repos.createCommitStatus(
+    context.repo({
+      sha: context.headSha,
+      context: HA_BOT_STATUS_CONTEXT,
+      state: aggregate.state,
+      description: aggregate.description,
+      target_url: result.comment.url,
+    }),
+  );
+  await sweep;
+}
+
+/**
+ * Find commit statuses on the head SHA that *we* wrote (matched by creator
+ * login = `<botSlug>[bot]`) whose context isn't the dispatcher's aggregate
+ * `ha-bot` context, and neutralize them to `success` + "No longer in use".
+ * GitHub has no "delete status" API; overwriting is the closest equivalent.
+ *
+ * Rules write only `dashboardSection` effects going forward; the single
+ * `ha-bot` status is the bot's sole commit-status output. Any other context
+ * we own on this commit is therefore from an older deploy.
+ */
+async function sweepStaleStatusChecks(context: WebhookContext): Promise<void> {
+  if (!context.headSha) return;
+  const { data: statuses } = await context.github.repos.listCommitStatusesForRef(
+    context.repo({ ref: context.headSha, per_page: 100 }),
+  );
+  // Collapse to the latest status per context (API returns newest first).
+  const latestByContext = new Map<string, (typeof statuses)[number]>();
+  for (const s of statuses) {
+    if (!latestByContext.has(s.context)) latestByContext.set(s.context, s);
+  }
+  // Identify our bot login from a previously-written `ha-bot` status. Avoids
+  // trusting `BOT_SLUG` to match the actual App slug. First dispatch on a SHA
+  // may have no ha-bot status yet — skip the sweep then; the ha-bot write
+  // running in parallel will be visible on the next dispatch.
+  const ourLogin = latestByContext.get(HA_BOT_STATUS_CONTEXT)?.creator?.login?.toLowerCase();
+  if (!ourLogin) return;
+
+  const stale = [...latestByContext.values()].filter(
+    (s) =>
+      s.creator?.login?.toLowerCase() === ourLogin &&
+      s.context !== HA_BOT_STATUS_CONTEXT &&
+      s.state !== "success",
+  );
+  if (stale.length === 0) return;
+  console.log(
+    `[sweep] neutralizing ${stale.length} stale status${stale.length === 1 ? "" : "es"}:`,
+    stale.map((s) => s.context).join(", "),
+  );
+  await Promise.all(
+    stale.map((s) =>
+      context.github.repos
+        .createCommitStatus(
+          context.repo({
+            sha: context.headSha,
+            context: s.context,
+            state: "success" as const,
+            description: "No longer in use",
+          }),
+        )
+        .catch((err) => {
+          console.warn(`[sweep] failed to neutralize ${s.context}:`, err);
+        }),
+    ),
+  );
+}
+
 export async function dispatch(
   registryConfig: RegistryConfig,
   context: WebhookContext,
@@ -201,6 +345,8 @@ export async function dispatch(
     }
   }
 
-  await applyEffects(context, effects);
+  await applyEffects(context, effects, {
+    knownSectionIds: collectKnownDashboardSectionIds(registryConfig, context),
+  });
   return effects;
 }

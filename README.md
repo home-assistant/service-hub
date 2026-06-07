@@ -19,9 +19,10 @@ bun run format       # Auto-fix formatting
 Many `catch {}` blocks silently discard errors. While some are intentional (e.g., 404 on label removal), others may hide real bugs. Audit each catch block and add logging or Sentry reporting for non-benign failures.
 
 ### More HA rules
+- Close PR if they have more than 5 open PRs. New contributors are limited to 1 unless given permissions for another one.
+
 - put into draft if merge conflicts exist
-- Warn user if they have more than 5 open PRs
-- put into draft/warn if there are CI failures. Depends on the job (prek/tests should fail, )
+- put into draft/warn if there are CI job failures. Depends on the job (prek/tests should fail)
 - draft if pr-description template is not followed
 - draft if new-feature but no new tests
 - draft if prior comments are still unresolved/haven't been acknowledged (reaction, comment or 'resolved')

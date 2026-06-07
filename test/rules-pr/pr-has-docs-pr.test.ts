@@ -4,7 +4,7 @@ import { prHasDocsPr } from "../../src/rules-pr/pr-has-docs-pr.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("docs-missing handler", () => {
-  it("passes when no docs-requiring labels are present", async () => {
+  it("skips when no docs-requiring labels are present", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
@@ -18,10 +18,7 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(prHasDocsPr, context);
-    expect(result).toMatchObject({
-      statusCheck: { state: "success" },
-      dashboard: { status: "pass" },
-    });
+    expect(result?.dashboard).toMatchObject({ id: "docs-missing", status: "skip" });
   });
 
   it("fails when new-integration has no docs link", async () => {
@@ -38,10 +35,7 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(prHasDocsPr, context);
-    expect(result).toMatchObject({
-      statusCheck: { state: "failure" },
-      dashboard: { status: "fail" },
-    });
+    expect(result?.dashboard).toMatchObject({ id: "docs-missing", status: "fail" });
   });
 
   it("passes when new-integration has docs link", async () => {
@@ -58,10 +52,7 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(prHasDocsPr, context);
-    expect(result).toMatchObject({
-      statusCheck: { state: "success" },
-      dashboard: { status: "pass" },
-    });
+    expect(result?.dashboard).toMatchObject({ id: "docs-missing", status: "pass" });
   });
 
   it("passes when docs-missing label is absent even for new-platform with URL link", async () => {
@@ -78,12 +69,10 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(prHasDocsPr, context);
-    expect(result).toMatchObject({
-      statusCheck: { state: "success" },
-    });
+    expect(result?.dashboard?.status).toBe("pass");
   });
 
-  it("auto-approves release PRs", async () => {
+  it("auto-approves (skips) release PRs", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
@@ -97,8 +86,22 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(prHasDocsPr, context);
-    expect(result).toMatchObject({
-      statusCheck: { state: "success" },
+    expect(result?.dashboard?.status).toBe("skip");
+  });
+
+  it("does not emit a statusCheck — the dispatcher synthesizes the aggregate one", async () => {
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_LABELED,
+      payload: {
+        pull_request: {
+          labels: [{ name: "bugfix" }],
+          head: { sha: "abc123" },
+          body: "",
+          base: { ref: "dev" },
+        },
+      },
     });
+    const result = await runRule(prHasDocsPr, context);
+    expect(result?.statusChecks).toHaveLength(0);
   });
 });

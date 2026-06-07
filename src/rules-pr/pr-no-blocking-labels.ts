@@ -34,18 +34,27 @@ export function blockingLabels(
       const description = config[label];
       const hasBlockingLabel = currentLabels.has(label);
       return {
-        type: "statusCheck",
-        sha: payload.pull_request.head.sha,
-        context: `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
-        state: hasBlockingLabel ? "failure" : "success",
-        description: hasBlockingLabel ? description.message : (description.success ?? "OK"),
+        type: "dashboardSection",
+        section: {
+          id: `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
+          title: `Blocking: ${label}`,
+          status: hasBlockingLabel ? "fail" : "skip",
+          message: hasBlockingLabel
+            ? description.message
+            : `\`${label}\` label not set — nothing to block.`,
+        },
       };
     });
   }
 
+  const dashboardSections = Object.keys(config).map(
+    (label) => `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
+  );
+
   return {
     name: "blocking-labels",
     description: `Blocks PRs with labels: ${Object.keys(config).join(", ")}`,
+    dashboardSections,
     events: {
       [EventType.PULL_REQUEST_LABELED]: async (ctx) => buildEffects(ctx),
       [EventType.PULL_REQUEST_UNLABELED]: async (ctx) => buildEffects(ctx),

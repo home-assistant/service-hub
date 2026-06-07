@@ -494,4 +494,362 @@ describe("dispatch", () => {
       expect.objectContaining({ labels: expect.arrayContaining(["label-a", "label-b"]) }),
     );
   });
+
+  describe("aggregate ha-bot status check from dashboard sections", () => {
+    function setupHarness(
+      sections: { id: string; status: "pass" | "fail" | "pending" | "skip" }[],
+    ) {
+      const github = createMockGitHub();
+      github.issues.listComments.mockResolvedValue({ data: [] });
+      github.paginate.mockImplementation(async () => []);
+      github.issues.createComment.mockResolvedValue({
+        data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
+      });
+
+      const rule: Rule = {
+        name: "with-dashboard",
+        description: "",
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () =>
+            sections.map((s) => ({
+              type: "dashboardSection" as const,
+              section: { id: s.id, title: s.id, status: s.status, message: s.id },
+            })),
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+      return { github, config, context };
+    }
+
+    it("writes a success ha-bot status when all sections pass", async () => {
+      const { github, config, context } = setupHarness([{ id: "a", status: "pass" }]);
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "ha-bot",
+          state: "success",
+          target_url: expect.stringContaining("#issuecomment-999"),
+        }),
+      );
+    });
+
+    it("writes a failure ha-bot status when any section fails", async () => {
+      const { github, config, context } = setupHarness([
+        { id: "a", status: "pass" },
+        { id: "b", status: "fail" },
+      ]);
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "ha-bot",
+          state: "failure",
+          description: expect.stringContaining("1 check failing"),
+        }),
+      );
+    });
+
+    it("counts skipped sections as success and notes them in the description", async () => {
+      const { github, config, context } = setupHarness([
+        { id: "a", status: "pass" },
+        { id: "b", status: "skip" },
+        { id: "c", status: "skip" },
+      ]);
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "ha-bot",
+          state: "success",
+          description: expect.stringContaining("2 skipped"),
+        }),
+      );
+    });
+
+    it("writes a pending ha-bot status when any section is pending", async () => {
+      const { github, config, context } = setupHarness([
+        { id: "a", status: "fail" },
+        { id: "b", status: "pending" },
+      ]);
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "ha-bot",
+          state: "pending",
+        }),
+      );
+    });
+
+    it("does not write a ha-bot status if no rule emitted a dashboard section", async () => {
+      const github = createMockGitHub();
+      const rule: Rule = {
+        name: "no-dashboard",
+        description: "",
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["x"] }],
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("stale-section sweep", () => {
+    it("drops sections from the existing comment whose IDs no live rule claims", async () => {
+      const github = createMockGitHub();
+      // Existing comment has both a known and a stale section
+      github.paginate.mockImplementation(async () => [
+        {
+          id: 555,
+          body: [
+            "<!-- ha-bot-dashboard -->",
+            "<!-- section:still-live:" +
+              JSON.stringify({
+                id: "still-live",
+                title: "Live",
+                status: "pass",
+                message: "ok",
+              }) +
+              " -->",
+            "<!-- section:gone-rule:" +
+              JSON.stringify({
+                id: "gone-rule",
+                title: "Stale",
+                status: "fail",
+                message: "should be swept",
+              }) +
+              " -->",
+          ].join("\n"),
+        },
+      ]);
+      github.issues.updateComment.mockResolvedValue({
+        data: { id: 555, html_url: "https://github.com/ha/c/pull/1#issuecomment-555" },
+      });
+
+      const rule: Rule = {
+        name: "live-rule",
+        description: "",
+        dashboardSections: ["still-live"],
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () => [
+            {
+              type: "dashboardSection",
+              section: { id: "still-live", title: "Live", status: "pass", message: "ok" },
+            },
+          ],
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+
+      await dispatch(config, context);
+
+      // Comment was rewritten; new body must not contain the stale section.
+      expect(github.issues.updateComment).toHaveBeenCalledTimes(1);
+      const writtenBody = github.issues.updateComment.mock.calls[0][0].body as string;
+      expect(writtenBody).toContain("still-live");
+      expect(writtenBody).not.toContain("gone-rule");
+
+      // ha-bot status reflects only the surviving sections (one pass) → success
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ context: "ha-bot", state: "success" }),
+      );
+    });
+  });
+
+  describe("stale-status sweep", () => {
+    const BOT_LOGIN = "test-bot[bot]";
+
+    function setupStaleStatusHarness(existingStatuses: { context: string; state: string }[]) {
+      const github = createMockGitHub();
+      github.paginate.mockImplementation(async () => []);
+      github.issues.createComment.mockResolvedValue({
+        data: { id: 111, html_url: "https://github.com/ha/c/pull/1#issuecomment-111" },
+      });
+      // listCommitStatusesForRef returns newest-first. We need a prior ha-bot
+      // entry so the sweep can identify "our" creator login. Put it first.
+      const allStatuses = [
+        { context: "ha-bot", state: "success", id: -1, creator: { login: BOT_LOGIN } },
+        ...existingStatuses.map((s, idx) => ({
+          ...s,
+          id: idx,
+          creator: { login: BOT_LOGIN },
+        })),
+      ];
+      github.repos.listCommitStatusesForRef.mockResolvedValue({ data: allStatuses });
+      const rule: Rule = {
+        name: "with-dashboard",
+        description: "",
+        dashboardSections: ["live"],
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () => [
+            {
+              type: "dashboardSection",
+              section: { id: "live", title: "Live", status: "pass", message: "ok" },
+            },
+          ],
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+      return { github, config, context };
+    }
+
+    it("neutralizes stale non-ha-bot statuses we wrote", async () => {
+      const { github, config, context } = setupStaleStatusHarness([
+        { context: "required-labels", state: "failure" },
+        { context: "code-owner-approval", state: "failure" },
+      ]);
+
+      await dispatch(config, context);
+
+      // ha-bot itself gets re-written (success now) but is NOT neutralized.
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "required-labels",
+          state: "success",
+          description: "No longer in use",
+        }),
+      );
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "code-owner-approval",
+          state: "success",
+          description: "No longer in use",
+        }),
+      );
+      // ha-bot got overwritten by the aggregate, not by the sweep.
+      const haBotCalls = github.repos.createCommitStatus.mock.calls.filter(
+        (call) => call[0].context === "ha-bot",
+      );
+      expect(haBotCalls).toHaveLength(1);
+      expect(haBotCalls[0][0].description).not.toBe("No longer in use");
+    });
+
+    it("does not touch statuses created by other users", async () => {
+      const github = createMockGitHub();
+      github.paginate.mockImplementation(async () => []);
+      github.issues.createComment.mockResolvedValue({
+        data: { id: 111, html_url: "https://github.com/ha/c/pull/1#issuecomment-111" },
+      });
+      // Our previous ha-bot status (so the sweep can identify us) plus a
+      // status from another bot. The other bot's status must be left alone.
+      github.repos.listCommitStatusesForRef.mockResolvedValue({
+        data: [
+          {
+            id: 0,
+            context: "ha-bot",
+            state: "success",
+            creator: { login: BOT_LOGIN },
+          },
+          {
+            id: 1,
+            context: "external-ci",
+            state: "failure",
+            creator: { login: "some-other-bot[bot]" },
+          },
+        ],
+      });
+      const rule: Rule = {
+        name: "rule",
+        description: "",
+        dashboardSections: ["live"],
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () => [
+            {
+              type: "dashboardSection",
+              section: { id: "live", title: "Live", status: "pass", message: "ok" },
+            },
+          ],
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+
+      await dispatch(config, context);
+
+      const neutralizing = github.repos.createCommitStatus.mock.calls.filter(
+        (call) => call[0].description === "No longer in use",
+      );
+      expect(neutralizing).toHaveLength(0);
+    });
+
+    it("skips the sweep on first dispatch (no prior ha-bot status to identify us)", async () => {
+      const github = createMockGitHub();
+      github.paginate.mockImplementation(async () => []);
+      github.issues.createComment.mockResolvedValue({
+        data: { id: 111, html_url: "https://github.com/ha/c/pull/1#issuecomment-111" },
+      });
+      // No ha-bot status in history yet — sweep can't know which login is ours.
+      github.repos.listCommitStatusesForRef.mockResolvedValue({
+        data: [
+          {
+            id: 1,
+            context: "some-other-bot-status",
+            state: "failure",
+            creator: { login: "anyone" },
+          },
+        ],
+      });
+      const rule: Rule = {
+        name: "rule",
+        description: "",
+        dashboardSections: ["live"],
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () => [
+            {
+              type: "dashboardSection",
+              section: { id: "live", title: "Live", status: "pass", message: "ok" },
+            },
+          ],
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+
+      await dispatch(config, context);
+
+      // ha-bot still written by the aggregate, but nothing neutralized.
+      const neutralizing = github.repos.createCommitStatus.mock.calls.filter(
+        (call) => call[0].description === "No longer in use",
+      );
+      expect(neutralizing).toHaveLength(0);
+    });
+
+    it("skips statuses already in success state", async () => {
+      const { github, config, context } = setupStaleStatusHarness([
+        { context: "required-labels", state: "success" },
+      ]);
+      await dispatch(config, context);
+
+      const neutralizing = github.repos.createCommitStatus.mock.calls.filter(
+        (call) => call[0].description === "No longer in use",
+      );
+      expect(neutralizing).toHaveLength(0);
+    });
+  });
 });
