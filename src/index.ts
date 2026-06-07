@@ -14,7 +14,7 @@ import type { RegistryConfig } from "./rules/dispatch.js";
 import { dispatch } from "./rules/dispatch.js";
 import { issueConfig } from "./rules-issue/registry.js";
 import { prConfig } from "./rules-pr/registry.js";
-import { evaluatePR, evaluateRecentPRs } from "./utils/evaluate.js";
+import { evaluateRecentPRs } from "./utils/evaluate.js";
 
 const CRON_LOOKBACK_MINUTES = 10;
 
@@ -131,55 +131,6 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
     }
 
     return c.text("OK", 200);
-  });
-
-  app.get("/replay", async (c) => {
-    // Replay rules against recent PRs without mutating anything. Requires
-    // DRY_RUN=1 so it cannot be invoked in production by accident.
-    if (!isDryRun(c.env)) {
-      return c.text("DRY_RUN=1 required", 403);
-    }
-
-    const repoFullName = c.req.query("repo") ?? "home-assistant/core";
-    const count = Math.min(Number(c.req.query("count") ?? "20"), 100);
-    const state = (c.req.query("state") ?? "all") as "open" | "closed" | "all";
-
-    const [owner, repo] = repoFullName.split("/");
-    if (!owner || !repo) return c.text("invalid repo", 400);
-
-    const octokit = deps.createOctokit(c.env);
-
-    const { data: prs } = await octokit.pulls.list({
-      owner,
-      repo,
-      state,
-      sort: "updated",
-      direction: "desc",
-      per_page: count,
-    });
-
-    const results: Array<Record<string, unknown>> = [];
-    for (const pr of prs) {
-      try {
-        const effects = await evaluatePR(
-          deps.prConfig,
-          octokit,
-          { owner, repo, pull_number: pr.number },
-          { dryRun: true, botSlug: c.env.BOT_SLUG },
-        );
-        results.push({
-          pr: pr.number,
-          title: pr.title,
-          state: pr.state,
-          url: pr.html_url,
-          effects,
-        });
-      } catch (err) {
-        results.push({ pr: pr.number, title: pr.title, error: String(err) });
-      }
-    }
-
-    return c.json({ repo: repoFullName, count: results.length, results });
   });
 
   return app;
