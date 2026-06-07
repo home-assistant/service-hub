@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prCorePrTypeLabel as prAutoLabel } from "../../src/rules-pr/pr-core-pr-type-label.js";
+import { PrTypeLabel as prAutoLabel } from "../../src/rules-pr/pr-type-label.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string, overrides: { status?: string; additions?: number } = {}) {

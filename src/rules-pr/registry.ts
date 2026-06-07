@@ -1,7 +1,6 @@
 import type { RegistryConfig } from "../rules/dispatch.js";
 import type { Rule } from "../rules/types.js";
 import { mentionCodeOwners } from "../rules-issue/issue-mention-code-owners.js";
-import { PrTypeLabel } from "./pr-type-label.js";
 import { docsParentingCodeSide } from "./pr-docs-parenting.js";
 import { prDraftOnChangesRequested } from "./pr-draft-on-changes-requested.js";
 import { prHacktoberfest } from "./pr-hacktoberfest.js";
@@ -13,6 +12,7 @@ import { prNewIntegrationValidation } from "./pr-new-integration-validation.js";
 import { blockingLabels } from "./pr-no-blocking-labels.js";
 import { prNoMergeConflict } from "./pr-no-merge-conflict.js";
 import { prPlatinumCodeOwnerApproval } from "./pr-platinum-code-owner-approval.js";
+import { PrTypeLabel } from "./pr-type-label.js";
 
 const coreRules: Rule[] = [
   prDraftOnChangesRequested,
