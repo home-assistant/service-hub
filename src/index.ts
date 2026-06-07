@@ -9,7 +9,7 @@ import { commandConfig } from "./commands/registry.js";
 import { WebhookContext, type WebhookEventPayload } from "./context/webhook-context.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
-import type { EventType } from "./github/types.js";
+import { EventType } from "./github/types.js";
 import type { RegistryConfig } from "./rules/dispatch.js";
 import { dispatch } from "./rules/dispatch.js";
 import { issueConfig } from "./rules-issue/registry.js";
@@ -17,6 +17,7 @@ import { prConfig } from "./rules-pr/registry.js";
 import { evaluateRecentPRs } from "./utils/evaluate.js";
 
 const CRON_LOOKBACK_MINUTES = 10;
+const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
 
 function isDryRun(env: Env): boolean {
   return env.DRY_RUN === "1";
@@ -71,20 +72,19 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
     }
     const event = c.req.header("x-github-event") ?? "";
     const action = (raw.action as string) ?? "";
-    const eventType = `${event}.${action}` as EventType;
+    const rawEventType = `${event}.${action}`;
 
-    // Skip events without repository scope (installation, marketplace, etc.).
-    // The `installation` event with action=new_permissions_accepted is the
-    // canonical example; rules in this codebase all require a repository.
+    // Skip events without repository scope
     if (!raw.repository || typeof raw.repository !== "object") {
       return c.text("OK", 200);
     }
 
     const payload = raw as unknown as WebhookEventPayload;
+    const known = KNOWN_EVENT_TYPES.has(rawEventType);
 
     console.log(
       JSON.stringify({
-        webhook: eventType,
+        webhook: rawEventType,
         repo: payload.repository.full_name,
         sender: payload.sender?.login,
         number:
@@ -92,9 +92,14 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
           ("issue" in payload && payload.issue?.number) ||
           undefined,
         delivery: c.req.header("x-github-delivery"),
+        ...(known ? {} : { ignored: "unknown event type" }),
       }),
     );
 
+    // Skip events we don't have a rule for
+    if (!known) return c.text("OK", 200);
+
+    const eventType = rawEventType as EventType;
     const octokit = deps.createOctokit(c.env);
 
     // Handle bot commands on PR comments

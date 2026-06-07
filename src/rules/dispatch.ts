@@ -282,8 +282,6 @@ export async function dispatch(
     matched.map((rule) => {
       const handler = rule.events[context.eventType as keyof EventPayloadMap];
       if (!handler) return Promise.resolve(undefined);
-      // The handler expects WebhookContext<EventPayloadMap[E]>; we know the
-      // event type matches because we just looked it up in rule.events.
       return (handler as (ctx: WebhookContext) => Promise<Effect[] | undefined>)(context);
     }),
   );

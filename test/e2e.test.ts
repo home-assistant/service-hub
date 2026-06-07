@@ -96,6 +96,31 @@ describe("e2e: webhook delivery", () => {
       expect.objectContaining({ issue_number: 7, labels: ["triage"] }),
     );
   });
+
+  it("returns 200 and runs no rules for an unknown event type", async () => {
+    const labelRule: Rule = {
+      name: "should-not-fire",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["never"] }],
+      },
+    };
+    const harness = createE2EHarness({
+      prConfig: {
+        organizations: {},
+        repositories: { "home-assistant/core": [labelRule] },
+      },
+    });
+
+    // pull_request.assigned isn't in our EventType enum; should bail.
+    const res = await harness.deliver("pull_request", {
+      ...prOpenedPayload(),
+      action: "assigned",
+    });
+
+    expect(res.status).toBe(200);
+    expect(harness.github.issues.addLabels).not.toHaveBeenCalled();
+  });
 });
 
 describe("e2e: bot commands", () => {
