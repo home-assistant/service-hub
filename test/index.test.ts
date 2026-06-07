@@ -66,7 +66,7 @@ const env = {
   GITHUB_WEBHOOK_SECRET: "secret",
   SENTRY_DSN: "",
   ENVIRONMENT: "test",
-  BOT_LOGIN: "ha-bot[bot]",
+  BOT_SLUG: "ha-bot",
 } as Record<string, unknown>;
 
 const ctx = { waitUntil: vi.fn() } as unknown as ExecutionContext;

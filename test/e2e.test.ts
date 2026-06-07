@@ -146,7 +146,7 @@ describe("e2e: webhook delivery", () => {
 });
 
 describe("e2e: bot commands", () => {
-  it("runs a matched @ha-bot command and posts a +1 reaction", async () => {
+  it("runs a matched /ha-bot command and posts a +1 reaction", async () => {
     const handle = vi.fn().mockResolvedValue(undefined);
     const ping: Command = { name: "ping", handle };
 
@@ -157,7 +157,7 @@ describe("e2e: bot commands", () => {
       },
     });
 
-    const res = await harness.deliver("issue_comment", commentPayload("@ha-bot ping"));
+    const res = await harness.deliver("issue_comment", commentPayload("/ha-bot ping"));
 
     expect(res.status).toBe(200);
     expect(handle).toHaveBeenCalledWith(
@@ -176,7 +176,7 @@ describe("e2e: bot commands", () => {
       },
     });
 
-    await harness.deliver("issue_comment", commentPayload("@ha-bot nonsense"));
+    await harness.deliver("issue_comment", commentPayload("/ha-bot nonsense"));
 
     expect(harness.github.reactions.createForIssueComment).toHaveBeenCalledWith(
       expect.objectContaining({ comment_id: 42, content: "-1" }),

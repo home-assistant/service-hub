@@ -18,32 +18,38 @@ const config: CommandRegistryConfig = {
 };
 
 describe("isBotCommand", () => {
-  it("matches comments mentioning @ha-bot", () => {
-    expect(isBotCommand("@ha-bot update")).toBe(true);
-    expect(isBotCommand("@ha-bot bogus")).toBe(true);
+  it("matches comments starting with /<slug>", () => {
+    expect(isBotCommand("/ha-bot update", "ha-bot")).toBe(true);
+    expect(isBotCommand("/ha-bot bogus", "ha-bot")).toBe(true);
   });
 
-  it("does not match comments without a bot mention", () => {
-    expect(isBotCommand("just a regular comment")).toBe(false);
-    expect(isBotCommand("see @ha-bot below")).toBe(false);
+  it("does not match comments without the slash prefix", () => {
+    expect(isBotCommand("just a regular comment", "ha-bot")).toBe(false);
+    expect(isBotCommand("see /ha-bot below", "ha-bot")).toBe(false);
+    expect(isBotCommand("@ha-bot update", "ha-bot")).toBe(false);
+  });
+
+  it("respects a different slug", () => {
+    expect(isBotCommand("/home-assistant-bot-test update", "home-assistant-bot-test")).toBe(true);
+    expect(isBotCommand("/ha-bot update", "home-assistant-bot-test")).toBe(false);
   });
 });
 
 describe("getBotCommand", () => {
-  it("extracts the command name after the bot mention", () => {
-    expect(getBotCommand("@ha-bot update")).toBe("update");
+  it("extracts the command name after the slug", () => {
+    expect(getBotCommand("/ha-bot update", "ha-bot")).toBe("update");
   });
 
   it("lowercases the extracted name", () => {
-    expect(getBotCommand("@ha-bot UPDATE")).toBe("update");
+    expect(getBotCommand("/ha-bot UPDATE", "ha-bot")).toBe("update");
   });
 
   it("returns undefined when the line has trailing arguments", () => {
-    expect(getBotCommand("@ha-bot update now")).toBeUndefined();
+    expect(getBotCommand("/ha-bot update now", "ha-bot")).toBeUndefined();
   });
 
-  it("returns undefined when there is no bot mention", () => {
-    expect(getBotCommand("hello world")).toBeUndefined();
+  it("returns undefined when there is no slash command", () => {
+    expect(getBotCommand("hello world", "ha-bot")).toBeUndefined();
   });
 });
 
@@ -57,11 +63,12 @@ describe("dispatchCommand", () => {
       repo: "core",
       issueNumber: 1,
       commentId: 100,
-      commentBody: "@ha-bot ping",
+      commentBody: "/ha-bot ping",
       senderLogin: "testuser",
+      botSlug: "ha-bot",
     };
 
-    await dispatchCommand(config, context);
+    await dispatchCommand(config, context, "ha-bot");
     expect(pingCommand.handle).toHaveBeenCalledWith(context);
     expect(github.reactions.createForIssueComment).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -80,11 +87,12 @@ describe("dispatchCommand", () => {
       repo: "core",
       issueNumber: 1,
       commentId: 100,
-      commentBody: "@ha-bot bogus",
+      commentBody: "/ha-bot bogus",
       senderLogin: "testuser",
+      botSlug: "ha-bot",
     };
 
-    await dispatchCommand(config, context);
+    await dispatchCommand(config, context, "ha-bot");
     expect(github.reactions.createForIssueComment).toHaveBeenCalledWith(
       expect.objectContaining({
         comment_id: 100,
@@ -102,11 +110,12 @@ describe("dispatchCommand", () => {
       repo: "repo",
       issueNumber: 1,
       commentId: 100,
-      commentBody: "@ha-bot ping",
+      commentBody: "/ha-bot ping",
       senderLogin: "testuser",
+      botSlug: "ha-bot",
     };
 
-    await dispatchCommand(config, context);
+    await dispatchCommand(config, context, "ha-bot");
     expect(github.reactions.createForIssueComment).toHaveBeenCalledWith(
       expect.objectContaining({
         comment_id: 100,

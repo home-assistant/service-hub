@@ -158,6 +158,7 @@ export function createMockContext(
     github: asOctokit(github),
     payload: payload as unknown as WebhookEventPayload,
     eventType,
+    botSlug: "ha-bot",
     dryRun: overrides.dryRun,
   });
 }
@@ -173,6 +174,7 @@ export function createMockIssueContext(
     github: asOctokit(github),
     payload: payload as unknown as WebhookEventPayload,
     eventType,
+    botSlug: "ha-bot",
   });
 }
 

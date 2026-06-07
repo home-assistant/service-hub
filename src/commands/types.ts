@@ -8,6 +8,7 @@ export interface CommandContext {
   commentId: number;
   commentBody: string;
   senderLogin: string;
+  botSlug: string;
 }
 
 export interface Command {

@@ -25,6 +25,7 @@ function prToPayload(
 
 export interface EvaluateOptions {
   dryRun?: boolean;
+  botSlug?: string;
 }
 
 export async function evaluatePR(
@@ -40,6 +41,7 @@ export async function evaluatePR(
     github,
     payload,
     eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
+    botSlug: options.botSlug ?? "",
     dryRun: options.dryRun,
   });
 

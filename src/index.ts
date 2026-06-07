@@ -83,16 +83,22 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
     if (event === "issue_comment" && action === "created") {
       const commentPayload = payload as IssueCommentCreatedEvent;
       const commentBody = commentPayload.comment.body ?? "";
-      if (commentPayload.issue.pull_request && isBotCommand(commentBody)) {
-        await dispatchCommand(deps.commandConfig, {
-          github: octokit,
-          owner: commentPayload.repository.owner.login,
-          repo: commentPayload.repository.name,
-          issueNumber: commentPayload.issue.number,
-          commentId: commentPayload.comment.id,
-          commentBody,
-          senderLogin: commentPayload.sender.login,
-        });
+      const slug = c.env.BOT_SLUG;
+      if (commentPayload.issue.pull_request && isBotCommand(commentBody, slug)) {
+        await dispatchCommand(
+          deps.commandConfig,
+          {
+            github: octokit,
+            owner: commentPayload.repository.owner.login,
+            repo: commentPayload.repository.name,
+            issueNumber: commentPayload.issue.number,
+            commentId: commentPayload.comment.id,
+            commentBody,
+            senderLogin: commentPayload.sender.login,
+            botSlug: slug,
+          },
+          slug,
+        );
         return c.text("OK", 200);
       }
     }
@@ -101,6 +107,7 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
       github: octokit,
       payload,
       eventType,
+      botSlug: c.env.BOT_SLUG,
       dryRun: isDryRun(c.env),
     });
 
@@ -145,7 +152,7 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
           deps.prConfig,
           octokit,
           { owner, repo, pull_number: pr.number },
-          { dryRun: true },
+          { dryRun: true, botSlug: c.env.BOT_SLUG },
         );
         results.push({
           pr: pr.number,
@@ -174,7 +181,9 @@ export function createScheduledHandler(deps: BotDeps): (env: Env) => Promise<voi
     const repos = Object.keys(deps.prConfig.repositories);
 
     await Promise.allSettled(
-      repos.map((repo) => evaluateRecentPRs(deps.prConfig, octokit, repo, since, { dryRun })),
+      repos.map((repo) =>
+        evaluateRecentPRs(deps.prConfig, octokit, repo, since, { dryRun, botSlug: env.BOT_SLUG }),
+      ),
     );
   };
 }

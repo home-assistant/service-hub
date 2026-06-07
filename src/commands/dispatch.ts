@@ -1,22 +1,25 @@
 import { type CommandRegistryConfig, findCommand } from "./registry.js";
 import type { CommandContext } from "./types.js";
 
-const BOT_MENTION_PATTERN = /^@ha-bot\b/im;
-const BOT_COMMAND_PATTERN = /^@ha-bot\s+(\S+)\s*$/im;
-
-export function isBotCommand(commentBody: string): boolean {
-  return BOT_MENTION_PATTERN.test(commentBody);
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function getBotCommand(commentBody: string): string | undefined {
-  return commentBody.match(BOT_COMMAND_PATTERN)?.[1]?.toLowerCase();
+export function isBotCommand(commentBody: string, slug: string): boolean {
+  return new RegExp(`^/${escapeRegExp(slug)}\\b`, "im").test(commentBody);
+}
+
+export function getBotCommand(commentBody: string, slug: string): string | undefined {
+  const match = commentBody.match(new RegExp(`^/${escapeRegExp(slug)}\\s+(\\S+)\\s*$`, "im"));
+  return match?.[1]?.toLowerCase();
 }
 
 export async function dispatchCommand(
   registryConfig: CommandRegistryConfig,
   context: CommandContext,
+  slug: string,
 ): Promise<void> {
-  const name = getBotCommand(context.commentBody);
+  const name = getBotCommand(context.commentBody, slug);
   const command = name
     ? findCommand(registryConfig, `${context.owner}/${context.repo}`, context.owner, name)
     : undefined;

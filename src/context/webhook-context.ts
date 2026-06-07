@@ -42,6 +42,7 @@ interface WebhookContextParams<P extends WebhookEventPayload> {
   github: Octokit;
   payload: P;
   eventType: EventType;
+  botSlug: string;
   dryRun?: boolean;
 }
 
@@ -51,6 +52,7 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
   readonly repository: Repository;
   readonly organization: Organization;
   readonly payload: P;
+  readonly botSlug: string;
   readonly dryRun: boolean;
 
   prFilesCache?: ListPullRequestFiles;
@@ -61,9 +63,15 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
     this.github = params.github;
     this.eventType = params.eventType;
     this.payload = params.payload;
+    this.botSlug = params.botSlug;
     this.dryRun = params.dryRun ?? false;
     this.repository = params.payload.repository.full_name as Repository;
     this.organization = params.payload.repository.owner.login as Organization;
+  }
+
+  /** Bot's commit-status creator login, e.g. "ha-bot[bot]". */
+  get botLogin(): string {
+    return `${this.botSlug}[bot]`;
   }
 
   get senderIsBot(): boolean {

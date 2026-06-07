@@ -49,7 +49,7 @@ export function createE2EHarness(options: E2EHarnessOptions = {}): E2EHarness {
     GITHUB_PRIVATE_KEY: "test-key",
     GITHUB_INSTALLATION_ID: "1",
     GITHUB_WEBHOOK_SECRET: TEST_SECRET,
-    BOT_LOGIN: "ha-bot[bot]",
+    BOT_SLUG: "ha-bot",
     SENTRY_DSN: "",
     ENVIRONMENT: "test",
     DRY_RUN: options.dryRun ? "1" : undefined,

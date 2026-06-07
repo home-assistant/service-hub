@@ -14,6 +14,7 @@ export const commandConfig: CommandRegistryConfig = {
   },
   repositories: {
     "home-assistant/core": [updateCommand],
+    "justanotherariel/hass_core": [updateCommand],
   },
 };
 
