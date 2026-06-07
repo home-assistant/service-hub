@@ -8,7 +8,8 @@ type ValidationEvent =
   | EventType.PULL_REQUEST_REOPENED
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_UNLABELED
-  | EventType.PULL_REQUEST_SYNCHRONIZE;
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.ON_DEMAND;
 
 const SECTION_ID = "new-integration-validation";
 const SECTION_TITLE = "New integration validation";
@@ -89,5 +90,6 @@ export const prNewIntegrationValidation: Rule = {
     [EventType.PULL_REQUEST_LABELED]: evaluate,
     [EventType.PULL_REQUEST_UNLABELED]: evaluate,
     [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
+    [EventType.ON_DEMAND]: evaluate,
   },
 };

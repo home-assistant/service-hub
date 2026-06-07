@@ -10,7 +10,8 @@ type PlatinumEvent =
   | EventType.PULL_REQUEST_REOPENED
   | EventType.PULL_REQUEST_REVIEW_SUBMITTED
   | EventType.PULL_REQUEST_SYNCHRONIZE
-  | EventType.PULL_REQUEST_UNLABELED;
+  | EventType.PULL_REQUEST_UNLABELED
+  | EventType.ON_DEMAND;
 
 async function evaluate(
   ctx: WebhookContext<EventPayloadMap[PlatinumEvent]>,
@@ -128,6 +129,7 @@ export const prPlatinumCodeOwnerApproval: Rule = {
     [EventType.PULL_REQUEST_REOPENED]: async (ctx) => evaluate(ctx),
     [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: async (ctx) => evaluate(ctx),
     [EventType.PULL_REQUEST_SYNCHRONIZE]: async (ctx) => evaluate(ctx),
+    [EventType.ON_DEMAND]: async (ctx) => evaluate(ctx),
     [EventType.PULL_REQUEST_UNLABELED]: async (ctx) => evaluate(ctx),
   },
 };

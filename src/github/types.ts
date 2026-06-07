@@ -41,6 +41,11 @@ export enum EventType {
   PULL_REQUEST_REVIEW_SUBMITTED = "pull_request_review.submitted",
   PULL_REQUEST_SYNCHRONIZE = "pull_request.synchronize",
   PULL_REQUEST_UNLABELED = "pull_request.unlabeled",
+
+  /**
+   * Synthetic event to reavaluate a rule.
+   */
+  ON_DEMAND = "on_demand",
 }
 
 export type ListPullRequestFiles =

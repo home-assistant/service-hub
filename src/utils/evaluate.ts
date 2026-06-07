@@ -1,27 +1,10 @@
 import type { Octokit } from "@octokit/rest";
-import type { PullRequestSynchronizeEvent } from "@octokit/webhooks-types";
 import { WebhookContext } from "../context/webhook-context.js";
 import type { GetPullRequestParams } from "../github/types.js";
 import { EventType } from "../github/types.js";
 import type { RegistryConfig } from "../rules/dispatch.js";
 import { dispatch } from "../rules/dispatch.js";
-import type { Effect } from "../rules/types.js";
-
-function prToPayload(
-  pr: Awaited<ReturnType<Octokit["pulls"]["get"]>>["data"],
-): PullRequestSynchronizeEvent {
-  return {
-    action: "synchronize",
-    number: pr.number,
-    before: "",
-    after: pr.head.sha,
-    repository: pr.base.repo,
-    sender: pr.user ?? { login: "", type: "User" },
-    pull_request: pr,
-    installation: undefined,
-    organization: undefined,
-  } as unknown as PullRequestSynchronizeEvent;
-}
+import type { Effect, OnDemandEvent } from "../rules/types.js";
 
 export interface EvaluateOptions {
   dryRun?: boolean;
@@ -36,11 +19,19 @@ export async function evaluatePR(
 ): Promise<Effect[]> {
   const { data: pr } = await github.pulls.get(params);
 
-  const payload = prToPayload(pr);
+  const payload: OnDemandEvent = {
+    action: "on_demand",
+    pull_request: pr,
+    repository: pr.base.repo,
+    sender: pr.user
+      ? { login: pr.user.login, type: pr.user.type === "Bot" ? "Bot" : "User" }
+      : { login: "", type: "User" },
+  };
+
   const context = new WebhookContext({
     github,
     payload,
-    eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
+    eventType: EventType.ON_DEMAND,
     botSlug: options.botSlug ?? "",
     dryRun: options.dryRun,
   });

@@ -7,7 +7,8 @@ type ReviewEvent =
   | EventType.PULL_REQUEST_REOPENED
   | EventType.PULL_REQUEST_READY_FOR_REVIEW
   | EventType.PULL_REQUEST_REVIEW_SUBMITTED
-  | EventType.PULL_REQUEST_SYNCHRONIZE;
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.ON_DEMAND;
 
 const ACK_REACTIONS = new Set(["+1", "heart", "hooray", "rocket"]);
 const SECTION_ID = "review-comments";
@@ -107,5 +108,6 @@ export const prReviewComments: Rule = {
     [EventType.PULL_REQUEST_READY_FOR_REVIEW]: evaluate,
     [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: evaluate,
     [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
+    [EventType.ON_DEMAND]: evaluate,
   },
 };

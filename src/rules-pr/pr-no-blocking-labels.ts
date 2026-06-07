@@ -5,7 +5,8 @@ import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 type BlockingEvent =
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_UNLABELED
-  | EventType.PULL_REQUEST_SYNCHRONIZE;
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.ON_DEMAND;
 
 export function blockingLabels(
   config: Record<string, { message: string; success?: string }>,
@@ -23,7 +24,7 @@ export function blockingLabels(
         : undefined;
 
     const labelsToEmit = Object.keys(config).filter((label) => {
-      if (payload.action === "synchronize") return true;
+      if (payload.action === "synchronize" || payload.action === "on_demand") return true;
       if (affectedLabel && affectedLabel === label) return true;
       return false;
     });
@@ -59,6 +60,7 @@ export function blockingLabels(
       [EventType.PULL_REQUEST_LABELED]: async (ctx) => buildEffects(ctx),
       [EventType.PULL_REQUEST_UNLABELED]: async (ctx) => buildEffects(ctx),
       [EventType.PULL_REQUEST_SYNCHRONIZE]: async (ctx) => buildEffects(ctx),
+      [EventType.ON_DEMAND]: async (ctx) => buildEffects(ctx),
     },
   };
 }

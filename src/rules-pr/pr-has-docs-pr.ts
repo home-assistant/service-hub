@@ -7,7 +7,8 @@ type DocsCheckEvent =
   | EventType.PULL_REQUEST_EDITED
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_UNLABELED
-  | EventType.PULL_REQUEST_SYNCHRONIZE;
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.ON_DEMAND;
 
 function evaluate(ctx: WebhookContext<EventPayloadMap[DocsCheckEvent]>): Effect[] {
   const payload = ctx.payload;
@@ -79,5 +80,6 @@ export const prHasDocsPr: Rule = {
     [EventType.PULL_REQUEST_LABELED]: async (ctx) => evaluate(ctx),
     [EventType.PULL_REQUEST_UNLABELED]: async (ctx) => evaluate(ctx),
     [EventType.PULL_REQUEST_SYNCHRONIZE]: async (ctx) => evaluate(ctx),
+    [EventType.ON_DEMAND]: async (ctx) => evaluate(ctx),
   },
 };

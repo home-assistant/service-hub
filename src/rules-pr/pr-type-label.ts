@@ -198,7 +198,8 @@ function describeTypeSelection(
 type AutoLabelEvent =
   | EventType.PULL_REQUEST_OPENED
   | EventType.PULL_REQUEST_EDITED
-  | EventType.PULL_REQUEST_SYNCHRONIZE;
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.ON_DEMAND;
 
 async function handleAutoLabel(
   ctx: WebhookContext<EventPayloadMap[AutoLabelEvent]>,
@@ -276,5 +277,6 @@ export const PrTypeLabel: Rule = {
     [EventType.PULL_REQUEST_OPENED]: handleAutoLabel,
     [EventType.PULL_REQUEST_EDITED]: handleAutoLabel,
     [EventType.PULL_REQUEST_SYNCHRONIZE]: handleAutoLabel,
+    [EventType.ON_DEMAND]: handleAutoLabel,
   },
 };

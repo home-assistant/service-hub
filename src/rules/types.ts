@@ -14,7 +14,19 @@ import type {
 } from "@octokit/webhooks-types";
 import type { WebhookContext } from "../context/webhook-context.js";
 import type { DashboardSection } from "../dashboard/types.js";
+import type { GetPullRequestResponse } from "../github/types.js";
 import { EventType } from "../github/types.js";
+
+/**
+ * Synthetic payload for `EventType.ON_DEMAND`. Built by the bot when the
+ * cron sweep or the `/<slug> update` command re-evaluates a PR.
+ */
+export interface OnDemandEvent {
+  action: "on_demand";
+  pull_request: GetPullRequestResponse;
+  repository: GetPullRequestResponse["base"]["repo"];
+  sender: { login: string; type: "User" | "Bot" };
+}
 
 /**
  * Maps each EventType to its strongly-typed webhook payload. Rules
@@ -34,6 +46,7 @@ export interface EventPayloadMap {
   [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: PullRequestReviewSubmittedEvent;
   [EventType.PULL_REQUEST_SYNCHRONIZE]: PullRequestSynchronizeEvent;
   [EventType.PULL_REQUEST_UNLABELED]: PullRequestUnlabeledEvent;
+  [EventType.ON_DEMAND]: OnDemandEvent;
 }
 
 /**

@@ -5,7 +5,8 @@ import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 type MergeEvent =
   | EventType.PULL_REQUEST_OPENED
   | EventType.PULL_REQUEST_REOPENED
-  | EventType.PULL_REQUEST_SYNCHRONIZE;
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.ON_DEMAND;
 
 const SECTION_ID = "merge-conflict";
 const SECTION_TITLE = "Merge conflicts";
@@ -42,5 +43,6 @@ export const prNoMergeConflict: Rule = {
     [EventType.PULL_REQUEST_OPENED]: evaluate,
     [EventType.PULL_REQUEST_REOPENED]: evaluate,
     [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
+    [EventType.ON_DEMAND]: evaluate,
   },
 };

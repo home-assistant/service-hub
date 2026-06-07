@@ -23,6 +23,7 @@ import type {
   Organization,
   Repository,
 } from "../github/types.js";
+import type { OnDemandEvent } from "../rules/types.js";
 
 export type WebhookEventPayload =
   | IssueCommentCreatedEvent
@@ -36,7 +37,8 @@ export type WebhookEventPayload =
   | PullRequestReopenedEvent
   | PullRequestReviewSubmittedEvent
   | PullRequestSynchronizeEvent
-  | PullRequestUnlabeledEvent;
+  | PullRequestUnlabeledEvent
+  | OnDemandEvent;
 
 interface WebhookContextParams<P extends WebhookEventPayload> {
   github: Octokit;
