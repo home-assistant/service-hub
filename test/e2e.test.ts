@@ -34,53 +34,6 @@ describe("e2e: webhook delivery", () => {
     );
   });
 
-  it("dedupes status checks from two rules emitting the same (sha, context)", async () => {
-    const ruleA: Rule = {
-      name: "rule-a",
-      description: "",
-      events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          {
-            type: "statusCheck",
-            sha: "abc123",
-            context: "ci/check",
-            state: "pending",
-            description: "from A",
-          },
-        ],
-      },
-    };
-    const ruleB: Rule = {
-      name: "rule-b",
-      description: "",
-      events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          {
-            type: "statusCheck",
-            sha: "abc123",
-            context: "ci/check",
-            state: "success",
-            description: "from B",
-          },
-        ],
-      },
-    };
-
-    const harness = createE2EHarness({
-      prConfig: {
-        organizations: {},
-        repositories: { "home-assistant/core": [ruleA, ruleB] },
-      },
-    });
-
-    await harness.deliver("pull_request", prOpenedPayload());
-
-    expect(harness.github.repos.createCommitStatus).toHaveBeenCalledTimes(1);
-    expect(harness.github.repos.createCommitStatus).toHaveBeenCalledWith(
-      expect.objectContaining({ context: "ci/check", state: "success", description: "from B" }),
-    );
-  });
-
   it("rejects a webhook with a bad signature", async () => {
     const labelOnOpen: Rule = {
       name: "label-on-open",

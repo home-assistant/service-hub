@@ -15,7 +15,7 @@ export const prHacktoberfest: Rule = {
     [EventType.PULL_REQUEST_CLOSED]: async (ctx): Promise<Effect[] | undefined> => {
       if (ctx.payload.pull_request.merged) return;
       if (!ctx.payload.pull_request.labels.some((l) => l.name === "Hacktoberfest")) return;
-      return [{ type: "removeLabel", label: "Hacktoberfest" }];
+      return [{ type: "removeLabels", label: ["Hacktoberfest"] }];
     },
   },
 };

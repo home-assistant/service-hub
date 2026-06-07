@@ -4,11 +4,9 @@ import { prNoMergeConflict } from "../../src/rules-pr/pr-no-merge-conflict.js";
 import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 describe("pr-no-merge-conflict", () => {
-  it("requests changes when PR has merge conflict", async () => {
+  it("emits a fail dashboard row when the PR has merge conflicts", async () => {
     const github = createMockGitHub();
-    github.pulls.get.mockResolvedValue({
-      data: { mergeable_state: "dirty" },
-    });
+    github.pulls.get.mockResolvedValue({ data: { mergeable_state: "dirty" } });
 
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_OPENED,
@@ -16,14 +14,15 @@ describe("pr-no-merge-conflict", () => {
     });
 
     const result = await runRule(prNoMergeConflict, context);
-    expect(result).toMatchObject({ requestChanges: "There is a merge conflict." });
+    expect(result?.dashboard).toMatchObject({
+      id: "merge-conflict",
+      status: "fail",
+    });
   });
 
-  it("returns undefined when PR is clean", async () => {
+  it("emits a pass dashboard row when the PR is clean", async () => {
     const github = createMockGitHub();
-    github.pulls.get.mockResolvedValue({
-      data: { mergeable_state: "clean" },
-    });
+    github.pulls.get.mockResolvedValue({ data: { mergeable_state: "clean" } });
 
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_OPENED,
@@ -31,14 +30,15 @@ describe("pr-no-merge-conflict", () => {
     });
 
     const result = await runRule(prNoMergeConflict, context);
-    expect(result).toBeUndefined();
+    expect(result?.dashboard).toMatchObject({
+      id: "merge-conflict",
+      status: "pass",
+    });
   });
 
-  it("returns undefined when mergeable state is unstable", async () => {
+  it("returns nothing while mergeable_state is unknown", async () => {
     const github = createMockGitHub();
-    github.pulls.get.mockResolvedValue({
-      data: { mergeable_state: "unstable" },
-    });
+    github.pulls.get.mockResolvedValue({ data: { mergeable_state: "unknown" } });
 
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
@@ -49,8 +49,10 @@ describe("pr-no-merge-conflict", () => {
     expect(result).toBeUndefined();
   });
 
-  it("listens to opened and synchronize events", () => {
-    expect(Object.keys(prNoMergeConflict.events)).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(Object.keys(prNoMergeConflict.events)).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+  it("listens to opened/reopened/synchronize", () => {
+    const keys = Object.keys(prNoMergeConflict.events);
+    expect(keys).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(keys).toContain(EventType.PULL_REQUEST_REOPENED);
+    expect(keys).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
   });
 });

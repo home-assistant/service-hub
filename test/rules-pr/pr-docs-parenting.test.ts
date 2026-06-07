@@ -5,7 +5,7 @@ import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-co
 
 describe("docs-parenting-code-side", () => {
   describe("code repo opened/edited", () => {
-    it("emits a crossRepoAddLabels effect for linked docs PRs", async () => {
+    it("emits a addLabelsCrossRepo effect for linked docs PRs", async () => {
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
         payload: {
@@ -20,7 +20,7 @@ describe("docs-parenting-code-side", () => {
       expect(result?.effects).toHaveLength(1);
       const effect = result?.effects[0];
       expect(effect).toMatchObject({
-        type: "crossRepoAddLabels",
+        type: "addLabelsCrossRepo",
         owner: "home-assistant",
         repo: "home-assistant.io",
         issue_number: 999,

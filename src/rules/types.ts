@@ -43,25 +43,17 @@ export interface EventPayloadMap {
  */
 export type Effect =
   | { type: "addLabels"; labels: string[] }
-  | { type: "removeLabel"; label: string }
   | {
-      type: "statusCheck";
-      sha: string;
-      context: string;
-      state: "success" | "failure" | "pending";
-      description: string;
-    }
-  | { type: "comment"; body: string }
-  | { type: "requestChanges"; body: string }
-  | { type: "addAssignees"; assignees: string[] }
-  | { type: "dashboardSection"; section: DashboardSection }
-  | {
-      type: "crossRepoAddLabels";
+      type: "addLabelsCrossRepo";
       owner: string;
       repo: string;
       issue_number: number;
       labels: string[];
     }
+  | { type: "removeLabels"; label: string[] }
+  | { type: "addAssignees"; assignees: string[] }
+  | { type: "comment"; body: string }
+  | { type: "dashboardSection"; section: DashboardSection }
   | {
       type: "updatePullRequest";
       owner: string;
@@ -70,15 +62,9 @@ export type Effect =
       state: "open" | "closed";
     }
   | {
-      type: "convertPullRequestToDraft";
-      node_id: string;
-    }
-  | { type: "updateComment"; comment_id: number; body: string }
-  | {
       type: "requestReviewers";
       reviewers: string[];
-    }
-  | { type: "dismissReview"; review_id: number; message: string };
+    };
 
 export type EventHandler<E extends keyof EventPayloadMap> = (
   context: WebhookContext<EventPayloadMap[E]>,

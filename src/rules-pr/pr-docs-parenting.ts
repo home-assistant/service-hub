@@ -21,7 +21,7 @@ function handleOpenedOrEdited(
   const linksToDocs = findDocsLinks(ctx.payload.pull_request.body);
   if (linksToDocs.length === 0 || linksToDocs.length > 2) return;
   return linksToDocs.map<Effect>((link) => ({
-    type: "crossRepoAddLabels",
+    type: "addLabelsCrossRepo",
     owner: link.owner,
     repo: link.repo,
     issue_number: link.number,
@@ -76,7 +76,7 @@ async function handleClosedOrReopened(
   // merged
   return [
     {
-      type: "crossRepoAddLabels",
+      type: "addLabelsCrossRepo",
       owner: docLink.owner,
       repo: docLink.repo,
       issue_number: docLink.number,

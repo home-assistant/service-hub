@@ -153,7 +153,7 @@ describe("dispatch", () => {
       description: "",
       events: {
         [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "removeLabel", label: "needs-rebase" },
+          { type: "removeLabels", label: ["needs-rebase"] },
         ],
       },
     };
@@ -179,7 +179,7 @@ describe("dispatch", () => {
       events: {
         [EventType.PULL_REQUEST_OPENED]: async () => [
           { type: "addLabels", labels: ["keep-me"] },
-          { type: "removeLabel", label: "keep-me" },
+          { type: "removeLabels", label: ["keep-me"] },
         ],
       },
     };
@@ -194,103 +194,6 @@ describe("dispatch", () => {
 
     expect(github.issues.addLabels).toHaveBeenCalled();
     expect(github.issues.removeLabel).not.toHaveBeenCalled();
-  });
-
-  it("creates status checks from rule effects", async () => {
-    const github = createMockGitHub();
-    const statusRule: Rule = {
-      name: "status-checker",
-      description: "",
-      events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          {
-            type: "statusCheck",
-            sha: "abc123",
-            context: "ci/test",
-            state: "success",
-            description: "All tests passed",
-          },
-        ],
-      },
-    };
-
-    const config: RegistryConfig = {
-      organizations: {},
-      repositories: { "home-assistant/core": [statusRule] },
-    };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
-
-    await dispatch(config, context);
-
-    expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-      expect.objectContaining({
-        context: "ci/test",
-        state: "success",
-        description: "All tests passed",
-      }),
-    );
-  });
-
-  it("dedupes status checks by (sha, context) — last effect wins", async () => {
-    const github = createMockGitHub();
-    const rule1: Rule = {
-      name: "rule1",
-      description: "",
-      events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          {
-            type: "statusCheck",
-            sha: "abc123",
-            context: "ci/test",
-            state: "pending",
-            description: "from rule1",
-          },
-        ],
-      },
-    };
-    const rule2: Rule = {
-      name: "rule2",
-      description: "",
-      events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          {
-            type: "statusCheck",
-            sha: "abc123",
-            context: "ci/test",
-            state: "success",
-            description: "from rule2",
-          },
-          {
-            type: "statusCheck",
-            sha: "abc123",
-            context: "ci/other",
-            state: "success",
-            description: "different context",
-          },
-        ],
-      },
-    };
-
-    const config: RegistryConfig = {
-      organizations: {},
-      repositories: { "home-assistant/core": [rule1, rule2] },
-    };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
-
-    await dispatch(config, context);
-
-    expect(github.repos.createCommitStatus).toHaveBeenCalledTimes(2);
-    expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sha: "abc123",
-        context: "ci/test",
-        state: "success",
-        description: "from rule2",
-      }),
-    );
-    expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-      expect.objectContaining({ sha: "abc123", context: "ci/other" }),
-    );
   });
 
   it("creates comments from rule effects", async () => {
@@ -315,31 +218,6 @@ describe("dispatch", () => {
 
     expect(github.issues.createComment).toHaveBeenCalledWith(
       expect.objectContaining({ body: "Hello from the bot!" }),
-    );
-  });
-
-  it("creates review requests from requestChanges effect", async () => {
-    const github = createMockGitHub();
-    const reviewRule: Rule = {
-      name: "reviewer",
-      description: "",
-      events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "requestChanges", body: "Please fix this." },
-        ],
-      },
-    };
-
-    const config: RegistryConfig = {
-      organizations: {},
-      repositories: { "home-assistant/core": [reviewRule] },
-    };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
-
-    await dispatch(config, context);
-
-    expect(github.pulls.createReview).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "REQUEST_CHANGES", body: "Please fix this." }),
     );
   });
 
@@ -420,13 +298,7 @@ describe("dispatch", () => {
       events: {
         [EventType.PULL_REQUEST_OPENED]: async () => [
           { type: "addLabels", labels: ["bugfix"] },
-          {
-            type: "statusCheck",
-            sha: "abc",
-            context: "ci/test",
-            state: "success",
-            description: "ok",
-          },
+          { type: "removeLabels", label: ["stale"] },
         ],
       },
     };
@@ -445,7 +317,7 @@ describe("dispatch", () => {
 
     expect(effects).toHaveLength(2);
     expect(github.issues.addLabels).not.toHaveBeenCalled();
-    expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
+    expect(github.issues.removeLabel).not.toHaveBeenCalled();
     expect(consoleLogSpy).toHaveBeenCalled();
 
     consoleLogSpy.mockRestore();

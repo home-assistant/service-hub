@@ -1,7 +1,6 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { upsertDashboardComment } from "../dashboard/comment.js";
 import type { DashboardSection } from "../dashboard/types.js";
-import { convertPullRequestToDraft } from "../github/client.js";
 import { deduplicateByName } from "../utils/deduplicate.js";
 import type { Effect, EventPayloadMap, Rule } from "./types.js";
 
@@ -66,10 +65,8 @@ async function applyEffects(
   const labels = new Set<string>();
   const removeLabels = new Set<string>();
   const dashboardSections = new Map<string, DashboardSection>();
-  const comments: string[] = [];
-  const reviewBodies: string[] = [];
   const assignees = new Set<string>();
-  const statusChecks = new Map<string, Extract<Effect, { type: "statusCheck" }>>();
+  const comments: string[] = [];
   const ops: Promise<unknown>[] = [];
 
   for (const effect of effects) {
@@ -77,25 +74,19 @@ async function applyEffects(
       case "addLabels":
         for (const l of effect.labels) labels.add(l);
         break;
-      case "removeLabel":
-        removeLabels.add(effect.label);
-        break;
-      case "comment":
-        comments.push(effect.body);
-        break;
-      case "requestChanges":
-        reviewBodies.push(effect.body);
+      case "removeLabels":
+        for (const l of effect.label) removeLabels.add(l);
         break;
       case "addAssignees":
         for (const a of effect.assignees) assignees.add(a);
         break;
+      case "comment":
+        comments.push(effect.body);
+        break;
       case "dashboardSection":
         dashboardSections.set(effect.section.id, effect.section);
         break;
-      case "statusCheck":
-        statusChecks.set(`${effect.sha}\0${effect.context}`, effect);
-        break;
-      case "crossRepoAddLabels":
+      case "addLabelsCrossRepo":
         ops.push(
           context.github.issues.addLabels({
             owner: effect.owner,
@@ -115,16 +106,6 @@ async function applyEffects(
           }),
         );
         break;
-      case "convertPullRequestToDraft":
-        ops.push(convertPullRequestToDraft(context.github, effect.node_id));
-        break;
-      case "updateComment":
-        ops.push(
-          context.github.issues.updateComment(
-            context.repo({ comment_id: effect.comment_id, body: effect.body }),
-          ),
-        );
-        break;
       case "requestReviewers":
         ops.push(
           context.github.pulls.requestReviewers(
@@ -132,27 +113,7 @@ async function applyEffects(
           ),
         );
         break;
-      case "dismissReview":
-        ops.push(
-          context.github.pulls.dismissReview(
-            context.pullRequest({ review_id: effect.review_id, message: effect.message }),
-          ),
-        );
-        break;
     }
-  }
-
-  for (const effect of statusChecks.values()) {
-    ops.push(
-      context.github.repos.createCommitStatus(
-        context.repo({
-          sha: effect.sha,
-          context: effect.context,
-          state: effect.state,
-          description: effect.description,
-        }),
-      ),
-    );
   }
 
   if (labels.size > 0) {
@@ -170,14 +131,6 @@ async function applyEffects(
 
   for (const body of comments) {
     ops.push(context.github.issues.createComment(context.issue({ body })));
-  }
-
-  for (const body of reviewBodies) {
-    ops.push(
-      context.github.pulls.createReview(
-        context.pullRequest({ event: "REQUEST_CHANGES" as const, body }),
-      ),
-    );
   }
 
   if (assignees.size > 0) {

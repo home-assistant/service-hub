@@ -240,10 +240,11 @@ async function handleAutoLabel(
     if (typeResult.selection !== "multiple") {
       const picked = new Set(typeResult.labels);
       const current = new Set(ctx.payload.pull_request.labels.map((l) => l.name));
-      for (const candidate of TYPE_OF_CHANGE_LABELS) {
-        if (current.has(candidate) && !picked.has(candidate)) {
-          effects.push({ type: "removeLabel", label: candidate });
-        }
+      const toRemove = [...TYPE_OF_CHANGE_LABELS].filter(
+        (candidate) => current.has(candidate) && !picked.has(candidate),
+      );
+      if (toRemove.length > 0) {
+        effects.push({ type: "removeLabels", label: toRemove });
       }
     }
   }

@@ -18,25 +18,28 @@ function makeFile(filename: string, status = "added") {
 }
 
 describe("pr-new-integration-validation", () => {
-  it("does nothing when label is not new-integration", async () => {
+  it("skips when PR has no new-integration label", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
         label: { name: "bugfix" },
-        pull_request: { head: { sha: "abc123" }, labels: [] },
+        pull_request: { head: { sha: "abc123" }, labels: [{ name: "bugfix" }] },
       },
     });
 
     const result = await runRule(prNewIntegrationValidation, context);
-    expect(result).toBeUndefined();
+    expect(result?.dashboard).toMatchObject({
+      id: "new-integration-validation",
+      status: "skip",
+    });
   });
 
-  it("passes when new integration has single platform", async () => {
+  it("passes when new-integration PR has a single platform", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
         label: { name: "new-integration" },
-        pull_request: { head: { sha: "abc123" }, labels: [] },
+        pull_request: { head: { sha: "abc123" }, labels: [{ name: "new-integration" }] },
       },
     });
     mockPRFiles(context, [
@@ -46,15 +49,18 @@ describe("pr-new-integration-validation", () => {
     ]);
 
     const result = await runRule(prNewIntegrationValidation, context);
-    expect(result).toBeUndefined();
+    expect(result?.dashboard).toMatchObject({
+      id: "new-integration-validation",
+      status: "pass",
+    });
   });
 
-  it("requests changes when multiple platforms added", async () => {
+  it("fails when multiple platforms added", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
         label: { name: "new-integration" },
-        pull_request: { head: { sha: "abc123" }, labels: [] },
+        pull_request: { head: { sha: "abc123" }, labels: [{ name: "new-integration" }] },
       },
     });
     mockPRFiles(context, [
@@ -64,15 +70,16 @@ describe("pr-new-integration-validation", () => {
     ]);
 
     const result = await runRule(prNewIntegrationValidation, context);
-    expect(result?.requestChanges).toContain("limit included platforms to a single platform");
+    expect(result?.dashboard?.status).toBe("fail");
+    expect(result?.dashboard?.message).toContain("single platform");
   });
 
-  it("requests changes when brand folder is included", async () => {
+  it("fails when brand folder is included", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
         label: { name: "new-integration" },
-        pull_request: { head: { sha: "abc123" }, labels: [] },
+        pull_request: { head: { sha: "abc123" }, labels: [{ name: "new-integration" }] },
       },
     });
     mockPRFiles(context, [
@@ -81,15 +88,16 @@ describe("pr-new-integration-validation", () => {
     ]);
 
     const result = await runRule(prNewIntegrationValidation, context);
-    expect(result?.requestChanges).toContain("Brand assets should not be part of the core");
+    expect(result?.dashboard?.status).toBe("fail");
+    expect(result?.dashboard?.message).toContain("brand");
   });
 
-  it("reports both issues when multiple platforms and brand folder", async () => {
+  it("reports both issues when multiple platforms AND brand folder", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
         label: { name: "new-integration" },
-        pull_request: { head: { sha: "abc123" }, labels: [] },
+        pull_request: { head: { sha: "abc123" }, labels: [{ name: "new-integration" }] },
       },
     });
     mockPRFiles(context, [
@@ -100,13 +108,16 @@ describe("pr-new-integration-validation", () => {
     ]);
 
     const result = await runRule(prNewIntegrationValidation, context);
-    expect(result?.requestChanges).toContain("limit included platforms");
-    expect(result?.requestChanges).toContain("Brand assets");
+    expect(result?.dashboard?.status).toBe("fail");
+    expect(result?.dashboard?.message).toContain("single platform");
+    expect(result?.dashboard?.message).toContain("brand");
   });
 
-  it("listens only to labeled events", () => {
-    expect(Object.keys(prNewIntegrationValidation.events)).toEqual([
-      EventType.PULL_REQUEST_LABELED,
-    ]);
+  it("listens to opened/reopened/labeled/unlabeled/synchronize", () => {
+    const keys = Object.keys(prNewIntegrationValidation.events);
+    expect(keys).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(keys).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(keys).toContain(EventType.PULL_REQUEST_UNLABELED);
+    expect(keys).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
   });
 });
