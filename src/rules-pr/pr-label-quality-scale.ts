@@ -26,6 +26,7 @@ async function evaluate(
 ): Promise<Effect[] | undefined> {
   const effects: Effect[] = [];
 
+  // Add `quality-scale` label when PR touches `quality_scale.yaml`.
   const files = await ctx.fetchPRFiles();
   const touchesQualityScaleYaml = files.some(
     (f) => f.filename.split("/").pop() === "quality_scale.yaml",
@@ -34,9 +35,8 @@ async function evaluate(
     effects.push({ type: "addLabels", labels: ["quality-scale"] });
   }
 
-  // Always re-evaluate every integration: label currently on the PR. On
-  // LABELED, the webhook fires post-add, so the newly added label is
-  // already in pull_request.labels.
+  // Add `Quality Scale: {}` label if PR touches an integration.
+  // Only show the IQS highest score.
   const currentLabels = ctx.payload.pull_request.labels.map((l) => l.name);
   const integrationLabels = currentLabels.filter((n) => n.startsWith("integration: "));
 
@@ -53,7 +53,6 @@ async function evaluate(
     const newLabel = `Quality Scale: ${highestScale(scales)}`;
     effects.push({ type: "addLabels", labels: [newLabel] });
 
-    // Strip any other `Quality Scale: *` labels — we only show the highest.
     const stale = currentLabels.filter((n) => n.startsWith("Quality Scale: ") && n !== newLabel);
     if (stale.length > 0) {
       effects.push({ type: "removeLabels", label: stale });
