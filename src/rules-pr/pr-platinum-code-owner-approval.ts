@@ -4,7 +4,7 @@ import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../utils/integration.js";
 import { expandOrganizationTeams } from "../utils/organization-teams.js";
 
-type PlatinumEvent =
+type HandledEvent =
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_OPENED
   | EventType.PULL_REQUEST_REOPENED
@@ -14,7 +14,7 @@ type PlatinumEvent =
   | EventType.ON_DEMAND;
 
 async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[PlatinumEvent]>,
+  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
 ): Promise<Effect[] | undefined> {
   const currentLabels = ctx.payload.pull_request.labels.map((l) => l.name);
   const integrations = currentLabels.filter((l) => l.startsWith("integration: "));

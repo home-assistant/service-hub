@@ -3,7 +3,7 @@ import { EventType } from "../github/types.js";
 import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 import { ParsedPath } from "../utils/parse-path.js";
 
-type ValidationEvent =
+type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
   | EventType.PULL_REQUEST_REOPENED
   | EventType.PULL_REQUEST_LABELED
@@ -14,7 +14,7 @@ type ValidationEvent =
 const SECTION_ID = "new-integration-validation";
 const SECTION_TITLE = "New integration validation";
 
-async function evaluate(ctx: WebhookContext<EventPayloadMap[ValidationEvent]>): Promise<Effect[]> {
+async function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Promise<Effect[]> {
   const hasNewIntegrationLabel = ctx.payload.pull_request.labels.some(
     (l) => l.name === "new-integration",
   );

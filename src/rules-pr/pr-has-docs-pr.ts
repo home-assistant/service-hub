@@ -3,14 +3,14 @@ import { EventType, HomeAssistantRepository } from "../github/types.js";
 import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 import { extractAllLinks } from "../utils/text-parser.js";
 
-type DocsCheckEvent =
+type HandledEvent =
   | EventType.PULL_REQUEST_EDITED
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_UNLABELED
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-function evaluate(ctx: WebhookContext<EventPayloadMap[DocsCheckEvent]>): Effect[] {
+function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Effect[] {
   const payload = ctx.payload;
   const isReleasePR = payload.pull_request.base.ref === "master";
   const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));

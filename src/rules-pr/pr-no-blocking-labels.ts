@@ -2,7 +2,7 @@ import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 
-type BlockingEvent =
+type HandledEvent =
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_UNLABELED
   | EventType.PULL_REQUEST_SYNCHRONIZE
@@ -11,7 +11,7 @@ type BlockingEvent =
 export function blockingLabels(
   config: Record<string, { message: string; success?: string }>,
 ): Rule {
-  function buildEffects(ctx: WebhookContext<EventPayloadMap[BlockingEvent]>): Effect[] | undefined {
+  function buildEffects(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Effect[] | undefined {
     const payload = ctx.payload;
     const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
 

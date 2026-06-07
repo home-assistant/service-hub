@@ -2,7 +2,7 @@ import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 
-type MergeEvent =
+type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
   | EventType.PULL_REQUEST_REOPENED
   | EventType.PULL_REQUEST_SYNCHRONIZE
@@ -12,7 +12,7 @@ const SECTION_ID = "merge-conflict";
 const SECTION_TITLE = "Merge conflicts";
 
 async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[MergeEvent]>,
+  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
 ): Promise<Effect[] | undefined> {
   const { data: pr } = await ctx.github.pulls.get(ctx.pullRequest());
 

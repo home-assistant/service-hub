@@ -2,7 +2,7 @@ import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
 import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 
-type ReviewEvent =
+type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
   | EventType.PULL_REQUEST_REOPENED
   | EventType.PULL_REQUEST_READY_FOR_REVIEW
@@ -15,7 +15,7 @@ const SECTION_ID = "review-comments";
 const SECTION_TITLE = "Review comments";
 const MAX_LINKS = 10;
 
-async function evaluate(ctx: WebhookContext<EventPayloadMap[ReviewEvent]>): Promise<Effect[]> {
+async function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Promise<Effect[]> {
   const authorLogin = ctx.payload.pull_request.user.login.toLowerCase();
 
   const reviewComments = await ctx.github.paginate(

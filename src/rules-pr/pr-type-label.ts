@@ -195,14 +195,14 @@ function describeTypeSelection(
 
 // --- Handler ---
 
-type AutoLabelEvent =
+type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
   | EventType.PULL_REQUEST_EDITED
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
 async function handleAutoLabel(
-  ctx: WebhookContext<EventPayloadMap[AutoLabelEvent]>,
+  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
 ): Promise<Effect[]> {
   const effects: Effect[] = [];
   const typeResult = typeOfChange(ctx.payload.pull_request.body);
