@@ -31,7 +31,12 @@ function githubConfig(env: Env): GitHubAppConfig {
 }
 
 function isPullRequestEvent(event: string): boolean {
-  return event === "pull_request" || event === "pull_request_review";
+  return (
+    event === "pull_request" ||
+    event === "pull_request_review" ||
+    event === "pull_request_review_comment" ||
+    event === "pull_request_review_thread"
+  );
 }
 
 function isIssueEvent(event: string): boolean {
