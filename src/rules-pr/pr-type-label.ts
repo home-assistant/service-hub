@@ -265,7 +265,7 @@ async function handleAutoLabel(
   return effects;
 }
 
-export const prCorePrTypeLabel: Rule = {
+export const PrTypeLabel: Rule = {
   name: "pr-core-pr-type-label",
   description:
     "Core-repo PR labeling: auto-applies labels from changed files + PR body, and " +
