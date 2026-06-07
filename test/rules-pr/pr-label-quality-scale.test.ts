@@ -59,7 +59,7 @@ describe("pr-label-quality-scale", () => {
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
         label: { name: "integration: hue" },
-        pull_request: { head: { sha: "abc123" }, labels: [] },
+        pull_request: { head: { sha: "abc123" }, labels: [{ name: "integration: hue" }] },
       },
     });
     mockPRFiles(context, []);
@@ -86,7 +86,10 @@ describe("pr-label-quality-scale", () => {
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
         label: { name: "integration: mydevice" },
-        pull_request: { head: { sha: "abc123" }, labels: [] },
+        pull_request: {
+          head: { sha: "abc123" },
+          labels: [{ name: "integration: mydevice" }],
+        },
       },
     });
     mockPRFiles(context, []);
@@ -140,7 +143,7 @@ describe("pr-label-quality-scale", () => {
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
         label: { name: "integration: hue" },
-        pull_request: { head: { sha: "abc123" }, labels: [] },
+        pull_request: { head: { sha: "abc123" }, labels: [{ name: "integration: hue" }] },
       },
     });
     mockPRFiles(context, [
@@ -160,5 +163,88 @@ describe("pr-label-quality-scale", () => {
     const result = await runRule(prLabelQualityScale, context);
     expect(result?.labels).toContain("quality-scale");
     expect(result?.labels).toContain("Quality Scale: gold");
+  });
+
+  it("emits only the highest scale across multiple integration labels", async () => {
+    const scales: Record<string, string> = {
+      hue: "silver",
+      mqtt: "platinum",
+      ohx: "gold",
+    };
+    globalThis.fetch.mockImplementation(async (url: string) => {
+      const domain = (url.match(/components\/([^/]+)\//) ?? [])[1];
+      return {
+        ok: true,
+        json: async () => ({
+          domain,
+          name: domain,
+          quality_scale: scales[domain] ?? "no score",
+          config_flow: true,
+          dependencies: [],
+          documentation: "",
+          requirements: [],
+          iot_class: "local_polling",
+        }),
+      };
+    });
+
+    const context = createMockContext({
+      eventType: EventType.ON_DEMAND,
+      payload: {
+        label: { name: "integration: ohx" },
+        pull_request: {
+          head: { sha: "abc123" },
+          labels: [
+            { name: "integration: hue" },
+            { name: "integration: mqtt" },
+            { name: "integration: ohx" },
+          ],
+        },
+      },
+    });
+    mockPRFiles(context, []);
+
+    const result = await runRule(prLabelQualityScale, context);
+    expect(result?.labels).toContain("Quality Scale: platinum");
+    expect(result?.labels).not.toContain("Quality Scale: silver");
+    expect(result?.labels).not.toContain("Quality Scale: gold");
+  });
+
+  it("removes stale Quality Scale labels when a lower-ranked one is on the PR", async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        domain: "hue",
+        name: "Hue",
+        quality_scale: "platinum",
+        config_flow: true,
+        dependencies: [],
+        documentation: "",
+        requirements: [],
+        iot_class: "local_polling",
+      }),
+    });
+
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_LABELED,
+      payload: {
+        label: { name: "integration: hue" },
+        pull_request: {
+          head: { sha: "abc123" },
+          labels: [
+            { name: "integration: hue" },
+            { name: "Quality Scale: silver" },
+            { name: "Quality Scale: gold" },
+          ],
+        },
+      },
+    });
+    mockPRFiles(context, []);
+
+    const result = await runRule(prLabelQualityScale, context);
+    expect(result?.labels).toContain("Quality Scale: platinum");
+    expect(result?.removeLabels).toEqual(
+      expect.arrayContaining(["Quality Scale: silver", "Quality Scale: gold"]),
+    );
   });
 });

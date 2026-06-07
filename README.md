@@ -14,9 +14,8 @@ bun run format       # Auto-fix formatting
 
 ## TODOs
 
-### Swallowed errors
-
-Many `catch {}` blocks silently discard errors. While some are intentional (e.g., 404 on label removal), others may hide real bugs. Audit each catch block and add logging or Sentry reporting for non-benign failures.
+- Add sentry logging
+- pr-type-labels: should be renamed to pr-label-type and should be split up (needs a closer look)
 
 ### More HA rules
 - Close PR if they have more than 5 open PRs. New contributors are limited to 1 unless given permissions for another one.
