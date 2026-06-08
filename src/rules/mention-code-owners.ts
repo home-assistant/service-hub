@@ -1,8 +1,8 @@
 import type { WebhookContext } from "../context/webhook-context.js";
 import { EventType } from "../github/types.js";
-import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 import { matchCodeOwners, parseCodeOwners } from "../utils/codeowners.js";
 import { expandOrganizationTeams } from "../utils/organization-teams.js";
+import type { Effect, EventPayloadMap, Rule } from "./types.js";
 
 type HandledEvent = EventType.ISSUES_LABELED | EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;
 
