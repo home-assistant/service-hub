@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
 import { prLabelQualityScale } from "../../src/rules-pr/pr-label-quality-scale.js";
+import { QualityScale } from "../../src/utils/integration.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 describe("pr-label-quality-scale", () => {
@@ -246,5 +247,36 @@ describe("pr-label-quality-scale", () => {
     expect(result?.removeLabels).toEqual(
       expect.arrayContaining(["Quality Scale: silver", "Quality Scale: gold"]),
     );
+  });
+
+  // One integration, one scale → exact `Quality Scale: <tier>` label. Covers
+  // every value in the QualityScale enum so a new tier added upstream surfaces
+  // here as a missing case.
+  it.each(Object.values(QualityScale))("emits 'Quality Scale: %s'", async (scale) => {
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        domain: "hue",
+        name: "Hue",
+        quality_scale: scale,
+        config_flow: true,
+        dependencies: [],
+        documentation: "",
+        requirements: [],
+        iot_class: "local_polling",
+      }),
+    });
+
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_LABELED,
+      payload: {
+        label: { name: "integration: hue" },
+        pull_request: { head: { sha: "abc123" }, labels: [{ name: "integration: hue" }] },
+      },
+    });
+    mockPRFiles(context, []);
+
+    const result = await runRule(prLabelQualityScale, context);
+    expect(result?.labels).toContain(`Quality Scale: ${scale}`);
   });
 });

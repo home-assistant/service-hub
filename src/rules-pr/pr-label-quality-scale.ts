@@ -9,6 +9,8 @@ type HandledEvent = EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;
 // manifest.quality_scale value that isn't in the enum falls back to NO_SCORE.
 const QUALITY_SCALE_ORDER: QualityScale[] = [
   QualityScale.NO_SCORE,
+  QualityScale.LEGACY,
+  QualityScale.BRONZE,
   QualityScale.SILVER,
   QualityScale.GOLD,
   QualityScale.PLATINUM,

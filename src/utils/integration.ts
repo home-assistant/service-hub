@@ -3,6 +3,8 @@ import { fetchWithTimeout } from "./fetch.js";
 
 export enum QualityScale {
   NO_SCORE = "no score",
+  LEGACY = "legacy",
+  BRONZE = "bronze",
   SILVER = "silver",
   GOLD = "gold",
   PLATINUM = "platinum",
