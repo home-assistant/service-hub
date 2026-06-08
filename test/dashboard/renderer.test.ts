@@ -31,10 +31,12 @@ describe("dashboard renderer", () => {
       expect(result).toContain("**unknown-owner/unknown-repo**");
     });
 
-    it("collapses override syntax and bot commands into a single details block", () => {
+    it("collapses dashboard details, override syntax, and bot commands into one details block", () => {
       const result = renderDashboard(sections, REPO);
-      expect(result).toContain("Skip a check or run commands");
+      expect(result).toContain("More information about this dashboard");
+      expect(result).toContain("Skip a check that doesn't apply");
       expect(result).toContain("ha-bot:ignore");
+      expect(result).toContain("Bot commands");
       expect(result).toContain("/ha-bot update");
     });
 
