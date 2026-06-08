@@ -43,7 +43,3 @@ The `id` is the section ID shown in the dashboard's machine-readable markers (e.
 
 - convert other github/ci jobs into messages like `detect-non-english-issues`. These jobs should set flags which our bot can read instead.
 - info: they touched 'meta files': a pr should only touch a single meta file or no meta file. e.g. Agents.md, lock files, github actions, etc
-
-## PR Dashboard Text
-Hi 👋
-Thank you for contributing to {repo friendly name: e.g. everything under home-assistant = Home Assistant}! This is your PR dashboard which will flag anything you need to address before your PR can be reviewed. As long as a rule fails, your PR cannot be put into 'Ready for Review', but if you think a rule does not apply to you, add a section to your PR description with ... (too long?)

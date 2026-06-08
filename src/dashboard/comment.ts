@@ -60,14 +60,14 @@ export async function upsertDashboardComment(
       owner: params.owner,
       repo: params.repo,
       comment_id: existing.id,
-      body: renderDashboard(merged),
+      body: renderDashboard(merged, `${params.owner}/${params.repo}`),
     });
     return { comment: { id: data.id, url: data.html_url }, sections: merged };
   }
   const sections = applyOverrides(newSections, overrides ?? []);
   const { data } = await github.issues.createComment({
     ...params,
-    body: renderDashboard(sections),
+    body: renderDashboard(sections, `${params.owner}/${params.repo}`),
   });
   return { comment: { id: data.id, url: data.html_url }, sections };
 }
