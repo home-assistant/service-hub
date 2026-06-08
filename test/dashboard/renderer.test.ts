@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  mergeSections,
-  parseDashboard,
-  renderDashboard,
-  SENTINEL,
-} from "../../src/dashboard/renderer.js";
+import { parseDashboard, renderDashboard, SENTINEL } from "../../src/dashboard/renderer.js";
 import type { DashboardSection } from "../../src/dashboard/types.js";
 
 describe("dashboard renderer", () => {
@@ -120,33 +115,4 @@ describe("dashboard renderer", () => {
     });
   });
 
-  describe("mergeSections", () => {
-    it("overwrites existing sections by id", () => {
-      const existing: DashboardSection[] = [
-        { id: "cla", title: "CLA", status: "fail", message: "Not signed" },
-        { id: "docs", title: "Docs", status: "pass", message: "OK" },
-      ];
-      const updates: DashboardSection[] = [
-        { id: "cla", title: "CLA", status: "pass", message: "Signed" },
-      ];
-
-      const merged = mergeSections(existing, updates);
-
-      expect(merged).toHaveLength(2);
-      expect(merged.find((s) => s.id === "cla")?.status).toBe("pass");
-      expect(merged.find((s) => s.id === "docs")?.status).toBe("pass");
-    });
-
-    it("adds new sections", () => {
-      const existing: DashboardSection[] = [
-        { id: "cla", title: "CLA", status: "pass", message: "OK" },
-      ];
-      const updates: DashboardSection[] = [
-        { id: "labels", title: "Labels", status: "fail", message: "Missing" },
-      ];
-
-      const merged = mergeSections(existing, updates);
-      expect(merged).toHaveLength(2);
-    });
-  });
 });

@@ -1,6 +1,6 @@
 import type { Octokit } from "@octokit/rest";
 import type { GetIssueParams } from "../github/types.js";
-import { mergeSections, parseDashboard, renderDashboard, SENTINEL } from "./renderer.js";
+import { parseDashboard, renderDashboard, SENTINEL } from "./renderer.js";
 import type { DashboardSection } from "./types.js";
 
 export async function findDashboardCommentId(
@@ -41,11 +41,18 @@ export async function upsertDashboardComment(
 
   if (existing) {
     let existingSections = parseDashboard(existing.body);
+
     // Sweep stale sections — anything no live rule claims gets dropped.
     if (knownSectionIds) {
       existingSections = existingSections.filter((s) => knownSectionIds.has(s.id));
     }
-    const merged = mergeSections(existingSections, newSections);
+
+    // Merge existing+new by id (new wins)
+    const byId = new Map<string, DashboardSection>();
+    for (const s of existingSections) byId.set(s.id, s);
+    for (const s of newSections) byId.set(s.id, s);
+    const merged = [...byId.values()];
+
     const { data } = await github.issues.updateComment({
       owner: params.owner,
       repo: params.repo,

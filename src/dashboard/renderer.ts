@@ -92,18 +92,4 @@ export function parseDashboard(body: string): DashboardSection[] {
   return sections;
 }
 
-export function mergeSections(
-  existing: DashboardSection[],
-  updates: DashboardSection[],
-): DashboardSection[] {
-  const merged = new Map<string, DashboardSection>();
-  for (const s of existing) {
-    merged.set(s.id, s);
-  }
-  for (const s of updates) {
-    merged.set(s.id, s);
-  }
-  return Array.from(merged.values());
-}
-
 export { SENTINEL };
