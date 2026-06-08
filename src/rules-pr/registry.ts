@@ -8,7 +8,7 @@ import { prLabelChangeType } from "./pr-label-change-type.js";
 import { prLabelDependencyBump } from "./pr-label-dependency-bump.js";
 import { prLabelFileShape } from "./pr-label-file-shape.js";
 import { prLabelIntegrationName } from "./pr-label-integration-name.js";
-import { prLabelMergeTarget } from "./pr-label-merge-target.js";
+import { prMergeTarget } from "./pr-merge-target.js";
 import { prLabelQualityScale } from "./pr-label-quality-scale.js";
 import { prLabelWth } from "./pr-label-wth.js";
 import { prNewIntegrationValidation } from "./pr-new-integration-validation.js";
@@ -24,7 +24,7 @@ const coreRules: Rule[] = [
 
   prLabelChangeType,
   prLabelIntegrationName,
-  prLabelMergeTarget,
+  prMergeTarget,
   prLabelFileShape,
   blockingLabels({
     "awaiting-frontend": { message: "This PR is awaiting changes to the frontend" },
