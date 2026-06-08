@@ -236,13 +236,8 @@ async function sweepStaleStatusChecks(context: WebhookContext): Promise<void> {
   for (const s of statuses) {
     if (!latestByContext.has(s.context)) latestByContext.set(s.context, s);
   }
-  // Identify our bot login from a previously-written `ha-bot` status. Avoids
-  // trusting `BOT_SLUG` to match the actual App slug. First dispatch on a SHA
-  // may have no ha-bot status yet — skip the sweep then; the ha-bot write
-  // running in parallel will be visible on the next dispatch.
-  const ourLogin = latestByContext.get(HA_BOT_STATUS_CONTEXT)?.creator?.login?.toLowerCase();
-  if (!ourLogin) return;
 
+  const ourLogin = context.botLogin.toLowerCase();
   const stale = [...latestByContext.values()].filter(
     (s) =>
       s.creator?.login?.toLowerCase() === ourLogin &&

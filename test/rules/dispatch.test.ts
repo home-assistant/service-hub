@@ -545,7 +545,8 @@ describe("dispatch", () => {
   });
 
   describe("stale-status sweep", () => {
-    const BOT_LOGIN = "test-bot[bot]";
+    // Must match the mock context's `botLogin` (derived from `botSlug: "ha-bot"`).
+    const BOT_LOGIN = "ha-bot[bot]";
 
     function setupStaleStatusHarness(existingStatuses: { context: string; state: string }[]) {
       const github = createMockGitHub();
@@ -553,16 +554,11 @@ describe("dispatch", () => {
       github.issues.createComment.mockResolvedValue({
         data: { id: 111, html_url: "https://github.com/ha/c/pull/1#issuecomment-111" },
       });
-      // listCommitStatusesForRef returns newest-first. We need a prior ha-bot
-      // entry so the sweep can identify "our" creator login. Put it first.
-      const allStatuses = [
-        { context: "ha-bot", state: "success", id: -1, creator: { login: BOT_LOGIN } },
-        ...existingStatuses.map((s, idx) => ({
-          ...s,
-          id: idx,
-          creator: { login: BOT_LOGIN },
-        })),
-      ];
+      const allStatuses = existingStatuses.map((s, idx) => ({
+        ...s,
+        id: idx,
+        creator: { login: BOT_LOGIN },
+      }));
       github.repos.listCommitStatusesForRef.mockResolvedValue({ data: allStatuses });
       const rule: Rule = {
         name: "with-dashboard",
@@ -622,16 +618,9 @@ describe("dispatch", () => {
       github.issues.createComment.mockResolvedValue({
         data: { id: 111, html_url: "https://github.com/ha/c/pull/1#issuecomment-111" },
       });
-      // Our previous ha-bot status (so the sweep can identify us) plus a
-      // status from another bot. The other bot's status must be left alone.
+      // A status from another bot — the sweep must leave it alone.
       github.repos.listCommitStatusesForRef.mockResolvedValue({
         data: [
-          {
-            id: 0,
-            context: "ha-bot",
-            state: "success",
-            creator: { login: BOT_LOGIN },
-          },
           {
             id: 1,
             context: "external-ci",
@@ -667,20 +656,21 @@ describe("dispatch", () => {
       expect(neutralizing).toHaveLength(0);
     });
 
-    it("skips the sweep on first dispatch (no prior ha-bot status to identify us)", async () => {
+    it("runs on first dispatch even with no prior ha-bot status", async () => {
       const github = createMockGitHub();
       github.paginate.mockImplementation(async () => []);
       github.issues.createComment.mockResolvedValue({
         data: { id: 111, html_url: "https://github.com/ha/c/pull/1#issuecomment-111" },
       });
-      // No ha-bot status in history yet — sweep can't know which login is ours.
+      // No ha-bot status in history yet — sweep uses `context.botLogin` directly
+      // so it can still neutralize any stale status the bot wrote previously.
       github.repos.listCommitStatusesForRef.mockResolvedValue({
         data: [
           {
             id: 1,
-            context: "some-other-bot-status",
+            context: "required-labels",
             state: "failure",
-            creator: { login: "anyone" },
+            creator: { login: BOT_LOGIN },
           },
         ],
       });
@@ -705,11 +695,13 @@ describe("dispatch", () => {
 
       await dispatch(config, context);
 
-      // ha-bot still written by the aggregate, but nothing neutralized.
-      const neutralizing = github.repos.createCommitStatus.mock.calls.filter(
-        (call) => call[0].description === "No longer in use",
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "required-labels",
+          state: "success",
+          description: "No longer in use",
+        }),
       );
-      expect(neutralizing).toHaveLength(0);
     });
 
     it("skips statuses already in success state", async () => {

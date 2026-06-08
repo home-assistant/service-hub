@@ -8,4 +8,5 @@ crons = ["*/5 * * * *"]
 
 [vars]
 ENVIRONMENT = "production"
-BOT_SLUG = "ha-bot"
+BOT_SLUG = "home-assistant"
+COMMAND_SLUG = "ha-bot"

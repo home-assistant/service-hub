@@ -81,6 +81,9 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
 
     const payload = raw as unknown as WebhookEventPayload;
     const known = KNOWN_EVENT_TYPES.has(rawEventType);
+    const senderLogin = payload.sender?.login ?? "";
+    const ownBotLogin = `${c.env.BOT_SLUG}[bot]`;
+    const selfWebhook = senderLogin.toLowerCase() === ownBotLogin.toLowerCase();
 
     console.log(
       JSON.stringify({
@@ -92,12 +95,16 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
           ("issue" in payload && payload.issue?.number) ||
           undefined,
         delivery: c.req.header("x-github-delivery"),
-        ...(known ? {} : { ignored: "unknown event type" }),
+        ...(selfWebhook
+          ? { ignored: "self-webhook" }
+          : known
+            ? {}
+            : { ignored: "unknown event type" }),
       }),
     );
 
-    // Skip events we don't have a rule for
-    if (!known) return c.text("OK", 200);
+    // Skip self-webhooks and events we don't have a rule for
+    if (selfWebhook || !known) return c.text("OK", 200);
 
     const eventType = rawEventType as EventType;
     const octokit = deps.createOctokit(c.env);
@@ -106,8 +113,8 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
     if (event === "issue_comment" && action === "created") {
       const commentPayload = payload as IssueCommentCreatedEvent;
       const commentBody = commentPayload.comment.body ?? "";
-      const slug = c.env.BOT_SLUG;
-      if (commentPayload.issue.pull_request && isBotCommand(commentBody, slug)) {
+      const commandSlug = c.env.COMMAND_SLUG;
+      if (commentPayload.issue.pull_request && isBotCommand(commentBody, commandSlug)) {
         await dispatchCommand(
           deps.commandConfig,
           {
@@ -118,9 +125,9 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
             commentId: commentPayload.comment.id,
             commentBody,
             senderLogin: commentPayload.sender.login,
-            botSlug: slug,
+            botSlug: c.env.BOT_SLUG,
           },
-          slug,
+          commandSlug,
         );
         return c.text("OK", 200);
       }

@@ -5,8 +5,13 @@ export interface Env {
   GITHUB_INSTALLATION_ID: string;
   GITHUB_WEBHOOK_SECRET: string;
 
-  // Bot
-  BOT_SLUG: string; // e.g. "ha-bot" — used to match "/<slug> <command>" comments
+  // Bot identity — must match the GitHub App's URL slug. `[bot]` is
+  // added during runtime.
+  BOT_SLUG: string;
+
+  // Comment-command prefix — the bot reacts to comments starting with
+  // `/${COMMAND_SLUG} <command>`.
+  COMMAND_SLUG: string;
 
   // Sentry
   SENTRY_DSN: string;
