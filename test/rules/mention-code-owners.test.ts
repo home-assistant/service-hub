@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { mentionCodeOwners } from "../../src/rules/issue-mention-code-owners.js";
+import { mentionCodeOwners } from "../../src/rules/mention-code-owners.js";
 import { createMockGitHub, createMockIssueContext, runRule } from "../helpers/mock-context.js";
 
 const rule = mentionCodeOwners({

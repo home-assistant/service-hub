@@ -1,6 +1,6 @@
 import type { RegistryConfig } from "../rules/dispatch.js";
+import { mentionCodeOwners } from "../rules/mention-code-owners.js";
 import type { Rule } from "../rules/types.js";
-import { mentionCodeOwners } from "../rules-issue/issue-mention-code-owners.js";
 import { docsParentingCodeSide } from "./pr-docs-parenting.js";
 import { prHacktoberfest } from "./pr-hacktoberfest.js";
 import { prHasDocsPr } from "./pr-has-docs-pr.js";
