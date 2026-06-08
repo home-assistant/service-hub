@@ -12,24 +12,37 @@ bun run check        # Run linter + type checker
 bun run format       # Auto-fix formatting
 ```
 
+## Overriding a dashboard check
+
+Failing or pending checks on the bot's PR dashboard can be overridden by adding a tag to the PR description, with an explanation of why this PR doesn't need to satisfy the rule:
+
+```html
+<!-- ha-bot:ignore id="<section-id>" reason="<why this PR is an exception>" -->
+```
+
+The `id` is the section ID shown in the dashboard's machine-readable markers (e.g. `merge-conflict`, `docs-missing`). Only `fail` and `pending` sections can be downgraded; `pass`/`info` checks ignore the tag. The original check message stays visible in the dashboard with an `Override: <reason>` line appended, so reviewers can see both what was flagged and why it was waived.
+
 ## TODOs
 
 - Add sentry logging
-- pr-type-labels: should be renamed to pr-label-type and should be split up (needs a closer look)
+- On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
+
 
 ### More HA rules
-- Close PR if they have more than 5 open PRs. New contributors are limited to 1 unless given permissions for another one.
+- fail: pr-description template is not followed
+- fail: merge conflicts exist
+- fail/info: if there are CI job failures. Depends on the job (prek should fail, tests should fail if single integretion and integration test fails - otherwise info)
+- fail: if they have more than 5 open PRs. New contributors are limited to 1 unless given permissions for another one (add label to new PR). Members are exempted
 
-- put into draft if merge conflicts exist
-- put into draft/warn if there are CI job failures. Depends on the job (prek/tests should fail)
-- draft if pr-description template is not followed
-- draft if new-feature but no new tests
-- draft if prior comments are still unresolved/haven't been acknowledged (reaction, comment or 'resolved')
-- Warn user if they add more than one platform for a new-integration
-- Warn user if they touched 'meta files': a pr should only touch a single meta file or no meta file. e.g. Agents.md, lock files, github actions, etc
-- Warn user if they touch more than one integration
-- convert other github/ci jobs into messages like `detect-non-english-issues`. These jobs should set flags which our bot can read instead.
+- fail: if prior comments are still unresolved/haven't been acknowledged (reaction, comment or 'resolved')
+- fail: if new-feature but no new tests
+- info: if they add more than one platform for a new-integration
+- info: if they touch more than one integration. Members are exempted
 - linked PRs should be cross-linked. If the other PR doesn't link to this one (like for docs) flag it
 
-- members get treated differently and some rules don't apply to them (e.g. touching more than one integration, more than 5 PRs open)
-- Any bot warning/error can be removed by adjusting the PR description with a comment and tagging it appropriatly (so the bot sees it). The comment should be an explanation of why this PR is an exception to the rule.
+- convert other github/ci jobs into messages like `detect-non-english-issues`. These jobs should set flags which our bot can read instead.
+- info: they touched 'meta files': a pr should only touch a single meta file or no meta file. e.g. Agents.md, lock files, github actions, etc
+
+## PR Dashboard Text
+Hi 👋
+Thank you for contributing to {repo friendly name: e.g. everything under home-assistant = Home Assistant}! This is your PR dashboard which will flag anything you need to address before your PR can be reviewed. As long as a rule fails, your PR cannot be put into 'Ready for Review', but if you think a rule does not apply to you, add a section to your PR description with ... (too long?)

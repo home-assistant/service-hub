@@ -478,6 +478,202 @@ describe("dispatch", () => {
     });
   });
 
+  describe("PR-body rule overrides", () => {
+    function setupOverrideHarness(
+      status: "fail" | "pending" | "pass",
+      body: string,
+      extraSections: { id: string; status: "fail" | "pending" | "pass" | "skip" }[] = [],
+    ) {
+      const github = createMockGitHub();
+      github.paginate.mockImplementation(async () => []);
+      github.issues.createComment.mockResolvedValue({
+        data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
+      });
+
+      const rule: Rule = {
+        name: "rule-with-override",
+        description: "",
+        dashboardSections: ["merge-conflict", ...extraSections.map((s) => s.id)],
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () => [
+            {
+              type: "dashboardSection",
+              section: {
+                id: "merge-conflict",
+                title: "Merge conflicts",
+                status,
+                message: "Branch has merge conflicts.",
+              },
+            },
+            ...extraSections.map((s) => ({
+              type: "dashboardSection" as const,
+              section: { id: s.id, title: s.id, status: s.status, message: s.id },
+            })),
+          ],
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({
+        eventType: EventType.PULL_REQUEST_OPENED,
+        github,
+        payload: { pull_request: { body } },
+      });
+      return { github, config, context };
+    }
+
+    it("downgrades a failing section to success and preserves the original message", async () => {
+      const { github, config, context } = setupOverrideHarness(
+        "fail",
+        'PR description.\n<!-- ha-bot:ignore id="merge-conflict" reason="Will rebase before merge" -->',
+      );
+
+      await dispatch(config, context);
+
+      const writtenBody = github.issues.createComment.mock.calls[0][0].body as string;
+      // Original failure message stays visible alongside the override reason.
+      expect(writtenBody).toContain("Branch has merge conflicts.");
+      expect(writtenBody).toContain("Override: Will rebase before merge");
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ context: "ha-bot", state: "success" }),
+      );
+    });
+
+    it("downgrades a pending section to success+skipped", async () => {
+      const { github, config, context } = setupOverrideHarness(
+        "pending",
+        '<!-- ha-bot:ignore id="merge-conflict" reason="Known transient state" -->',
+      );
+
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "ha-bot",
+          state: "success",
+          description: expect.stringContaining("1 skipped"),
+        }),
+      );
+    });
+
+    it("does not downgrade other failing sections", async () => {
+      const { github, config, context } = setupOverrideHarness(
+        "fail",
+        '<!-- ha-bot:ignore id="merge-conflict" reason="ok" -->',
+        [{ id: "other-rule", status: "fail" }],
+      );
+
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "ha-bot",
+          state: "failure",
+          description: expect.stringContaining("1 check failing"),
+        }),
+      );
+    });
+
+    it("ignores overrides for unknown section ids", async () => {
+      const { github, config, context } = setupOverrideHarness(
+        "fail",
+        '<!-- ha-bot:ignore id="typo-id" reason="nope" -->',
+      );
+
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ context: "ha-bot", state: "failure" }),
+      );
+    });
+
+    it("does not modify a passing section even if the PR body names it", async () => {
+      const { github, config, context } = setupOverrideHarness(
+        "pass",
+        '<!-- ha-bot:ignore id="merge-conflict" reason="no-op" -->',
+      );
+
+      await dispatch(config, context);
+
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ context: "ha-bot", state: "success" }),
+      );
+      const writtenBody = github.issues.createComment.mock.calls[0][0].body as string;
+      expect(writtenBody).not.toContain("Override:");
+    });
+
+    it("applies overrides to sections preserved from a prior dashboard comment", async () => {
+      const github = createMockGitHub();
+      // Existing comment carries a failing section whose owning rule won't
+      // re-emit this dispatch — override should still downgrade it.
+      github.paginate.mockImplementation(async () => [
+        {
+          id: 555,
+          body: [
+            "<!-- ha-bot-dashboard -->",
+            "<!-- section:merge-conflict:" +
+              JSON.stringify({
+                id: "merge-conflict",
+                title: "Merge conflicts",
+                status: "fail",
+                message: "Branch has merge conflicts.",
+              }) +
+              " -->",
+            "<!-- section:other:" +
+              JSON.stringify({
+                id: "other",
+                title: "Other",
+                status: "pass",
+                message: "ok",
+              }) +
+              " -->",
+          ].join("\n"),
+        },
+      ]);
+      github.issues.updateComment.mockResolvedValue({
+        data: { id: 555, html_url: "https://github.com/ha/c/pull/1#issuecomment-555" },
+      });
+
+      const rule: Rule = {
+        name: "other-rule",
+        description: "",
+        dashboardSections: ["merge-conflict", "other"],
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () => [
+            {
+              type: "dashboardSection",
+              section: { id: "other", title: "Other", status: "pass", message: "ok" },
+            },
+          ],
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({
+        eventType: EventType.PULL_REQUEST_OPENED,
+        github,
+        payload: {
+          pull_request: {
+            body: '<!-- ha-bot:ignore id="merge-conflict" reason="Will rebase" -->',
+          },
+        },
+      });
+
+      await dispatch(config, context);
+
+      const writtenBody = github.issues.updateComment.mock.calls[0][0].body as string;
+      expect(writtenBody).toContain("Branch has merge conflicts.");
+      expect(writtenBody).toContain("Override: Will rebase");
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ context: "ha-bot", state: "success" }),
+      );
+    });
+  });
+
   describe("stale-section sweep", () => {
     it("drops sections from the existing comment whose IDs no live rule claims", async () => {
       const github = createMockGitHub();

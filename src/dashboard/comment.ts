@@ -1,5 +1,6 @@
 import type { Octokit } from "@octokit/rest";
 import type { GetIssueParams } from "../github/types.js";
+import { applyOverrides, type RuleOverride } from "../utils/rule-overrides.js";
 import { parseDashboard, renderDashboard, SENTINEL } from "./renderer.js";
 import type { DashboardSection } from "./types.js";
 
@@ -32,6 +33,7 @@ export async function upsertDashboardComment(
   params: GetIssueParams,
   newSections: DashboardSection[],
   knownSectionIds?: ReadonlySet<string>,
+  overrides?: RuleOverride[],
 ): Promise<UpsertedDashboard | null> {
   if (newSections.length === 0) {
     return null;
@@ -51,8 +53,9 @@ export async function upsertDashboardComment(
     const byId = new Map<string, DashboardSection>();
     for (const s of existingSections) byId.set(s.id, s);
     for (const s of newSections) byId.set(s.id, s);
-    const merged = [...byId.values()];
 
+    // Apply overrides by contributor
+    const merged = applyOverrides([...byId.values()], overrides ?? []);
     const { data } = await github.issues.updateComment({
       owner: params.owner,
       repo: params.repo,
@@ -61,9 +64,10 @@ export async function upsertDashboardComment(
     });
     return { comment: { id: data.id, url: data.html_url }, sections: merged };
   }
+  const sections = applyOverrides(newSections, overrides ?? []);
   const { data } = await github.issues.createComment({
     ...params,
-    body: renderDashboard(newSections),
+    body: renderDashboard(sections),
   });
-  return { comment: { id: data.id, url: data.html_url }, sections: newSections };
+  return { comment: { id: data.id, url: data.html_url }, sections };
 }
