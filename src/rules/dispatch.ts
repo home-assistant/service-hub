@@ -1,6 +1,8 @@
-import type { WebhookContext } from "../context/webhook-context.js";
+import { WebhookContextType, type WebhookContext } from "../context/webhook-context.js";
 import { upsertDashboardComment } from "../dashboard/comment.js";
 import type { DashboardSection } from "../dashboard/types.js";
+import { convertPullRequestToDraft } from "../github/client.js";
+import { EventType } from "../github/types.js";
 import { deduplicateByName } from "../utils/deduplicate.js";
 import { parseOverrides } from "../utils/rule-overrides.js";
 import type { Effect, EventPayloadMap, Rule } from "./types.js";
@@ -153,6 +155,33 @@ function tryNumber(context: WebhookContext): number | undefined {
 
 const HA_BOT_STATUS_CONTEXT = "ha-bot";
 
+/** Convert the PR to draft unless it's already one */
+async function draftPRIfNotDraft(context: WebhookContext): Promise<void> {
+  if (context.type !== WebhookContextType.PULL_REQUEST) return;
+  try {
+    const pr = await context.fetchPullRequestWithCache(context.pullRequest());
+    if (pr.draft) return;
+    await convertPullRequestToDraft(context.github, pr.node_id);
+  } catch (err) {
+    console.warn("draftPRIfNotDraft failed:", err);
+  }
+}
+
+/** Re-draft if the existing ha-bot aggregate on head SHA is failing. */
+async function maybeRedraftOnReady(context: WebhookContext): Promise<void> {
+  if (!context.headSha) return;
+  try {
+    const { data: statuses } = await context.github.repos.listCommitStatusesForRef(
+      context.repo({ ref: context.headSha, per_page: 100 }),
+    );
+    const haBot = statuses.find((s) => s.context === HA_BOT_STATUS_CONTEXT);
+    if (haBot?.state !== "failure") return;
+    await draftPRIfNotDraft(context);
+  } catch (err) {
+    console.warn("maybeRedraftOnReady failed:", err);
+  }
+}
+
 function aggregateDashboardStatus(sections: DashboardSection[]): {
   state: "success" | "failure" | "pending";
   description: string;
@@ -213,6 +242,9 @@ async function syncDashboardAndStatus(
       target_url: result.comment.url,
     }),
   );
+  if (aggregate.state === "failure") {
+    await draftPRIfNotDraft(context);
+  }
   await sweep;
 }
 
@@ -271,6 +303,10 @@ export async function dispatch(
   registryConfig: RegistryConfig,
   context: WebhookContext,
 ): Promise<Effect[]> {
+  if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW && !context.dryRun) {
+    await maybeRedraftOnReady(context);
+  }
+
   const matched = matchRules(registryConfig, context);
 
   const settled = await Promise.allSettled(

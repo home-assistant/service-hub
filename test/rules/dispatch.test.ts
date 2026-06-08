@@ -478,6 +478,128 @@ describe("dispatch", () => {
     });
   });
 
+  describe("draft-on-failure", () => {
+    function setupDraftHarness(
+      sectionStatus: "fail" | "pass" | "pending",
+      prData: { draft?: boolean; node_id?: string } = {},
+    ) {
+      const github = createMockGitHub();
+      github.paginate.mockImplementation(async () => []);
+      github.issues.createComment.mockResolvedValue({
+        data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
+      });
+      github.pulls.get.mockResolvedValue({
+        data: { draft: prData.draft ?? false, node_id: prData.node_id ?? "PR_NODE_1" },
+      });
+
+      const rule: Rule = {
+        name: "rule",
+        description: "",
+        dashboardSections: ["x"],
+        events: {
+          [EventType.PULL_REQUEST_OPENED]: async () => [
+            {
+              type: "dashboardSection",
+              section: { id: "x", title: "x", status: sectionStatus, message: "msg" },
+            },
+          ],
+        },
+      };
+      const config: RegistryConfig = {
+        organizations: {},
+        repositories: { "home-assistant/core": [rule] },
+      };
+      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+      return { github, config, context };
+    }
+
+    it("converts the PR to draft when the aggregate is failing", async () => {
+      const { github, config, context } = setupDraftHarness("fail");
+      await dispatch(config, context);
+
+      expect(github.graphql).toHaveBeenCalledWith(
+        expect.stringContaining("convertPullRequestToDraft"),
+        expect.objectContaining({ id: "PR_NODE_1" }),
+      );
+    });
+
+    it("does not draft when the PR is already a draft", async () => {
+      const { github, config, context } = setupDraftHarness("fail", { draft: true });
+      await dispatch(config, context);
+
+      expect(github.graphql).not.toHaveBeenCalled();
+    });
+
+    it("does not draft when the aggregate is passing", async () => {
+      const { github, config, context } = setupDraftHarness("pass");
+      await dispatch(config, context);
+
+      expect(github.graphql).not.toHaveBeenCalled();
+    });
+
+    it("does not draft when the aggregate is pending", async () => {
+      const { github, config, context } = setupDraftHarness("pending");
+      await dispatch(config, context);
+
+      expect(github.graphql).not.toHaveBeenCalled();
+    });
+
+    it("on ready_for_review with an existing failing ha-bot status, drafts immediately", async () => {
+      const github = createMockGitHub();
+      github.repos.listCommitStatusesForRef.mockResolvedValue({
+        data: [{ id: 1, context: "ha-bot", state: "failure", creator: { login: "ha-bot[bot]" } }],
+      });
+      github.pulls.get.mockResolvedValue({
+        data: { draft: false, node_id: "PR_NODE_READY" },
+      });
+
+      const config: RegistryConfig = { organizations: {}, repositories: {} };
+      const context = createMockContext({
+        eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
+        github,
+      });
+
+      await dispatch(config, context);
+
+      expect(github.graphql).toHaveBeenCalledWith(
+        expect.stringContaining("convertPullRequestToDraft"),
+        expect.objectContaining({ id: "PR_NODE_READY" }),
+      );
+    });
+
+    it("on ready_for_review with a passing ha-bot status, does not draft", async () => {
+      const github = createMockGitHub();
+      github.repos.listCommitStatusesForRef.mockResolvedValue({
+        data: [{ id: 1, context: "ha-bot", state: "success", creator: { login: "ha-bot[bot]" } }],
+      });
+
+      const config: RegistryConfig = { organizations: {}, repositories: {} };
+      const context = createMockContext({
+        eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
+        github,
+      });
+
+      await dispatch(config, context);
+
+      expect(github.graphql).not.toHaveBeenCalled();
+    });
+
+    it("on ready_for_review with no ha-bot status yet, does not draft", async () => {
+      const github = createMockGitHub();
+      github.repos.listCommitStatusesForRef.mockResolvedValue({ data: [] });
+
+      const config: RegistryConfig = { organizations: {}, repositories: {} };
+      const context = createMockContext({
+        eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
+        github,
+      });
+
+      await dispatch(config, context);
+
+      expect(github.graphql).not.toHaveBeenCalled();
+    });
+  });
+
   describe("PR-body rule overrides", () => {
     function setupOverrideHarness(
       status: "fail" | "pending" | "pass",
