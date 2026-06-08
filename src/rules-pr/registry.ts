@@ -45,7 +45,7 @@ export const prConfig: RegistryConfig = {
   organizations: {},
   repositories: {
     "home-assistant/core": coreRules,
-    // Test fork — drives the live bot until we have permission on real core.
+    // Test fork
     "justanotherariel/hass_core": coreRules,
   },
 };
