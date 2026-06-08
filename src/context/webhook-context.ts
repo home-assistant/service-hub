@@ -25,6 +25,18 @@ import type {
 } from "../github/types.js";
 import type { OnDemandEvent } from "../rules/types.js";
 
+/**
+ * Discriminates whether a webhook dispatch concerns an Issue or a PR. 
+ * 
+ * Some GitHub events (notably `issue_comment`) can fire for either, so 
+ * consumers that need to behave differently can branch on `context.type` 
+ * instead of sniffing payload shape.
+ */
+export enum WebhookContextType {
+  ISSUE = "issue",
+  PULL_REQUEST = "pull_request",
+}
+
 export type WebhookEventPayload =
   | IssueCommentCreatedEvent
   | IssuesLabeledEvent
@@ -51,6 +63,7 @@ interface WebhookContextParams<P extends WebhookEventPayload> {
 export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload> {
   readonly github: Octokit;
   readonly eventType: EventType;
+  readonly type: WebhookContextType;
   readonly repository: Repository;
   readonly organization: Organization;
   readonly payload: P;
@@ -69,6 +82,7 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
     this.dryRun = params.dryRun ?? false;
     this.repository = params.payload.repository.full_name as Repository;
     this.organization = params.payload.repository.owner.login as Organization;
+    this.type = deriveContextType(params.payload);
   }
 
   /** Bot's commit-status creator login, e.g. "ha-bot[bot]". */
@@ -157,4 +171,15 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
     this._pullRequestCache.set(key, result);
     return result;
   }
+}
+
+function deriveContextType(payload: WebhookEventPayload): WebhookContextType {
+  if ("pull_request" in payload && payload.pull_request) {
+    return WebhookContextType.PULL_REQUEST;
+  }
+  // `issue_comment` events on a PR have the PR cross-link on `issue.pull_request`.
+  if ("issue" in payload && payload.issue?.pull_request) {
+    return WebhookContextType.PULL_REQUEST;
+  }
+  return WebhookContextType.ISSUE;
 }
