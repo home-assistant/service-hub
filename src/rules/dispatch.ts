@@ -1,4 +1,4 @@
-import { WebhookContextType, type WebhookContext } from "../context/webhook-context.js";
+import type { WebhookContext } from "../context/webhook-context.js";
 import { upsertDashboardComment } from "../dashboard/comment.js";
 import type { DashboardSection } from "../dashboard/types.js";
 import { deduplicateByName } from "../utils/deduplicate.js";
@@ -22,10 +22,7 @@ export function matchRules(registryConfig: RegistryConfig, context: WebhookConte
   );
 }
 
-/**
- * Collect every dashboardSection ID claimed by some rule in this repo/org's
- * registry. Used to sweep stale sections written by older deploys.
- */
+/** Collect every dashboardSection ID claimed by some rule in this repo/org's registry. */
 function collectKnownDashboardSectionIds(
   registryConfig: RegistryConfig,
   context: WebhookContext,
@@ -43,36 +40,6 @@ function collectKnownDashboardSectionIds(
 
 interface ApplyEffectsConfig {
   knownSectionIds: ReadonlySet<string>;
-}
-
-/**
- * Returns the body of the issue or PR in scope — the surface where users
- * declare rule overrides via `<!-- ha-bot:ignore ... -->` tags. Tries the
- * webhook payload first (every PR_* and ISSUES_* event carries it inline);
- * for shapes that don't (e.g. `issue_comment` on a PR has the body on
- * `issue.body`, not `pull_request.body`) falls back to a cached fetch via
- * the endpoint matching `context.type`.
- */
-async function getOverrideSourceBody(context: WebhookContext): Promise<string | null> {
-  const payload = context.payload as {
-    pull_request?: { body?: string | null };
-    issue?: { body?: string | null };
-  };
-
-  if (payload.pull_request?.body != null) return payload.pull_request.body;
-  if (payload.issue?.body != null) return payload.issue.body;
-
-  try {
-    if (context.type === WebhookContextType.PULL_REQUEST) {
-      const pr = await context.fetchPullRequestWithCache(context.pullRequest());
-      return pr.body ?? null;
-    }
-    const issue = await context.fetchIssueWithCache(context.issue());
-    return issue.body ?? null;
-  } catch (err) {
-    console.warn("getOverrideSourceBody fetch failed:", err);
-    return null;
-  }
 }
 
 async function applyEffects(
@@ -219,7 +186,7 @@ async function syncDashboardAndStatus(
   newSections: DashboardSection[],
   config: ApplyEffectsConfig,
 ): Promise<void> {
-  const overrides = parseOverrides(await getOverrideSourceBody(context));
+  const overrides = parseOverrides(await context.getBody());
   const result = await upsertDashboardComment(
     context.github,
     context.issue(),

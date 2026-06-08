@@ -171,6 +171,28 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
     this._pullRequestCache.set(key, result);
     return result;
   }
+
+  /** Body of the issue/PR in scope; payload first, falls back to a cached fetch. */
+  async getBody(): Promise<string | null> {
+    const payload = this.payload as {
+      pull_request?: { body?: string | null };
+      issue?: { body?: string | null };
+    };
+    if (payload.pull_request?.body != null) return payload.pull_request.body;
+    if (payload.issue?.body != null) return payload.issue.body;
+
+    try {
+      if (this.type === WebhookContextType.PULL_REQUEST) {
+        const pr = await this.fetchPullRequestWithCache(this.pullRequest());
+        return pr.body ?? null;
+      }
+      const issue = await this.fetchIssueWithCache(this.issue());
+      return issue.body ?? null;
+    } catch (err) {
+      console.warn("WebhookContext.getBody fetch failed:", err);
+      return null;
+    }
+  }
 }
 
 function deriveContextType(payload: WebhookEventPayload): WebhookContextType {
