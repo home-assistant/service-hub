@@ -22,6 +22,23 @@ export async function findDashboardCommentId(
   return null;
 }
 
+/**
+ * Post a tiny placeholder dashboard comment if none exists yet. Called at the
+ * top of effect-application so the dashboard sits above any other comment
+ * (mention-code-owners, etc.) the same dispatch will create.
+ */
+export async function ensureDashboardCommentExists(
+  github: Octokit,
+  params: GetIssueParams,
+): Promise<void> {
+  const existing = await findDashboardCommentId(github, params);
+  if (existing) return;
+  await github.issues.createComment({
+    ...params,
+    body: `${SENTINEL}\n\n_Evaluating PR rules…_`,
+  });
+}
+
 export interface UpsertedDashboard {
   comment: { id: number; url: string };
   /** All sections currently on the comment (existing merged with new). */

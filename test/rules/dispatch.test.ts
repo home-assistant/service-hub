@@ -654,7 +654,10 @@ describe("dispatch", () => {
 
       await dispatch(config, context);
 
-      const writtenBody = github.issues.createComment.mock.calls[0][0].body as string;
+      // The placeholder is createComment.mock.calls[0]; the real dashboard
+      // is the last createComment call (since the mock returns [] from
+      // paginate so upsertDashboardComment doesn't find the placeholder).
+      const writtenBody = github.issues.createComment.mock.lastCall?.[0].body as string;
       // Original failure message stays visible alongside the override reason.
       expect(writtenBody).toContain("Branch has merge conflicts.");
       expect(writtenBody).toContain("Override: Will rebase before merge");
@@ -722,7 +725,10 @@ describe("dispatch", () => {
       expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
         expect.objectContaining({ context: "ha-bot", state: "success" }),
       );
-      const writtenBody = github.issues.createComment.mock.calls[0][0].body as string;
+      // The placeholder is createComment.mock.calls[0]; the real dashboard
+      // is the last createComment call (since the mock returns [] from
+      // paginate so upsertDashboardComment doesn't find the placeholder).
+      const writtenBody = github.issues.createComment.mock.lastCall?.[0].body as string;
       expect(writtenBody).not.toContain("Override:");
     });
 

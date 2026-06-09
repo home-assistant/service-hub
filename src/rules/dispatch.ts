@@ -1,5 +1,5 @@
 import { WebhookContextType, type WebhookContext } from "../context/webhook-context.js";
-import { upsertDashboardComment } from "../dashboard/comment.js";
+import { ensureDashboardCommentExists, upsertDashboardComment } from "../dashboard/comment.js";
 import type { DashboardSection } from "../dashboard/types.js";
 import { convertPullRequestToDraft } from "../github/client.js";
 import { EventType } from "../github/types.js";
@@ -126,6 +126,11 @@ async function applyEffects(
   }
 
   if (dashboardSections.size > 0) {
+    // Post a placeholder dashboard *before* the other effects race, so the
+    // dashboard is always the earliest comment on the PR. The real content
+    // gets rendered by syncDashboardAndStatus below (which updates this
+    // placeholder via findDashboardCommentId).
+    await ensureDashboardCommentExists(context.github, context.issue());
     ops.push(syncDashboardAndStatus(context, [...dashboardSections.values()], config));
   }
 
