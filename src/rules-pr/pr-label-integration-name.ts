@@ -14,10 +14,6 @@ const AnalyticsSchema = z.object({
   integrations: z.record(z.string(), z.number()).optional(),
 });
 
-function componentLabels(parsed: ParsedPath[]): string[] {
-  return parsed.filter((f) => f.component).map((f) => `integration: ${f.component}`);
-}
-
 async function getTopLabels(parsed: ParsedPath[]): Promise<string[]> {
   try {
     const res = await fetchWithTimeout(ANALYTICS_URL);
@@ -61,18 +57,17 @@ async function evaluate(
 ): Promise<Effect[] | undefined> {
   if (ctx.senderIsBot) return undefined;
 
-  const files = await ctx.fetchPRFiles();
-  const parsed = files.map((f) => new ParsedPath(f));
-
-  const components = componentLabels(parsed);
-  if (components.length === 0 || components.length > MAX_INTEGRATION_LABELS) {
+  const domains = await ctx.getIntegrationDomains();
+  if (domains.length === 0 || domains.length > MAX_INTEGRATION_LABELS) {
     return undefined;
   }
 
-  const labels = new Set(components);
+  const labels = new Set(domains.map((d) => `integration: ${d}`));
 
   // Skip Top N for PRs that touch core or add a brand-new integration —
   // analytics rank is meaningless in both cases.
+  const files = await ctx.fetchPRFiles();
+  const parsed = files.map((f) => new ParsedPath(f));
   const touchesCore = parsed.some((f) => f.core);
   const newIntegration = addsNewIntegration(parsed);
   if (!touchesCore && !newIntegration) {

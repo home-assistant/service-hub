@@ -279,4 +279,41 @@ describe("pr-label-quality-scale", () => {
     const result = await runRule(prLabelQualityScale, context);
     expect(result?.labels).toContain(`Quality Scale: ${scale}`);
   });
+
+  it("derives the integration from changed files on pull_request.opened (no labels yet)", async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        domain: "hue",
+        name: "Hue",
+        quality_scale: "platinum",
+        config_flow: true,
+        dependencies: [],
+        documentation: "",
+        requirements: [],
+        iot_class: "local_polling",
+      }),
+    });
+
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_OPENED,
+      payload: {
+        pull_request: { head: { sha: "abc123" }, labels: [] },
+      },
+    });
+    mockPRFiles(context, [
+      { filename: "homeassistant/components/hue/light.py", status: "modified" },
+    ]);
+
+    const result = await runRule(prLabelQualityScale, context);
+    expect(result?.labels).toContain("Quality Scale: platinum");
+  });
+
+  it("subscribes to opened, reopened, synchronize, labeled, and on_demand", () => {
+    expect(Object.keys(prLabelQualityScale.events)).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(Object.keys(prLabelQualityScale.events)).toContain(EventType.PULL_REQUEST_REOPENED);
+    expect(Object.keys(prLabelQualityScale.events)).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+    expect(Object.keys(prLabelQualityScale.events)).toContain(EventType.PULL_REQUEST_LABELED);
+    expect(Object.keys(prLabelQualityScale.events)).toContain(EventType.ON_DEMAND);
+  });
 });

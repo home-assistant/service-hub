@@ -4,7 +4,13 @@ import { matchCodeOwners, parseCodeOwners } from "../utils/codeowners.js";
 import { expandOrganizationTeams } from "../utils/organization-teams.js";
 import type { Effect, EventPayloadMap, Rule } from "./types.js";
 
-type HandledEvent = EventType.ISSUES_LABELED | EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;
+type HandledEvent =
+  | EventType.ISSUES_LABELED
+  | EventType.PULL_REQUEST_LABELED
+  | EventType.PULL_REQUEST_OPENED
+  | EventType.PULL_REQUEST_REOPENED
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.ON_DEMAND;
 
 async function fetchCodeowners(
   ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
@@ -71,6 +77,39 @@ async function processIntegration(
   return effects;
 }
 
+function labelsToIntegrationNames(labels: { name?: string }[] | null | undefined): string[] {
+  return (labels ?? []).flatMap((l) =>
+    l?.name?.startsWith("integration: ") ? [l.name.slice("integration: ".length)] : [],
+  );
+}
+
+async function collectIntegrationNames(
+  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
+  triggerItem: TriggerItem & { labels?: { name?: string }[] | null },
+): Promise<string[]> {
+  switch (ctx.eventType) {
+    case EventType.ISSUES_LABELED:
+    case EventType.PULL_REQUEST_LABELED: {
+      const labeled = ctx.payload as EventPayloadMap[
+        | EventType.ISSUES_LABELED
+        | EventType.PULL_REQUEST_LABELED];
+      if (!labeled.label?.name.startsWith("integration: ")) return [];
+      return [labeled.label.name.slice("integration: ".length)];
+    }
+    case EventType.PULL_REQUEST_OPENED:
+    case EventType.PULL_REQUEST_REOPENED:
+    case EventType.PULL_REQUEST_SYNCHRONIZE:
+      return ctx.getIntegrationDomains();
+    case EventType.ON_DEMAND: {
+      const fileDerived = await ctx.getIntegrationDomains();
+      const labelDerived = labelsToIntegrationNames(triggerItem.labels);
+      return [...new Set([...fileDerived, ...labelDerived])];
+    }
+    default:
+      return [];
+  }
+}
+
 export function mentionCodeOwners(config: {
   pathPattern: (integration: string) => string;
   itemLabel?: string;
@@ -85,23 +124,12 @@ export function mentionCodeOwners(config: {
       "pull_request" in payload ? payload.pull_request : "issue" in payload ? payload.issue : null;
     if (!triggerItem) return;
 
-    // Pick the integration labels we need to process this dispatch:
-    //   LABELED → only the label that was just added (if it's an integration: one)
-    //   ON_DEMAND → every integration: label currently on the item
-    let integrationLabels: string[];
-    if (ctx.eventType === EventType.ON_DEMAND) {
-      const labels = (triggerItem.labels ?? []) as { name?: string }[];
-      integrationLabels = labels.flatMap((l) =>
-        l?.name?.startsWith("integration: ") ? [l.name] : [],
-      );
-    } else {
-      const labeled = payload as EventPayloadMap[
-        | EventType.ISSUES_LABELED
-        | EventType.PULL_REQUEST_LABELED];
-      if (!labeled.label?.name.startsWith("integration: ")) return;
-      integrationLabels = [labeled.label.name];
-    }
-    if (integrationLabels.length === 0) return;
+    // Pick which integration domain(s) drive this dispatch:
+    //   LABELED → only the integration in the just-added label (if any)
+    //   PR opened/reopened/synchronize → derived from changed files
+    //   ON_DEMAND → union of file-derived (PR only) and label-derived
+    const integrationNames = await collectIntegrationNames(ctx, triggerItem);
+    if (integrationNames.length === 0) return;
 
     const codeownersContent = await fetchCodeowners(ctx);
     if (!codeownersContent) return;
@@ -113,8 +141,7 @@ export function mentionCodeOwners(config: {
       config.itemLabel ?? (ctx.eventType.startsWith("issues") ? "issue" : "pull request");
 
     const effects: Effect[] = [];
-    for (const labelName of integrationLabels) {
-      const integrationName = labelName.split("integration: ")[1];
+    for (const integrationName of integrationNames) {
       const integrationEffects = await processIntegration(
         ctx,
         integrationName,
@@ -132,10 +159,13 @@ export function mentionCodeOwners(config: {
 
   return {
     name: "mention-code-owners",
-    description: "Assigns and mentions code owners when an integration label is added",
+    description: "Assigns and mentions code owners for integrations a PR/issue touches",
     events: {
       [EventType.ISSUES_LABELED]: handle,
       [EventType.PULL_REQUEST_LABELED]: handle,
+      [EventType.PULL_REQUEST_OPENED]: handle,
+      [EventType.PULL_REQUEST_REOPENED]: handle,
+      [EventType.PULL_REQUEST_SYNCHRONIZE]: handle,
       [EventType.ON_DEMAND]: handle,
     },
   };

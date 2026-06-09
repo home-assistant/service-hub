@@ -3,7 +3,12 @@ import { EventType } from "../github/types.js";
 import type { Effect, EventPayloadMap, Rule } from "../rules/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../utils/integration.js";
 
-type HandledEvent = EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;
+type HandledEvent =
+  | EventType.PULL_REQUEST_OPENED
+  | EventType.PULL_REQUEST_REOPENED
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.PULL_REQUEST_LABELED
+  | EventType.ON_DEMAND;
 
 // Lowest → highest. Index in this list is the rank. An integration's
 // manifest.quality_scale value that isn't in the enum falls back to NO_SCORE.
@@ -37,14 +42,18 @@ async function evaluate(
     effects.push({ type: "addLabels", labels: ["quality-scale"] });
   }
 
-  // Add `Quality Scale: {}` label if PR touches an integration.
-  // Only show the IQS highest score.
+  // Resolve which integration domains drive the score: file-derived first
+  // (the canonical case), unioned with any `integration:` labels already on
+  // the PR (covers manual maintainer adds that file shape doesn't pick up).
+  const fileDerived = await ctx.getIntegrationDomains();
   const currentLabels = ctx.payload.pull_request.labels.map((l) => l.name);
-  const integrationLabels = currentLabels.filter((n) => n.startsWith("integration: "));
+  const labelDerived = currentLabels
+    .filter((n) => n.startsWith("integration: "))
+    .map((n) => n.slice("integration: ".length));
+  const domains = [...new Set([...fileDerived, ...labelDerived])];
 
   const scales: QualityScale[] = [];
-  for (const labelName of integrationLabels) {
-    const domain = labelName.split("integration: ")[1];
+  for (const domain of domains) {
     const manifest = await fetchIntegrationManifest(domain);
     if (manifest) {
       scales.push(manifest.quality_scale || QualityScale.NO_SCORE);
@@ -66,9 +75,11 @@ async function evaluate(
 
 export const prLabelQualityScale: Rule = {
   name: "pr-label-quality-scale",
-  description:
-    "Labels PRs with the highest integration quality scale among their `integration:` labels.",
+  description: "Labels PRs with the highest quality scale among the integrations they touch.",
   events: {
+    [EventType.PULL_REQUEST_OPENED]: evaluate,
+    [EventType.PULL_REQUEST_REOPENED]: evaluate,
+    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
     [EventType.PULL_REQUEST_LABELED]: evaluate,
     [EventType.ON_DEMAND]: evaluate,
   },

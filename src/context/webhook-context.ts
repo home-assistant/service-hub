@@ -24,6 +24,7 @@ import type {
   Repository,
 } from "../github/types.js";
 import type { OnDemandEvent } from "../rules/types.js";
+import { ParsedPath } from "../utils/parse-path.js";
 
 /**
  * Discriminates whether a webhook dispatch concerns an Issue or a PR. 
@@ -73,6 +74,7 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
   prFilesCache?: ListPullRequestFiles;
   private _issueCache = new Map<string, GetIssueResponse>();
   private _pullRequestCache = new Map<string, GetPullRequestResponse>();
+  private _integrationDomainsCache?: string[];
 
   constructor(params: WebhookContextParams<P>) {
     this.github = params.github;
@@ -150,6 +152,21 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
       });
     }
     return this.prFilesCache;
+  }
+
+  /** Unique integration domains derived from PR file paths. Empty for issue contexts. */
+  async getIntegrationDomains(): Promise<string[]> {
+    if (this.type !== WebhookContextType.PULL_REQUEST) return [];
+    if (this._integrationDomainsCache) return this._integrationDomainsCache;
+
+    const files = await this.fetchPRFiles();
+    const domains = new Set<string>();
+    for (const file of files) {
+      const parsed = new ParsedPath(file);
+      if (parsed.component) domains.add(parsed.component);
+    }
+    this._integrationDomainsCache = [...domains];
+    return this._integrationDomainsCache;
   }
 
   async fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {
