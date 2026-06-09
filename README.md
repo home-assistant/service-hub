@@ -26,11 +26,12 @@ The `id` is the section ID shown in the dashboard's machine-readable markers (e.
 
 - Add sentry logging
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
+- Fix pr-platinum-code-owner-approval, pr-new-integration-validation, and pr-has-docs-pr to update on PR creation
+- Make the sectiond-id discoverable or replace it with the friendly name when overriding checks
 
 
 ### More HA rules
 - fail: pr-description template is not followed
-- fail: merge conflicts exist
 - fail/info: if there are CI job failures. Depends on the job (prek should fail, tests should fail if single integretion and integration test fails - otherwise info)
 - fail: if they have more than 5 open PRs. New contributors are limited to 1 unless given permissions for another one (add label to new PR). Members are exempted
 
