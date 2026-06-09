@@ -32,6 +32,7 @@ export function matchCodeOwners(
 }
 
 function globToRegex(pattern: string): RegExp {
+  const trailingSlash = pattern.endsWith("/");
   let regexStr = pattern
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
     .replace(/\*\*/g, "{{GLOBSTAR}}")
@@ -45,5 +46,8 @@ function globToRegex(pattern: string): RegExp {
     regexStr = `^${regexStr.slice(1)}`;
   }
 
-  return new RegExp(`${regexStr}$`);
+  // Per the CODEOWNERS spec, a pattern ending with `/` matches the directory
+  // and everything under it.
+  const suffix = trailingSlash ? ".*$" : "$";
+  return new RegExp(`${regexStr}${suffix}`);
 }

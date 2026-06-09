@@ -97,4 +97,27 @@ homeassistant/components/hue/* @specific
     expect(match).toBeDefined();
     expect(match?.owners).toEqual(["@js-owner"]);
   });
+
+  it("treats trailing-slash patterns as 'directory and everything under it'", () => {
+    // Real HA CODEOWNERS format.
+    const parsed = parseCodeOwners("/homeassistant/components/analytics_insights/ @joostlek");
+
+    // Matches any file inside the directory.
+    expect(
+      matchCodeOwners(
+        "homeassistant/components/analytics_insights/config_flow.py",
+        parsed,
+      )?.owners,
+    ).toEqual(["@joostlek"]);
+
+    // And the synthetic wildcard path mention-code-owners generates.
+    expect(
+      matchCodeOwners("homeassistant/components/analytics_insights/*", parsed)?.owners,
+    ).toEqual(["@joostlek"]);
+
+    // Does not match unrelated paths.
+    expect(
+      matchCodeOwners("homeassistant/components/hue/light.py", parsed),
+    ).toBeUndefined();
+  });
 });
