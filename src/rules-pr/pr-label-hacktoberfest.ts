@@ -40,8 +40,8 @@ async function evaluate(
   }
 }
 
-export const prHacktoberfest: Rule = {
-  name: "pr-hacktoberfest",
+export const prLabelHacktoberfest: Rule = {
+  name: "pr-label-hacktoberfest",
   description: "Labels PRs with 'Hacktoberfest' during October on participating repos",
   events: {
     [EventType.PULL_REQUEST_OPENED]: evaluate,

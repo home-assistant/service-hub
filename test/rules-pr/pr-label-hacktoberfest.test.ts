@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../src/github/types.js";
-import { prHacktoberfest } from "../../src/rules-pr/pr-hacktoberfest.js";
+import { prLabelHacktoberfest } from "../../src/rules-pr/pr-label-hacktoberfest.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
-describe("pr-hacktoberfest", () => {
+describe("pr-label-hacktoberfest", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -24,7 +24,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await runRule(prHacktoberfest, context);
+      const result = await runRule(prLabelHacktoberfest, context);
       expect(result).toMatchObject({ labels: ["Hacktoberfest"] });
     });
 
@@ -43,7 +43,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await runRule(prHacktoberfest, context);
+      const result = await runRule(prLabelHacktoberfest, context);
       expect(result).toBeUndefined();
     });
 
@@ -62,7 +62,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await runRule(prHacktoberfest, context);
+      const result = await runRule(prLabelHacktoberfest, context);
       expect(result).toBeUndefined();
     });
 
@@ -82,7 +82,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await runRule(prHacktoberfest, context);
+      const result = await runRule(prLabelHacktoberfest, context);
       expect(result).toBeUndefined();
     });
   });
@@ -100,7 +100,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await runRule(prHacktoberfest, context);
+      const result = await runRule(prLabelHacktoberfest, context);
       expect(result).toMatchObject({ removeLabels: ["Hacktoberfest"] });
     });
 
@@ -116,7 +116,7 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await runRule(prHacktoberfest, context);
+      const result = await runRule(prLabelHacktoberfest, context);
       expect(result).toBeUndefined();
     });
 
@@ -132,13 +132,13 @@ describe("pr-hacktoberfest", () => {
         },
       });
 
-      const result = await runRule(prHacktoberfest, context);
+      const result = await runRule(prLabelHacktoberfest, context);
       expect(result).toBeUndefined();
     });
   });
 
   it("listens to opened and closed events", () => {
-    expect(Object.keys(prHacktoberfest.events)).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(Object.keys(prHacktoberfest.events)).toContain(EventType.PULL_REQUEST_CLOSED);
+    expect(Object.keys(prLabelHacktoberfest.events)).toContain(EventType.PULL_REQUEST_OPENED);
+    expect(Object.keys(prLabelHacktoberfest.events)).toContain(EventType.PULL_REQUEST_CLOSED);
   });
 });
