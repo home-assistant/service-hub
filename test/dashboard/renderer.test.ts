@@ -140,18 +140,32 @@ describe("dashboard renderer", () => {
       expect(beforeDetails).not.toContain("| Status |");
     });
 
-    it("treats pending as failing and info as passing", () => {
+    it("renders pending and info rows together in the visible top section", () => {
       const mixed: DashboardSection[] = [
         { id: "a", title: "A", status: "pending", message: "waiting" },
         { id: "b", title: "B", status: "info", message: "fyi" },
       ];
       const result = renderDashboard(mixed, REPO);
 
+      // Both rows live in the visible (non-collapsed) top section under ## Checks.
       const checks = checksSection(result);
       const beforeDetails = checks.split("<details>")[0];
       expect(beforeDetails).toContain(":hourglass:");
+      expect(beforeDetails).toContain(":information_source:");
 
-      expect(result).toContain("<summary>1 check passed</summary>");
+      // No combined "passed/skipped" block because nothing actually passed or skipped.
+      expect(checks).not.toContain("<summary>");
+    });
+
+    it("shows 'Everything's in order!' even when info-only rows are present", () => {
+      const infoOnly: DashboardSection[] = [
+        { id: "merge-target", title: "Merge target", status: "info", message: "release branch" },
+      ];
+      const result = renderDashboard(infoOnly, REPO);
+      expect(result).toContain("**✨ Everything's in order!**");
+      // The info row still shows in the visible section.
+      const checks = checksSection(result);
+      expect(checks).toContain(":information_source:");
     });
 
     it("renders skipped checks with a minus icon inside the combined block", () => {

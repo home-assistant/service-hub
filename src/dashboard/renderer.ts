@@ -38,8 +38,10 @@ function summarizePassedSkipped(passedCount: number, skippedCount: number): stri
 export function renderDashboard(sections: DashboardSection[], repo: string): string {
   const friendlyName = FRIENDLY_NAMES[repo] ?? repo;
   const failing = sections.filter((s) => s.status === "fail" || s.status === "pending");
-  const passing = sections.filter((s) => s.status === "pass" || s.status === "info");
+  const info = sections.filter((s) => s.status === "info");
+  const passing = sections.filter((s) => s.status === "pass");
   const skipped = sections.filter((s) => s.status === "skip");
+  const visible = [...failing, ...info];
 
   const sectionData = sections.map(
     (s) => `${SECTION_PREFIX}${s.id}:${JSON.stringify(s)}${SECTION_SUFFIX}`,
@@ -76,8 +78,8 @@ export function renderDashboard(sections: DashboardSection[], repo: string): str
     "",
   ];
 
-  if (failing.length > 0) {
-    lines.push(...TABLE_HEADER, ...failing.map(renderRow), "");
+  if (visible.length > 0) {
+    lines.push(...TABLE_HEADER, ...visible.map(renderRow), "");
   }
 
   if (passing.length > 0 || skipped.length > 0) {

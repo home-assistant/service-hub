@@ -663,7 +663,7 @@ describe("dispatch", () => {
       );
     });
 
-    it("downgrades a pending section to success+skipped", async () => {
+    it("downgrades a pending section to success (info, not skipped)", async () => {
       const { github, config, context } = setupOverrideHarness(
         "pending",
         '<!-- ha-bot:ignore id="merge-conflict" reason="Known transient state" -->',
@@ -675,7 +675,7 @@ describe("dispatch", () => {
         expect.objectContaining({
           context: "ha-bot",
           state: "success",
-          description: expect.stringContaining("1 skipped"),
+          description: "All checks passed",
         }),
       );
     });
