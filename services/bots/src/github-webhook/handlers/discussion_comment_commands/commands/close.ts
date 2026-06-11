@@ -22,7 +22,12 @@ export class CloseDiscussionCommentCommand extends DiscussionCommentCommandBase 
       throw new Error('Only code owners can close discussions.');
     }
 
-    const reason = REASONS[(command.additional || '').trim().toLowerCase()] || 'RESOLVED';
+    const argument = (command.additional || '').trim().toLowerCase();
+    const reason = argument ? REASONS[argument] : 'RESOLVED';
+    if (!reason) {
+      throw new Error(`Unknown close reason: ${argument}`);
+    }
+
     await closeDiscussion(context, context.payload.discussion.node_id, reason);
     return true;
   }

@@ -59,6 +59,21 @@ describe('DiscussionCommentCommands', () => {
       );
     });
 
+    it('rejects an unknown reason', async () => {
+      mockContext.payload.comment.body = '@home-assistant close foo';
+      mockContext.payload.comment.user.login = 'test';
+      await handler.handle(mockContext);
+
+      expect(graphqlMock(mockContext)).not.toHaveBeenCalledWith(
+        expect.stringContaining('closeDiscussion'),
+        expect.anything(),
+      );
+      expect(graphqlMock(mockContext)).toHaveBeenCalledWith(
+        expect.stringContaining('addReaction'),
+        expect.objectContaining({ content: 'THUMBS_DOWN' }),
+      );
+    });
+
     it('not by codeowner', async () => {
       mockContext.payload.comment.body = '@home-assistant close';
       mockContext.payload.comment.user.login = 'other';
@@ -101,15 +116,19 @@ describe('DiscussionCommentCommands', () => {
   });
 
   describe('command: answer', () => {
-    it('marks the command comment when it is top-level', async () => {
+    it('replies with guidance and does not mark when used top-level', async () => {
       mockContext.payload.comment.body = '@home-assistant answer';
       mockContext.payload.comment.user.login = 'test';
       mockContext.payload.comment.parent_id = null;
       await handler.handle(mockContext);
 
       expect(graphqlMock(mockContext)).toHaveBeenCalledWith(
+        expect.stringContaining('addDiscussionComment'),
+        expect.objectContaining({ replyToId: 'DC_comment_555' }),
+      );
+      expect(graphqlMock(mockContext)).not.toHaveBeenCalledWith(
         expect.stringContaining('markDiscussionCommentAsAnswer'),
-        expect.objectContaining({ id: 'DC_comment_555' }),
+        expect.anything(),
       );
     });
 
@@ -119,10 +138,15 @@ describe('DiscussionCommentCommands', () => {
       mockContext.payload.comment.parent_id = 7;
       graphqlMock(mockContext).mockImplementation((query: string) =>
         Promise.resolve(
-          query.includes('comments(first: 100)')
+          query.includes('pageInfo')
             ? {
                 repository: {
-                  discussion: { comments: { nodes: [{ id: 'PARENT_NODE', databaseId: 7 }] } },
+                  discussion: {
+                    comments: {
+                      pageInfo: { hasNextPage: false, endCursor: null },
+                      nodes: [{ id: 'PARENT_NODE', databaseId: 7 }],
+                    },
+                  },
                 },
               }
             : {},

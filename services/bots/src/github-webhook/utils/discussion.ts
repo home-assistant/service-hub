@@ -60,27 +60,66 @@ export const addDiscussionCommentReaction = (
     { id: commentId, content: positive ? 'THUMBS_UP' : 'THUMBS_DOWN' },
   );
 
+export const addDiscussionReply = (
+  context: WebhookContext<any>,
+  discussionId: string,
+  replyToId: string,
+  body: string,
+): Promise<unknown> =>
+  context.github.graphql(
+    `mutation ($discussionId: ID!, $replyToId: ID!, $body: String!) {
+      addDiscussionComment(input: { discussionId: $discussionId, replyToId: $replyToId, body: $body }) {
+        clientMutationId
+      }
+    }`,
+    { discussionId, replyToId, body },
+  );
+
 // A discussion comment webhook payload only carries the numeric `parent_id`, not
 // the parent's GraphQL node id (which markDiscussionCommentAsAnswer needs). Resolve
-// it from the discussion's comments. Only top-level comments can be answers, so the
-// parent is always within the first page.
+// it by paging through the discussion's comments until the matching one is found.
 export const discussionCommentNodeId = async (
   context: WebhookContext<any>,
   discussionNumber: number,
   databaseId: number,
 ): Promise<string | undefined> => {
-  const result = (await context.github.graphql(
-    `query ($owner: String!, $name: String!, $number: Int!) {
-      repository(owner: $owner, name: $name) {
-        discussion(number: $number) { comments(first: 100) { nodes { id databaseId } } }
-      }
-    }`,
-    { owner: context.repo().owner, name: context.repo().repo, number: discussionNumber },
-  )) as {
-    repository?: { discussion?: { comments?: { nodes?: { id: string; databaseId: number }[] } } };
-  };
+  let after: string | null = null;
 
-  return result?.repository?.discussion?.comments?.nodes?.find(
-    (node) => node.databaseId === databaseId,
-  )?.id;
+  // Cap the paging to stay bounded even if the API keeps reporting more pages.
+  for (let page = 0; page < 50; page++) {
+    const result = (await context.github.graphql(
+      `query ($owner: String!, $name: String!, $number: Int!, $after: String) {
+        repository(owner: $owner, name: $name) {
+          discussion(number: $number) {
+            comments(first: 100, after: $after) {
+              pageInfo { hasNextPage endCursor }
+              nodes { id databaseId }
+            }
+          }
+        }
+      }`,
+      { owner: context.repo().owner, name: context.repo().repo, number: discussionNumber, after },
+    )) as {
+      repository?: {
+        discussion?: {
+          comments?: {
+            pageInfo?: { hasNextPage: boolean; endCursor: string | null };
+            nodes?: { id: string; databaseId: number }[];
+          };
+        };
+      };
+    };
+
+    const comments = result?.repository?.discussion?.comments;
+    const match = comments?.nodes?.find((node) => node.databaseId === databaseId);
+    if (match) {
+      return match.id;
+    }
+    if (!comments?.pageInfo?.hasNextPage) {
+      return undefined;
+    }
+    after = comments.pageInfo.endCursor;
+  }
+
+  return undefined;
 };
