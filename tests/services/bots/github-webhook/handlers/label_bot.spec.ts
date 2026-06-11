@@ -6,6 +6,9 @@ import { IntegrationAnalyticsService } from '../../../../../services/bots/src/gi
 
 const mockAnalyticsData = {
   integrations: Object.fromEntries([
+    // Highest install count, but a non-ranked integration_type (see
+    // mockIntegrationDetails) — must be excluded from the ranking.
+    ['system_widget', 10001],
     // Ranks 0-1: top integrations used for tests
     ['sonos', 10000],
     ['tplink', 9999],
@@ -30,15 +33,29 @@ const mockAnalyticsData = {
   ]),
 };
 
+// Every test integration is a ranked type, except system_widget (system), which
+// the analytics integrations page — and now the bot — excludes from the ranking.
+const mockIntegrationDetails = Object.fromEntries(
+  Object.keys(mockAnalyticsData.integrations).map((domain) => [
+    domain,
+    { integration_type: domain === 'system_widget' ? 'system' : 'integration' },
+  ]),
+);
+
 describe('LabelBot', () => {
   let handler: LabelBot;
   let mockContext;
 
   beforeEach(async function () {
-    jest.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockAnalyticsData),
-    } as any);
+    jest.spyOn(global, 'fetch').mockImplementation((url) =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            String(url).includes('integrations.json') ? mockIntegrationDetails : mockAnalyticsData,
+          ),
+      } as any),
+    );
     const analyticsService = new IntegrationAnalyticsService();
     await analyticsService.onModuleInit();
     handler = new LabelBot(analyticsService);
@@ -67,6 +84,21 @@ describe('LabelBot', () => {
       'merging-to-master',
       'integration: mqtt',
     ]);
+  });
+
+  it('does not add Top labels for a non-ranked integration_type', async () => {
+    // system_widget has the highest install count but integration_type "system",
+    // which the analytics ranking excludes, so it must get no Top N labels.
+    mockContext._prFilesCache = [
+      {
+        filename: 'homeassistant/components/system_widget/__init__.py',
+      },
+    ];
+    mockContext.payload.pull_request.base = { ref: 'dev' };
+    await handler.handle(mockContext);
+    assert.ok(!mockContext.scheduledlabels.includes('Top 50'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 100'));
+    assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
   });
 
   it('adds Top 50, Top 100 and Top 200 labels for non-core top 50 integration', async () => {
