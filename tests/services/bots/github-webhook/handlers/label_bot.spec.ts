@@ -337,4 +337,26 @@ describe('LabelBot', () => {
     assert.ok(!mockContext.scheduledlabels.includes('Top 200'));
     assert.ok(!mockContext.scheduledlabels.includes('merging-to-master'));
   });
+
+  it('keeps the previous ranking when a later update yields an empty result', async () => {
+    const analyticsService = new IntegrationAnalyticsService();
+    await analyticsService.onModuleInit();
+
+    // A successfully fetched but empty integration_details response must not wipe
+    // the previously computed ranking.
+    (global.fetch as jest.Mock).mockImplementation((url) =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve(String(url).includes('integrations.json') ? {} : mockAnalyticsData),
+      } as any),
+    );
+    await analyticsService.updateAnalytics();
+
+    assert.deepStrictEqual(analyticsService.getTopLabels([{ component: 'sonos' } as any]), [
+      'Top 50',
+      'Top 100',
+      'Top 200',
+    ]);
+  });
 });

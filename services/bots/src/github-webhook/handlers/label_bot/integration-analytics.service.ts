@@ -45,13 +45,21 @@ export class IntegrationAnalyticsService implements OnModuleInit {
     // integrations of a ranked type by install count, so the Top N labels match
     // where an integration appears there. Ranking the raw analytics map instead
     // counts system/entity/hardware/... domains and pushes real integrations down.
-    this.rankedIntegrations = Object.keys(details)
+    const ranked = Object.keys(details)
       .filter((domain) => RANKED_INTEGRATION_TYPES.has(details[domain]?.integration_type ?? ''))
       .map((domain) => ({ domain, installations: integrations[domain] || 0 }))
       .sort((a, b) => b.installations - a.installations)
       .slice(0, maxCount)
       .map((entry) => entry.domain);
 
+    // Don't overwrite a good ranking with an empty result from an unexpected
+    // (but successfully fetched) response shape.
+    if (!ranked.length) {
+      this.logger.error('Computed an empty integration ranking; keeping the previous one');
+      return;
+    }
+
+    this.rankedIntegrations = ranked;
     this.logger.log(`Updated integration analytics (${this.rankedIntegrations.length} entries)`);
   }
 
