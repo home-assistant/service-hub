@@ -64,6 +64,23 @@ describe('NewIntegrationsHandler', () => {
     assert.ok(!call.body.includes('brand'));
   });
 
+  it('requests changes when the PR adds diagnostics', async () => {
+    mockContext._prFilesCache = [
+      { filename: 'homeassistant/components/my_integration/__init__.py' },
+      { filename: 'homeassistant/components/my_integration/sensor.py' },
+      { filename: 'homeassistant/components/my_integration/diagnostics.py' },
+    ];
+
+    await handler.handle(mockContext);
+
+    expect(mockContext.github.pulls.createReview).toHaveBeenCalledTimes(1);
+    const call = mockContext.github.pulls.createReview.mock.calls[0][0];
+    assert.strictEqual(call.event, 'REQUEST_CHANGES');
+    assert.ok(call.body.includes('diagnostics'));
+    assert.ok(!call.body.includes('limit included platforms'));
+    assert.ok(!call.body.includes('brand'));
+  });
+
   it('requests changes when the PR contains a brand folder', async () => {
     mockContext._prFilesCache = [
       { filename: 'homeassistant/components/my_integration/__init__.py' },
