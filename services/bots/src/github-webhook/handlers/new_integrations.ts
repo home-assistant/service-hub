@@ -41,8 +41,8 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
   }
 
   /**
-   * When a new-integration label is added, check if the PR contains multiple platforms
-   * or a brand sub-folder. If so, request changes with a combined message.
+   * When a new-integration label is added, check if the PR contains multiple platforms,
+   * diagnostics support, or a brand sub-folder. If so, request changes with a combined message.
    */
   async handle(context: WebhookContext<PullRequestLabeledEvent>) {
     if (context.payload.label?.name !== 'new-integration') {
