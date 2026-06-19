@@ -14,7 +14,15 @@ describe('ParsedPath', () => {
     ],
     [
       'homeassistant/components/demo/diagnostics.py',
-      { core: true, platform: null, component: 'demo', type: 'diagnostics' },
+      { core: true, platform: null, component: 'demo', type: 'non-entity-platform' },
+    ],
+    [
+      'homeassistant/components/demo/intent.py',
+      { core: true, platform: null, component: 'demo', type: 'non-entity-platform' },
+    ],
+    [
+      'homeassistant/components/demo/llm.py',
+      { core: true, platform: null, component: 'demo', type: 'non-entity-platform' },
     ],
   ])('%s', (filename: string, results: Record<string, any>) => {
     for (const [key, value] of Object.entries(results)) {

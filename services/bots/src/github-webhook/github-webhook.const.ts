@@ -111,6 +111,8 @@ export const entityComponents = new Set([
   'weather',
 ]);
 
+export const nonEntityPlatforms = new Set(['diagnostics', 'intent', 'llm']);
+
 export const coreComponents = new Set([
   ...entityComponents,
   'alexa',

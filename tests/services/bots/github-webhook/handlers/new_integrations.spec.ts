@@ -64,7 +64,7 @@ describe('NewIntegrationsHandler', () => {
     assert.ok(!call.body.includes('brand'));
   });
 
-  it('requests changes when the PR adds diagnostics', async () => {
+  it('counts a non-entity platform (e.g. diagnostics) toward the multiple-platforms check', async () => {
     mockContext._prFilesCache = [
       { filename: 'homeassistant/components/my_integration/__init__.py' },
       { filename: 'homeassistant/components/my_integration/sensor.py' },
@@ -76,9 +76,19 @@ describe('NewIntegrationsHandler', () => {
     expect(mockContext.github.pulls.createReview).toHaveBeenCalledTimes(1);
     const call = mockContext.github.pulls.createReview.mock.calls[0][0];
     assert.strictEqual(call.event, 'REQUEST_CHANGES');
-    assert.ok(call.body.includes('diagnostics'));
-    assert.ok(!call.body.includes('limit included platforms'));
+    assert.ok(call.body.includes('single platform'));
     assert.ok(!call.body.includes('brand'));
+  });
+
+  it('does nothing when a new-integration PR has only a single non-entity platform', async () => {
+    mockContext._prFilesCache = [
+      { filename: 'homeassistant/components/my_integration/__init__.py' },
+      { filename: 'homeassistant/components/my_integration/diagnostics.py' },
+    ];
+
+    await handler.handle(mockContext);
+
+    expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
   });
 
   it('requests changes when the PR contains a brand folder', async () => {

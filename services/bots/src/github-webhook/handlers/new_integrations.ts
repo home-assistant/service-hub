@@ -11,23 +11,16 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
   public allowedRepositories = [HomeAssistantRepository.CORE];
 
   private getPlatformIssue(parsed: ParsedPath[]): string | undefined {
-    const hasMultiplePlatforms = parsed.filter((path) => path.type === 'platform').length > 1;
+    const hasMultiplePlatforms =
+      parsed.filter(
+        (path) => path.type === 'platform' || path.type === 'non-entity-platform',
+      ).length > 1;
 
     if (!hasMultiplePlatforms) {
       return undefined;
     }
 
-    return 'When adding new integrations, limit included platforms to a single platform. Please reduce this PR to a single platform. See the [review process](https://developers.home-assistant.io/docs/review-process/#home-assistant-core) for more details.';
-  }
-
-  private getDiagnosticsIssue(parsed: ParsedPath[]): string | undefined {
-    const hasDiagnostics = parsed.some((path) => path.type === 'diagnostics');
-
-    if (!hasDiagnostics) {
-      return undefined;
-    }
-
-    return 'When adding new integrations, limit the initial PR to a single platform and basic functionality. This PR adds diagnostics, please remove it and add it in a follow-up PR. See the [review process](https://developers.home-assistant.io/docs/review-process/#home-assistant-core) for more details.';
+    return 'When adding new integrations, limit included platforms to a single platform. While we appreciate the effort, reviewing larger than necessary PRs slows down the review process. Please reduce this PR to a single platform. See the [review process](https://developers.home-assistant.io/docs/review-process/#home-assistant-core) for more details.';
   }
 
   private getBrandIssue(parsed: ParsedPath[]): string | undefined {
@@ -41,8 +34,9 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
   }
 
   /**
-   * When a new-integration label is added, check if the PR contains multiple platforms,
-   * diagnostics support, or a brand sub-folder. If so, request changes with a combined message.
+   * When a new-integration label is added, check if the PR contains multiple platforms
+   * (entity or non-entity platforms such as diagnostics) or a brand sub-folder.
+   * If so, request changes with a combined message.
    */
   async handle(context: WebhookContext<PullRequestLabeledEvent>) {
     if (context.payload.label?.name !== 'new-integration') {
@@ -52,7 +46,7 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
     const pullRequestFiles = await fetchPullRequestFilesFromContext(context);
     const parsed = pullRequestFiles.map((file) => new ParsedPath(file));
 
-    const issueCheckers = [this.getPlatformIssue, this.getDiagnosticsIssue, this.getBrandIssue];
+    const issueCheckers = [this.getPlatformIssue, this.getBrandIssue];
     const issues = issueCheckers
       .map((checker) => checker.call(this, parsed))
       .filter((issue): issue is string => Boolean(issue));

@@ -1,4 +1,4 @@
-import { entityComponents, coreComponents } from '../github-webhook.const';
+import { entityComponents, nonEntityPlatforms, coreComponents } from '../github-webhook.const';
 import { basename } from 'path';
 import { ListPullRequestFiles } from '../github-webhook.const';
 
@@ -17,7 +17,7 @@ export class ParsedPath {
     | 'services'
     | 'component'
     | 'platform'
-    | 'diagnostics'
+    | 'non-entity-platform'
     | 'brand' = null;
   public component: null | string = null;
   public platform: null | string = null;
@@ -63,8 +63,8 @@ export class ParsedPath {
       this.type = 'brand';
     } else if (filename === 'services.yaml') {
       this.type = 'services';
-    } else if (filename === 'diagnostics') {
-      this.type = 'diagnostics';
+    } else if (nonEntityPlatforms.has(filename)) {
+      this.type = 'non-entity-platform';
     } else if (entityComponents.has(filename)) {
       this.type = 'platform';
       this.platform = filename;
