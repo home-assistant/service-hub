@@ -71,10 +71,15 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
   readonly botSlug: string;
   readonly dryRun: boolean;
 
-  prFilesCache?: ListPullRequestFiles;
-  private _issueCache = new Map<string, GetIssueResponse>();
-  private _pullRequestCache = new Map<string, GetPullRequestResponse>();
-  private _integrationDomainsCache?: string[];
+  // Caches store the in-flight *promise*, not the resolved value, so that rules
+  // dispatched concurrently (see dispatch() / Promise.allSettled) dedupe to a
+  // single underlying request. Caching the resolved value instead would leave a
+  // check-then-act race across the `await`: a second caller arriving before the
+  // first resolves would miss the cache and fire a duplicate request.
+  prFilesCache?: Promise<ListPullRequestFiles>;
+  private _issueCache = new Map<string, Promise<GetIssueResponse>>();
+  private _pullRequestCache = new Map<string, Promise<GetPullRequestResponse>>();
+  private _integrationDomainsCache?: Promise<string[]>;
 
   constructor(params: WebhookContextParams<P>) {
     this.github = params.github;
@@ -144,49 +149,58 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
     } as { pull_number: number; owner: string; repo: string } & T;
   }
 
-  async fetchPRFiles(): Promise<ListPullRequestFiles> {
+  fetchPRFiles(): Promise<ListPullRequestFiles> {
     if (!this.prFilesCache) {
-      this.prFilesCache = await this.github.paginate(this.github.pulls.listFiles, {
+      this.prFilesCache = this.github.paginate(this.github.pulls.listFiles, {
         ...this.pullRequest(),
         per_page: 100,
+      });
+      this.prFilesCache.catch(() => {
+        this.prFilesCache = undefined;
       });
     }
     return this.prFilesCache;
   }
 
   /** Unique integration domains derived from PR file paths. Empty for issue contexts. */
-  async getIntegrationDomains(): Promise<string[]> {
-    if (this.type !== WebhookContextType.PULL_REQUEST) return [];
-    if (this._integrationDomainsCache) return this._integrationDomainsCache;
-
-    const files = await this.fetchPRFiles();
-    const domains = new Set<string>();
-    for (const file of files) {
-      const parsed = new ParsedPath(file);
-      if (parsed.component) domains.add(parsed.component);
+  getIntegrationDomains(): Promise<string[]> {
+    if (this.type !== WebhookContextType.PULL_REQUEST) return Promise.resolve([]);
+    if (!this._integrationDomainsCache) {
+      this._integrationDomainsCache = this.fetchPRFiles().then((files) => {
+        const domains = new Set<string>();
+        for (const file of files) {
+          const parsed = new ParsedPath(file);
+          if (parsed.component) domains.add(parsed.component);
+        }
+        return [...domains];
+      });
+      this._integrationDomainsCache.catch(() => {
+        this._integrationDomainsCache = undefined;
+      });
     }
-    this._integrationDomainsCache = [...domains];
     return this._integrationDomainsCache;
   }
 
-  async fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {
+  fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {
     const key = `${params.owner}/${params.repo}/${params.issue_number}`;
-    const cached = this._issueCache.get(key);
-    if (cached) return cached;
-
-    const result = (await this.github.issues.get(params)).data;
-    this._issueCache.set(key, result);
-    return result;
+    let inflight = this._issueCache.get(key);
+    if (!inflight) {
+      inflight = this.github.issues.get(params).then((r) => r.data);
+      inflight.catch(() => this._issueCache.delete(key));
+      this._issueCache.set(key, inflight);
+    }
+    return inflight;
   }
 
-  async fetchPullRequestWithCache(params: GetPullRequestParams): Promise<GetPullRequestResponse> {
+  fetchPullRequestWithCache(params: GetPullRequestParams): Promise<GetPullRequestResponse> {
     const key = `${params.owner}/${params.repo}/${params.pull_number}`;
-    const cached = this._pullRequestCache.get(key);
-    if (cached) return cached;
-
-    const result = (await this.github.pulls.get(params)).data;
-    this._pullRequestCache.set(key, result);
-    return result;
+    let inflight = this._pullRequestCache.get(key);
+    if (!inflight) {
+      inflight = this.github.pulls.get(params).then((r) => r.data);
+      inflight.catch(() => this._pullRequestCache.delete(key));
+      this._pullRequestCache.set(key, inflight);
+    }
+    return inflight;
   }
 
   /** Body of the issue/PR in scope; payload first, falls back to a cached fetch. */

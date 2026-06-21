@@ -184,7 +184,7 @@ export function createMockIssueContext(
 
 /** Helper to mock fetchPRFiles by pre-populating the cache */
 export function mockPRFiles(context: WebhookContext, files: Record<string, unknown>[]) {
-  context.prFilesCache = files as WebhookContext["prFilesCache"];
+  context.prFilesCache = Promise.resolve(files) as WebhookContext["prFilesCache"];
 }
 
 export function lastSegment(path: string): string {
