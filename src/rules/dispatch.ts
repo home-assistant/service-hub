@@ -1,4 +1,4 @@
-import { WebhookContextType, type WebhookContext } from "../context/webhook-context.js";
+import { type WebhookContext, WebhookContextType } from "../context/webhook-context.js";
 import { ensureDashboardCommentExists, upsertDashboardComment } from "../dashboard/comment.js";
 import type { DashboardSection } from "../dashboard/types.js";
 import { convertPullRequestToDraft } from "../github/client.js";

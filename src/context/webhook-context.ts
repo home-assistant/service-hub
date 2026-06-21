@@ -27,10 +27,10 @@ import type { OnDemandEvent } from "../rules/types.js";
 import { ParsedPath } from "../utils/parse-path.js";
 
 /**
- * Discriminates whether a webhook dispatch concerns an Issue or a PR. 
- * 
- * Some GitHub events (notably `issue_comment`) can fire for either, so 
- * consumers that need to behave differently can branch on `context.type` 
+ * Discriminates whether a webhook dispatch concerns an Issue or a PR.
+ *
+ * Some GitHub events (notably `issue_comment`) can fire for either, so
+ * consumers that need to behave differently can branch on `context.type`
  * instead of sniffing payload shape.
  */
 export enum WebhookContextType {

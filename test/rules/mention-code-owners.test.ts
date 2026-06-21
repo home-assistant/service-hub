@@ -182,7 +182,9 @@ describe("mention-code-owners", () => {
           },
         },
       });
-      mockPRFiles(context, [{ filename: "homeassistant/components/hue/light.py", status: "modified" }]);
+      mockPRFiles(context, [
+        { filename: "homeassistant/components/hue/light.py", status: "modified" },
+      ]);
 
       const result = await runRule(rule, context);
       expect(result?.assignees).toContain("balloob");
@@ -224,7 +226,9 @@ describe("mention-code-owners", () => {
           },
         },
       });
-      mockPRFiles(context, [{ filename: "homeassistant/components/hue/sensor.py", status: "added" }]);
+      mockPRFiles(context, [
+        { filename: "homeassistant/components/hue/sensor.py", status: "added" },
+      ]);
 
       const result = await runRule(rule, context);
       expect(result?.assignees).toContain("balloob");

@@ -104,10 +104,7 @@ homeassistant/components/hue/* @specific
 
     // Matches any file inside the directory.
     expect(
-      matchCodeOwners(
-        "homeassistant/components/analytics_insights/config_flow.py",
-        parsed,
-      )?.owners,
+      matchCodeOwners("homeassistant/components/analytics_insights/config_flow.py", parsed)?.owners,
     ).toEqual(["@joostlek"]);
 
     // And the synthetic wildcard path mention-code-owners generates.
@@ -116,8 +113,6 @@ homeassistant/components/hue/* @specific
     ).toEqual(["@joostlek"]);
 
     // Does not match unrelated paths.
-    expect(
-      matchCodeOwners("homeassistant/components/hue/light.py", parsed),
-    ).toBeUndefined();
+    expect(matchCodeOwners("homeassistant/components/hue/light.py", parsed)).toBeUndefined();
   });
 });

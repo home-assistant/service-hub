@@ -47,9 +47,7 @@ describe("dashboard renderer", () => {
     });
 
     it("shows a bold 'Everything's in order' lead-in when all checks pass", () => {
-      const allPass: DashboardSection[] = [
-        { id: "a", title: "A", status: "pass", message: "ok" },
-      ];
+      const allPass: DashboardSection[] = [{ id: "a", title: "A", status: "pass", message: "ok" }];
       const result = renderDashboard(allPass, REPO);
       expect(result).toContain("**✨ Everything's in order!**");
       expect(result).not.toContain("Things to address");
