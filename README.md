@@ -24,10 +24,17 @@ The `id` is the section ID shown in the dashboard's machine-readable markers (e.
 
 ## TODOs
 
-- Add sentry logging
+- Add a label loop. On each dispatch call, check if labels were added or removed. Run all rules which check for those. Do it until add/remove-labels stabilize and only then run the effects. (Have some safeguard to prevent infinite loops and report it to sentry).
+    - This gives rules two ways of reducing recomputation across rules: labels (if the information it is useful to contributors/reviewers) and using the cache.
+    - It makes rules simpler, as we can only listen to the webhooks we actually care for (i.e. not every rule has to listen to new-pr anymore)
+- Think of a better cache mechanism - maybe seperate from the webhookcontext? Seems overloaded.
+- Convert to typical docker container setup (instead of cloudflare)
+- Create Slack/Discord effects (sendMessage, deleteMessage, addReaction...)
+- Add Slack/Discord commands
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
 - Fix pr-platinum-code-owner-approval, pr-new-integration-validation, and pr-has-docs-pr to update on PR creation
 - Make the sectiond-id discoverable or replace it with the friendly name when overriding checks
+- Add sentry logging
 
 
 ### More HA rules
