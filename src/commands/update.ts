@@ -1,5 +1,5 @@
-import { prConfig } from "../rules-pr/registry.js";
-import { evaluatePR } from "../utils/evaluate.js";
+import { evaluatePR } from "../engine/evaluate.js";
+import { config } from "../manifests/index.js";
 import type { Command } from "./types.js";
 
 export const updateCommand: Command = {
@@ -7,7 +7,7 @@ export const updateCommand: Command = {
 
   async handle(context) {
     await evaluatePR(
-      prConfig,
+      config,
       context.github,
       {
         owner: context.owner,

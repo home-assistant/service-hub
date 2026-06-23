@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Command } from "../src/commands/types.js";
+import type { Rule } from "../src/engine/types.js";
 import { EventType } from "../src/github/types.js";
-import type { Rule } from "../src/rules/types.js";
 import { commentPayload, createE2EHarness, prOpenedPayload } from "./helpers/e2e.js";
 
 describe("e2e: webhook delivery", () => {
@@ -15,8 +15,7 @@ describe("e2e: webhook delivery", () => {
     };
 
     const harness = createE2EHarness({
-      prConfig: {
-        organizations: {},
+      config: {
         repositories: { "home-assistant/core": [labelOnOpen] },
       },
     });
@@ -46,8 +45,7 @@ describe("e2e: webhook delivery", () => {
     };
 
     const harness = createE2EHarness({
-      prConfig: {
-        organizations: {},
+      config: {
         repositories: { "home-assistant/core": [labelOnOpen] },
       },
     });
@@ -68,8 +66,7 @@ describe("e2e: webhook delivery", () => {
     };
 
     const harness = createE2EHarness({
-      issueConfig: {
-        organizations: {},
+      config: {
         repositories: { "home-assistant/core": [labelIssue] },
       },
     });
@@ -106,8 +103,7 @@ describe("e2e: webhook delivery", () => {
       },
     };
     const harness = createE2EHarness({
-      prConfig: {
-        organizations: {},
+      config: {
         repositories: { "home-assistant/core": [labelRule] },
       },
     });
@@ -130,7 +126,6 @@ describe("e2e: bot commands", () => {
 
     const harness = createE2EHarness({
       commandConfig: {
-        organizations: {},
         repositories: { "home-assistant/core": [ping] },
       },
     });
@@ -149,7 +144,6 @@ describe("e2e: bot commands", () => {
   it("posts a -1 reaction when the command is unknown", async () => {
     const harness = createE2EHarness({
       commandConfig: {
-        organizations: {},
         repositories: { "home-assistant/core": [{ name: "ping", handle: vi.fn() }] },
       },
     });
@@ -166,7 +160,6 @@ describe("e2e: bot commands", () => {
 
     const harness = createE2EHarness({
       commandConfig: {
-        organizations: {},
         repositories: { "home-assistant/core": [{ name: "ping", handle }] },
       },
     });

@@ -11,7 +11,6 @@ const pingCommand: Command = {
 };
 
 const config: CommandRegistryConfig = {
-  organizations: {},
   repositories: {
     "home-assistant/core": [pingCommand],
   },

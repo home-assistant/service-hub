@@ -10,32 +10,28 @@ vi.mock("@sentry/cloudflare", () => ({
 }));
 
 vi.mock("../src/commands/registry.js", () => ({
-  commandConfig: { organizations: {}, repositories: {} },
+  commandConfig: { repositories: {} },
   dispatchCommand: vi.fn().mockResolvedValue(false),
 }));
 
-vi.mock("../src/rules/dispatch.js", () => ({
+vi.mock("../src/engine/dispatch.js", () => ({
   dispatch: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../src/rules-pr/registry.js", () => ({
-  prConfig: { organizations: {}, repositories: {} },
-}));
-
-vi.mock("../src/rules-issue/registry.js", () => ({
-  issueConfig: { organizations: {}, repositories: {} },
+vi.mock("../src/manifests/index.js", () => ({
+  config: { repositories: {} },
 }));
 
 vi.mock("../src/github/app.js", () => ({
   createOctokit: vi.fn().mockReturnValue({}),
 }));
 
-vi.mock("../src/utils/evaluate.js", () => ({
+vi.mock("../src/engine/evaluate.js", () => ({
   evaluatePR: vi.fn().mockResolvedValue([]),
   evaluateRecentPRs: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { dispatch } from "../src/rules/dispatch.js";
+import { dispatch } from "../src/engine/dispatch.js";
 
 // Import the app — due to the withSentry mock, default export is the raw handler
 const mod = await import("../src/index.js");

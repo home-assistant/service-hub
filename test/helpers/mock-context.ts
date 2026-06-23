@@ -1,11 +1,11 @@
 import type { Octokit } from "@octokit/rest";
 import type { Mock } from "vitest";
 import { vi } from "vitest";
-import type { WebhookEventPayload } from "../../src/context/webhook-context.js";
-import { WebhookContext } from "../../src/context/webhook-context.js";
-import type { DashboardSection } from "../../src/dashboard/types.js";
+import type { WebhookEventPayload } from "../../src/engine/context.js";
+import { WebhookContext } from "../../src/engine/context.js";
+import type { DashboardSection } from "../../src/engine/dashboard/types.js";
+import type { Effect, EventPayloadMap, Rule } from "../../src/engine/types.js";
 import { EventType } from "../../src/github/types.js";
-import type { Effect, EventPayloadMap, Rule } from "../../src/rules/types.js";
 
 export interface MockGitHub {
   issues: {

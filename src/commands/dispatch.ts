@@ -21,7 +21,7 @@ export async function dispatchCommand(
 ): Promise<void> {
   const name = getBotCommand(context.commentBody, slug);
   const command = name
-    ? findCommand(registryConfig, `${context.owner}/${context.repo}`, context.owner, name)
+    ? findCommand(registryConfig, `${context.owner}/${context.repo}`, name)
     : undefined;
 
   if (!command) {

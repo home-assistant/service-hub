@@ -6,15 +6,14 @@ import { Hono } from "hono";
 import { dispatchCommand, isBotCommand } from "./commands/dispatch.js";
 import type { CommandRegistryConfig } from "./commands/registry.js";
 import { commandConfig } from "./commands/registry.js";
-import { WebhookContext, type WebhookEventPayload } from "./context/webhook-context.js";
+import { WebhookContext, type WebhookEventPayload } from "./engine/context.js";
+import type { RegistryConfig } from "./engine/dispatch.js";
+import { dispatch } from "./engine/dispatch.js";
+import { evaluateRecentPRs } from "./engine/evaluate.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import { EventType } from "./github/types.js";
-import type { RegistryConfig } from "./rules/dispatch.js";
-import { dispatch } from "./rules/dispatch.js";
-import { issueConfig } from "./rules-issue/registry.js";
-import { prConfig } from "./rules-pr/registry.js";
-import { evaluateRecentPRs } from "./utils/evaluate.js";
+import { config } from "./manifests/index.js";
 
 const CRON_LOOKBACK_MINUTES = 10;
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
@@ -45,8 +44,7 @@ function isIssueEvent(event: string): boolean {
 }
 
 export interface BotDeps {
-  prConfig: RegistryConfig;
-  issueConfig: RegistryConfig;
+  config: RegistryConfig;
   commandConfig: CommandRegistryConfig;
   createOctokit: (env: Env) => Octokit;
 }
@@ -141,10 +139,8 @@ export function createBotApp(deps: BotDeps): Hono<{ Bindings: Env }> {
       dryRun: isDryRun(c.env),
     });
 
-    if (isPullRequestEvent(event)) {
-      await dispatch(deps.prConfig, context);
-    } else if (isIssueEvent(event)) {
-      await dispatch(deps.issueConfig, context);
+    if (isPullRequestEvent(event) || isIssueEvent(event)) {
+      await dispatch(deps.config, context);
     }
 
     return c.text("OK", 200);
@@ -159,19 +155,18 @@ export function createScheduledHandler(deps: BotDeps): (env: Env) => Promise<voi
     const since = new Date(Date.now() - CRON_LOOKBACK_MINUTES * 60 * 1000);
     const dryRun = isDryRun(env);
 
-    const repos = Object.keys(deps.prConfig.repositories);
+    const repos = Object.keys(deps.config.repositories);
 
     await Promise.allSettled(
       repos.map((repo) =>
-        evaluateRecentPRs(deps.prConfig, octokit, repo, since, { dryRun, botSlug: env.BOT_SLUG }),
+        evaluateRecentPRs(deps.config, octokit, repo, since, { dryRun, botSlug: env.BOT_SLUG }),
       ),
     );
   };
 }
 
 const defaultDeps: BotDeps = {
-  prConfig,
-  issueConfig,
+  config,
   commandConfig,
   createOctokit: (env) => createOctokit(githubConfig(env)),
 };
