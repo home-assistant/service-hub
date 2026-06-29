@@ -1,6 +1,5 @@
 import type { Octokit } from "@octokit/rest";
 import { sign } from "@octokit/webhooks-methods";
-import { vi } from "vitest";
 import type { CommandRegistryConfig } from "../../src/commands/registry.js";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import type { Env } from "../../src/env.js";
@@ -26,8 +25,8 @@ export interface E2EHarness {
 }
 
 /**
- * Build a Hono app wired with test registries and a mock Octokit, then
- * provide a `deliver(event, payload)` helper that POSTs a signed webhook
+ * Build the request handler wired with test registries and a mock Octokit,
+ * then provide a `deliver(event, payload)` helper that POSTs a signed webhook
  * through the real signature-verification + dispatch pipeline.
  *
  * Modeled on Probot's `probot.receive({ name, payload })` — but assertions
@@ -54,8 +53,6 @@ export function createE2EHarness(options: E2EHarnessOptions = {}): E2EHarness {
     DRY_RUN: options.dryRun ? "1" : undefined,
   } as unknown as Env;
 
-  const ctx = { waitUntil: vi.fn() } as unknown as ExecutionContext;
-
   return {
     github,
     deliver: async (event, payload) => {
@@ -70,7 +67,7 @@ export function createE2EHarness(options: E2EHarnessOptions = {}): E2EHarness {
           "x-github-event": event,
         },
       });
-      return app.fetch(req, env, ctx);
+      return app(req, env);
     },
     deliverUnsigned: async (event, payload) => {
       const req = new Request("http://localhost/github/webhook", {
@@ -82,7 +79,7 @@ export function createE2EHarness(options: E2EHarnessOptions = {}): E2EHarness {
           "x-github-event": event,
         },
       });
-      return app.fetch(req, env, ctx);
+      return app(req, env);
     },
   };
 }

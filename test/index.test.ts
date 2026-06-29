@@ -5,10 +5,6 @@ vi.mock("@octokit/webhooks-methods", () => ({
   verify: vi.fn(),
 }));
 
-vi.mock("@sentry/cloudflare", () => ({
-  withSentry: (_opts: unknown, handler: unknown) => handler,
-}));
-
 vi.mock("../src/commands/registry.js", () => ({
   commandConfig: { repositories: {} },
   dispatchCommand: vi.fn().mockResolvedValue(false),
@@ -32,14 +28,13 @@ vi.mock("../src/engine/evaluate.js", () => ({
 }));
 
 import { dispatch } from "../src/engine/dispatch.js";
+import type { Env } from "../src/env.js";
+import { createBotApp, defaultDeps } from "../src/index.js";
 
-// Import the app — due to the withSentry mock, default export is the raw handler
-const mod = await import("../src/index.js");
-const rawHandler = mod.default as ExportedHandler<Record<string, unknown>>;
+const app = createBotApp(defaultDeps);
 
 async function fetchApp(req: Request): Promise<Response> {
-  if (!rawHandler.fetch) throw new Error("handler.fetch is undefined");
-  return rawHandler.fetch(req, env, ctx);
+  return app(req, env);
 }
 
 function makeRequest(body: string, headers: Record<string, string> = {}): Request {
@@ -55,7 +50,7 @@ function makeRequest(body: string, headers: Record<string, string> = {}): Reques
   });
 }
 
-const env = {
+const env: Env = {
   GITHUB_APP_ID: "123",
   GITHUB_PRIVATE_KEY: "key",
   GITHUB_INSTALLATION_ID: "456",
@@ -64,9 +59,7 @@ const env = {
   ENVIRONMENT: "test",
   BOT_SLUG: "ha-bot",
   COMMAND_SLUG: "ha-bot",
-} as Record<string, unknown>;
-
-const ctx = { waitUntil: vi.fn() } as unknown as ExecutionContext;
+};
 
 describe("webhook handler", () => {
   it("returns 401 for invalid signature", async () => {

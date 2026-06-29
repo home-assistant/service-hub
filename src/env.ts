@@ -23,3 +23,30 @@ export interface Env {
   // Reads still happen so rules produce realistic effects.
   DRY_RUN?: string;
 }
+
+function required(name: keyof Env): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+/**
+ * Build the runtime config from `process.env`. Bun auto-loads `.env`, so a
+ * local `.env` file is enough for development. Defaults mirror the `[vars]`
+ * block that used to live in `wrangler.toml`.
+ */
+export function loadEnv(): Env {
+  return {
+    GITHUB_APP_ID: required("GITHUB_APP_ID"),
+    GITHUB_PRIVATE_KEY: required("GITHUB_PRIVATE_KEY"),
+    GITHUB_INSTALLATION_ID: required("GITHUB_INSTALLATION_ID"),
+    GITHUB_WEBHOOK_SECRET: required("GITHUB_WEBHOOK_SECRET"),
+    BOT_SLUG: process.env.BOT_SLUG ?? "home-assistant",
+    COMMAND_SLUG: process.env.COMMAND_SLUG ?? "ha-bot",
+    SENTRY_DSN: process.env.SENTRY_DSN ?? "",
+    ENVIRONMENT: process.env.ENVIRONMENT ?? "production",
+    DRY_RUN: process.env.DRY_RUN,
+  };
+}

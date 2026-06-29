@@ -1,0 +1,17 @@
+node_modules
+dist
+coverage
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.devenv
+.direnv
+.envrc
+result
+Dockerfile
+.dockerignore
+*.md
+test
+vitest.config.ts
