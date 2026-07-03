@@ -9,6 +9,7 @@ import type { Effect, OnDemandEvent } from "./types.js";
 export interface EvaluateOptions {
   dryRun?: boolean;
   botSlug?: string;
+  captureException?: (err: unknown) => void;
 }
 
 export async function evaluatePR(
@@ -34,6 +35,7 @@ export async function evaluatePR(
     eventType: EventType.ON_DEMAND,
     botSlug: options.botSlug ?? "",
     dryRun: options.dryRun,
+    captureException: options.captureException,
   });
 
   return dispatch(registryConfig, context);

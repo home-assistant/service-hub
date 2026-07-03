@@ -58,6 +58,8 @@ interface WebhookContextParams<P extends WebhookEventPayload> {
   eventType: EventType;
   botSlug: string;
   dryRun?: boolean;
+  /** Reports unexpected engine conditions (e.g. Sentry.captureException). */
+  captureException?: (err: unknown) => void;
 }
 
 export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload> {
@@ -69,16 +71,30 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
   readonly payload: P;
   readonly botSlug: string;
   readonly dryRun: boolean;
+  readonly captureException?: (err: unknown) => void;
 
   // Caches store the in-flight *promise*, not the resolved value, so that rules
   // dispatched concurrently (see dispatch() / Promise.allSettled) dedupe to a
   // single underlying request. Caching the resolved value instead would leave a
   // check-then-act race across the `await`: a second caller arriving before the
   // first resolves would miss the cache and fire a duplicate request.
-  prFilesCache?: Promise<ListPullRequestFiles>;
-  private _issueCache = new Map<string, Promise<GetIssueResponse>>();
-  private _pullRequestCache = new Map<string, Promise<GetPullRequestResponse>>();
-  private _integrationDomainsCache?: Promise<string[]>;
+  //
+  // One shared object so withSyntheticEvent() children and the parent context
+  // see each other's fetches.
+  private _caches = {
+    prFiles: undefined as Promise<ListPullRequestFiles> | undefined,
+    integrationDomains: undefined as Promise<string[]> | undefined,
+    issue: new Map<string, Promise<GetIssueResponse>>(),
+    pullRequest: new Map<string, Promise<GetPullRequestResponse>>(),
+  };
+
+  get prFilesCache(): Promise<ListPullRequestFiles> | undefined {
+    return this._caches.prFiles;
+  }
+
+  set prFilesCache(value: Promise<ListPullRequestFiles> | undefined) {
+    this._caches.prFiles = value;
+  }
 
   constructor(params: WebhookContextParams<P>) {
     this.github = params.github;
@@ -86,9 +102,30 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
     this.payload = params.payload;
     this.botSlug = params.botSlug;
     this.dryRun = params.dryRun ?? false;
+    this.captureException = params.captureException;
     this.repository = params.payload.repository.full_name as Repository;
     this.organization = params.payload.repository.owner.login as Organization;
     this.type = deriveContextType(params.payload);
+  }
+
+  /**
+   * Context for a synthetic event on the same issue/PR, sharing this
+   * context's request caches. Used by the dispatcher's label loop.
+   */
+  withSyntheticEvent<Q extends WebhookEventPayload>(
+    payload: Q,
+    eventType: EventType,
+  ): WebhookContext<Q> {
+    const child = new WebhookContext<Q>({
+      github: this.github,
+      payload,
+      eventType,
+      botSlug: this.botSlug,
+      dryRun: this.dryRun,
+      captureException: this.captureException,
+    });
+    child._caches = this._caches;
+    return child;
   }
 
   /** Bot's commit-status creator login, e.g. "ha-bot[bot]". */
@@ -164,8 +201,8 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
   /** Unique integration domains derived from PR file paths. Empty for issue contexts. */
   getIntegrationDomains(): Promise<string[]> {
     if (this.type !== WebhookContextType.PULL_REQUEST) return Promise.resolve([]);
-    if (!this._integrationDomainsCache) {
-      this._integrationDomainsCache = this.fetchPRFiles().then((files) => {
+    if (!this._caches.integrationDomains) {
+      this._caches.integrationDomains = this.fetchPRFiles().then((files) => {
         const domains = new Set<string>();
         for (const file of files) {
           const parsed = new ParsedPath(file);
@@ -173,31 +210,31 @@ export class WebhookContext<P extends WebhookEventPayload = WebhookEventPayload>
         }
         return [...domains];
       });
-      this._integrationDomainsCache.catch(() => {
-        this._integrationDomainsCache = undefined;
+      this._caches.integrationDomains.catch(() => {
+        this._caches.integrationDomains = undefined;
       });
     }
-    return this._integrationDomainsCache;
+    return this._caches.integrationDomains;
   }
 
   fetchIssueWithCache(params: GetIssueParams): Promise<GetIssueResponse> {
     const key = `${params.owner}/${params.repo}/${params.issue_number}`;
-    let inflight = this._issueCache.get(key);
+    let inflight = this._caches.issue.get(key);
     if (!inflight) {
       inflight = this.github.issues.get(params).then((r) => r.data);
-      inflight.catch(() => this._issueCache.delete(key));
-      this._issueCache.set(key, inflight);
+      inflight.catch(() => this._caches.issue.delete(key));
+      this._caches.issue.set(key, inflight);
     }
     return inflight;
   }
 
   fetchPullRequestWithCache(params: GetPullRequestParams): Promise<GetPullRequestResponse> {
     const key = `${params.owner}/${params.repo}/${params.pull_number}`;
-    let inflight = this._pullRequestCache.get(key);
+    let inflight = this._caches.pullRequest.get(key);
     if (!inflight) {
       inflight = this.github.pulls.get(params).then((r) => r.data);
-      inflight.catch(() => this._pullRequestCache.delete(key));
-      this._pullRequestCache.set(key, inflight);
+      inflight.catch(() => this._caches.pullRequest.delete(key));
+      this._caches.pullRequest.set(key, inflight);
     }
     return inflight;
   }

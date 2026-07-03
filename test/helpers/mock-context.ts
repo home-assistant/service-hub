@@ -152,6 +152,7 @@ export function createMockContext(
     payload?: Record<string, unknown>;
     github?: MockGitHub;
     dryRun?: boolean;
+    captureException?: (err: unknown) => void;
   } = {},
 ): WebhookContext {
   const github = overrides.github ?? createMockGitHub();
@@ -164,6 +165,7 @@ export function createMockContext(
     eventType,
     botSlug: "ha-bot",
     dryRun: overrides.dryRun,
+    captureException: overrides.captureException,
   });
 }
 

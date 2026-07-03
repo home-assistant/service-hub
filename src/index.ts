@@ -45,6 +45,8 @@ export interface BotDeps {
   config: RegistryConfig;
   commandConfig: CommandRegistryConfig;
   createOctokit: (env: Env) => Octokit;
+  /** Error reporter for engine anomalies (wired to Sentry in server.ts). */
+  captureException?: (err: unknown) => void;
 }
 
 /** A standalone request handler: takes a Fetch `Request`, returns a `Response`. */
@@ -133,6 +135,7 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
     eventType,
     botSlug: env.BOT_SLUG,
     dryRun: isDryRun(env),
+    captureException: deps.captureException,
   });
 
   if (isPullRequestEvent(event) || isIssueEvent(event)) {
@@ -168,7 +171,11 @@ export function createScheduledHandler(deps: BotDeps): (env: Env) => Promise<voi
 
     await Promise.allSettled(
       repos.map((repo) =>
-        evaluateRecentPRs(deps.config, octokit, repo, since, { dryRun, botSlug: env.BOT_SLUG }),
+        evaluateRecentPRs(deps.config, octokit, repo, since, {
+          dryRun,
+          botSlug: env.BOT_SLUG,
+          captureException: deps.captureException,
+        }),
       ),
     );
   };

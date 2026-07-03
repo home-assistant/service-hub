@@ -1,6 +1,6 @@
 import { convertPullRequestToDraft } from "../github/client.js";
 import { EventType } from "../github/types.js";
-import { type WebhookContext, WebhookContextType } from "./context.js";
+import { type WebhookContext, WebhookContextType, type WebhookEventPayload } from "./context.js";
 import { ensureDashboardCommentExists, upsertDashboardComment } from "./dashboard/comment.js";
 import { parseOverrides } from "./dashboard/overrides.js";
 import type { DashboardSection } from "./dashboard/types.js";
@@ -59,7 +59,8 @@ async function applyEffects(
   const removeLabels = new Set<string>();
   const dashboardSections = new Map<string, DashboardSection>();
   const assignees = new Set<string>();
-  const comments: string[] = [];
+  // Set: the label loop can run a rule twice per dispatch; identical comments post once.
+  const comments = new Set<string>();
   const ops: Promise<unknown>[] = [];
 
   for (const effect of effects) {
@@ -74,7 +75,7 @@ async function applyEffects(
         for (const a of effect.assignees) assignees.add(a);
         break;
       case "comment":
-        comments.push(effect.body);
+        comments.add(effect.body);
         break;
       case "dashboardSection":
         dashboardSections.set(effect.section.id, effect.section);
@@ -297,14 +298,10 @@ async function sweepStaleStatusChecks(context: WebhookContext): Promise<void> {
   );
 }
 
-export async function dispatch(
+async function runMatchedRules(
   registryConfig: RegistryConfig,
   context: WebhookContext,
 ): Promise<Effect[]> {
-  if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW && !context.dryRun) {
-    await maybeRedraftOnReady(context);
-  }
-
   const matched = matchRules(registryConfig, context);
 
   const settled = await Promise.allSettled(
@@ -324,6 +321,178 @@ export async function dispatch(
       effects.push(...outcome.value);
     }
   }
+  return effects;
+}
+
+/** Synthetic rounds before the label loop declares the rule set non-converging. */
+const MAX_LABEL_ROUNDS = 10;
+
+interface LabelLike {
+  name: string;
+}
+
+function payloadLabels(context: WebhookContext): LabelLike[] | undefined {
+  const payload = context.payload as {
+    pull_request?: { labels?: LabelLike[] };
+    issue?: { labels?: LabelLike[] };
+  };
+  return payload.pull_request?.labels ?? payload.issue?.labels;
+}
+
+/**
+ * Label adds/removes against the simulated set. Add wins over remove within
+ * a round (mirrors applyEffects); cross-repo label effects don't participate.
+ */
+function labelChanges(
+  effects: Effect[],
+  current: ReadonlySet<string>,
+): { adds: string[]; removes: string[] } {
+  const added = new Set<string>();
+  const removed = new Set<string>();
+  for (const effect of effects) {
+    if (effect.type === "addLabels") for (const l of effect.labels) added.add(l);
+    else if (effect.type === "removeLabels") for (const l of effect.label) removed.add(l);
+  }
+  return {
+    adds: [...added].filter((l) => !current.has(l)),
+    removes: [...removed].filter((l) => current.has(l) && !added.has(l)),
+  };
+}
+
+/**
+ * Context for a synthetic labeled/unlabeled event, shaped like the webhook
+ * GitHub would send after the change. Undefined when no matching EventType
+ * exists (issue unlabels) or the PR can't be fetched.
+ */
+async function buildSyntheticLabelContext(
+  context: WebhookContext,
+  change: { name: string; action: "labeled" | "unlabeled" },
+  labels: LabelLike[],
+): Promise<WebhookContext | undefined> {
+  const base = context.payload as unknown as Record<string, unknown> & {
+    pull_request?: object;
+    issue?: object;
+  };
+  const label = { name: change.name };
+
+  if (context.type === WebhookContextType.PULL_REQUEST) {
+    // issue_comment events on a PR carry no pull_request object; fetch it.
+    let pr = base.pull_request;
+    if (!pr) {
+      try {
+        pr = await context.fetchPullRequestWithCache(context.pullRequest());
+      } catch (err) {
+        console.warn("label loop: failed to fetch PR for synthetic event:", err);
+        return undefined;
+      }
+    }
+    const payload = {
+      ...base,
+      action: change.action,
+      label,
+      pull_request: { ...pr, labels },
+    } as unknown as WebhookEventPayload;
+    return context.withSyntheticEvent(
+      payload,
+      change.action === "labeled"
+        ? EventType.PULL_REQUEST_LABELED
+        : EventType.PULL_REQUEST_UNLABELED,
+    );
+  }
+
+  // Issues have no unlabeled EventType; removals only count toward the net diff.
+  if (change.action !== "labeled" || !base.issue) return undefined;
+  const payload = {
+    ...base,
+    action: "labeled",
+    label,
+    issue: { ...base.issue, labels },
+  } as unknown as WebhookEventPayload;
+  return context.withSyntheticEvent(payload, EventType.ISSUES_LABELED);
+}
+
+/**
+ * The label loop: simulates label effects in memory and re-dispatches rules
+ * with synthetic labeled/unlabeled events until the label set stabilizes.
+ * Returns all effects to apply, with label effects collapsed to the net diff
+ * so labels never flicker on GitHub. Non-converging rule sets are cut off
+ * after MAX_LABEL_ROUNDS and reported via context.captureException.
+ */
+async function runLabelLoop(
+  registryConfig: RegistryConfig,
+  context: WebhookContext,
+  initialEffects: Effect[],
+): Promise<Effect[]> {
+  const initial = payloadLabels(context);
+  if (!initial) return initialEffects;
+
+  const isLabelEffect = (e: Effect) => e.type === "addLabels" || e.type === "removeLabels";
+
+  // Bot-added labels only carry a name; original labels keep their full objects.
+  const labelObjects = new Map<string, LabelLike>(initial.map((l) => [l.name, l]));
+  const initialNames = new Set(labelObjects.keys());
+  const current = new Set(initialNames);
+
+  const effects: Effect[] = initialEffects.filter((e) => !isLabelEffect(e));
+  let roundEffects = initialEffects;
+  let round = 0;
+
+  while (true) {
+    const { adds, removes } = labelChanges(roundEffects, current);
+    if (adds.length === 0 && removes.length === 0) break;
+
+    round++;
+    if (round > MAX_LABEL_ROUNDS) {
+      const err = new Error(
+        `Label loop did not stabilize after ${MAX_LABEL_ROUNDS} rounds for ` +
+          `${context.repository}#${tryNumber(context)} (${context.eventType}); ` +
+          `still changing: +[${adds.join(", ")}] -[${removes.join(", ")}]`,
+      );
+      console.error(err.message);
+      context.captureException?.(err);
+      break;
+    }
+
+    for (const name of adds) {
+      current.add(name);
+      if (!labelObjects.has(name)) labelObjects.set(name, { name });
+    }
+    for (const name of removes) current.delete(name);
+
+    // One synthetic event per changed label (as GitHub sends them), all
+    // seeing the round's fully updated label set.
+    const labels = [...current].map((name) => labelObjects.get(name) as LabelLike);
+    const changes = [
+      ...adds.map((name) => ({ name, action: "labeled" as const })),
+      ...removes.map((name) => ({ name, action: "unlabeled" as const })),
+    ];
+
+    roundEffects = [];
+    for (const change of changes) {
+      const synthetic = await buildSyntheticLabelContext(context, change, labels);
+      if (!synthetic) continue;
+      roundEffects.push(...(await runMatchedRules(registryConfig, synthetic)));
+    }
+    effects.push(...roundEffects.filter((e) => !isLabelEffect(e)));
+  }
+
+  const netAdds = [...current].filter((name) => !initialNames.has(name));
+  const netRemoves = [...initialNames].filter((name) => !current.has(name));
+  if (netAdds.length > 0) effects.push({ type: "addLabels", labels: netAdds });
+  if (netRemoves.length > 0) effects.push({ type: "removeLabels", label: netRemoves });
+  return effects;
+}
+
+export async function dispatch(
+  registryConfig: RegistryConfig,
+  context: WebhookContext,
+): Promise<Effect[]> {
+  if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW && !context.dryRun) {
+    await maybeRedraftOnReady(context);
+  }
+
+  const initialEffects = await runMatchedRules(registryConfig, context);
+  const effects = await runLabelLoop(registryConfig, context, initialEffects);
 
   await applyEffects(context, effects, {
     knownSectionIds: collectKnownDashboardSectionIds(registryConfig, context),

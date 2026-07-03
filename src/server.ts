@@ -14,8 +14,10 @@ Sentry.init({
   tracesSampleRate: 1.0,
 });
 
-const handleRequest = createBotApp(defaultDeps);
-const handleScheduled = createScheduledHandler(defaultDeps);
+const deps = { ...defaultDeps, captureException: (err: unknown) => Sentry.captureException(err) };
+
+const handleRequest = createBotApp(deps);
+const handleScheduled = createScheduledHandler(deps);
 
 const port = Number(process.env.PORT ?? 8787);
 

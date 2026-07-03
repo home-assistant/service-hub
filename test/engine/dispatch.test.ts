@@ -3,7 +3,11 @@ import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import { dispatch, matchRules } from "../../src/engine/dispatch.js";
 import type { Rule } from "../../src/engine/types.js";
 import { EventType } from "../../src/github/types.js";
-import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
+import {
+  createMockContext,
+  createMockGitHub,
+  createMockIssueContext,
+} from "../helpers/mock-context.js";
 
 const testRule: Rule = {
   name: "test-rule",
@@ -121,7 +125,11 @@ describe("dispatch", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [removerRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+      payload: { pull_request: { labels: [{ name: "needs-rebase" }] } },
+    });
 
     await dispatch(config, context);
 
@@ -265,6 +273,7 @@ describe("dispatch", () => {
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
       dryRun: true,
+      payload: { pull_request: { labels: [{ name: "stale" }] } },
     });
 
     const effects = await dispatch(config, context);
@@ -982,5 +991,190 @@ describe("dispatch", () => {
       );
       expect(neutralizing).toHaveLength(0);
     });
+  });
+});
+
+describe("label loop", () => {
+  it("re-dispatches labeled rules until labels stabilize and applies the net diff", async () => {
+    const github = createMockGitHub();
+    const seenByB: string[][] = [];
+
+    const ruleA: Rule = {
+      name: "a",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["X"] }],
+      },
+    };
+    const ruleB: Rule = {
+      name: "b",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_LABELED]: async (ctx) => {
+          seenByB.push(ctx.payload.pull_request.labels.map((l) => l.name));
+          if (ctx.payload.label?.name === "X") return [{ type: "addLabels", labels: ["Y"] }];
+          return undefined;
+        },
+      },
+    };
+    const ruleC: Rule = {
+      name: "c",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_LABELED]: async (ctx) =>
+          ctx.payload.label?.name === "Y" ? [{ type: "removeLabels", label: ["X"] }] : undefined,
+      },
+    };
+
+    const config: RegistryConfig = {
+      repositories: { "home-assistant/core": [ruleA, ruleB, ruleC] },
+    };
+    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+
+    await dispatch(config, context);
+
+    // X was added in round 1 and removed again in round 3, so only Y is applied.
+    expect(github.issues.addLabels).toHaveBeenCalledTimes(1);
+    expect(github.issues.addLabels).toHaveBeenCalledWith(
+      expect.objectContaining({ labels: ["Y"] }),
+    );
+    expect(github.issues.removeLabel).not.toHaveBeenCalled();
+    // Synthetic payloads carry the simulated label state of their round.
+    expect(seenByB).toEqual([["X"], ["X", "Y"]]);
+  });
+
+  it("dispatches synthetic unlabeled events for removed labels", async () => {
+    const github = createMockGitHub();
+
+    const remover: Rule = {
+      name: "remover",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "removeLabels", label: ["stale"] }],
+      },
+    };
+    const reactor: Rule = {
+      name: "reactor",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_UNLABELED]: async (ctx) =>
+          ctx.payload.label?.name === "stale" ? [{ type: "comment", body: "bye" }] : undefined,
+      },
+    };
+
+    const config: RegistryConfig = {
+      repositories: { "home-assistant/core": [remover, reactor] },
+    };
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+      payload: { pull_request: { labels: [{ name: "stale" }] } },
+    });
+
+    await dispatch(config, context);
+
+    expect(github.issues.removeLabel).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "stale" }),
+    );
+    expect(github.issues.createComment).toHaveBeenCalledWith(
+      expect.objectContaining({ body: "bye" }),
+    );
+  });
+
+  it("does not call GitHub for labels already present", async () => {
+    const github = createMockGitHub();
+    const rule: Rule = {
+      name: "labeler",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [
+          { type: "addLabels", labels: ["cla-signed"] },
+        ],
+      },
+    };
+
+    const config: RegistryConfig = {
+      repositories: { "home-assistant/core": [rule] },
+    };
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+      payload: { pull_request: { labels: [{ name: "cla-signed" }] } },
+    });
+
+    await dispatch(config, context);
+
+    expect(github.issues.addLabels).not.toHaveBeenCalled();
+  });
+
+  it("runs the loop for issue events via issues.labeled", async () => {
+    const github = createMockGitHub();
+    const labeler: Rule = {
+      name: "labeler",
+      description: "",
+      events: {
+        [EventType.ISSUES_OPENED]: async () => [{ type: "addLabels", labels: ["bug"] }],
+      },
+    };
+    const reactor: Rule = {
+      name: "reactor",
+      description: "",
+      events: {
+        [EventType.ISSUES_LABELED]: async (ctx) =>
+          ctx.payload.label?.name === "bug" ? [{ type: "comment", body: "triaged" }] : undefined,
+      },
+    };
+
+    const config: RegistryConfig = {
+      repositories: { "home-assistant/core": [labeler, reactor] },
+    };
+    const context = createMockIssueContext({ eventType: EventType.ISSUES_OPENED, github });
+
+    await dispatch(config, context);
+
+    expect(github.issues.addLabels).toHaveBeenCalledWith(
+      expect.objectContaining({ labels: ["bug"] }),
+    );
+    expect(github.issues.createComment).toHaveBeenCalledWith(
+      expect.objectContaining({ body: "triaged" }),
+    );
+  });
+
+  it("cuts off non-converging rules and reports via captureException", async () => {
+    const github = createMockGitHub();
+    const captureException = vi.fn();
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const kickoff: Rule = {
+      name: "kickoff",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["ping"] }],
+      },
+    };
+    const flipper: Rule = {
+      name: "flipper",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_LABELED]: async () => [{ type: "removeLabels", label: ["ping"] }],
+        [EventType.PULL_REQUEST_UNLABELED]: async () => [{ type: "addLabels", labels: ["ping"] }],
+      },
+    };
+
+    const config: RegistryConfig = {
+      repositories: { "home-assistant/core": [kickoff, flipper] },
+    };
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+      captureException,
+    });
+
+    await dispatch(config, context);
+
+    expect(captureException).toHaveBeenCalledTimes(1);
+    expect(String(captureException.mock.calls[0][0])).toContain("did not stabilize");
+
+    consoleErrorSpy.mockRestore();
   });
 });
