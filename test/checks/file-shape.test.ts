@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { fileShape } from "../../src/checks/file-shape.js";
 import { EventType } from "../../src/engine/event.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { docsPrPresent } from "../../src/checks/docs-pr-present.js";
 import { fileShape } from "../../src/checks/file-shape.js";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";

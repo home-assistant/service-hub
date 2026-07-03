@@ -1,11 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, mock } from "bun:test";
 import type { CommandRegistryConfig } from "../../src/commands/registry.js";
 import { findCommand } from "../../src/commands/registry.js";
 import type { Command } from "../../src/commands/types.js";
 
 const pingCommand: Command = {
   name: "ping",
-  handle: vi.fn().mockResolvedValue(undefined),
+  handle: mock().mockResolvedValue(undefined),
 };
 
 const config: CommandRegistryConfig = {

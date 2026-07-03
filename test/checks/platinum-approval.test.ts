@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { integrationDomain } from "../../src/checks/integration-domain.js";
 import { platinumApproval } from "../../src/checks/platinum-approval.js";
 import { qualityScale } from "../../src/checks/quality-scale.js";
@@ -16,7 +16,7 @@ describe("platinum-approval", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    globalThis.fetch = vi.fn();
+    globalThis.fetch = mock();
   });
 
   afterEach(() => {

@@ -1,5 +1,5 @@
+import { describe, expect, it, mock } from "bun:test";
 import type { Octokit } from "@octokit/rest";
-import { describe, expect, it, vi } from "vitest";
 import { dispatchCommand, getBotCommand, isBotCommand } from "../../src/commands/dispatch.js";
 import type { CommandRegistryConfig } from "../../src/commands/registry.js";
 import type { Command, CommandContext } from "../../src/commands/types.js";
@@ -7,7 +7,7 @@ import { createMockGitHub } from "../helpers/mock-context.js";
 
 const pingCommand: Command = {
   name: "ping",
-  handle: vi.fn().mockResolvedValue(undefined),
+  handle: mock().mockResolvedValue(undefined),
 };
 
 const config: CommandRegistryConfig = {

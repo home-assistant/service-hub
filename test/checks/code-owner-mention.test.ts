@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { mentionCodeOwners } from "../../src/checks/code-owner-mention.js";
 import { integrationDomain } from "../../src/checks/integration-domain.js";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";

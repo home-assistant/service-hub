@@ -1,6 +1,6 @@
+import type { Mock } from "bun:test";
+import { mock } from "bun:test";
 import type { Octokit } from "@octokit/rest";
-import type { Mock } from "vitest";
-import { vi } from "vitest";
 import type { DashboardSection } from "../../src/engine/dashboard/types.js";
 import { EventType } from "../../src/engine/event.js";
 import type { WebhookEventPayload } from "../../src/engine/model/from-webhook.js";
@@ -8,46 +8,49 @@ import { contextFromWebhook } from "../../src/engine/model/from-webhook.js";
 import type { RuleContext } from "../../src/engine/rule-context.js";
 import type { Effect, Rule } from "../../src/engine/types.js";
 
+/** bun's `Mock` requires a signature; the octokit mocks are loosely typed. */
+type MockFn = Mock<(...args: never[]) => unknown>;
+
 export interface MockGitHub {
   issues: {
-    createComment: Mock;
-    updateComment: Mock;
-    listComments: Mock;
-    addLabels: Mock;
-    removeLabel: Mock;
-    get: Mock;
-    getLabel: Mock;
-    addAssignees: Mock;
+    createComment: MockFn;
+    updateComment: MockFn;
+    listComments: MockFn;
+    addLabels: MockFn;
+    removeLabel: MockFn;
+    get: MockFn;
+    getLabel: MockFn;
+    addAssignees: MockFn;
   };
   pulls: {
-    get: Mock;
-    list: Mock;
-    listFiles: Mock;
-    createReview: Mock;
-    listReviews: Mock;
-    listReviewComments: Mock;
-    update: Mock;
-    requestReviewers: Mock;
-    dismissReview: Mock;
-    listCommits: Mock;
+    get: MockFn;
+    list: MockFn;
+    listFiles: MockFn;
+    createReview: MockFn;
+    listReviews: MockFn;
+    listReviewComments: MockFn;
+    update: MockFn;
+    requestReviewers: MockFn;
+    dismissReview: MockFn;
+    listCommits: MockFn;
   };
   repos: {
-    createCommitStatus: Mock;
-    getContent: Mock;
-    listCommitStatusesForRef: Mock;
+    createCommitStatus: MockFn;
+    getContent: MockFn;
+    listCommitStatusesForRef: MockFn;
   };
   teams: {
-    listMembersInOrg: Mock;
+    listMembersInOrg: MockFn;
   };
   orgs: {
-    getMembershipForUser: Mock;
+    getMembershipForUser: MockFn;
   };
   reactions: {
-    createForIssueComment: Mock;
-    listForPullRequestReviewComment: Mock;
+    createForIssueComment: MockFn;
+    listForPullRequestReviewComment: MockFn;
   };
-  paginate: Mock;
-  graphql: Mock;
+  paginate: MockFn;
+  graphql: MockFn;
 }
 
 export function createMockPayload(overrides: Record<string, unknown> = {}) {
@@ -106,52 +109,52 @@ export function createMockIssuePayload(overrides: Record<string, unknown> = {}) 
 export function createMockGitHub(): MockGitHub {
   return {
     issues: {
-      createComment: vi.fn().mockResolvedValue({ data: {} }),
-      updateComment: vi.fn().mockResolvedValue({ data: {} }),
-      listComments: vi.fn().mockResolvedValue({ data: [] }),
-      addLabels: vi.fn().mockResolvedValue({ data: {} }),
-      removeLabel: vi.fn().mockResolvedValue({ data: {} }),
-      get: vi.fn().mockResolvedValue({ data: {} }),
-      getLabel: vi.fn().mockResolvedValue({ data: {} }),
-      addAssignees: vi.fn().mockResolvedValue({ data: {} }),
+      createComment: mock().mockResolvedValue({ data: {} }),
+      updateComment: mock().mockResolvedValue({ data: {} }),
+      listComments: mock().mockResolvedValue({ data: [] }),
+      addLabels: mock().mockResolvedValue({ data: {} }),
+      removeLabel: mock().mockResolvedValue({ data: {} }),
+      get: mock().mockResolvedValue({ data: {} }),
+      getLabel: mock().mockResolvedValue({ data: {} }),
+      addAssignees: mock().mockResolvedValue({ data: {} }),
     },
     pulls: {
-      get: vi.fn().mockResolvedValue({ data: {} }),
-      list: vi.fn().mockResolvedValue({ data: [] }),
-      listFiles: vi.fn().mockResolvedValue({ data: [] }),
-      createReview: vi.fn().mockResolvedValue({ data: {} }),
-      listReviews: vi.fn().mockResolvedValue({ data: [] }),
-      listReviewComments: vi.fn().mockResolvedValue({ data: [] }),
-      update: vi.fn().mockResolvedValue({ data: {} }),
-      requestReviewers: vi.fn().mockResolvedValue({ data: {} }),
-      dismissReview: vi.fn().mockResolvedValue({ data: {} }),
-      listCommits: vi.fn().mockResolvedValue({ data: [] }),
+      get: mock().mockResolvedValue({ data: {} }),
+      list: mock().mockResolvedValue({ data: [] }),
+      listFiles: mock().mockResolvedValue({ data: [] }),
+      createReview: mock().mockResolvedValue({ data: {} }),
+      listReviews: mock().mockResolvedValue({ data: [] }),
+      listReviewComments: mock().mockResolvedValue({ data: [] }),
+      update: mock().mockResolvedValue({ data: {} }),
+      requestReviewers: mock().mockResolvedValue({ data: {} }),
+      dismissReview: mock().mockResolvedValue({ data: {} }),
+      listCommits: mock().mockResolvedValue({ data: [] }),
     },
     repos: {
-      createCommitStatus: vi.fn().mockResolvedValue({ data: {} }),
-      getContent: vi.fn().mockResolvedValue({ data: {} }),
-      listCommitStatusesForRef: vi.fn().mockResolvedValue({ data: [] }),
+      createCommitStatus: mock().mockResolvedValue({ data: {} }),
+      getContent: mock().mockResolvedValue({ data: {} }),
+      listCommitStatusesForRef: mock().mockResolvedValue({ data: [] }),
     },
     teams: {
-      listMembersInOrg: vi.fn().mockResolvedValue({ data: [] }),
+      listMembersInOrg: mock().mockResolvedValue({ data: [] }),
     },
     orgs: {
-      getMembershipForUser: vi.fn().mockResolvedValue({ data: { role: "member" } }),
+      getMembershipForUser: mock().mockResolvedValue({ data: { role: "member" } }),
     },
     reactions: {
-      createForIssueComment: vi.fn().mockResolvedValue({ data: {} }),
-      listForPullRequestReviewComment: vi.fn().mockResolvedValue({ data: [] }),
+      createForIssueComment: mock().mockResolvedValue({ data: {} }),
+      listForPullRequestReviewComment: mock().mockResolvedValue({ data: [] }),
     },
     // Delegates to the per-endpoint mock so tests can keep mocking e.g.
     // pulls.listReviews and have entity accessors (which paginate) see it.
-    paginate: vi.fn().mockImplementation(async (fn: unknown, params: unknown) => {
+    paginate: mock().mockImplementation(async (fn: unknown, params: unknown) => {
       if (typeof fn === "function") {
         const response = await fn(params);
         return response?.data ?? [];
       }
       return [];
     }),
-    graphql: vi.fn().mockResolvedValue({}),
+    graphql: mock().mockResolvedValue({}),
   };
 }
 

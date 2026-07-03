@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { qualityScale } from "../../src/checks/quality-scale.js";
 import { EventType } from "../../src/engine/event.js";
 import { QualityScale } from "../../src/util/integration.js";
@@ -8,7 +8,7 @@ describe("quality-scale", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    globalThis.fetch = vi.fn();
+    globalThis.fetch = mock();
   });
 
   afterEach(() => {

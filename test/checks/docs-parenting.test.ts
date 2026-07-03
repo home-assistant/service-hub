@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { docsParenting } from "../../src/checks/docs-parenting.js";
 import { EventType } from "../../src/engine/event.js";
 import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";

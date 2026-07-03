@@ -8,9 +8,9 @@
     "dev": "bun --watch src/server.ts",
     "check": "biome check . && tsc --noEmit",
     "format": "biome check --write .",
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest"
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "test:watch": "bun test --watch"
   },
   "dependencies": {
     "@octokit/auth-app": "^8.2.0",
@@ -23,8 +23,6 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.14",
     "@types/bun": "^1.2.0",
-    "@vitest/coverage-v8": "^4.1.6",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "typescript": "^6.0.3"
   }
 }

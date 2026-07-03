@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, mock } from "bun:test";
 import type { Command } from "../src/commands/types.js";
 import { EventType } from "../src/engine/event.js";
 import type { Rule } from "../src/engine/types.js";
@@ -121,7 +121,7 @@ describe("e2e: webhook delivery", () => {
 
 describe("e2e: bot commands", () => {
   it("runs a matched /ha-bot command and posts a +1 reaction", async () => {
-    const handle = vi.fn().mockResolvedValue(undefined);
+    const handle = mock().mockResolvedValue(undefined);
     const ping: Command = { name: "ping", handle };
 
     const harness = createE2EHarness({
@@ -147,7 +147,7 @@ describe("e2e: bot commands", () => {
   });
 
   it("runs commands on plain issue comments too", async () => {
-    const handle = vi.fn().mockResolvedValue(undefined);
+    const handle = mock().mockResolvedValue(undefined);
 
     const harness = createE2EHarness({
       commandConfig: {
@@ -174,7 +174,7 @@ describe("e2e: bot commands", () => {
   it("posts a -1 reaction when the command is unknown", async () => {
     const harness = createE2EHarness({
       commandConfig: {
-        repositories: { "home-assistant/core": [{ name: "ping", handle: vi.fn() }] },
+        repositories: { "home-assistant/core": [{ name: "ping", handle: mock() }] },
       },
     });
 
@@ -186,7 +186,7 @@ describe("e2e: bot commands", () => {
   });
 
   it("ignores comments without a bot mention and falls through to the issue path (no PR)", async () => {
-    const handle = vi.fn();
+    const handle = mock();
 
     const harness = createE2EHarness({
       commandConfig: {

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, mock, spyOn } from "bun:test";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import { dispatch, matchRules } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
@@ -212,7 +212,7 @@ describe("dispatch", () => {
 
   it("continues processing when a rule throws", async () => {
     const github = createMockGitHub();
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleErrorSpy = spyOn(console, "error").mockImplementation(() => {});
 
     const failingRule: Rule = {
       name: "failing",
@@ -253,7 +253,7 @@ describe("dispatch", () => {
 
   it("in dry-run, returns effects but does not call GitHub", async () => {
     const github = createMockGitHub();
-    const consoleLogSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleLogSpy = spyOn(console, "log").mockImplementation(() => {});
 
     const rule: Rule = {
       name: "rule",
@@ -1143,8 +1143,8 @@ describe("label loop", () => {
 
   it("cuts off non-converging rules and reports via captureException", async () => {
     const github = createMockGitHub();
-    const captureException = vi.fn();
-    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const captureException = mock();
+    const consoleErrorSpy = spyOn(console, "error").mockImplementation(() => {});
 
     const kickoff: Rule = {
       name: "kickoff",

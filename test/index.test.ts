@@ -1,37 +1,31 @@
-import { verify } from "@octokit/webhooks-methods";
-import { describe, expect, it, vi } from "vitest";
-
-vi.mock("@octokit/webhooks-methods", () => ({
-  verify: vi.fn(),
-}));
-
-vi.mock("../src/commands/registry.js", () => ({
-  commandConfig: { repositories: {} },
-  dispatchCommand: vi.fn().mockResolvedValue(false),
-}));
-
-vi.mock("../src/engine/dispatch.js", () => ({
-  dispatch: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../src/manifests/index.js", () => ({
-  config: { repositories: {} },
-}));
-
-vi.mock("../src/github/app.js", () => ({
-  createOctokit: vi.fn().mockReturnValue({}),
-}));
-
-vi.mock("../src/engine/evaluate.js", () => ({
-  evaluatePR: vi.fn().mockResolvedValue([]),
-  evaluateRecentPRs: vi.fn().mockResolvedValue(undefined),
-}));
-
-import { dispatch } from "../src/engine/dispatch.js";
+import { afterAll, describe, expect, it, mock } from "bun:test";
+import type { Octokit } from "@octokit/rest";
 import type { Env } from "../src/env.js";
-import { createBotApp, defaultDeps } from "../src/index.js";
 
-const app = createBotApp(defaultDeps);
+// bun's mock.module is neither hoisted nor scoped to this file: register the
+// mocks before importing src/index.js, and restore the real modules in
+// afterAll — helpers/e2e.ts and engine/dispatch.test.ts need the originals.
+const actualWebhooks = { ...(await import("@octokit/webhooks-methods")) };
+const actualDispatchModule = { ...(await import("../src/engine/dispatch.js")) };
+
+const verify = mock(async () => true);
+mock.module("@octokit/webhooks-methods", () => ({ ...actualWebhooks, verify }));
+
+const dispatch = mock(async () => undefined);
+mock.module("../src/engine/dispatch.js", () => ({ ...actualDispatchModule, dispatch }));
+
+afterAll(() => {
+  mock.module("@octokit/webhooks-methods", () => actualWebhooks);
+  mock.module("../src/engine/dispatch.js", () => actualDispatchModule);
+});
+
+const { createBotApp } = await import("../src/index.js");
+
+const app = createBotApp({
+  config: { repositories: {} },
+  commandConfig: { repositories: {} },
+  createOctokit: () => ({}) as unknown as Octokit,
+});
 
 async function fetchApp(req: Request): Promise<Response> {
   return app(req, env);
@@ -63,7 +57,7 @@ const env: Env = {
 
 describe("webhook handler", () => {
   it("returns 401 for invalid signature", async () => {
-    vi.mocked(verify).mockResolvedValue(false);
+    verify.mockResolvedValue(false);
 
     const req = makeRequest(JSON.stringify({ action: "opened" }));
     const res = await fetchApp(req);
@@ -73,7 +67,7 @@ describe("webhook handler", () => {
   });
 
   it("returns 400 for invalid JSON", async () => {
-    vi.mocked(verify).mockResolvedValue(true);
+    verify.mockResolvedValue(true);
 
     const req = makeRequest("not-json");
     const res = await fetchApp(req);
@@ -83,8 +77,8 @@ describe("webhook handler", () => {
   });
 
   it("returns 200 and skips new_permissions_accepted", async () => {
-    vi.mocked(verify).mockResolvedValue(true);
-    vi.mocked(dispatch).mockClear();
+    verify.mockResolvedValue(true);
+    dispatch.mockClear();
 
     const req = makeRequest(JSON.stringify({ action: "new_permissions_accepted" }));
     const res = await fetchApp(req);
@@ -94,8 +88,8 @@ describe("webhook handler", () => {
   });
 
   it("dispatches pull request events", async () => {
-    vi.mocked(verify).mockResolvedValue(true);
-    vi.mocked(dispatch).mockClear();
+    verify.mockResolvedValue(true);
+    dispatch.mockClear();
 
     const payload = {
       action: "opened",
@@ -117,8 +111,8 @@ describe("webhook handler", () => {
   });
 
   it("short-circuits self-webhooks without dispatching", async () => {
-    vi.mocked(verify).mockResolvedValue(true);
-    vi.mocked(dispatch).mockClear();
+    verify.mockResolvedValue(true);
+    dispatch.mockClear();
 
     const payload = {
       action: "labeled",
@@ -141,8 +135,8 @@ describe("webhook handler", () => {
   });
 
   it("matches self-webhook login case-insensitively", async () => {
-    vi.mocked(verify).mockResolvedValue(true);
-    vi.mocked(dispatch).mockClear();
+    verify.mockResolvedValue(true);
+    dispatch.mockClear();
 
     const payload = {
       action: "labeled",
@@ -163,8 +157,8 @@ describe("webhook handler", () => {
   });
 
   it("still dispatches for other bot senders", async () => {
-    vi.mocked(verify).mockResolvedValue(true);
-    vi.mocked(dispatch).mockClear();
+    verify.mockResolvedValue(true);
+    dispatch.mockClear();
 
     const payload = {
       action: "opened",

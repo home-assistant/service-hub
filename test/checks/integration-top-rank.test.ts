@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, mock } from "bun:test";
 import { integrationTopRank } from "../../src/checks/integration-top-rank.js";
 import { EventType } from "../../src/engine/event.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
@@ -18,7 +18,7 @@ function makeFile(filename: string, overrides: { status?: string; additions?: nu
 }
 
 function mockAnalytics(integrations: Record<string, number>) {
-  globalThis.fetch = vi.fn().mockResolvedValue({
+  globalThis.fetch = mock().mockResolvedValue({
     ok: true,
     json: async () => ({ integrations }),
   });
