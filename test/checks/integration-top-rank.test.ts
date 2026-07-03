@@ -75,17 +75,4 @@ describe("integration-top-rank", () => {
     const result = await runRule(integrationTopRank, context);
     expect(result).toBeUndefined();
   });
-
-  it("skips for bot senders", async () => {
-    mockAnalytics({ hue: 100000 });
-
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_OPENED,
-      payload: { sender: { login: "dependabot[bot]", type: "Bot" } },
-    });
-    mockPRFiles(context, [makeFile("homeassistant/components/hue/sensor.py")]);
-
-    const result = await runRule(integrationTopRank, context);
-    expect(result).toBeUndefined();
-  });
 });

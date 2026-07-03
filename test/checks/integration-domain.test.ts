@@ -48,17 +48,4 @@ describe("integration-domain", () => {
     const result = await runRule(integrationDomain, context);
     expect(result).toBeUndefined();
   });
-
-  it("skips for bot senders", async () => {
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_OPENED,
-      payload: {
-        sender: { login: "dependabot[bot]", type: "Bot" },
-      },
-    });
-    mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
-
-    const result = await runRule(integrationDomain, context);
-    expect(result).toBeUndefined();
-  });
 });

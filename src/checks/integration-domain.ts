@@ -17,8 +17,6 @@ type HandledEvent =
   | EventType.ON_DEMAND;
 
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
-  if (ctx.senderIsBot) return undefined;
-
   const domains = await ctx.target.integrationDomains();
   if (domains.length === 0 || domains.length > MAX_INTEGRATION_LABELS) {
     return undefined;

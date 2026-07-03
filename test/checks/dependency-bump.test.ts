@@ -52,8 +52,4 @@ describe("dependency-bump", () => {
     const result = await runRule(dependencyBump, context);
     expect(result).toMatchObject({ labels: ["dependency-bump"] });
   });
-
-  it("does not allow bots", () => {
-    expect(dependencyBump.allowBots).toBe(false);
-  });
 });

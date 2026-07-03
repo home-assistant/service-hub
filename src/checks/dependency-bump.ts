@@ -23,7 +23,6 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
 export const dependencyBump: Rule = {
   name: "dependency-bump",
   description: "Labels PRs that only modify dependency files",
-  allowBots: false,
   events: {
     [EventType.PULL_REQUEST_OPENED]: evaluate,
     [EventType.ON_DEMAND]: evaluate,

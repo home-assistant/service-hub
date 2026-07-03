@@ -48,7 +48,7 @@ describe("mention-code-owners", () => {
           user: { login: "reporter" },
           assignees: [],
           body: "",
-          labels: [],
+          labels: [{ name: "integration: hue" }],
         },
       },
     });
@@ -80,7 +80,7 @@ describe("mention-code-owners", () => {
           user: { login: "reporter" },
           assignees: [{ login: "balloob" }],
           body: "",
-          labels: [],
+          labels: [{ name: "integration: hue" }],
         },
       },
     });
@@ -110,7 +110,7 @@ describe("mention-code-owners", () => {
           user: { login: "reporter" },
           assignees: [],
           body: "",
-          labels: [],
+          labels: [{ name: "integration: hue" }],
         },
       },
     });
@@ -129,6 +129,7 @@ describe("mention-code-owners", () => {
       github,
       payload: {
         label: { name: "integration: hue" },
+        issue: { labels: [{ name: "integration: hue" }] },
       },
     });
 
@@ -149,6 +150,7 @@ describe("mention-code-owners", () => {
       github,
       payload: {
         label: { name: "integration: hue" },
+        issue: { labels: [{ name: "integration: hue" }] },
       },
     });
 
@@ -261,7 +263,7 @@ describe("mention-code-owners", () => {
           user: { login: "reporter" },
           assignees: [],
           body: "",
-          labels: [],
+          labels: [{ name: "integration: hue" }],
         },
       },
     });

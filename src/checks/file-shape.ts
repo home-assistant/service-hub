@@ -87,8 +87,6 @@ type HandledEvent =
   | EventType.ON_DEMAND;
 
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
-  if (ctx.senderIsBot) return undefined;
-
   const files = await ctx.target.files();
   const parsed = files.map((f) => new ParsedPath(f));
   const current = new Set(await ctx.target.labels());

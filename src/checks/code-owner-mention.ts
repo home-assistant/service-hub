@@ -53,19 +53,16 @@ async function processIntegration(
 }
 
 async function collectIntegrationNames(ctx: RuleContext<HandledEvent>): Promise<string[]> {
-  // LABELED → only the integration in the just-added label (if any)
-  // ON_DEMAND → union of file-derived (PRs) and the current labels
-  if ("label" in ctx.event) {
-    if (!ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return [];
-    return [ctx.event.label.slice(INTEGRATION_LABEL_PREFIX.length)];
-  }
+  // State-based: the `integration:` labels currently on the item, whether
+  // the trigger is a label event or on_demand. Re-processing an integration
+  // is idempotent — owners already assigned or heard from aren't re-pinged.
+  // A labeled/unlabeled event for a non-integration label can't change the
+  // outcome, so skip those cheaply.
+  if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return [];
 
-  const labelDerived = (await ctx.target.labels())
+  return (await ctx.target.labels())
     .filter((l) => l.startsWith(INTEGRATION_LABEL_PREFIX))
     .map((l) => l.slice(INTEGRATION_LABEL_PREFIX.length));
-  const fileDerived =
-    ctx.target.kind === "pull_request" ? await ctx.target.integrationDomains() : [];
-  return [...new Set([...fileDerived, ...labelDerived])];
 }
 
 export function mentionCodeOwners(config: {

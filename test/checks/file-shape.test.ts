@@ -289,15 +289,4 @@ describe("file-shape", () => {
     expect(result?.labels).toContain("small-pr");
     expect(result?.labels).toContain("metadata-only");
   });
-
-  it("skips for bot senders", async () => {
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_OPENED,
-      payload: { sender: { login: "dependabot[bot]", type: "Bot" } },
-    });
-    mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
-
-    const result = await runRule(fileShape, context);
-    expect(result).toBeUndefined();
-  });
 });
