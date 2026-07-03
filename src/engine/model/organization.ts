@@ -1,4 +1,5 @@
 import type { Octokit } from "@octokit/rest";
+import { log } from "../../log.js";
 
 /**
  * Read-model of the organization an event happened in. Team membership is
@@ -23,7 +24,11 @@ export class Org {
         .listMembersInOrg({ org: this.name, team_slug: teamSlug })
         .then((r) => r.data.map((m) => m.login.toLowerCase()))
         .catch((err) => {
-          console.warn(`Org.teamMembers: ${this.name}/${teamSlug} failed:`, err);
+          log.warn("Org.teamMembers: fetch failed", {
+            org: this.name,
+            team: teamSlug,
+            error: String(err),
+          });
           this.teamCache.delete(teamSlug);
           return [];
         });

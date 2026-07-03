@@ -38,7 +38,6 @@ export type WebhookEventPayload =
 export interface AdapterOptions {
   botSlug: string;
   dryRun?: boolean;
-  captureException?: (err: unknown) => void;
 }
 
 /**

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
+import { log } from "../log.js";
 import { fetchWithTimeout } from "../util/fetch.js";
 import { ParsedPath } from "../util/parse-path.js";
 import { addsNewIntegration } from "./file-shape.js";
@@ -20,7 +21,7 @@ async function getTopLabels(parsed: ParsedPath[]): Promise<string[]> {
     if (!res.ok) return [];
     const parsedData = AnalyticsSchema.safeParse(await res.json());
     if (!parsedData.success) {
-      console.warn("getTopLabels: analytics schema mismatch:", parsedData.error.issues);
+      log.warn("getTopLabels: analytics schema mismatch", { issues: parsedData.error.issues });
       return [];
     }
     const data = parsedData.data;
@@ -41,7 +42,7 @@ async function getTopLabels(parsed: ParsedPath[]): Promise<string[]> {
 
     return TOP_COUNTS.filter((count) => bestRank < count).map((count) => `Top ${count}`);
   } catch (err) {
-    console.warn("getTopLabels: analytics fetch failed:", err);
+    log.warn("getTopLabels: analytics fetch failed", { error: String(err) });
     return [];
   }
 }

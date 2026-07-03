@@ -11,6 +11,7 @@ import { EventType } from "./engine/event.js";
 import { contextFromWebhook, type WebhookEventPayload } from "./engine/model/from-webhook.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
+import { log } from "./log.js";
 import { config } from "./manifests/index.js";
 
 const CRON_LOOKBACK_MINUTES = 10;
@@ -45,8 +46,6 @@ export interface BotDeps {
   config: RegistryConfig;
   commandConfig: CommandRegistryConfig;
   createOctokit: (env: Env) => Octokit;
-  /** Error reporter for engine anomalies (wired to Sentry in server.ts). */
-  captureException?: (err: unknown) => void;
 }
 
 /** A standalone request handler: takes a Fetch `Request`, returns a `Response`. */
@@ -81,23 +80,17 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
   const ownBotLogin = `${env.BOT_SLUG}[bot]`;
   const selfWebhook = senderLogin.toLowerCase() === ownBotLogin.toLowerCase();
 
-  console.log(
-    JSON.stringify({
-      webhook: rawEventType,
-      repo: payload.repository.full_name,
-      sender: payload.sender?.login,
-      number:
-        ("pull_request" in payload && payload.pull_request?.number) ||
-        ("issue" in payload && payload.issue?.number) ||
-        undefined,
-      delivery: request.headers.get("x-github-delivery"),
-      ...(selfWebhook
-        ? { ignored: "self-webhook" }
-        : known
-          ? {}
-          : { ignored: "unknown event type" }),
-    }),
-  );
+  log.info("webhook", {
+    webhook: rawEventType,
+    repo: payload.repository.full_name,
+    sender: payload.sender?.login,
+    number:
+      ("pull_request" in payload && payload.pull_request?.number) ||
+      ("issue" in payload && payload.issue?.number) ||
+      undefined,
+    delivery: request.headers.get("x-github-delivery"),
+    ...(selfWebhook ? { ignored: "self-webhook" } : known ? {} : { ignored: "unknown event type" }),
+  });
 
   // Skip self-webhooks and events we don't have a rule for
   if (selfWebhook || !known) return new Response("OK");
@@ -134,7 +127,6 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
     const context = contextFromWebhook(octokit, payload, eventType, {
       botSlug: env.BOT_SLUG,
       dryRun: isDryRun(env),
-      captureException: deps.captureException,
     });
     await dispatch(deps.config, context);
   }
@@ -171,7 +163,6 @@ export function createScheduledHandler(deps: BotDeps): (env: Env) => Promise<voi
         evaluateRecentPRs(deps.config, octokit, repo, since, {
           dryRun,
           botSlug: env.BOT_SLUG,
-          captureException: deps.captureException,
         }),
       ),
     );

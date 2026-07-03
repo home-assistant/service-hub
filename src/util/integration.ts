@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { log } from "../log.js";
 import { fetchWithTimeout } from "./fetch.js";
 
 export enum QualityScale {
@@ -35,11 +36,14 @@ export async function fetchIntegrationManifest(
     if (!res.ok) return;
     const parsed = IntegrationManifestSchema.safeParse(await res.json());
     if (!parsed.success) {
-      console.warn(`fetchIntegrationManifest(${domain}) schema mismatch:`, parsed.error.issues);
+      log.warn("fetchIntegrationManifest: schema mismatch", {
+        domain,
+        issues: parsed.error.issues,
+      });
       return;
     }
     return parsed.data;
   } catch (err) {
-    console.warn(`fetchIntegrationManifest(${domain}) failed:`, err);
+    log.warn("fetchIntegrationManifest: fetch failed", { domain, error: String(err) });
   }
 }

@@ -169,7 +169,6 @@ export function createMockContext(
     payload?: Record<string, unknown>;
     github?: MockGitHub;
     dryRun?: boolean;
-    captureException?: (err: unknown) => void;
   } = {},
 ): RuleContext {
   const github = overrides.github ?? createMockGitHub();
@@ -183,7 +182,6 @@ export function createMockContext(
     {
       botSlug: "ha-bot",
       dryRun: overrides.dryRun,
-      captureException: overrides.captureException,
     },
   );
 }

@@ -1,4 +1,5 @@
 import type { Octokit } from "@octokit/rest";
+import { log } from "../log.js";
 import { ensureDashboardCommentExists, upsertDashboardComment } from "./dashboard/comment.js";
 import { parseOverrides } from "./dashboard/overrides.js";
 import type { DashboardSection } from "./dashboard/types.js";
@@ -43,15 +44,12 @@ async function applyEffects(
   config: ApplyEffectsConfig,
 ): Promise<void> {
   if (context.dryRun) {
-    console.log(
-      JSON.stringify({
-        dryRun: true,
-        repository: context.repository,
-        eventType: context.eventType,
-        number: context.number,
-        effects,
-      }),
-    );
+    log.info("dry run", {
+      repository: context.repository,
+      eventType: context.eventType,
+      number: context.number,
+      effects: JSON.stringify(effects),
+    });
     return;
   }
 
@@ -143,7 +141,7 @@ async function applyEffects(
   const settled = await Promise.allSettled(ops);
   for (const outcome of settled) {
     if (outcome.status === "rejected") {
-      console.warn("applyEffects operation failed:", outcome.reason);
+      log.warn("applyEffects: operation failed", { error: String(outcome.reason) });
     }
   }
 }
@@ -164,7 +162,7 @@ async function draftPRIfNotDraft(context: RuleContext): Promise<void> {
     if (await context.target.isDraft()) return;
     await convertPullRequestToDraft(context.github, await context.target.nodeId());
   } catch (err) {
-    console.warn("draftPRIfNotDraft failed:", err);
+    log.warn("draftPRIfNotDraft failed", { error: String(err) });
   }
 }
 
@@ -180,7 +178,7 @@ async function maybeRedraftOnReady(context: RuleContext): Promise<void> {
     if (haBot?.state !== "failure") return;
     await draftPRIfNotDraft(context);
   } catch (err) {
-    console.warn("maybeRedraftOnReady failed:", err);
+    log.warn("maybeRedraftOnReady failed", { error: String(err) });
   }
 }
 
@@ -235,7 +233,7 @@ async function syncDashboardAndStatus(
   // primary write below). The bot writes only the `ha-bot` aggregate going
   // forward — anything else we created on this commit is from an older deploy.
   const sweep = sweepStaleStatusChecks(context, headSha).catch((err) => {
-    console.warn("sweepStaleStatusChecks failed:", err);
+    log.warn("sweepStaleStatusChecks failed", { error: String(err) });
   });
   await context.github.repos.createCommitStatus(
     context.repoParams({
@@ -280,10 +278,10 @@ async function sweepStaleStatusChecks(context: RuleContext, headSha: string): Pr
       s.state !== "success",
   );
   if (stale.length === 0) return;
-  console.log(
-    `[sweep] neutralizing ${stale.length} stale status${stale.length === 1 ? "" : "es"}:`,
-    stale.map((s) => s.context).join(", "),
-  );
+  log.info("sweep: neutralizing stale statuses", {
+    count: stale.length,
+    contexts: stale.map((s) => s.context).join(", "),
+  });
   await Promise.all(
     stale.map((s) =>
       context.github.repos
@@ -296,7 +294,10 @@ async function sweepStaleStatusChecks(context: RuleContext, headSha: string): Pr
           }),
         )
         .catch((err) => {
-          console.warn(`[sweep] failed to neutralize ${s.context}:`, err);
+          log.warn("sweep: failed to neutralize status", {
+            context: s.context,
+            error: String(err),
+          });
         }),
     ),
   );
@@ -320,7 +321,12 @@ async function runMatchedRules(
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
     if (outcome.status === "rejected") {
-      console.error(`Rule "${matched[i].name}" failed:`, outcome.reason);
+      log.error("rule failed", {
+        rule: matched[i].name,
+        repository: context.repository,
+        number: context.number,
+        error: String(outcome.reason),
+      });
     } else if (outcome.value) {
       effects.push(...outcome.value);
     }
@@ -381,7 +387,7 @@ function syntheticLabelContext(
  * with synthetic labeled/unlabeled events until the label set stabilizes.
  * Returns all effects to apply, with label effects collapsed to the net diff
  * so labels never flicker on GitHub. Non-converging rule sets are cut off
- * after MAX_LABEL_ROUNDS and reported via context.captureException.
+ * after MAX_LABEL_ROUNDS and reported to Sentry via log.exception.
  */
 async function runLabelLoop(
   registryConfig: RegistryConfig,
@@ -409,8 +415,7 @@ async function runLabelLoop(
           `${context.repository}#${context.number} (${context.eventType}); ` +
           `still changing: +[${adds.join(", ")}] -[${removes.join(", ")}]`,
       );
-      console.error(err.message);
-      context.captureException?.(err);
+      log.exception(err);
       break;
     }
 

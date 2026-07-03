@@ -1,3 +1,4 @@
+import { log } from "../../log.js";
 import type { DashboardSection, SectionStatus } from "./types.js";
 
 const SENTINEL = "<!-- ha-bot-dashboard -->";
@@ -114,7 +115,7 @@ export function parseDashboard(body: string): DashboardSection[] {
         try {
           sections.push(JSON.parse(content.slice(colonIndex + 1)));
         } catch (err) {
-          console.warn(`parseDashboard: malformed section data:`, err);
+          log.warn("parseDashboard: malformed section data", { error: String(err) });
         }
       }
     }

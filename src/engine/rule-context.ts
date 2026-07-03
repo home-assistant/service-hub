@@ -44,7 +44,6 @@ interface RuleContextParams<E extends EventType> {
   target: TargetFor<E>;
   botSlug: string;
   dryRun?: boolean;
-  captureException?: (err: unknown) => void;
 }
 
 /**
@@ -62,7 +61,6 @@ export class RuleContext<E extends EventType = EventType> {
   readonly target: TargetFor<E>;
   readonly botSlug: string;
   readonly dryRun: boolean;
-  readonly captureException?: (err: unknown) => void;
 
   constructor(params: RuleContextParams<E>) {
     this.github = params.github;
@@ -73,7 +71,6 @@ export class RuleContext<E extends EventType = EventType> {
     this.target = params.target;
     this.botSlug = params.botSlug;
     this.dryRun = params.dryRun ?? false;
-    this.captureException = params.captureException;
   }
 
   get eventType(): E {
@@ -145,7 +142,6 @@ export class RuleContext<E extends EventType = EventType> {
       target: target ?? (this.target as unknown as TargetFor<F>),
       botSlug: this.botSlug,
       dryRun: this.dryRun,
-      captureException: this.captureException,
     });
   }
 }

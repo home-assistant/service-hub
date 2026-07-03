@@ -1,8 +1,9 @@
-import { describe, expect, it, mock, spyOn } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import { dispatch, matchRules } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
 import type { Rule } from "../../src/engine/types.js";
+import { log } from "../../src/log.js";
 import {
   createMockContext,
   createMockGitHub,
@@ -212,7 +213,7 @@ describe("dispatch", () => {
 
   it("continues processing when a rule throws", async () => {
     const github = createMockGitHub();
-    const consoleErrorSpy = spyOn(console, "error").mockImplementation(() => {});
+    const logErrorSpy = spyOn(log, "error").mockImplementation(() => {});
 
     const failingRule: Rule = {
       name: "failing",
@@ -240,20 +241,20 @@ describe("dispatch", () => {
 
     await dispatch(config, context);
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("failing"),
-      expect.any(Error),
+    expect(logErrorSpy).toHaveBeenCalledWith(
+      "rule failed",
+      expect.objectContaining({ rule: "failing", error: expect.stringContaining("Rule exploded") }),
     );
     expect(github.issues.addLabels).toHaveBeenCalledWith(
       expect.objectContaining({ labels: ["still-works"] }),
     );
 
-    consoleErrorSpy.mockRestore();
+    logErrorSpy.mockRestore();
   });
 
   it("in dry-run, returns effects but does not call GitHub", async () => {
     const github = createMockGitHub();
-    const consoleLogSpy = spyOn(console, "log").mockImplementation(() => {});
+    const logInfoSpy = spyOn(log, "info").mockImplementation(() => {});
 
     const rule: Rule = {
       name: "rule",
@@ -281,9 +282,9 @@ describe("dispatch", () => {
     expect(effects).toHaveLength(2);
     expect(github.issues.addLabels).not.toHaveBeenCalled();
     expect(github.issues.removeLabel).not.toHaveBeenCalled();
-    expect(consoleLogSpy).toHaveBeenCalled();
+    expect(logInfoSpy).toHaveBeenCalled();
 
-    consoleLogSpy.mockRestore();
+    logInfoSpy.mockRestore();
   });
 
   it("does nothing when no rules match", async () => {
@@ -1141,10 +1142,9 @@ describe("label loop", () => {
     );
   });
 
-  it("cuts off non-converging rules and reports via captureException", async () => {
+  it("cuts off non-converging rules and reports the exception", async () => {
     const github = createMockGitHub();
-    const captureException = mock();
-    const consoleErrorSpy = spyOn(console, "error").mockImplementation(() => {});
+    const exceptionSpy = spyOn(log, "exception").mockImplementation(() => {});
 
     const kickoff: Rule = {
       name: "kickoff",
@@ -1168,14 +1168,13 @@ describe("label loop", () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
-      captureException,
     });
 
     await dispatch(config, context);
 
-    expect(captureException).toHaveBeenCalledTimes(1);
-    expect(String(captureException.mock.calls[0][0])).toContain("did not stabilize");
+    expect(exceptionSpy).toHaveBeenCalledTimes(1);
+    expect(String(exceptionSpy.mock.calls[0][0])).toContain("did not stabilize");
 
-    consoleErrorSpy.mockRestore();
+    exceptionSpy.mockRestore();
   });
 });

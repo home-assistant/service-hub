@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it, mock, spyOn } from "bun:test";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
+import { log } from "../../src/log.js";
 import { createMockGitHub } from "../helpers/mock-context.js";
 
 // bun's mock.module is neither hoisted nor scoped to this file: register the
@@ -147,7 +148,7 @@ describe("evaluateRecentPRs", () => {
   it("continues when a single PR evaluation fails", async () => {
     const github = createMockGitHub();
     const now = new Date();
-    const consoleSpy = spyOn(console, "error").mockImplementation(() => {});
+    const logErrorSpy = spyOn(log, "error").mockImplementation(() => {});
 
     github.pulls.list.mockResolvedValue({
       data: [
@@ -174,10 +175,13 @@ describe("evaluateRecentPRs", () => {
     const since = new Date(now.getTime() - 10 * 60 * 1000);
     await evaluateRecentPRs(config, github as never, "home-assistant/core", since);
 
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("#1"), expect.any(Error));
+    expect(logErrorSpy).toHaveBeenCalledWith(
+      "evaluateRecentPRs: PR evaluation failed",
+      expect.objectContaining({ number: 1 }),
+    );
     // PR #2 should still have been evaluated
     expect(github.pulls.get).toHaveBeenCalledTimes(2);
 
-    consoleSpy.mockRestore();
+    logErrorSpy.mockRestore();
   });
 });

@@ -1,4 +1,5 @@
 import type { Octokit } from "@octokit/rest";
+import { log } from "../log.js";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
 import { contextFromIssue, contextFromPullRequest } from "./model/from-webhook.js";
@@ -9,7 +10,6 @@ import type { Effect } from "./types.js";
 export interface EvaluateOptions {
   dryRun?: boolean;
   botSlug?: string;
-  captureException?: (err: unknown) => void;
 }
 
 export async function evaluatePR(
@@ -27,7 +27,6 @@ export async function evaluatePR(
   const context = contextFromPullRequest(github, pr, {
     botSlug: options.botSlug ?? "",
     dryRun: options.dryRun,
-    captureException: options.captureException,
   });
 
   return dispatch(registryConfig, context);
@@ -58,7 +57,6 @@ export async function evaluateIssue(
     {
       botSlug: options.botSlug ?? "",
       dryRun: options.dryRun,
-      captureException: options.captureException,
     },
   );
 
@@ -88,7 +86,11 @@ export async function evaluateRecentPRs(
     try {
       await evaluatePR(registryConfig, github, { owner, repo, number: pr.number }, options);
     } catch (err) {
-      console.error(`Failed to evaluate PR ${repoFullName}#${pr.number}:`, err);
+      log.error("evaluateRecentPRs: PR evaluation failed", {
+        repository: repoFullName,
+        number: pr.number,
+        error: String(err),
+      });
     }
   }
 }

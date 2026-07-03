@@ -1,4 +1,5 @@
 import type { ListPullRequestFiles } from "../engine/model/pull-request.js";
+import { log } from "../log.js";
 import { coreComponents, entityPlatforms } from "./components.js";
 
 const FILE_TYPES = [
@@ -50,9 +51,10 @@ export class ParsedPath {
       } else {
         const validated = asFileType(subfolder);
         if (validated === null) {
-          console.warn(
-            `parse-path: unrecognized top-level subfolder "${subfolder}" in ${file.filename}; FileType set to null`,
-          );
+          log.warn("parse-path: unrecognized top-level subfolder; FileType set to null", {
+            subfolder,
+            file: file.filename,
+          });
         }
         this.type = validated;
       }

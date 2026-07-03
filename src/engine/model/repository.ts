@@ -1,4 +1,5 @@
 import type { Octokit } from "@octokit/rest";
+import { log } from "../../log.js";
 import type { Organization, Repository } from "../../util/repositories.js";
 
 /**
@@ -41,7 +42,10 @@ export class Repo {
           );
         })
         .catch((err) => {
-          console.warn(`Repo.codeownersContent: fetch for ${this.fullName} failed:`, err);
+          log.warn("Repo.codeownersContent: fetch failed", {
+            repository: this.fullName,
+            error: String(err),
+          });
           this.codeownersCache = undefined;
           return null;
         });

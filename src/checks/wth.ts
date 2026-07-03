@@ -2,6 +2,7 @@ import { z } from "zod";
 import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
+import { log } from "../log.js";
 import { fetchWithTimeout } from "../util/fetch.js";
 import { extractForumLinks } from "../util/pr-body.js";
 
@@ -18,7 +19,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
       if (!res.ok) continue;
       const parsed = ForumPostSchema.safeParse(await res.json());
       if (!parsed.success) {
-        console.warn(`wth: schema mismatch on ${link}:`, parsed.error.issues);
+        log.warn("wth: forum post schema mismatch", { link, issues: parsed.error.issues });
         continue;
       }
       const categoryId = parsed.data.category_id;
@@ -26,7 +27,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
         return [{ type: "addLabels", labels: ["WTH"] }];
       }
     } catch (err) {
-      console.warn(`wth: fetch ${link}.json failed:`, err);
+      log.warn("wth: forum fetch failed", { link, error: String(err) });
     }
   }
 }
