@@ -22,13 +22,16 @@ Failing or pending checks on the bot's PR dashboard can be overridden by adding 
 
 The `id` is the section ID shown in the dashboard's machine-readable markers (e.g. `merge-conflict`, `docs-missing`). Only `fail` and `pending` sections can be downgraded; `pass`/`info` checks ignore the tag. The original check message stays visible in the dashboard with an `Override: <reason>` line appended, so reviewers can see both what was flagged and why it was waived.
 
+## Rule context and entity model
+
+Rules never see raw webhook payloads. Each dispatch hands them a `RuleContext`: an event descriptor (what happened — event type plus per-event facts like the changed label) and lazily-hydrated read-models (`PullRequest`, `Issue`, `Repo`, `Org`). Entities are seeded with whatever the triggering payload carried; any field the source lacked is fetched on first read through per-endpoint cache groups (core `pulls.get`, files, reviews, review comments, issue comments), costing at most one request per group per dispatch no matter how many rules read it. `src/engine/model/from-webhook.ts` is the only file that knows payload shapes.
+
 ## Label loop
 
-Rules communicate through labels: one rule's `addLabels`/`removeLabels` effect can be another rule's `labeled`/`unlabeled` trigger, so a rule only needs to listen for the events it actually cares about instead of every PR event. On each dispatch the engine simulates label changes in memory, re-dispatches the affected rules with synthetic `labeled`/`unlabeled` events (sharing the request caches of the original context), and repeats until the label set stabilizes. Only then are effects applied — with label effects collapsed to the net diff, so a label added and removed within one dispatch never flickers on GitHub, and labels already present aren't re-sent. Non-converging rule sets are cut off after 10 rounds and reported to Sentry.
+Rules communicate through labels: one rule's `addLabels`/`removeLabels` effect can be another rule's `labeled`/`unlabeled` trigger, so a rule only needs to listen for the events it actually cares about instead of every PR event. On each dispatch the engine simulates label changes in memory, re-dispatches the affected rules with synthetic `labeled`/`unlabeled` events (same entity, label state overridden), and repeats until the label set stabilizes. Only then are effects applied — with label effects collapsed to the net diff, so a label added and removed within one dispatch never flickers on GitHub, and labels already present aren't re-sent. Non-converging rule sets are cut off after 10 rounds and reported to Sentry.
 
 ## TODOs
 
-- Think of a better cache mechanism - maybe seperate from the webhookcontext? Seems overloaded.
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
 - Fix pr-platinum-code-owner-approval, pr-new-integration-validation, and pr-has-docs-pr to update on PR creation
 - Add sentry logging

@@ -1,5 +1,5 @@
 import type { Octokit } from "@octokit/rest";
-import type { GetIssueParams } from "../../github/types.js";
+import type { GetIssueParams } from "../model/issue.js";
 import { applyOverrides, type RuleOverride } from "./overrides.js";
 import { parseDashboard, renderDashboard, SENTINEL } from "./renderer.js";
 import type { DashboardSection } from "./types.js";

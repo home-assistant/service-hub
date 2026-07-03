@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { hacktoberfest } from "../../src/checks/hacktoberfest.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("hacktoberfest", () => {

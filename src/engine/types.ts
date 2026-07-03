@@ -1,5 +1,5 @@
-import type { EventType } from "../github/types.js";
 import type { DashboardSection } from "./dashboard/types.js";
+import type { EventType } from "./event.js";
 import type { RuleContext } from "./rule-context.js";
 
 /**

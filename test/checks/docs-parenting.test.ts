@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { docsParenting } from "../../src/checks/docs-parenting.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 describe("docs-parenting-code-side", () => {

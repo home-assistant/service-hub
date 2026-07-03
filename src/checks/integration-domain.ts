@@ -1,6 +1,6 @@
+import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
-import { EventType } from "../github/types.js";
 
 /**
  * Cap on how many `integration: <domain>` labels a single PR gets. A PR

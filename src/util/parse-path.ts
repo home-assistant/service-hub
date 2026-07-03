@@ -1,4 +1,4 @@
-import type { ListPullRequestFiles } from "../github/types.js";
+import type { ListPullRequestFiles } from "../engine/model/pull-request.js";
 import { coreComponents, entityPlatforms } from "./components.js";
 
 const FILE_TYPES = [

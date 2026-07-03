@@ -2,20 +2,38 @@ import type { Octokit } from "@octokit/rest";
 import type {
   IssueCommentCreatedEvent,
   IssuesLabeledEvent,
+  IssuesOpenedEvent,
   PullRequestClosedEvent,
+  PullRequestEditedEvent,
   PullRequestLabeledEvent,
+  PullRequestOpenedEvent,
+  PullRequestReadyForReviewEvent,
+  PullRequestReopenedEvent,
   PullRequestReviewSubmittedEvent,
+  PullRequestSynchronizeEvent,
   PullRequestUnlabeledEvent,
 } from "@octokit/webhooks-types";
-import type { GetPullRequestResponse } from "../../github/types.js";
-import { EventType } from "../../github/types.js";
-import type { WebhookEventPayload } from "../context.js";
-import type { RuleEvent } from "../event.js";
+import { EventType, type RuleEvent } from "../event.js";
 import { RuleContext } from "../rule-context.js";
 import { Issue } from "./issue.js";
 import { Org } from "./organization.js";
-import { PullRequest, type PullRequestSeed } from "./pull-request.js";
+import { type GetPullRequestResponse, PullRequest, type PullRequestSeed } from "./pull-request.js";
 import { Repo } from "./repository.js";
+
+/** Every webhook payload the bot consumes; the adapter's input type. */
+export type WebhookEventPayload =
+  | IssueCommentCreatedEvent
+  | IssuesLabeledEvent
+  | IssuesOpenedEvent
+  | PullRequestClosedEvent
+  | PullRequestEditedEvent
+  | PullRequestLabeledEvent
+  | PullRequestOpenedEvent
+  | PullRequestReadyForReviewEvent
+  | PullRequestReopenedEvent
+  | PullRequestReviewSubmittedEvent
+  | PullRequestSynchronizeEvent
+  | PullRequestUnlabeledEvent;
 
 export interface AdapterOptions {
   botSlug: string;

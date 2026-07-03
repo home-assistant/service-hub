@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mentionCodeOwners } from "../../src/checks/code-owner-mention.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import {
   createMockContext,
   createMockGitHub,

@@ -1,6 +1,8 @@
-import type { Octokit } from "@octokit/rest";
-import type { GetIssueResponse } from "../../github/types.js";
+import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
 import type { IssueComments } from "./pull-request.js";
+
+export type GetIssueParams = RestEndpointMethodTypes["issues"]["get"]["parameters"];
+export type GetIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
 
 export interface IssueRef {
   owner: string;

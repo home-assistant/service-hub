@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fileShape } from "../../src/checks/file-shape.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string, overrides: { status?: string; additions?: number } = {}) {

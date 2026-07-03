@@ -1,7 +1,10 @@
 import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
-import type { GetPullRequestResponse, ListPullRequestFiles } from "../../github/types.js";
 import { ParsedPath } from "../../util/parse-path.js";
 
+export type GetPullRequestParams = RestEndpointMethodTypes["pulls"]["get"]["parameters"];
+export type GetPullRequestResponse = RestEndpointMethodTypes["pulls"]["get"]["response"]["data"];
+export type ListPullRequestFiles =
+  RestEndpointMethodTypes["pulls"]["listFiles"]["response"]["data"];
 export type PullRequestReviews =
   RestEndpointMethodTypes["pulls"]["listReviews"]["response"]["data"];
 export type PullRequestReviewComments =

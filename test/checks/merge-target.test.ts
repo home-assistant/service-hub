@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mergeTarget } from "../../src/checks/merge-target.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 function contextTargeting(baseRef: string, authorAssociation = "NONE") {

@@ -4,14 +4,13 @@ import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
 import { dispatchCommand, isBotCommand } from "./commands/dispatch.js";
 import type { CommandRegistryConfig } from "./commands/registry.js";
 import { commandConfig } from "./commands/registry.js";
-import type { WebhookEventPayload } from "./engine/context.js";
 import type { RegistryConfig } from "./engine/dispatch.js";
 import { dispatch } from "./engine/dispatch.js";
 import { evaluateRecentPRs } from "./engine/evaluate.js";
-import { contextFromWebhook } from "./engine/model/from-webhook.js";
+import { EventType } from "./engine/event.js";
+import { contextFromWebhook, type WebhookEventPayload } from "./engine/model/from-webhook.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
-import { EventType } from "./github/types.js";
 import { config } from "./manifests/index.js";
 
 const CRON_LOOKBACK_MINUTES = 10;

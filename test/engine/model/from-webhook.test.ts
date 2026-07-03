@@ -1,14 +1,14 @@
 import type { Octokit } from "@octokit/rest";
 import { describe, expect, it } from "vitest";
-import type { WebhookEventPayload } from "../../../src/engine/context.js";
+import { EventType } from "../../../src/engine/event.js";
+import type { WebhookEventPayload } from "../../../src/engine/model/from-webhook.js";
 import {
   contextFromPullRequest,
   contextFromWebhook,
 } from "../../../src/engine/model/from-webhook.js";
 import { Issue } from "../../../src/engine/model/issue.js";
+import type { GetPullRequestResponse } from "../../../src/engine/model/pull-request.js";
 import { PullRequest } from "../../../src/engine/model/pull-request.js";
-import type { GetPullRequestResponse } from "../../../src/github/types.js";
-import { EventType } from "../../../src/github/types.js";
 import { createMockGitHub, type MockGitHub } from "../../helpers/mock-context.js";
 
 const OPTS = { botSlug: "ha-bot" };

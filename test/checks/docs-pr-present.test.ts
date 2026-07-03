@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { docsPrPresent } from "../../src/checks/docs-pr-present.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("docs-missing handler", () => {

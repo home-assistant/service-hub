@@ -1,8 +1,8 @@
 import type { Octokit } from "@octokit/rest";
-import type { GetPullRequestParams } from "../github/types.js";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
 import { contextFromPullRequest } from "./model/from-webhook.js";
+import type { GetPullRequestParams } from "./model/pull-request.js";
 import type { Effect } from "./types.js";
 
 export interface EvaluateOptions {

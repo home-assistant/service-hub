@@ -1,7 +1,7 @@
 import { z } from "zod";
+import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
-import { EventType } from "../github/types.js";
 import { fetchWithTimeout } from "../util/fetch.js";
 import { ParsedPath } from "../util/parse-path.js";
 import { addsNewIntegration } from "./file-shape.js";

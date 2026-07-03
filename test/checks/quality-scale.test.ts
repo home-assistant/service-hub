@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { qualityScale } from "../../src/checks/quality-scale.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { QualityScale } from "../../src/util/integration.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 

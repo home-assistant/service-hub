@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reviewComments } from "../../src/checks/review-comments.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 const AUTHOR = "pr-author";

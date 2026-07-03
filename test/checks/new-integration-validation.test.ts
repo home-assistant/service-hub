@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { newIntegrationValidation } from "../../src/checks/new-integration-validation.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string, status = "added") {

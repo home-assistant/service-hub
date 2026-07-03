@@ -1,6 +1,6 @@
+import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
-import { EventType } from "../github/types.js";
 import { ParsedPath } from "../util/parse-path.js";
 
 const SMALL_PR_THRESHOLD = 30;

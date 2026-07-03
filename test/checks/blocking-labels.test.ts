@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blockingLabels } from "../../src/checks/blocking-labels.js";
-import { EventType } from "../../src/github/types.js";
+import { EventType } from "../../src/engine/event.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 const rule = blockingLabels({

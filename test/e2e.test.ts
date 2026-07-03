@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Command } from "../src/commands/types.js";
+import { EventType } from "../src/engine/event.js";
 import type { Rule } from "../src/engine/types.js";
-import { EventType } from "../src/github/types.js";
 import { commentPayload, createE2EHarness, prOpenedPayload } from "./helpers/e2e.js";
 
 describe("e2e: webhook delivery", () => {

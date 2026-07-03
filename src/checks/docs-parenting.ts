@@ -1,7 +1,7 @@
+import { EventType } from "../engine/event.js";
 import { PullRequest } from "../engine/model/pull-request.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
-import { EventType } from "../github/types.js";
 import { extractAllLinks } from "../util/pr-body.js";
 import { HomeAssistantRepository } from "../util/repositories.js";
 

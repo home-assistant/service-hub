@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchCodeOwners, parseCodeOwners } from "../../src/github/codeowners.js";
+import { matchCodeOwners, parseCodeOwners } from "../../../src/engine/model/codeowners.js";
 
 describe("parseCodeOwners", () => {
   it("parses a simple CODEOWNERS file", () => {

@@ -1,7 +1,7 @@
+import { EventType } from "../engine/event.js";
+import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
-import { matchCodeOwners, parseCodeOwners } from "../github/codeowners.js";
-import { EventType } from "../github/types.js";
 
 type HandledEvent =
   | EventType.ISSUES_LABELED

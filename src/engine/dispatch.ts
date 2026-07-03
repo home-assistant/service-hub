@@ -1,8 +1,8 @@
-import { convertPullRequestToDraft } from "../github/client.js";
-import { EventType } from "../github/types.js";
+import type { Octokit } from "@octokit/rest";
 import { ensureDashboardCommentExists, upsertDashboardComment } from "./dashboard/comment.js";
 import { parseOverrides } from "./dashboard/overrides.js";
 import type { DashboardSection } from "./dashboard/types.js";
+import { EventType } from "./event.js";
 import type { RuleContext } from "./rule-context.js";
 import type { Effect, Rule } from "./types.js";
 
@@ -149,6 +149,13 @@ async function applyEffects(
 }
 
 const HA_BOT_STATUS_CONTEXT = "ha-bot";
+
+async function convertPullRequestToDraft(github: Octokit, nodeId: string): Promise<void> {
+  await github.graphql(
+    "mutation($id: ID!) { convertPullRequestToDraft(input: {pullRequestId: $id}) { clientMutationId } }",
+    { id: nodeId },
+  );
+}
 
 /** Convert the PR to draft unless it's already one */
 async function draftPRIfNotDraft(context: RuleContext): Promise<void> {

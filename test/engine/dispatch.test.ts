@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import { dispatch, matchRules } from "../../src/engine/dispatch.js";
+import { EventType } from "../../src/engine/event.js";
 import type { Rule } from "../../src/engine/types.js";
-import { EventType } from "../../src/github/types.js";
 import {
   createMockContext,
   createMockGitHub,

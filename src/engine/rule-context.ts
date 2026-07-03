@@ -1,7 +1,7 @@
 import type { Octokit } from "@octokit/rest";
-import { EventType } from "../github/types.js";
 import type { Organization, Repository } from "../util/repositories.js";
 import type { RuleEventOf } from "./event.js";
+import { EventType } from "./event.js";
 import type { Issue } from "./model/issue.js";
 import type { Org } from "./model/organization.js";
 import type { PullRequest } from "./model/pull-request.js";
