@@ -1,0 +1,137 @@
+import type { Octokit } from "@octokit/rest";
+import type { EventType } from "../github/types.js";
+import type { Organization, Repository } from "../util/repositories.js";
+import type { RuleEventOf } from "./event.js";
+import type { Issue } from "./model/issue.js";
+import type { Org } from "./model/organization.js";
+import type { PullRequest } from "./model/pull-request.js";
+import type { Repo } from "./model/repository.js";
+
+export interface Sender {
+  login: string;
+  isBot: boolean;
+}
+
+/** Which entity kind an event targets. issue_comment can concern either. */
+export type TargetFor<E extends EventType> = E extends
+  | EventType.ISSUES_OPENED
+  | EventType.ISSUES_LABELED
+  ? Issue
+  : E extends EventType.ISSUE_COMMENT_CREATED
+    ? PullRequest | Issue
+    : PullRequest;
+
+interface RuleContextParams<E extends EventType> {
+  github: Octokit;
+  event: RuleEventOf<E>;
+  sender: Sender;
+  repo: Repo;
+  org: Org;
+  target: TargetFor<E>;
+  botSlug: string;
+  dryRun?: boolean;
+  captureException?: (err: unknown) => void;
+}
+
+/**
+ * What a rule handler receives: the event descriptor (what happened), the
+ * target entity (lazily-hydrated state), and the repo/org read-models.
+ * Replaces raw webhook payload access — only model/from-webhook.ts knows
+ * payload shapes.
+ */
+export class RuleContext<E extends EventType = EventType> {
+  readonly github: Octokit;
+  readonly event: RuleEventOf<E>;
+  readonly sender: Sender;
+  readonly repo: Repo;
+  readonly org: Org;
+  readonly target: TargetFor<E>;
+  readonly botSlug: string;
+  readonly dryRun: boolean;
+  readonly captureException?: (err: unknown) => void;
+
+  constructor(params: RuleContextParams<E>) {
+    this.github = params.github;
+    this.event = params.event;
+    this.sender = params.sender;
+    this.repo = params.repo;
+    this.org = params.org;
+    this.target = params.target;
+    this.botSlug = params.botSlug;
+    this.dryRun = params.dryRun ?? false;
+    this.captureException = params.captureException;
+  }
+
+  get eventType(): E {
+    return this.event.type as E;
+  }
+
+  get repository(): Repository {
+    return this.repo.fullName;
+  }
+
+  get organization(): Organization {
+    return this.repo.organization;
+  }
+
+  get senderIsBot(): boolean {
+    return this.sender.isBot;
+  }
+
+  get number(): number {
+    return this.target.number;
+  }
+
+  /** Bot's commit-status creator login, e.g. "ha-bot[bot]". */
+  get botLogin(): string {
+    return `${this.botSlug}[bot]`;
+  }
+
+  repoParams<T extends Record<string, unknown> = Record<string, never>>(
+    data?: T,
+  ): { owner: string; repo: string } & T {
+    return { owner: this.repo.owner, repo: this.repo.name, ...data } as {
+      owner: string;
+      repo: string;
+    } & T;
+  }
+
+  issueParams<T extends Record<string, unknown> = Record<string, never>>(
+    data?: T,
+  ): { issue_number: number; owner: string; repo: string } & T {
+    return { issue_number: this.number, ...this.repoParams(data) } as {
+      issue_number: number;
+      owner: string;
+      repo: string;
+    } & T;
+  }
+
+  pullParams<T extends Record<string, unknown> = Record<string, never>>(
+    data?: T,
+  ): { pull_number: number; owner: string; repo: string } & T {
+    return { pull_number: this.number, ...this.repoParams(data) } as {
+      pull_number: number;
+      owner: string;
+      repo: string;
+    } & T;
+  }
+
+  /**
+   * Same dispatch (github, sender, repo, org, options), different event —
+   * used by the label loop. Pass a `target` to override entity state (e.g.
+   * `pr.withLabels(...)`); defaults to the current target.
+   */
+  withEvent<F extends EventType>(event: RuleEventOf<F>, target?: TargetFor<F>): RuleContext<F> {
+    return new RuleContext<F>({
+      github: this.github,
+      event,
+      sender: this.sender,
+      repo: this.repo,
+      org: this.org,
+      target: target ?? (this.target as unknown as TargetFor<F>),
+      botSlug: this.botSlug,
+      dryRun: this.dryRun,
+      captureException: this.captureException,
+    });
+  }
+}

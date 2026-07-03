@@ -32,6 +32,7 @@ Rules communicate through labels: one rule's `addLabels`/`removeLabels` effect c
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
 - Fix pr-platinum-code-owner-approval, pr-new-integration-validation, and pr-has-docs-pr to update on PR creation
 - Add sentry logging
+- Check what happens when a dispatch for a PR is currently running, but a new webhook enters for the same PR. We should probably queue those, such that a later webhook can't finish before an earlier one.
 
 ### CLA Check
 - Add CLA Check
