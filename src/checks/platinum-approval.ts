@@ -1,6 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
-import { expandOrganizationTeams } from "../github/teams.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../util/integration.js";
 
@@ -13,10 +12,8 @@ type HandledEvent =
   | EventType.PULL_REQUEST_UNLABELED
   | EventType.ON_DEMAND;
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
-  const currentLabels = ctx.payload.pull_request.labels.map((l) => l.name);
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  const currentLabels = await ctx.target.labels();
   const integrations = currentLabels.filter((l) => l.startsWith("integration: "));
 
   const isPlatinum = currentLabels.includes(`Quality Scale: ${QualityScale.PLATINUM}`);
@@ -81,13 +78,9 @@ async function evaluate(
     ];
   }
 
-  const reviews = await ctx.github.pulls.listReviews(ctx.pullRequest({ per_page: 100 }));
-  const expandedOwners = await expandOrganizationTeams(
-    ctx.github,
-    ctx.organization,
-    manifest.codeowners,
-  );
-  const approvedByOwner = reviews.data.some(
+  const reviews = await ctx.target.reviews();
+  const expandedOwners = await ctx.org.expandTeams(manifest.codeowners);
+  const approvedByOwner = reviews.some(
     (r) => r.state === "APPROVED" && expandedOwners.includes(r.user?.login?.toLowerCase() ?? ""),
   );
 
@@ -124,12 +117,12 @@ export const platinumApproval: Rule = {
   description: "Requires code owner approval for platinum quality scale integrations",
   dashboardSections: ["code-owner-approval"],
   events: {
-    [EventType.PULL_REQUEST_LABELED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_OPENED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_REOPENED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: async (ctx) => evaluate(ctx),
-    [EventType.ON_DEMAND]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_UNLABELED]: async (ctx) => evaluate(ctx),
+    [EventType.PULL_REQUEST_LABELED]: evaluate,
+    [EventType.PULL_REQUEST_OPENED]: evaluate,
+    [EventType.PULL_REQUEST_REOPENED]: evaluate,
+    [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: evaluate,
+    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
+    [EventType.ON_DEMAND]: evaluate,
+    [EventType.PULL_REQUEST_UNLABELED]: evaluate,
   },
 };

@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 
 type HandledEvent =
@@ -11,23 +11,13 @@ function inOctober(): boolean {
   return new Date().getMonth() === 9;
 }
 
-function isHacktoberfestRepo(topics: string[] | undefined): boolean {
-  return topics?.includes("hacktoberfest") ?? false;
-}
-
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
-  const pr = ctx.payload.pull_request;
-  const prAny = pr as {
-    state?: string;
-    merged?: boolean | null;
-    merged_at?: string | null;
-  };
-  const repoTopics = ctx.payload.repository.topics;
-  const hasHacktoberfestLabel = pr.labels.some((l) => l.name === "Hacktoberfest");
-  const isClosed = ctx.eventType === EventType.PULL_REQUEST_CLOSED || prAny.state === "closed";
-  const isMerged = prAny.merged === true || prAny.merged_at != null;
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  const hasHacktoberfestLabel = (await ctx.target.labels()).includes("Hacktoberfest");
+  const isClosed =
+    ctx.eventType === EventType.PULL_REQUEST_CLOSED || (await ctx.target.state()) === "closed";
+  const isMerged =
+    (ctx.event.type === EventType.PULL_REQUEST_CLOSED && ctx.event.merged) ||
+    (await ctx.target.mergedAt()) != null;
 
   // On a closed-but-not-merged PR, strip the label if it's still there.
   if (isClosed && !isMerged && hasHacktoberfestLabel) {
@@ -35,7 +25,7 @@ async function evaluate(
   }
 
   // On an open PR during October on a participating repo, label it.
-  if (!isClosed && !ctx.senderIsBot && inOctober() && isHacktoberfestRepo(repoTopics)) {
+  if (!isClosed && !ctx.senderIsBot && inOctober() && ctx.repo.topics.includes("hacktoberfest")) {
     return [{ type: "addLabels", labels: ["Hacktoberfest"] }];
   }
 }

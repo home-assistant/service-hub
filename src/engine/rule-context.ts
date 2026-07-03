@@ -1,5 +1,5 @@
 import type { Octokit } from "@octokit/rest";
-import type { EventType } from "../github/types.js";
+import { EventType } from "../github/types.js";
 import type { Organization, Repository } from "../util/repositories.js";
 import type { RuleEventOf } from "./event.js";
 import type { Issue } from "./model/issue.js";
@@ -12,14 +12,27 @@ export interface Sender {
   isBot: boolean;
 }
 
-/** Which entity kind an event targets. issue_comment can concern either. */
-export type TargetFor<E extends EventType> = E extends
-  | EventType.ISSUES_OPENED
-  | EventType.ISSUES_LABELED
-  ? Issue
-  : E extends EventType.ISSUE_COMMENT_CREATED
-    ? PullRequest | Issue
-    : PullRequest;
+/**
+ * Which entity kind an event targets. issue_comment can concern either.
+ * A lookup interface, like RuleEventMap, so RuleContext<E> stays covariant.
+ */
+interface TargetMap {
+  [EventType.ISSUE_COMMENT_CREATED]: PullRequest | Issue;
+  [EventType.ISSUES_LABELED]: Issue;
+  [EventType.ISSUES_OPENED]: Issue;
+  [EventType.PULL_REQUEST_CLOSED]: PullRequest;
+  [EventType.PULL_REQUEST_EDITED]: PullRequest;
+  [EventType.PULL_REQUEST_LABELED]: PullRequest;
+  [EventType.PULL_REQUEST_OPENED]: PullRequest;
+  [EventType.PULL_REQUEST_REOPENED]: PullRequest;
+  [EventType.PULL_REQUEST_READY_FOR_REVIEW]: PullRequest;
+  [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: PullRequest;
+  [EventType.PULL_REQUEST_SYNCHRONIZE]: PullRequest;
+  [EventType.PULL_REQUEST_UNLABELED]: PullRequest;
+  [EventType.ON_DEMAND]: PullRequest;
+}
+
+export type TargetFor<E extends EventType> = TargetMap[E];
 
 interface RuleContextParams<E extends EventType> {
   github: Octokit;

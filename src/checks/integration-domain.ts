@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 
 /**
@@ -16,12 +16,10 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
   if (ctx.senderIsBot) return undefined;
 
-  const domains = await ctx.getIntegrationDomains();
+  const domains = await ctx.target.integrationDomains();
   if (domains.length === 0 || domains.length > MAX_INTEGRATION_LABELS) {
     return undefined;
   }

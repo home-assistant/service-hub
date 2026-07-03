@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { ParsedPath } from "../util/parse-path.js";
 
@@ -14,10 +14,8 @@ type HandledEvent =
 const SECTION_ID = "new-integration-validation";
 const SECTION_TITLE = "New integration validation";
 
-async function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Promise<Effect[]> {
-  const hasNewIntegrationLabel = ctx.payload.pull_request.labels.some(
-    (l) => l.name === "new-integration",
-  );
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
+  const hasNewIntegrationLabel = (await ctx.target.labels()).includes("new-integration");
   if (!hasNewIntegrationLabel) {
     return [
       {
@@ -32,7 +30,7 @@ async function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Pro
     ];
   }
 
-  const files = await ctx.fetchPRFiles();
+  const files = await ctx.target.files();
   const parsed = files.map((f) => new ParsedPath(f));
 
   const issues: string[] = [];

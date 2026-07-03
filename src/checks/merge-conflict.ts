@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 
 type HandledEvent =
@@ -11,17 +11,15 @@ type HandledEvent =
 const SECTION_ID = "merge-conflict";
 const SECTION_TITLE = "Merge conflicts";
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
-  const { data: pr } = await ctx.github.pulls.get(ctx.pullRequest());
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  const mergeableState = await ctx.target.mergeableState();
 
   // GitHub computes mergeable_state asynchronously; "unknown" means we should
   // wait for a later event. Don't emit anything yet — the row will appear on
   // the next dispatch when the state is settled.
-  if (pr.mergeable_state === "unknown") return;
+  if (mergeableState === "unknown") return;
 
-  const isDirty = pr.mergeable_state === "dirty";
+  const isDirty = mergeableState === "dirty";
   return [
     {
       type: "dashboardSection",

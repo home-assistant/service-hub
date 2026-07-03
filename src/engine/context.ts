@@ -23,7 +23,17 @@ import type {
 } from "../github/types.js";
 import { ParsedPath } from "../util/parse-path.js";
 import type { Organization, Repository } from "../util/repositories.js";
-import type { OnDemandEvent } from "./types.js";
+
+/**
+ * Synthetic payload for `EventType.ON_DEMAND`. Built by the bot when the
+ * cron sweep or the `/<slug> update` command re-evaluates a PR.
+ */
+export interface OnDemandEvent {
+  action: "on_demand";
+  pull_request: GetPullRequestResponse;
+  repository: GetPullRequestResponse["base"]["repo"];
+  sender: { login: string; type: "User" | "Bot" };
+}
 
 /**
  * Discriminates whether a webhook dispatch concerns an Issue or a PR.

@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../util/integration.js";
 
@@ -28,13 +28,11 @@ function highestScale(scales: QualityScale[]): QualityScale {
   );
 }
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
   const effects: Effect[] = [];
 
   // Add `quality-scale` label when PR touches `quality_scale.yaml`.
-  const files = await ctx.fetchPRFiles();
+  const files = await ctx.target.files();
   const touchesQualityScaleYaml = files.some(
     (f) => f.filename.split("/").pop() === "quality_scale.yaml",
   );
@@ -45,8 +43,8 @@ async function evaluate(
   // Resolve which integration domains drive the score: file-derived first
   // (the canonical case), unioned with any `integration:` labels already on
   // the PR (covers manual maintainer adds that file shape doesn't pick up).
-  const fileDerived = await ctx.getIntegrationDomains();
-  const currentLabels = ctx.payload.pull_request.labels.map((l) => l.name);
+  const fileDerived = await ctx.target.integrationDomains();
+  const currentLabels = await ctx.target.labels();
   const labelDerived = currentLabels
     .filter((n) => n.startsWith("integration: "))
     .map((n) => n.slice("integration: ".length));

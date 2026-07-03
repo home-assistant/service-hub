@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 
 type HandledEvent =
@@ -10,18 +10,26 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-const ACK_REACTIONS = new Set(["+1", "heart", "hooray", "rocket"]);
+const ACK_REACTIONS = ["+1", "heart", "hooray", "rocket"] as const;
 const SECTION_ID = "review-comments";
 const SECTION_TITLE = "Review comments";
 const MAX_LINKS = 10;
 
-async function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Promise<Effect[]> {
-  const authorLogin = ctx.payload.pull_request.user.login.toLowerCase();
+/**
+ * Acknowledgement via the reactions rollup each review comment carries —
+ * no per-comment reaction fetches. The rollup has no reactor identity, so
+ * any ack-type reaction counts, not just the PR author's.
+ */
+function hasAckReaction(
+  reactions: Partial<Record<(typeof ACK_REACTIONS)[number], number>> | undefined,
+): boolean {
+  if (!reactions) return false;
+  return ACK_REACTIONS.some((kind) => (reactions[kind] ?? 0) > 0);
+}
 
-  const reviewComments = await ctx.github.paginate(
-    ctx.github.pulls.listReviewComments,
-    ctx.pullRequest({ per_page: 100 }),
-  );
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
+  const authorLogin = (await ctx.target.authorLogin()).toLowerCase();
+  const reviewComments = await ctx.target.reviewComments();
 
   if (reviewComments.length === 0) {
     return [
@@ -49,20 +57,7 @@ async function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Pro
       .map((c) => c.in_reply_to_id as number),
   );
 
-  // Comments the author has acknowledged via reaction (+1, heart, hooray, rocket).
-  const hasAck = await Promise.all(
-    topLevel.map(async (c) => {
-      const reactions = await ctx.github.paginate(
-        ctx.github.reactions.listForPullRequestReviewComment,
-        ctx.repo({ comment_id: c.id, per_page: 100 }),
-      );
-      return reactions.some(
-        (r) => r.user?.login?.toLowerCase() === authorLogin && ACK_REACTIONS.has(r.content),
-      );
-    }),
-  );
-
-  const unresolved = topLevel.filter((c, idx) => !repliedTo.has(c.id) && !hasAck[idx]);
+  const unresolved = topLevel.filter((c) => !repliedTo.has(c.id) && !hasAckReaction(c.reactions));
 
   if (unresolved.length === 0) {
     return [
@@ -100,7 +95,7 @@ export const reviewComments: Rule = {
   name: "review-comments",
   description:
     "Surfaces unresolved inline review comments as a dashboard row; fails until each " +
-    "comment has been replied to or acknowledged via reaction by the PR author.",
+    "comment has been replied to or acknowledged via reaction.",
   dashboardSections: [SECTION_ID],
   events: {
     [EventType.PULL_REQUEST_OPENED]: evaluate,

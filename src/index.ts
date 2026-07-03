@@ -4,10 +4,11 @@ import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
 import { dispatchCommand, isBotCommand } from "./commands/dispatch.js";
 import type { CommandRegistryConfig } from "./commands/registry.js";
 import { commandConfig } from "./commands/registry.js";
-import { WebhookContext, type WebhookEventPayload } from "./engine/context.js";
+import type { WebhookEventPayload } from "./engine/context.js";
 import type { RegistryConfig } from "./engine/dispatch.js";
 import { dispatch } from "./engine/dispatch.js";
 import { evaluateRecentPRs } from "./engine/evaluate.js";
+import { contextFromWebhook } from "./engine/model/from-webhook.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import { EventType } from "./github/types.js";
@@ -129,16 +130,12 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
     }
   }
 
-  const context = new WebhookContext({
-    github: octokit,
-    payload,
-    eventType,
-    botSlug: env.BOT_SLUG,
-    dryRun: isDryRun(env),
-    captureException: deps.captureException,
-  });
-
   if (isPullRequestEvent(event) || isIssueEvent(event)) {
+    const context = contextFromWebhook(octokit, payload, eventType, {
+      botSlug: env.BOT_SLUG,
+      dryRun: isDryRun(env),
+      captureException: deps.captureException,
+    });
     await dispatch(deps.config, context);
   }
 

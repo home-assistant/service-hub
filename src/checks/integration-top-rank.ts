@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { fetchWithTimeout } from "../util/fetch.js";
 import { ParsedPath } from "../util/parse-path.js";
@@ -52,19 +52,17 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
   if (ctx.senderIsBot) return undefined;
 
-  const domains = await ctx.getIntegrationDomains();
+  const domains = await ctx.target.integrationDomains();
   if (domains.length === 0 || domains.length > MAX_INTEGRATION_LABELS) {
     return undefined;
   }
 
   // Skip Top N for PRs that touch core or add a brand-new integration —
   // analytics rank is meaningless in both cases.
-  const files = await ctx.fetchPRFiles();
+  const files = await ctx.target.files();
   const parsed = files.map((f) => new ParsedPath(f));
   if (parsed.some((f) => f.core) || addsNewIntegration(parsed)) {
     return undefined;

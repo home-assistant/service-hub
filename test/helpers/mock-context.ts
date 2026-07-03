@@ -2,9 +2,10 @@ import type { Octokit } from "@octokit/rest";
 import type { Mock } from "vitest";
 import { vi } from "vitest";
 import type { WebhookEventPayload } from "../../src/engine/context.js";
-import { WebhookContext } from "../../src/engine/context.js";
 import type { DashboardSection } from "../../src/engine/dashboard/types.js";
-import type { Effect, EventPayloadMap, Rule } from "../../src/engine/types.js";
+import { contextFromWebhook } from "../../src/engine/model/from-webhook.js";
+import type { RuleContext } from "../../src/engine/rule-context.js";
+import type { Effect, Rule } from "../../src/engine/types.js";
 import { EventType } from "../../src/github/types.js";
 
 export interface MockGitHub {
@@ -68,6 +69,11 @@ export function createMockPayload(overrides: Record<string, unknown> = {}) {
       labels: [],
       body: "",
       user: { login: "testuser" },
+      state: "open",
+      draft: false,
+      merged: false,
+      merged_at: null,
+      assignees: [],
       ...(prOverride as Record<string, unknown>),
     },
     ...restOverrides,
@@ -136,7 +142,15 @@ export function createMockGitHub(): MockGitHub {
       createForIssueComment: vi.fn().mockResolvedValue({ data: {} }),
       listForPullRequestReviewComment: vi.fn().mockResolvedValue({ data: [] }),
     },
-    paginate: vi.fn().mockImplementation(async () => []),
+    // Delegates to the per-endpoint mock so tests can keep mocking e.g.
+    // pulls.listReviews and have entity accessors (which paginate) see it.
+    paginate: vi.fn().mockImplementation(async (fn: unknown, params: unknown) => {
+      if (typeof fn === "function") {
+        const response = await fn(params);
+        return response?.data ?? [];
+      }
+      return [];
+    }),
     graphql: vi.fn().mockResolvedValue({}),
   };
 }
@@ -154,39 +168,42 @@ export function createMockContext(
     dryRun?: boolean;
     captureException?: (err: unknown) => void;
   } = {},
-): WebhookContext {
+): RuleContext {
   const github = overrides.github ?? createMockGitHub();
   const eventType = overrides.eventType ?? EventType.PULL_REQUEST_OPENED;
   const payload = createMockPayload(overrides.payload);
 
-  return new WebhookContext({
-    github: asOctokit(github),
-    payload: payload as unknown as WebhookEventPayload,
+  return contextFromWebhook(
+    asOctokit(github),
+    payload as unknown as WebhookEventPayload,
     eventType,
-    botSlug: "ha-bot",
-    dryRun: overrides.dryRun,
-    captureException: overrides.captureException,
-  });
+    {
+      botSlug: "ha-bot",
+      dryRun: overrides.dryRun,
+      captureException: overrides.captureException,
+    },
+  );
 }
 
 export function createMockIssueContext(
   overrides: { eventType?: EventType; payload?: Record<string, unknown>; github?: MockGitHub } = {},
-): WebhookContext {
+): RuleContext {
   const github = overrides.github ?? createMockGitHub();
   const eventType = overrides.eventType ?? EventType.ISSUES_OPENED;
   const payload = createMockIssuePayload(overrides.payload);
 
-  return new WebhookContext({
-    github: asOctokit(github),
-    payload: payload as unknown as WebhookEventPayload,
+  return contextFromWebhook(
+    asOctokit(github),
+    payload as unknown as WebhookEventPayload,
     eventType,
-    botSlug: "ha-bot",
-  });
+    { botSlug: "ha-bot" },
+  );
 }
 
-/** Helper to mock fetchPRFiles by pre-populating the cache */
-export function mockPRFiles(context: WebhookContext, files: Record<string, unknown>[]) {
-  context.prFilesCache = Promise.resolve(files) as WebhookContext["prFilesCache"];
+/** Pre-populate the target PR's files cache (bypasses the paginate call). */
+export function mockPRFiles(context: RuleContext, files: Record<string, unknown>[]) {
+  const target = context.target as unknown as { caches: { files?: Promise<unknown> } };
+  target.caches.files = Promise.resolve(files);
 }
 
 export function lastSegment(path: string): string {
@@ -281,14 +298,9 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
  * returns a `RuleSummary` view of the effects (or `undefined` if the
  * handler returned nothing or the rule does not handle this event).
  */
-export async function runRule(
-  rule: Rule,
-  context: WebhookContext,
-): Promise<RuleSummary | undefined> {
-  const handler = rule.events[context.eventType as keyof EventPayloadMap];
+export async function runRule(rule: Rule, context: RuleContext): Promise<RuleSummary | undefined> {
+  const handler = rule.events[context.eventType];
   if (!handler) return undefined;
-  const effects = await (handler as (ctx: WebhookContext) => Promise<Effect[] | undefined>)(
-    context,
-  );
+  const effects = await (handler as (ctx: RuleContext) => Promise<Effect[] | undefined>)(context);
   return summarizeEffects(effects);
 }

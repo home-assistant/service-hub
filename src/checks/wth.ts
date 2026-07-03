@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { fetchWithTimeout } from "../util/fetch.js";
 import { extractForumLinks } from "../util/pr-body.js";
@@ -11,10 +11,8 @@ const ForumPostSchema = z.object({ category_id: z.number().optional() });
 
 type HandledEvent = EventType.PULL_REQUEST_OPENED | EventType.ON_DEMAND;
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
-  for (const link of extractForumLinks(ctx.payload.pull_request.body)) {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  for (const link of extractForumLinks(await ctx.target.body())) {
     try {
       const res = await fetchWithTimeout(`${link}.json`);
       if (!res.ok) continue;

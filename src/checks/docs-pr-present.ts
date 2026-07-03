@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { extractAllLinks } from "../util/pr-body.js";
 import { HomeAssistantRepository } from "../util/repositories.js";
@@ -11,10 +11,9 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Effect[] {
-  const payload = ctx.payload;
-  const isReleasePR = payload.pull_request.base.ref === "master";
-  const currentLabels = new Set(payload.pull_request.labels.map((l) => l.name));
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
+  const isReleasePR = (await ctx.target.baseRef()) === "master";
+  const currentLabels = new Set(await ctx.target.labels());
 
   const hasNewIntegrationOrPlatform =
     currentLabels.has("new-integration") || currentLabels.has("new-platform");
@@ -53,7 +52,7 @@ function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Effect[] 
 
   let needsDocumentation = hasDocsMissingLabel;
   if (!needsDocumentation && hasNewIntegrationOrPlatform) {
-    const linksToDocs = extractAllLinks(payload.pull_request.body).filter(
+    const linksToDocs = extractAllLinks(await ctx.target.body()).filter(
       (link) => `${link.owner}/${link.repo}` === HomeAssistantRepository.HOME_ASSISTANT_IO,
     );
     needsDocumentation = linksToDocs.length === 0;
@@ -77,10 +76,10 @@ export const docsPrPresent: Rule = {
   description: "Checks new integrations and platforms have a linked documentation PR",
   dashboardSections: ["docs-missing"],
   events: {
-    [EventType.PULL_REQUEST_EDITED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_LABELED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_UNLABELED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: async (ctx) => evaluate(ctx),
-    [EventType.ON_DEMAND]: async (ctx) => evaluate(ctx),
+    [EventType.PULL_REQUEST_EDITED]: evaluate,
+    [EventType.PULL_REQUEST_LABELED]: evaluate,
+    [EventType.PULL_REQUEST_UNLABELED]: evaluate,
+    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
+    [EventType.ON_DEMAND]: evaluate,
   },
 };

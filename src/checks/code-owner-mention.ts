@@ -1,7 +1,6 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { matchCodeOwners, parseCodeOwners } from "../github/codeowners.js";
-import { expandOrganizationTeams } from "../github/teams.js";
 import { EventType } from "../github/types.js";
 
 type HandledEvent =
@@ -12,31 +11,16 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function fetchCodeowners(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<string | null> {
-  try {
-    const { data } = await ctx.github.repos.getContent(ctx.repo({ path: "CODEOWNERS" }));
-    if (!("content" in data)) return null;
-    return new TextDecoder().decode(Uint8Array.from(atob(data.content), (c) => c.charCodeAt(0)));
-  } catch (err) {
-    console.warn(`mentionCodeOwners: CODEOWNERS fetch for ${ctx.repository} failed:`, err);
-    return null;
-  }
-}
-
-interface TriggerItem {
-  user?: { login: string } | null;
-  assignees?: ({ login: string } | null)[] | null;
-}
+const INTEGRATION_LABEL_PREFIX = "integration: ";
 
 async function processIntegration(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
+  ctx: RuleContext<HandledEvent>,
   integrationName: string,
   codeownersContent: string,
   pathPattern: (name: string) => string,
   itemLabel: string,
-  triggerItem: TriggerItem,
+  authorLogin: string,
+  assignees: string[],
   commenters: string[],
 ): Promise<Effect[]> {
   if (!codeownersContent.includes(integrationName)) return [];
@@ -48,9 +32,6 @@ async function processIntegration(
   const owners = match.owners.map((o) => o.substring(1).toLowerCase());
   const codeownersLine = `https://github.com/${ctx.repository}/blob/HEAD/CODEOWNERS#L${match.line}`;
 
-  const authorLogin = (triggerItem.user?.login ?? "").toLowerCase();
-  const assignees =
-    triggerItem.assignees?.flatMap((a) => (a?.login ? [a.login.toLowerCase()] : [])) ?? [];
   const ownersMinusAuthor = owners.filter((usr) => usr !== authorLogin);
 
   const effects: Effect[] = [];
@@ -69,7 +50,7 @@ async function processIntegration(
     });
   }
 
-  const expandedOwners = await expandOrganizationTeams(ctx.github, ctx.organization, owners);
+  const expandedOwners = await ctx.org.expandTeams(owners);
   if (expandedOwners.includes(authorLogin)) {
     effects.push({ type: "addLabels", labels: ["by-code-owner"] });
   }
@@ -77,68 +58,43 @@ async function processIntegration(
   return effects;
 }
 
-function labelsToIntegrationNames(labels: { name?: string }[] | null | undefined): string[] {
-  return (labels ?? []).flatMap((l) =>
-    l?.name?.startsWith("integration: ") ? [l.name.slice("integration: ".length)] : [],
-  );
-}
-
-async function collectIntegrationNames(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-  triggerItem: TriggerItem & { labels?: { name?: string }[] | null },
-): Promise<string[]> {
-  switch (ctx.eventType) {
-    case EventType.ISSUES_LABELED:
-    case EventType.PULL_REQUEST_LABELED: {
-      const labeled = ctx.payload as EventPayloadMap[
-        | EventType.ISSUES_LABELED
-        | EventType.PULL_REQUEST_LABELED];
-      if (!labeled.label?.name.startsWith("integration: ")) return [];
-      return [labeled.label.name.slice("integration: ".length)];
-    }
-    case EventType.PULL_REQUEST_OPENED:
-    case EventType.PULL_REQUEST_REOPENED:
-    case EventType.PULL_REQUEST_SYNCHRONIZE:
-      return ctx.getIntegrationDomains();
-    case EventType.ON_DEMAND: {
-      const fileDerived = await ctx.getIntegrationDomains();
-      const labelDerived = labelsToIntegrationNames(triggerItem.labels);
-      return [...new Set([...fileDerived, ...labelDerived])];
-    }
-    default:
-      return [];
+async function collectIntegrationNames(ctx: RuleContext<HandledEvent>): Promise<string[]> {
+  // Pick which integration domain(s) drive this dispatch:
+  //   LABELED → only the integration in the just-added label (if any)
+  //   PR opened/reopened/synchronize → derived from changed files
+  //   ON_DEMAND → union of file-derived and label-derived
+  if ("label" in ctx.event) {
+    if (!ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return [];
+    return [ctx.event.label.slice(INTEGRATION_LABEL_PREFIX.length)];
   }
+
+  if (ctx.target.kind !== "pull_request") return [];
+  const fileDerived = await ctx.target.integrationDomains();
+  if (ctx.eventType !== EventType.ON_DEMAND) return fileDerived;
+
+  const labelDerived = (await ctx.target.labels())
+    .filter((l) => l.startsWith(INTEGRATION_LABEL_PREFIX))
+    .map((l) => l.slice(INTEGRATION_LABEL_PREFIX.length));
+  return [...new Set([...fileDerived, ...labelDerived])];
 }
 
 export function mentionCodeOwners(config: {
   pathPattern: (integration: string) => string;
   itemLabel?: string;
 }): Rule {
-  async function handle(
-    ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-  ): Promise<Effect[] | undefined> {
-    const payload = ctx.payload;
-
-    // The "trigger item" is the issue or pull_request the event is about.
-    const triggerItem =
-      "pull_request" in payload ? payload.pull_request : "issue" in payload ? payload.issue : null;
-    if (!triggerItem) return;
-
-    // Pick which integration domain(s) drive this dispatch:
-    //   LABELED → only the integration in the just-added label (if any)
-    //   PR opened/reopened/synchronize → derived from changed files
-    //   ON_DEMAND → union of file-derived (PR only) and label-derived
-    const integrationNames = await collectIntegrationNames(ctx, triggerItem);
+  async function handle(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+    const integrationNames = await collectIntegrationNames(ctx);
     if (integrationNames.length === 0) return;
 
-    const codeownersContent = await fetchCodeowners(ctx);
+    const codeownersContent = await ctx.repo.codeownersContent();
     if (!codeownersContent) return;
 
-    const commentsData = await ctx.github.issues.listComments(ctx.issue({ per_page: 100 }));
-    const commenters = commentsData.data.map((c) => c.user?.login?.toLowerCase() ?? "");
+    const authorLogin = (await ctx.target.authorLogin()).toLowerCase();
+    const assignees = (await ctx.target.assigneeLogins()).map((a) => a.toLowerCase());
+    const comments = await ctx.target.issueComments();
+    const commenters = comments.map((c) => c.user?.login?.toLowerCase() ?? "");
 
-    const itemLabel =
-      config.itemLabel ?? (ctx.eventType.startsWith("issues") ? "issue" : "pull request");
+    const itemLabel = config.itemLabel ?? (ctx.target.kind === "issue" ? "issue" : "pull request");
 
     const effects: Effect[] = [];
     for (const integrationName of integrationNames) {
@@ -148,7 +104,8 @@ export function mentionCodeOwners(config: {
         codeownersContent,
         config.pathPattern,
         itemLabel,
-        triggerItem,
+        authorLogin,
+        assignees,
         commenters,
       );
       effects.push(...integrationEffects);

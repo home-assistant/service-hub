@@ -1,10 +1,9 @@
 import type { Octokit } from "@octokit/rest";
 import type { GetPullRequestParams } from "../github/types.js";
-import { EventType } from "../github/types.js";
-import { WebhookContext } from "./context.js";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
-import type { Effect, OnDemandEvent } from "./types.js";
+import { contextFromPullRequest } from "./model/from-webhook.js";
+import type { Effect } from "./types.js";
 
 export interface EvaluateOptions {
   dryRun?: boolean;
@@ -20,19 +19,7 @@ export async function evaluatePR(
 ): Promise<Effect[]> {
   const { data: pr } = await github.pulls.get(params);
 
-  const payload: OnDemandEvent = {
-    action: "on_demand",
-    pull_request: pr,
-    repository: pr.base.repo,
-    sender: pr.user
-      ? { login: pr.user.login, type: pr.user.type === "Bot" ? "Bot" : "User" }
-      : { login: "", type: "User" },
-  };
-
-  const context = new WebhookContext({
-    github,
-    payload,
-    eventType: EventType.ON_DEMAND,
+  const context = contextFromPullRequest(github, pr, {
     botSlug: options.botSlug ?? "",
     dryRun: options.dryRun,
     captureException: options.captureException,

@@ -1,5 +1,6 @@
 import type { Octokit } from "@octokit/rest";
 import type { GetIssueResponse } from "../../github/types.js";
+import type { IssueComments } from "./pull-request.js";
 
 export interface IssueRef {
   owner: string;
@@ -28,7 +29,10 @@ export class Issue {
 
   private readonly github: Octokit;
   private seed: IssueSeed;
-  private caches: { core?: Promise<GetIssueResponse> } = {};
+  private caches: {
+    core?: Promise<GetIssueResponse>;
+    issueComments?: Promise<IssueComments>;
+  } = {};
 
   constructor(github: Octokit, ref: IssueRef, seed: IssueSeed = {}) {
     this.github = github;
@@ -88,5 +92,21 @@ export class Issue {
 
   state(): Promise<"open" | "closed"> {
     return this.coreField(this.seed.state, (issue) => (issue.state === "open" ? "open" : "closed"));
+  }
+
+  issueComments(): Promise<IssueComments> {
+    if (!this.caches.issueComments) {
+      const inflight = this.github.paginate(this.github.issues.listComments, {
+        owner: this.owner,
+        repo: this.repo,
+        issue_number: this.number,
+        per_page: 100,
+      });
+      inflight.catch(() => {
+        if (this.caches.issueComments === inflight) this.caches.issueComments = undefined;
+      });
+      this.caches.issueComments = inflight;
+    }
+    return this.caches.issueComments;
   }
 }

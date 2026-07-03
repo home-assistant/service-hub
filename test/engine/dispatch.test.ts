@@ -447,9 +447,6 @@ describe("dispatch", () => {
       github.issues.createComment.mockResolvedValue({
         data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
       });
-      github.pulls.get.mockResolvedValue({
-        data: { draft: prData.draft ?? false, node_id: prData.node_id ?? "PR_NODE_1" },
-      });
 
       const rule: Rule = {
         name: "rule",
@@ -467,7 +464,13 @@ describe("dispatch", () => {
       const config: RegistryConfig = {
         repositories: { "home-assistant/core": [rule] },
       };
-      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+      const context = createMockContext({
+        eventType: EventType.PULL_REQUEST_OPENED,
+        github,
+        payload: {
+          pull_request: { draft: prData.draft ?? false, node_id: prData.node_id ?? "PR_NODE_1" },
+        },
+      });
       return { github, config, context };
     }
 
@@ -507,14 +510,12 @@ describe("dispatch", () => {
       github.repos.listCommitStatusesForRef.mockResolvedValue({
         data: [{ id: 1, context: "ha-bot", state: "failure", creator: { login: "ha-bot[bot]" } }],
       });
-      github.pulls.get.mockResolvedValue({
-        data: { draft: false, node_id: "PR_NODE_READY" },
-      });
 
       const config: RegistryConfig = { repositories: {} };
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
         github,
+        payload: { pull_request: { draft: false, node_id: "PR_NODE_READY" } },
       });
 
       await dispatch(config, context);
@@ -1011,8 +1012,8 @@ describe("label loop", () => {
       description: "",
       events: {
         [EventType.PULL_REQUEST_LABELED]: async (ctx) => {
-          seenByB.push(ctx.payload.pull_request.labels.map((l) => l.name));
-          if (ctx.payload.label?.name === "X") return [{ type: "addLabels", labels: ["Y"] }];
+          seenByB.push(await ctx.target.labels());
+          if (ctx.event.label === "X") return [{ type: "addLabels", labels: ["Y"] }];
           return undefined;
         },
       },
@@ -1022,7 +1023,7 @@ describe("label loop", () => {
       description: "",
       events: {
         [EventType.PULL_REQUEST_LABELED]: async (ctx) =>
-          ctx.payload.label?.name === "Y" ? [{ type: "removeLabels", label: ["X"] }] : undefined,
+          ctx.event.label === "Y" ? [{ type: "removeLabels", label: ["X"] }] : undefined,
       },
     };
 
@@ -1039,7 +1040,7 @@ describe("label loop", () => {
       expect.objectContaining({ labels: ["Y"] }),
     );
     expect(github.issues.removeLabel).not.toHaveBeenCalled();
-    // Synthetic payloads carry the simulated label state of their round.
+    // Synthetic contexts carry the simulated label state of their round.
     expect(seenByB).toEqual([["X"], ["X", "Y"]]);
   });
 
@@ -1058,7 +1059,7 @@ describe("label loop", () => {
       description: "",
       events: {
         [EventType.PULL_REQUEST_UNLABELED]: async (ctx) =>
-          ctx.payload.label?.name === "stale" ? [{ type: "comment", body: "bye" }] : undefined,
+          ctx.event.label === "stale" ? [{ type: "comment", body: "bye" }] : undefined,
       },
     };
 
@@ -1121,7 +1122,7 @@ describe("label loop", () => {
       description: "",
       events: {
         [EventType.ISSUES_LABELED]: async (ctx) =>
-          ctx.payload.label?.name === "bug" ? [{ type: "comment", body: "triaged" }] : undefined,
+          ctx.event.label === "bug" ? [{ type: "comment", body: "triaged" }] : undefined,
       },
     };
 

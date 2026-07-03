@@ -1,16 +1,16 @@
 import { convertPullRequestToDraft } from "../github/client.js";
 import { EventType } from "../github/types.js";
-import { type WebhookContext, WebhookContextType, type WebhookEventPayload } from "./context.js";
 import { ensureDashboardCommentExists, upsertDashboardComment } from "./dashboard/comment.js";
 import { parseOverrides } from "./dashboard/overrides.js";
 import type { DashboardSection } from "./dashboard/types.js";
-import type { Effect, EventPayloadMap, Rule } from "./types.js";
+import type { RuleContext } from "./rule-context.js";
+import type { Effect, Rule } from "./types.js";
 
 export interface RegistryConfig {
   repositories: Record<string, Rule[]>;
 }
 
-export function matchRules(registryConfig: RegistryConfig, context: WebhookContext): Rule[] {
+export function matchRules(registryConfig: RegistryConfig, context: RuleContext): Rule[] {
   const repoRules = registryConfig.repositories[context.repository] ?? [];
 
   return repoRules.filter(
@@ -23,7 +23,7 @@ export function matchRules(registryConfig: RegistryConfig, context: WebhookConte
 /** Collect every dashboardSection ID claimed by some rule in this repo's registry. */
 function collectKnownDashboardSectionIds(
   registryConfig: RegistryConfig,
-  context: WebhookContext,
+  context: RuleContext,
 ): Set<string> {
   const ids = new Set<string>();
   const rules = registryConfig.repositories[context.repository] ?? [];
@@ -38,7 +38,7 @@ interface ApplyEffectsConfig {
 }
 
 async function applyEffects(
-  context: WebhookContext,
+  context: RuleContext,
   effects: Effect[],
   config: ApplyEffectsConfig,
 ): Promise<void> {
@@ -48,7 +48,7 @@ async function applyEffects(
         dryRun: true,
         repository: context.repository,
         eventType: context.eventType,
-        number: tryNumber(context),
+        number: context.number,
         effects,
       }),
     );
@@ -103,7 +103,7 @@ async function applyEffects(
       case "requestReviewers":
         ops.push(
           context.github.pulls.requestReviewers(
-            context.pullRequest({ reviewers: effect.reviewers }),
+            context.pullParams({ reviewers: effect.reviewers }),
           ),
         );
         break;
@@ -111,12 +111,14 @@ async function applyEffects(
   }
 
   if (labels.size > 0) {
-    ops.push(context.github.issues.addLabels(context.issue({ labels: [...labels] })));
+    ops.push(context.github.issues.addLabels(context.issueParams({ labels: [...labels] })));
   }
 
   for (const label of removeLabels) {
     if (labels.has(label)) continue;
-    ops.push(context.github.issues.removeLabel(context.issue({ name: label })).catch(() => {}));
+    ops.push(
+      context.github.issues.removeLabel(context.issueParams({ name: label })).catch(() => {}),
+    );
   }
 
   if (dashboardSections.size > 0) {
@@ -124,16 +126,18 @@ async function applyEffects(
     // dashboard is always the earliest comment on the PR. The real content
     // gets rendered by syncDashboardAndStatus below (which updates this
     // placeholder via findDashboardCommentId).
-    await ensureDashboardCommentExists(context.github, context.issue());
+    await ensureDashboardCommentExists(context.github, context.issueParams());
     ops.push(syncDashboardAndStatus(context, [...dashboardSections.values()], config));
   }
 
   for (const body of comments) {
-    ops.push(context.github.issues.createComment(context.issue({ body })));
+    ops.push(context.github.issues.createComment(context.issueParams({ body })));
   }
 
   if (assignees.size > 0) {
-    ops.push(context.github.issues.addAssignees(context.issue({ assignees: [...assignees] })));
+    ops.push(
+      context.github.issues.addAssignees(context.issueParams({ assignees: [...assignees] })),
+    );
   }
 
   const settled = await Promise.allSettled(ops);
@@ -144,34 +148,26 @@ async function applyEffects(
   }
 }
 
-function tryNumber(context: WebhookContext): number | undefined {
-  try {
-    return context.number;
-  } catch {
-    return undefined;
-  }
-}
-
 const HA_BOT_STATUS_CONTEXT = "ha-bot";
 
 /** Convert the PR to draft unless it's already one */
-async function draftPRIfNotDraft(context: WebhookContext): Promise<void> {
-  if (context.type !== WebhookContextType.PULL_REQUEST) return;
+async function draftPRIfNotDraft(context: RuleContext): Promise<void> {
+  if (context.target.kind !== "pull_request") return;
   try {
-    const pr = await context.fetchPullRequestWithCache(context.pullRequest());
-    if (pr.draft) return;
-    await convertPullRequestToDraft(context.github, pr.node_id);
+    if (await context.target.isDraft()) return;
+    await convertPullRequestToDraft(context.github, await context.target.nodeId());
   } catch (err) {
     console.warn("draftPRIfNotDraft failed:", err);
   }
 }
 
 /** Re-draft if the existing ha-bot aggregate on head SHA is failing. */
-async function maybeRedraftOnReady(context: WebhookContext): Promise<void> {
-  if (!context.headSha) return;
+async function maybeRedraftOnReady(context: RuleContext): Promise<void> {
+  if (context.target.kind !== "pull_request") return;
   try {
+    const headSha = await context.target.headSha();
     const { data: statuses } = await context.github.repos.listCommitStatusesForRef(
-      context.repo({ ref: context.headSha, per_page: 100 }),
+      context.repoParams({ ref: headSha, per_page: 100 }),
     );
     const haBot = statuses.find((s) => s.context === HA_BOT_STATUS_CONTEXT);
     if (haBot?.state !== "failure") return;
@@ -210,31 +206,33 @@ function aggregateDashboardStatus(sections: DashboardSection[]): {
  * older deploys (any IDs/contexts no live rule claims).
  */
 async function syncDashboardAndStatus(
-  context: WebhookContext,
+  context: RuleContext,
   newSections: DashboardSection[],
   config: ApplyEffectsConfig,
 ): Promise<void> {
-  const overrides = parseOverrides(await context.getBody());
+  const overrides = parseOverrides(await context.target.body());
   const result = await upsertDashboardComment(
     context.github,
-    context.issue(),
+    context.issueParams(),
     newSections,
     config.knownSectionIds,
     overrides,
   );
   if (!result) return;
-  if (!context.headSha) return;
+  if (context.target.kind !== "pull_request") return;
+  const headSha = await context.target.headSha();
+  if (!headSha) return;
 
   const aggregate = aggregateDashboardStatus(result.sections);
   // Sweep stale status checks (best-effort; failures here shouldn't sink the
   // primary write below). The bot writes only the `ha-bot` aggregate going
   // forward — anything else we created on this commit is from an older deploy.
-  const sweep = sweepStaleStatusChecks(context).catch((err) => {
+  const sweep = sweepStaleStatusChecks(context, headSha).catch((err) => {
     console.warn("sweepStaleStatusChecks failed:", err);
   });
   await context.github.repos.createCommitStatus(
-    context.repo({
-      sha: context.headSha,
+    context.repoParams({
+      sha: headSha,
       context: HA_BOT_STATUS_CONTEXT,
       state: aggregate.state,
       description: aggregate.description,
@@ -257,10 +255,9 @@ async function syncDashboardAndStatus(
  * `ha-bot` status is the bot's sole commit-status output. Any other context
  * we own on this commit is therefore from an older deploy.
  */
-async function sweepStaleStatusChecks(context: WebhookContext): Promise<void> {
-  if (!context.headSha) return;
+async function sweepStaleStatusChecks(context: RuleContext, headSha: string): Promise<void> {
   const { data: statuses } = await context.github.repos.listCommitStatusesForRef(
-    context.repo({ ref: context.headSha, per_page: 100 }),
+    context.repoParams({ ref: headSha, per_page: 100 }),
   );
   // Collapse to the latest status per context (API returns newest first).
   const latestByContext = new Map<string, (typeof statuses)[number]>();
@@ -284,8 +281,8 @@ async function sweepStaleStatusChecks(context: WebhookContext): Promise<void> {
     stale.map((s) =>
       context.github.repos
         .createCommitStatus(
-          context.repo({
-            sha: context.headSha,
+          context.repoParams({
+            sha: headSha,
             context: s.context,
             state: "success" as const,
             description: "No longer in use",
@@ -300,15 +297,15 @@ async function sweepStaleStatusChecks(context: WebhookContext): Promise<void> {
 
 async function runMatchedRules(
   registryConfig: RegistryConfig,
-  context: WebhookContext,
+  context: RuleContext,
 ): Promise<Effect[]> {
   const matched = matchRules(registryConfig, context);
 
   const settled = await Promise.allSettled(
     matched.map((rule) => {
-      const handler = rule.events[context.eventType as keyof EventPayloadMap];
+      const handler = rule.events[context.eventType];
       if (!handler) return Promise.resolve(undefined);
-      return (handler as (ctx: WebhookContext) => Promise<Effect[] | undefined>)(context);
+      return (handler as (ctx: RuleContext) => Promise<Effect[] | undefined>)(context);
     }),
   );
 
@@ -326,18 +323,6 @@ async function runMatchedRules(
 
 /** Synthetic rounds before the label loop declares the rule set non-converging. */
 const MAX_LABEL_ROUNDS = 10;
-
-interface LabelLike {
-  name: string;
-}
-
-function payloadLabels(context: WebhookContext): LabelLike[] | undefined {
-  const payload = context.payload as {
-    pull_request?: { labels?: LabelLike[] };
-    issue?: { labels?: LabelLike[] };
-  };
-  return payload.pull_request?.labels ?? payload.issue?.labels;
-}
 
 /**
  * Label adds/removes against the simulated set. Add wins over remove within
@@ -360,55 +345,28 @@ function labelChanges(
 }
 
 /**
- * Context for a synthetic labeled/unlabeled event, shaped like the webhook
- * GitHub would send after the change. Undefined when no matching EventType
- * exists (issue unlabels) or the PR can't be fetched.
+ * Context for a synthetic labeled/unlabeled event: same dispatch, the target
+ * entity's label state overridden to the simulated set. Undefined when no
+ * matching EventType exists (issue unlabels).
  */
-async function buildSyntheticLabelContext(
-  context: WebhookContext,
+function syntheticLabelContext(
+  context: RuleContext,
   change: { name: string; action: "labeled" | "unlabeled" },
-  labels: LabelLike[],
-): Promise<WebhookContext | undefined> {
-  const base = context.payload as unknown as Record<string, unknown> & {
-    pull_request?: object;
-    issue?: object;
-  };
-  const label = { name: change.name };
-
-  if (context.type === WebhookContextType.PULL_REQUEST) {
-    // issue_comment events on a PR carry no pull_request object; fetch it.
-    let pr = base.pull_request;
-    if (!pr) {
-      try {
-        pr = await context.fetchPullRequestWithCache(context.pullRequest());
-      } catch (err) {
-        console.warn("label loop: failed to fetch PR for synthetic event:", err);
-        return undefined;
-      }
-    }
-    const payload = {
-      ...base,
-      action: change.action,
-      label,
-      pull_request: { ...pr, labels },
-    } as unknown as WebhookEventPayload;
-    return context.withSyntheticEvent(
-      payload,
-      change.action === "labeled"
-        ? EventType.PULL_REQUEST_LABELED
-        : EventType.PULL_REQUEST_UNLABELED,
-    );
+  labels: string[],
+): RuleContext | undefined {
+  const target = context.target;
+  if (target.kind === "pull_request") {
+    const pr = target.withLabels(labels);
+    return change.action === "labeled"
+      ? context.withEvent({ type: EventType.PULL_REQUEST_LABELED, label: change.name }, pr)
+      : context.withEvent({ type: EventType.PULL_REQUEST_UNLABELED, label: change.name }, pr);
   }
-
   // Issues have no unlabeled EventType; removals only count toward the net diff.
-  if (change.action !== "labeled" || !base.issue) return undefined;
-  const payload = {
-    ...base,
-    action: "labeled",
-    label,
-    issue: { ...base.issue, labels },
-  } as unknown as WebhookEventPayload;
-  return context.withSyntheticEvent(payload, EventType.ISSUES_LABELED);
+  if (change.action !== "labeled") return undefined;
+  return context.withEvent(
+    { type: EventType.ISSUES_LABELED, label: change.name },
+    target.withLabels(labels),
+  );
 }
 
 /**
@@ -420,17 +378,13 @@ async function buildSyntheticLabelContext(
  */
 async function runLabelLoop(
   registryConfig: RegistryConfig,
-  context: WebhookContext,
+  context: RuleContext,
   initialEffects: Effect[],
 ): Promise<Effect[]> {
-  const initial = payloadLabels(context);
-  if (!initial) return initialEffects;
-
   const isLabelEffect = (e: Effect) => e.type === "addLabels" || e.type === "removeLabels";
+  if (!initialEffects.some(isLabelEffect)) return initialEffects;
 
-  // Bot-added labels only carry a name; original labels keep their full objects.
-  const labelObjects = new Map<string, LabelLike>(initial.map((l) => [l.name, l]));
-  const initialNames = new Set(labelObjects.keys());
+  const initialNames = new Set(await context.target.labels());
   const current = new Set(initialNames);
 
   const effects: Effect[] = initialEffects.filter((e) => !isLabelEffect(e));
@@ -445,7 +399,7 @@ async function runLabelLoop(
     if (round > MAX_LABEL_ROUNDS) {
       const err = new Error(
         `Label loop did not stabilize after ${MAX_LABEL_ROUNDS} rounds for ` +
-          `${context.repository}#${tryNumber(context)} (${context.eventType}); ` +
+          `${context.repository}#${context.number} (${context.eventType}); ` +
           `still changing: +[${adds.join(", ")}] -[${removes.join(", ")}]`,
       );
       console.error(err.message);
@@ -453,15 +407,12 @@ async function runLabelLoop(
       break;
     }
 
-    for (const name of adds) {
-      current.add(name);
-      if (!labelObjects.has(name)) labelObjects.set(name, { name });
-    }
+    for (const name of adds) current.add(name);
     for (const name of removes) current.delete(name);
 
     // One synthetic event per changed label (as GitHub sends them), all
     // seeing the round's fully updated label set.
-    const labels = [...current].map((name) => labelObjects.get(name) as LabelLike);
+    const labels = [...current];
     const changes = [
       ...adds.map((name) => ({ name, action: "labeled" as const })),
       ...removes.map((name) => ({ name, action: "unlabeled" as const })),
@@ -469,7 +420,7 @@ async function runLabelLoop(
 
     roundEffects = [];
     for (const change of changes) {
-      const synthetic = await buildSyntheticLabelContext(context, change, labels);
+      const synthetic = syntheticLabelContext(context, change, labels);
       if (!synthetic) continue;
       roundEffects.push(...(await runMatchedRules(registryConfig, synthetic)));
     }
@@ -485,7 +436,7 @@ async function runLabelLoop(
 
 export async function dispatch(
   registryConfig: RegistryConfig,
-  context: WebhookContext,
+  context: RuleContext,
 ): Promise<Effect[]> {
   if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW && !context.dryRun) {
     await maybeRedraftOnReady(context);

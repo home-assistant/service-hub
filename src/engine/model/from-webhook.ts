@@ -80,16 +80,20 @@ function eventFromPayload(payload: WebhookEventPayload, eventType: EventType): R
       return { type: eventType, merged: p.pull_request.merged === true };
     }
     case EventType.PULL_REQUEST_REVIEW_SUBMITTED: {
-      const p = payload as PullRequestReviewSubmittedEvent;
+      const p = payload as Partial<PullRequestReviewSubmittedEvent>;
       return {
         type: eventType,
-        reviewState: p.review.state,
-        reviewer: p.review.user?.login ?? "",
+        reviewState: p.review?.state ?? "",
+        reviewer: p.review?.user?.login ?? "",
       };
     }
     case EventType.ISSUE_COMMENT_CREATED: {
-      const p = payload as IssueCommentCreatedEvent;
-      return { type: eventType, commentId: p.comment.id, commentBody: p.comment.body ?? "" };
+      const p = payload as Partial<IssueCommentCreatedEvent>;
+      return {
+        type: eventType,
+        commentId: p.comment?.id ?? 0,
+        commentBody: p.comment?.body ?? "",
+      };
     }
     default:
       return { type: eventType } as RuleEvent;

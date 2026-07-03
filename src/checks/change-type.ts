@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { ParsedPath } from "../util/parse-path.js";
 import { extractTasks } from "../util/pr-body.js";
@@ -86,11 +86,9 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
   const effects: Effect[] = [];
-  const picked = pickedTypeLabels(ctx.payload.pull_request.body);
+  const picked = pickedTypeLabels(await ctx.target.body());
 
   if (picked.length > 0) {
     effects.push({ type: "addLabels", labels: picked });
@@ -100,7 +98,7 @@ async function evaluate(
   // checked boxes are valid (a PR can be both a `bugfix` and a `breaking-change`),
   // so the cleanup always runs against the picked set.
   const pickedSet = new Set(picked);
-  const current = new Set(ctx.payload.pull_request.labels.map((l) => l.name));
+  const current = new Set(await ctx.target.labels());
   const toRemove = [...TYPE_OF_CHANGE_LABELS].filter(
     (candidate) => current.has(candidate) && !pickedSet.has(candidate),
   );
@@ -115,7 +113,7 @@ async function evaluate(
   if (picked.length === 0) {
     rowState = { kind: "none" };
   } else {
-    const files = await ctx.fetchPRFiles();
+    const files = await ctx.target.files();
     const parsed = files.map((f) => new ParsedPath(f));
     const addsIntegration = addsNewIntegration(parsed);
     const newIntegrationPicked = picked.includes(NEW_INTEGRATION_LABEL);

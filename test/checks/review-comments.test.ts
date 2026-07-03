@@ -10,26 +10,20 @@ function reviewComment(opts: {
   user: string;
   in_reply_to_id?: number;
   html_url?: string;
+  reactions?: Record<string, number>;
 }) {
   return {
     id: opts.id,
     user: { login: opts.user },
     in_reply_to_id: opts.in_reply_to_id,
     html_url: opts.html_url ?? `https://github.com/x/y/pull/1#discussion_r${opts.id}`,
+    reactions: opts.reactions ?? {},
   };
 }
 
-function setupHarness(reviewComments: object[], reactions: Record<number, object[]> = {}) {
+function setupHarness(reviewComments: object[]) {
   const github = createMockGitHub();
-  // paginate handles both listReviewComments and listForPullRequestReviewComment;
-  // dispatch based on which method-like was passed in.
-  github.paginate.mockImplementation(async (fn: unknown, params: { comment_id?: number }) => {
-    if (fn === github.pulls.listReviewComments) return reviewComments;
-    if (fn === github.reactions.listForPullRequestReviewComment) {
-      return reactions[params?.comment_id ?? -1] ?? [];
-    }
-    return [];
-  });
+  github.pulls.listReviewComments.mockResolvedValue({ data: reviewComments });
   return { github };
 }
 
@@ -62,9 +56,9 @@ describe("review-comments", () => {
   });
 
   it("passes when reviewer comment is acknowledged via reaction", async () => {
-    const { github } = setupHarness([reviewComment({ id: 1, user: "reviewer" })], {
-      1: [{ user: { login: AUTHOR }, content: "+1" }],
-    });
+    const { github } = setupHarness([
+      reviewComment({ id: 1, user: "reviewer", reactions: { "+1": 1 } }),
+    ]);
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
       github,

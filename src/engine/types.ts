@@ -1,53 +1,6 @@
-import type {
-  IssueCommentCreatedEvent,
-  IssuesLabeledEvent,
-  IssuesOpenedEvent,
-  PullRequestClosedEvent,
-  PullRequestEditedEvent,
-  PullRequestLabeledEvent,
-  PullRequestOpenedEvent,
-  PullRequestReadyForReviewEvent,
-  PullRequestReopenedEvent,
-  PullRequestReviewSubmittedEvent,
-  PullRequestSynchronizeEvent,
-  PullRequestUnlabeledEvent,
-} from "@octokit/webhooks-types";
-import type { GetPullRequestResponse } from "../github/types.js";
-import { EventType } from "../github/types.js";
-import type { WebhookContext } from "./context.js";
+import type { EventType } from "../github/types.js";
 import type { DashboardSection } from "./dashboard/types.js";
-
-/**
- * Synthetic payload for `EventType.ON_DEMAND`. Built by the bot when the
- * cron sweep or the `/<slug> update` command re-evaluates a PR.
- */
-export interface OnDemandEvent {
-  action: "on_demand";
-  pull_request: GetPullRequestResponse;
-  repository: GetPullRequestResponse["base"]["repo"];
-  sender: { login: string; type: "User" | "Bot" };
-}
-
-/**
- * Maps each EventType to its strongly-typed webhook payload. Rules
- * declare handlers per event; the dispatcher narrows `context.payload`
- * to the matching type, so handler bodies do not need a cast.
- */
-export interface EventPayloadMap {
-  [EventType.ISSUE_COMMENT_CREATED]: IssueCommentCreatedEvent;
-  [EventType.ISSUES_LABELED]: IssuesLabeledEvent;
-  [EventType.ISSUES_OPENED]: IssuesOpenedEvent;
-  [EventType.PULL_REQUEST_CLOSED]: PullRequestClosedEvent;
-  [EventType.PULL_REQUEST_EDITED]: PullRequestEditedEvent;
-  [EventType.PULL_REQUEST_LABELED]: PullRequestLabeledEvent;
-  [EventType.PULL_REQUEST_OPENED]: PullRequestOpenedEvent;
-  [EventType.PULL_REQUEST_REOPENED]: PullRequestReopenedEvent;
-  [EventType.PULL_REQUEST_READY_FOR_REVIEW]: PullRequestReadyForReviewEvent;
-  [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: PullRequestReviewSubmittedEvent;
-  [EventType.PULL_REQUEST_SYNCHRONIZE]: PullRequestSynchronizeEvent;
-  [EventType.PULL_REQUEST_UNLABELED]: PullRequestUnlabeledEvent;
-  [EventType.ON_DEMAND]: OnDemandEvent;
-}
+import type { RuleContext } from "./rule-context.js";
 
 /**
  * Structured side-effects returned by a rule's event handler.
@@ -79,12 +32,12 @@ export type Effect =
       reviewers: string[];
     };
 
-export type EventHandler<E extends keyof EventPayloadMap> = (
-  context: WebhookContext<EventPayloadMap[E]>,
+export type EventHandler<E extends EventType> = (
+  context: RuleContext<E>,
 ) => Promise<Effect[] | undefined>;
 
 export type EventHandlers = {
-  [E in keyof EventPayloadMap]?: EventHandler<E>;
+  [E in EventType]?: EventHandler<E>;
 };
 
 export interface Rule {

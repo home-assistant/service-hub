@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { ParsedPath } from "../util/parse-path.js";
 
@@ -86,14 +86,12 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
   if (ctx.senderIsBot) return undefined;
 
-  const files = await ctx.fetchPRFiles();
+  const files = await ctx.target.files();
   const parsed = files.map((f) => new ParsedPath(f));
-  const current = new Set(ctx.payload.pull_request.labels.map((l) => l.name));
+  const current = new Set(await ctx.target.labels());
 
   const toAdd: string[] = [];
   const toRemove: string[] = [];

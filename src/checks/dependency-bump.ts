@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 
 const DEPENDENCY_FILES = new Set([
@@ -12,10 +12,8 @@ const DEPENDENCY_FILES = new Set([
 
 type HandledEvent = EventType.PULL_REQUEST_OPENED | EventType.ON_DEMAND;
 
-async function evaluate(
-  ctx: WebhookContext<EventPayloadMap[HandledEvent]>,
-): Promise<Effect[] | undefined> {
-  const files = await ctx.fetchPRFiles();
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  const files = await ctx.target.files();
   const filenames = files.map((f) => f.filename.split("/").pop() ?? "");
   if (filenames.length > 0 && filenames.every((name) => DEPENDENCY_FILES.has(name))) {
     return [{ type: "addLabels", labels: ["dependency-bump"] }];

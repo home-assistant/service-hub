@@ -1,5 +1,5 @@
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 
 const DASHBOARD_SECTION_ID = "merge-target";
@@ -11,8 +11,8 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Effect[] {
-  const baseRef = ctx.payload.pull_request.base.ref;
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
+  const baseRef = await ctx.target.baseRef();
   if (baseRef === REQUIRED_BASE_REF) {
     return [
       {
@@ -29,7 +29,7 @@ function evaluate(ctx: WebhookContext<EventPayloadMap[HandledEvent]>): Effect[] 
 
   // Org-affiliated authors (release work, backports) get an informational row
   // instead of a hard failure. `author_association` is computed server-side.
-  const assoc = ctx.payload.pull_request.author_association;
+  const assoc = await ctx.target.authorAssociation();
   const isMember = assoc === "OWNER" || assoc === "MEMBER" || assoc === "COLLABORATOR";
   return [
     {
@@ -51,9 +51,9 @@ export const mergeTarget: Rule = {
   description: "Requires PRs to target the `dev` branch.",
   dashboardSections: [DASHBOARD_SECTION_ID],
   events: {
-    [EventType.PULL_REQUEST_OPENED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_EDITED]: async (ctx) => evaluate(ctx),
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: async (ctx) => evaluate(ctx),
-    [EventType.ON_DEMAND]: async (ctx) => evaluate(ctx),
+    [EventType.PULL_REQUEST_OPENED]: evaluate,
+    [EventType.PULL_REQUEST_EDITED]: evaluate,
+    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
+    [EventType.ON_DEMAND]: evaluate,
   },
 };

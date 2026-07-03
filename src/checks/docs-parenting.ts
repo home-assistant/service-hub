@@ -1,11 +1,6 @@
-import type {
-  PullRequestClosedEvent,
-  PullRequestEditedEvent,
-  PullRequestOpenedEvent,
-  PullRequestReopenedEvent,
-} from "@octokit/webhooks-types";
-import type { WebhookContext } from "../engine/context.js";
-import type { Effect, EventPayloadMap, Rule } from "../engine/types.js";
+import { PullRequest } from "../engine/model/pull-request.js";
+import type { RuleContext } from "../engine/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { EventType } from "../github/types.js";
 import { extractAllLinks } from "../util/pr-body.js";
 import { HomeAssistantRepository } from "../util/repositories.js";
@@ -16,10 +11,10 @@ function findDocsLinks(body: string | null) {
   );
 }
 
-function handleOpenedOrEdited(
-  ctx: WebhookContext<PullRequestOpenedEvent | PullRequestEditedEvent>,
-): Effect[] | undefined {
-  const linksToDocs = findDocsLinks(ctx.payload.pull_request.body);
+async function handleOpenedOrEdited(
+  ctx: RuleContext<EventType.PULL_REQUEST_OPENED | EventType.PULL_REQUEST_EDITED>,
+): Promise<Effect[] | undefined> {
+  const linksToDocs = findDocsLinks(await ctx.target.body());
   if (linksToDocs.length === 0 || linksToDocs.length > 2) return;
   return linksToDocs.map<Effect>((link) => ({
     type: "addLabelsCrossRepo",
@@ -31,24 +26,24 @@ function handleOpenedOrEdited(
 }
 
 async function handleClosedOrReopened(
-  ctx: WebhookContext<PullRequestClosedEvent | PullRequestReopenedEvent>,
+  ctx: RuleContext<EventType.PULL_REQUEST_CLOSED | EventType.PULL_REQUEST_REOPENED>,
 ): Promise<Effect[] | undefined> {
-  const linksToDocs = findDocsLinks(ctx.payload.pull_request.body);
+  const linksToDocs = findDocsLinks(await ctx.target.body());
   if (linksToDocs.length !== 1) return;
   const docLink = linksToDocs[0];
 
-  const isClosed = ctx.payload.action === "closed";
-  const isMerged =
-    isClosed && "merged" in ctx.payload.pull_request && ctx.payload.pull_request.merged;
+  const isClosed = ctx.event.type === EventType.PULL_REQUEST_CLOSED;
+  const isMerged = ctx.event.type === EventType.PULL_REQUEST_CLOSED && ctx.event.merged;
   const parentState = !isClosed ? "open" : isMerged ? "merged" : "closed";
 
   if (parentState === "open") {
-    const docsPR = await ctx.fetchPullRequestWithCache({
+    const docsPR = new PullRequest(ctx.github, {
       owner: docLink.owner,
       repo: docLink.repo,
-      pull_number: docLink.number,
+      number: docLink.number,
     });
-    const docsState = docsPR.state === "open" ? "open" : docsPR.merged ? "merged" : "closed";
+    const docsState =
+      (await docsPR.state()) === "open" ? "open" : (await docsPR.merged()) ? "merged" : "closed";
     if (docsState === "open" || docsState === "merged") return;
 
     return [
@@ -93,9 +88,9 @@ async function handleClosedOrReopened(
  * the docs PR here.
  */
 async function handleOnDemand(
-  ctx: WebhookContext<EventPayloadMap[EventType.ON_DEMAND]>,
+  ctx: RuleContext<EventType.ON_DEMAND>,
 ): Promise<Effect[] | undefined> {
-  const links = findDocsLinks(ctx.payload.pull_request.body);
+  const links = findDocsLinks(await ctx.target.body());
   if (links.length === 0 || links.length > 2) return;
 
   const effects: Effect[] = links.map<Effect>((link) => ({
@@ -107,7 +102,7 @@ async function handleOnDemand(
   }));
 
   // For a merged code PR with a single docs link, surface `parent-merged`.
-  if (links.length === 1 && ctx.payload.pull_request.merged_at) {
+  if (links.length === 1 && (await ctx.target.mergedAt())) {
     effects.push({
       type: "addLabelsCrossRepo",
       owner: links[0].owner,
@@ -124,10 +119,10 @@ export const docsParenting: Rule = {
   name: "docs-parenting",
   description: "Labels linked docs PRs with 'has-parent' and syncs parent status on close/reopen",
   events: {
-    [EventType.PULL_REQUEST_OPENED]: async (ctx) => handleOpenedOrEdited(ctx),
-    [EventType.PULL_REQUEST_EDITED]: async (ctx) => handleOpenedOrEdited(ctx),
-    [EventType.PULL_REQUEST_CLOSED]: async (ctx) => handleClosedOrReopened(ctx),
-    [EventType.PULL_REQUEST_REOPENED]: async (ctx) => handleClosedOrReopened(ctx),
+    [EventType.PULL_REQUEST_OPENED]: handleOpenedOrEdited,
+    [EventType.PULL_REQUEST_EDITED]: handleOpenedOrEdited,
+    [EventType.PULL_REQUEST_CLOSED]: handleClosedOrReopened,
+    [EventType.PULL_REQUEST_REOPENED]: handleClosedOrReopened,
     [EventType.ON_DEMAND]: handleOnDemand,
   },
 };
