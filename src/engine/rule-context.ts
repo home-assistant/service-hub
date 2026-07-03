@@ -30,6 +30,7 @@ interface TargetMap {
   [EventType.PULL_REQUEST_SYNCHRONIZE]: PullRequest;
   [EventType.PULL_REQUEST_UNLABELED]: PullRequest;
   [EventType.ON_DEMAND]: PullRequest;
+  [EventType.ISSUES_ON_DEMAND]: Issue;
 }
 
 export type TargetFor<E extends EventType> = TargetMap[E];

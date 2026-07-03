@@ -15,7 +15,7 @@ import type {
 } from "@octokit/webhooks-types";
 import { EventType, type RuleEvent } from "../event.js";
 import { RuleContext } from "../rule-context.js";
-import { Issue } from "./issue.js";
+import { type GetIssueResponse, Issue, type IssueSeed } from "./issue.js";
 import { Org } from "./organization.js";
 import { type GetPullRequestResponse, PullRequest, type PullRequestSeed } from "./pull-request.js";
 import { Repo } from "./repository.js";
@@ -82,6 +82,42 @@ function seedFromPullRequestLike(pr: PullRequestLike): PullRequestSeed {
   };
 }
 
+/**
+ * Structural view over every issue-shaped object GitHub hands us — the
+ * webhook `issue` object and the REST issues.get response. Issue labels are
+ * looser than PR labels upstream: entries may be bare strings and object
+ * names are optional.
+ */
+interface IssueLike {
+  number: number;
+  pull_request?: unknown;
+  labels?: ({ name?: string } | string)[] | null;
+  body?: string | null;
+  user?: { login: string } | null;
+  assignees?: ({ login: string } | null)[] | null;
+  state?: string;
+}
+
+function seedFromIssueLike(issue: IssueLike): IssueSeed {
+  return {
+    ...(issue.labels
+      ? {
+          labels: issue.labels.flatMap((l) =>
+            typeof l === "string" ? [l] : l?.name ? [l.name] : [],
+          ),
+        }
+      : {}),
+    ...(issue.body !== undefined ? { body: issue.body } : {}),
+    ...(issue.user?.login ? { authorLogin: issue.user.login } : {}),
+    ...(issue.assignees
+      ? { assigneeLogins: issue.assignees.flatMap((a) => (a?.login ? [a.login] : [])) }
+      : {}),
+    ...(issue.state === "open" || issue.state === "closed"
+      ? { state: issue.state as "open" | "closed" }
+      : {}),
+  };
+}
+
 function eventFromPayload(payload: WebhookEventPayload, eventType: EventType): RuleEvent {
   switch (eventType) {
     case EventType.PULL_REQUEST_LABELED:
@@ -123,18 +159,7 @@ function targetFromPayload(
   payload: WebhookEventPayload,
   repo: Repo,
 ): PullRequest | Issue {
-  const p = payload as {
-    pull_request?: PullRequestLike;
-    issue?: {
-      number: number;
-      pull_request?: unknown;
-      labels?: ({ name?: string } | string)[] | null;
-      body?: string | null;
-      user?: { login: string } | null;
-      assignees?: ({ login: string } | null)[] | null;
-      state?: string;
-    };
-  };
+  const p = payload as { pull_request?: PullRequestLike; issue?: IssueLike };
 
   const ref = (number: number) => ({ owner: repo.owner, repo: repo.name, number });
 
@@ -148,31 +173,12 @@ function targetFromPayload(
 
   if (!p.issue) throw new Error("targetFromPayload: payload has neither pull_request nor issue");
 
-  const issue = p.issue;
-  const seed = {
-    ...(issue.labels
-      ? {
-          labels: issue.labels.flatMap((l) =>
-            typeof l === "string" ? [l] : l?.name ? [l.name] : [],
-          ),
-        }
-      : {}),
-    ...(issue.body !== undefined ? { body: issue.body } : {}),
-    ...(issue.user?.login ? { authorLogin: issue.user.login } : {}),
-    ...(issue.assignees
-      ? { assigneeLogins: issue.assignees.flatMap((a) => (a?.login ? [a.login] : [])) }
-      : {}),
-    ...(issue.state === "open" || issue.state === "closed"
-      ? { state: issue.state as "open" | "closed" }
-      : {}),
-  };
-
   // A comment on a PR arrives as an issue payload with a pull_request
   // cross-link; the PR-specific fields (head, base, draft, …) hydrate lazily.
-  if (issue.pull_request) {
-    return new PullRequest(github, ref(issue.number), seed);
+  if (p.issue.pull_request) {
+    return new PullRequest(github, ref(p.issue.number), seedFromIssueLike(p.issue));
   }
-  return new Issue(github, ref(issue.number), seed);
+  return new Issue(github, ref(p.issue.number), seedFromIssueLike(p.issue));
 }
 
 function senderFromLogin(login: string, isBotType: boolean) {
@@ -200,6 +206,38 @@ export function contextFromWebhook(
     repo,
     org: new Org(github, repo.owner),
     target: targetFromPayload(github, payload, repo),
+    ...opts,
+  });
+}
+
+/**
+ * Build an ISSUES_ON_DEMAND RuleContext from a REST issues.get response.
+ * The response carries no repository object, so the caller supplies owner
+ * and repo; topics are unknown without an extra fetch and stay empty.
+ */
+export function contextFromIssue(
+  github: Octokit,
+  issue: GetIssueResponse,
+  repoRef: { owner: string; repo: string },
+  opts: AdapterOptions,
+): RuleContext<EventType.ISSUES_ON_DEMAND> {
+  const repo = new Repo(github, {
+    owner: repoRef.owner,
+    name: repoRef.repo,
+    fullName: `${repoRef.owner}/${repoRef.repo}`,
+  });
+
+  return new RuleContext<EventType.ISSUES_ON_DEMAND>({
+    github,
+    event: { type: EventType.ISSUES_ON_DEMAND },
+    sender: senderFromLogin(issue.user?.login ?? "", issue.user?.type === "Bot"),
+    repo,
+    org: new Org(github, repo.owner),
+    target: new Issue(
+      github,
+      { owner: repoRef.owner, repo: repoRef.repo, number: issue.number },
+      seedFromIssueLike(issue),
+    ),
     ...opts,
   });
 }

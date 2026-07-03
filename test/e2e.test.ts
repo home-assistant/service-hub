@@ -134,7 +134,37 @@ describe("e2e: bot commands", () => {
 
     expect(res.status).toBe(200);
     expect(handle).toHaveBeenCalledWith(
-      expect.objectContaining({ owner: "home-assistant", repo: "core", issueNumber: 1 }),
+      expect.objectContaining({
+        owner: "home-assistant",
+        repo: "core",
+        issueNumber: 1,
+        isPullRequest: true,
+      }),
+    );
+    expect(harness.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+      expect.objectContaining({ comment_id: 42, content: "+1" }),
+    );
+  });
+
+  it("runs commands on plain issue comments too", async () => {
+    const handle = vi.fn().mockResolvedValue(undefined);
+
+    const harness = createE2EHarness({
+      commandConfig: {
+        repositories: { "home-assistant/core": [{ name: "ping", handle }] },
+      },
+    });
+
+    const res = await harness.deliver(
+      "issue_comment",
+      commentPayload("/ha-bot ping", {
+        issue: { number: 5, user: { login: "testuser" }, body: "" }, // no pull_request
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(handle).toHaveBeenCalledWith(
+      expect.objectContaining({ issueNumber: 5, isPullRequest: false }),
     );
     expect(harness.github.reactions.createForIssueComment).toHaveBeenCalledWith(
       expect.objectContaining({ comment_id: 42, content: "+1" }),

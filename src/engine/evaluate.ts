@@ -1,7 +1,8 @@
 import type { Octokit } from "@octokit/rest";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
-import { contextFromPullRequest } from "./model/from-webhook.js";
+import { contextFromIssue, contextFromPullRequest } from "./model/from-webhook.js";
+import type { GetIssueParams } from "./model/issue.js";
 import type { GetPullRequestParams } from "./model/pull-request.js";
 import type { Effect } from "./types.js";
 
@@ -24,6 +25,39 @@ export async function evaluatePR(
     dryRun: options.dryRun,
     captureException: options.captureException,
   });
+
+  return dispatch(registryConfig, context);
+}
+
+export async function evaluateIssue(
+  registryConfig: RegistryConfig,
+  github: Octokit,
+  params: GetIssueParams,
+  options: EvaluateOptions = {},
+): Promise<Effect[]> {
+  const { data: issue } = await github.issues.get(params);
+
+  // PRs and issues share a numbering space; issues.get happily returns the
+  // issue view of a PR. Route those through the PR path so PR rules run.
+  if (issue.pull_request) {
+    return evaluatePR(
+      registryConfig,
+      github,
+      { owner: params.owner, repo: params.repo, pull_number: params.issue_number },
+      options,
+    );
+  }
+
+  const context = contextFromIssue(
+    github,
+    issue,
+    { owner: params.owner, repo: params.repo },
+    {
+      botSlug: options.botSlug ?? "",
+      dryRun: options.dryRun,
+      captureException: options.captureException,
+    },
+  );
 
   return dispatch(registryConfig, context);
 }

@@ -13,9 +13,14 @@ export enum EventType {
   PULL_REQUEST_UNLABELED = "pull_request.unlabeled",
 
   /**
-   * Synthetic event to reevaluate a rule (cron sweep, `/<slug> update`).
+   * Synthetic PR event to reevaluate a rule (cron sweep, `/<slug> update`).
    */
   ON_DEMAND = "on_demand",
+
+  /**
+   * Synthetic issue counterpart of ON_DEMAND (`/<slug> update` on an issue).
+   */
+  ISSUES_ON_DEMAND = "issues.on_demand",
 }
 
 /**
@@ -50,6 +55,7 @@ export interface RuleEventMap {
   [EventType.PULL_REQUEST_SYNCHRONIZE]: { type: EventType.PULL_REQUEST_SYNCHRONIZE };
   [EventType.PULL_REQUEST_UNLABELED]: { type: EventType.PULL_REQUEST_UNLABELED; label: string };
   [EventType.ON_DEMAND]: { type: EventType.ON_DEMAND };
+  [EventType.ISSUES_ON_DEMAND]: { type: EventType.ISSUES_ON_DEMAND };
 }
 
 export type RuleEvent = RuleEventMap[EventType];

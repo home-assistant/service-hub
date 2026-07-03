@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 import { EventType } from "../../../src/engine/event.js";
 import type { WebhookEventPayload } from "../../../src/engine/model/from-webhook.js";
 import {
+  contextFromIssue,
   contextFromPullRequest,
   contextFromWebhook,
 } from "../../../src/engine/model/from-webhook.js";
+import type { GetIssueResponse } from "../../../src/engine/model/issue.js";
 import { Issue } from "../../../src/engine/model/issue.js";
 import type { GetPullRequestResponse } from "../../../src/engine/model/pull-request.js";
 import { PullRequest } from "../../../src/engine/model/pull-request.js";
@@ -233,5 +235,38 @@ describe("contextFromPullRequest", () => {
     expect(await target.merged()).toBe(true);
     expect(await target.state()).toBe("closed");
     expect(github.pulls.get).not.toHaveBeenCalled();
+  });
+});
+
+describe("contextFromIssue", () => {
+  it("builds a fully seeded ISSUES_ON_DEMAND context from a REST response", async () => {
+    const github = createMockGitHub();
+    const issue = {
+      number: 7,
+      labels: [{ name: "bug" }, "triage"],
+      body: "it broke",
+      user: { login: "reporter", type: "User" },
+      assignees: [{ login: "maintainer" }],
+      state: "open",
+    } as unknown as GetIssueResponse;
+
+    const ctx = contextFromIssue(
+      asOctokit(github),
+      issue,
+      { owner: "home-assistant", repo: "core" },
+      OPTS,
+    );
+
+    expect(ctx.event).toEqual({ type: EventType.ISSUES_ON_DEMAND });
+    expect(ctx.repository).toBe("home-assistant/core");
+    expect(ctx.sender).toEqual({ login: "reporter", isBot: false });
+    expect(ctx.target).toBeInstanceOf(Issue);
+
+    const target = ctx.target as Issue;
+    expect(target.number).toBe(7);
+    expect(await target.labels()).toEqual(["bug", "triage"]);
+    expect(await target.body()).toBe("it broke");
+    expect(await target.assigneeLogins()).toEqual(["maintainer"]);
+    expect(github.issues.get).not.toHaveBeenCalled();
   });
 });

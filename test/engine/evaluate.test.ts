@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
-import { evaluatePR, evaluateRecentPRs } from "../../src/engine/evaluate.js";
+import { evaluateIssue, evaluatePR, evaluateRecentPRs } from "../../src/engine/evaluate.js";
 import { createMockGitHub } from "../helpers/mock-context.js";
 
 vi.mock("../../src/engine/dispatch.js", async (importOriginal) => {
@@ -34,6 +34,61 @@ describe("evaluatePR", () => {
       owner: "home-assistant",
       repo: "core",
       pull_number: 42,
+    });
+
+    expect(github.pulls.get).toHaveBeenCalledWith(expect.objectContaining({ pull_number: 42 }));
+    expect(dispatch).toHaveBeenCalled();
+  });
+});
+
+describe("evaluateIssue", () => {
+  it("fetches the issue and dispatches rules", async () => {
+    const github = createMockGitHub();
+
+    github.issues.get.mockResolvedValue({
+      data: {
+        number: 7,
+        labels: [{ name: "bug" }],
+        body: "it broke",
+        user: { login: "reporter", type: "User" },
+        state: "open",
+      },
+    });
+
+    await evaluateIssue(config, github as never, {
+      owner: "home-assistant",
+      repo: "core",
+      issue_number: 7,
+    });
+
+    expect(github.issues.get).toHaveBeenCalledWith(expect.objectContaining({ issue_number: 7 }));
+    expect(github.pulls.get).not.toHaveBeenCalled();
+    expect(dispatch).toHaveBeenCalled();
+  });
+
+  it("routes PR numbers through the PR path", async () => {
+    const github = createMockGitHub();
+
+    github.issues.get.mockResolvedValue({
+      data: {
+        number: 42,
+        pull_request: { url: "https://api.github.com/repos/home-assistant/core/pulls/42" },
+        user: { login: "author", type: "User" },
+      },
+    });
+    github.pulls.get.mockResolvedValue({
+      data: {
+        number: 42,
+        head: { sha: "abc123" },
+        base: { repo: { owner: { login: "home-assistant" }, name: "core" } },
+        user: { login: "author", type: "User" },
+      },
+    });
+
+    await evaluateIssue(config, github as never, {
+      owner: "home-assistant",
+      repo: "core",
+      issue_number: 42,
     });
 
     expect(github.pulls.get).toHaveBeenCalledWith(expect.objectContaining({ pull_number: 42 }));

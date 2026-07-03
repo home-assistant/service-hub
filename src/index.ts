@@ -105,12 +105,12 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
   const eventType = rawEventType as EventType;
   const octokit = deps.createOctokit(env);
 
-  // Handle bot commands on PR comments
+  // Handle bot commands on PR and issue comments
   if (event === "issue_comment" && action === "created") {
     const commentPayload = payload as IssueCommentCreatedEvent;
     const commentBody = commentPayload.comment.body ?? "";
     const commandSlug = env.COMMAND_SLUG;
-    if (commentPayload.issue.pull_request && isBotCommand(commentBody, commandSlug)) {
+    if (isBotCommand(commentBody, commandSlug)) {
       await dispatchCommand(
         deps.commandConfig,
         {
@@ -118,6 +118,7 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
           owner: commentPayload.repository.owner.login,
           repo: commentPayload.repository.name,
           issueNumber: commentPayload.issue.number,
+          isPullRequest: Boolean(commentPayload.issue.pull_request),
           commentId: commentPayload.comment.id,
           commentBody,
           senderLogin: commentPayload.sender.login,

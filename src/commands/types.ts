@@ -5,6 +5,8 @@ export interface CommandContext {
   owner: string;
   repo: string;
   issueNumber: number;
+  /** Whether the comment thread belongs to a PR (true) or a plain issue. */
+  isPullRequest: boolean;
   commentId: number;
   commentBody: string;
   senderLogin: string;
