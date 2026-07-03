@@ -3,13 +3,7 @@ import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js"
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 
-type HandledEvent =
-  | EventType.ISSUES_LABELED
-  | EventType.PULL_REQUEST_LABELED
-  | EventType.PULL_REQUEST_OPENED
-  | EventType.PULL_REQUEST_REOPENED
-  | EventType.PULL_REQUEST_SYNCHRONIZE
-  | EventType.ON_DEMAND;
+type HandledEvent = EventType.ISSUES_LABELED | EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;
 
 const INTEGRATION_LABEL_PREFIX = "integration: ";
 
@@ -59,22 +53,18 @@ async function processIntegration(
 }
 
 async function collectIntegrationNames(ctx: RuleContext<HandledEvent>): Promise<string[]> {
-  // Pick which integration domain(s) drive this dispatch:
-  //   LABELED → only the integration in the just-added label (if any)
-  //   PR opened/reopened/synchronize → derived from changed files
-  //   ON_DEMAND → union of file-derived and label-derived
+  // LABELED → only the integration in the just-added label (if any)
+  // ON_DEMAND → union of file-derived (PRs) and the current labels
   if ("label" in ctx.event) {
     if (!ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return [];
     return [ctx.event.label.slice(INTEGRATION_LABEL_PREFIX.length)];
   }
 
-  if (ctx.target.kind !== "pull_request") return [];
-  const fileDerived = await ctx.target.integrationDomains();
-  if (ctx.eventType !== EventType.ON_DEMAND) return fileDerived;
-
   const labelDerived = (await ctx.target.labels())
     .filter((l) => l.startsWith(INTEGRATION_LABEL_PREFIX))
     .map((l) => l.slice(INTEGRATION_LABEL_PREFIX.length));
+  const fileDerived =
+    ctx.target.kind === "pull_request" ? await ctx.target.integrationDomains() : [];
   return [...new Set([...fileDerived, ...labelDerived])];
 }
 
@@ -120,9 +110,6 @@ export function mentionCodeOwners(config: {
     events: {
       [EventType.ISSUES_LABELED]: handle,
       [EventType.PULL_REQUEST_LABELED]: handle,
-      [EventType.PULL_REQUEST_OPENED]: handle,
-      [EventType.PULL_REQUEST_REOPENED]: handle,
-      [EventType.PULL_REQUEST_SYNCHRONIZE]: handle,
       [EventType.ON_DEMAND]: handle,
     },
   };

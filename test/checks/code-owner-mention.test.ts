@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { mentionCodeOwners } from "../../src/checks/code-owner-mention.js";
+import { integrationDomain } from "../../src/checks/integration-domain.js";
+import type { RegistryConfig } from "../../src/engine/dispatch.js";
+import { dispatch } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
 import {
   createMockContext,
@@ -162,14 +165,17 @@ describe("mention-code-owners", () => {
     expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_LABELED);
   });
 
-  describe("PR file-driven triggers", () => {
-    it("pings owners on pull_request.opened based on changed files", async () => {
+  describe("PR creation via the label loop", () => {
+    it("pings owners on pull_request.opened once integration-domain labels the PR", async () => {
       const github = createMockGitHub();
       const codeowners = `homeassistant/components/hue/* @balloob @frenck`;
       github.repos.getContent.mockResolvedValue({ data: { content: btoa(codeowners) } });
       github.issues.listComments.mockResolvedValue({ data: [] });
       github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
 
+      const config: RegistryConfig = {
+        repositories: { "home-assistant/core": [integrationDomain, rule] },
+      };
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
         github,
@@ -186,16 +192,26 @@ describe("mention-code-owners", () => {
         { filename: "homeassistant/components/hue/light.py", status: "modified" },
       ]);
 
-      const result = await runRule(rule, context);
-      expect(result?.assignees).toContain("balloob");
-      expect(result?.assignees).toContain("frenck");
-      expect(result?.comment).toContain("@balloob");
+      await dispatch(config, context);
+
+      expect(github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ["integration: hue"] }),
+      );
+      expect(github.issues.addAssignees).toHaveBeenCalledWith(
+        expect.objectContaining({ assignees: expect.arrayContaining(["balloob", "frenck"]) }),
+      );
+      expect(github.issues.createComment).toHaveBeenCalledWith(
+        expect.objectContaining({ body: expect.stringContaining("@balloob") }),
+      );
     });
 
-    it("returns undefined when the PR touches no integration files", async () => {
+    it("does nothing on opened when the PR touches no integration files", async () => {
       const github = createMockGitHub();
       github.repos.getContent.mockResolvedValue({ data: { content: btoa("") } });
 
+      const config: RegistryConfig = {
+        repositories: { "home-assistant/core": [integrationDomain, rule] },
+      };
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
         github,
@@ -203,41 +219,16 @@ describe("mention-code-owners", () => {
       });
       mockPRFiles(context, [{ filename: "docs/README.md", status: "modified" }]);
 
-      const result = await runRule(rule, context);
-      expect(result).toBeUndefined();
+      await dispatch(config, context);
+
+      expect(github.issues.addAssignees).not.toHaveBeenCalled();
+      expect(github.issues.createComment).not.toHaveBeenCalled();
     });
 
-    it("also fires on pull_request.synchronize", async () => {
-      const github = createMockGitHub();
-      const codeowners = `homeassistant/components/hue/* @balloob`;
-      github.repos.getContent.mockResolvedValue({ data: { content: btoa(codeowners) } });
-      github.issues.listComments.mockResolvedValue({ data: [] });
-      github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
-
-      const context = createMockContext({
-        eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
-        github,
-        payload: {
-          pull_request: {
-            user: { login: "contributor" },
-            assignees: [],
-            body: "",
-            labels: [],
-          },
-        },
-      });
-      mockPRFiles(context, [
-        { filename: "homeassistant/components/hue/sensor.py", status: "added" },
-      ]);
-
-      const result = await runRule(rule, context);
-      expect(result?.assignees).toContain("balloob");
-    });
-
-    it("subscribes to opened, reopened, and synchronize", () => {
-      expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_OPENED);
-      expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_REOPENED);
-      expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+    it("subscribes only to label events and on_demand", () => {
+      expect(Object.keys(rule.events).sort()).toEqual(
+        [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED, EventType.ON_DEMAND].sort(),
+      );
     });
   });
 

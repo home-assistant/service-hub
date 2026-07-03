@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { fileShape } from "../../src/checks/file-shape.js";
 import { newIntegrationValidation } from "../../src/checks/new-integration-validation.js";
+import type { RegistryConfig } from "../../src/engine/dispatch.js";
+import { dispatch } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
-import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
+import {
+  createMockContext,
+  createMockGitHub,
+  mockPRFiles,
+  runRule,
+} from "../helpers/mock-context.js";
 
 function makeFile(filename: string, status = "added") {
   return {
@@ -113,11 +121,47 @@ describe("new-integration-validation", () => {
     expect(result?.dashboard?.message).toContain("brand");
   });
 
-  it("listens to opened/reopened/labeled/unlabeled/synchronize", () => {
-    const keys = Object.keys(newIntegrationValidation.events);
-    expect(keys).toContain(EventType.PULL_REQUEST_OPENED);
-    expect(keys).toContain(EventType.PULL_REQUEST_LABELED);
-    expect(keys).toContain(EventType.PULL_REQUEST_UNLABELED);
-    expect(keys).toContain(EventType.PULL_REQUEST_SYNCHRONIZE);
+  it("listens to labeled/unlabeled/synchronize/on_demand", () => {
+    expect(Object.keys(newIntegrationValidation.events).sort()).toEqual(
+      [
+        EventType.PULL_REQUEST_LABELED,
+        EventType.PULL_REQUEST_UNLABELED,
+        EventType.PULL_REQUEST_SYNCHRONIZE,
+        EventType.ON_DEMAND,
+      ].sort(),
+    );
+  });
+
+  it("fires on PR creation via the label loop when file-shape sets new-integration", async () => {
+    const github = createMockGitHub();
+
+    // Payload has no labels; file-shape derives `new-integration` from the
+    // added __init__.py and the loop re-dispatches this rule with it.
+    const config: RegistryConfig = {
+      repositories: { "home-assistant/core": [fileShape, newIntegrationValidation] },
+    };
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+      payload: { pull_request: { labels: [] } },
+    });
+    mockPRFiles(context, [
+      makeFile("homeassistant/components/mydevice/__init__.py"),
+      makeFile("homeassistant/components/mydevice/sensor.py"),
+      makeFile("homeassistant/components/mydevice/light.py"),
+    ]);
+
+    const effects = await dispatch(config, context);
+
+    expect(effects).toContainEqual(
+      expect.objectContaining({
+        type: "dashboardSection",
+        section: expect.objectContaining({
+          id: "new-integration-validation",
+          status: "fail",
+          message: expect.stringContaining("single platform"),
+        }),
+      }),
+    );
   });
 });

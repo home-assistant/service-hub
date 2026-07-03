@@ -8,7 +8,6 @@ type HandledEvent =
   | EventType.PULL_REQUEST_EDITED
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_UNLABELED
-  | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
@@ -79,7 +78,6 @@ export const docsPrPresent: Rule = {
     [EventType.PULL_REQUEST_EDITED]: evaluate,
     [EventType.PULL_REQUEST_LABELED]: evaluate,
     [EventType.PULL_REQUEST_UNLABELED]: evaluate,
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
     [EventType.ON_DEMAND]: evaluate,
   },
 };

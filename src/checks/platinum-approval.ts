@@ -5,11 +5,8 @@ import { fetchIntegrationManifest, QualityScale } from "../util/integration.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_LABELED
-  | EventType.PULL_REQUEST_OPENED
-  | EventType.PULL_REQUEST_REOPENED
-  | EventType.PULL_REQUEST_REVIEW_SUBMITTED
-  | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.PULL_REQUEST_UNLABELED
+  | EventType.PULL_REQUEST_REVIEW_SUBMITTED
   | EventType.ON_DEMAND;
 
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
@@ -118,11 +115,8 @@ export const platinumApproval: Rule = {
   dashboardSections: ["code-owner-approval"],
   events: {
     [EventType.PULL_REQUEST_LABELED]: evaluate,
-    [EventType.PULL_REQUEST_OPENED]: evaluate,
-    [EventType.PULL_REQUEST_REOPENED]: evaluate,
-    [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: evaluate,
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
     [EventType.PULL_REQUEST_UNLABELED]: evaluate,
+    [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: evaluate,
+    [EventType.ON_DEMAND]: evaluate,
   },
 };

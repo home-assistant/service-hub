@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { docsPrPresent } from "../../src/checks/docs-pr-present.js";
+import { fileShape } from "../../src/checks/file-shape.js";
+import type { RegistryConfig } from "../../src/engine/dispatch.js";
+import { dispatch } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
-import { createMockContext, runRule } from "../helpers/mock-context.js";
+import {
+  createMockContext,
+  createMockGitHub,
+  mockPRFiles,
+  runRule,
+} from "../helpers/mock-context.js";
 
 describe("docs-missing handler", () => {
   it("skips when no docs-requiring labels are present", async () => {
@@ -103,5 +111,32 @@ describe("docs-missing handler", () => {
     });
     const result = await runRule(docsPrPresent, context);
     expect(result?.statusChecks).toHaveLength(0);
+  });
+
+  it("fires on PR creation via the label loop when file-shape sets new-integration", async () => {
+    const github = createMockGitHub();
+
+    const config: RegistryConfig = {
+      repositories: { "home-assistant/core": [fileShape, docsPrPresent] },
+    };
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+      payload: {
+        pull_request: { labels: [], body: "Added a cool new integration", base: { ref: "dev" } },
+      },
+    });
+    mockPRFiles(context, [
+      { filename: "homeassistant/components/mydevice/__init__.py", status: "added" },
+    ]);
+
+    const effects = await dispatch(config, context);
+
+    expect(effects).toContainEqual(
+      expect.objectContaining({
+        type: "dashboardSection",
+        section: expect.objectContaining({ id: "docs-missing", status: "fail" }),
+      }),
+    );
   });
 });

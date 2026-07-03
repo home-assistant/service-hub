@@ -4,8 +4,6 @@ import type { Effect, Rule } from "../engine/types.js";
 import { ParsedPath } from "../util/parse-path.js";
 
 type HandledEvent =
-  | EventType.PULL_REQUEST_OPENED
-  | EventType.PULL_REQUEST_REOPENED
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_UNLABELED
   | EventType.PULL_REQUEST_SYNCHRONIZE
@@ -83,8 +81,6 @@ export const newIntegrationValidation: Rule = {
   description: "Validates new-integration PRs for platform count and brand folder placement",
   dashboardSections: [SECTION_ID],
   events: {
-    [EventType.PULL_REQUEST_OPENED]: evaluate,
-    [EventType.PULL_REQUEST_REOPENED]: evaluate,
     [EventType.PULL_REQUEST_LABELED]: evaluate,
     [EventType.PULL_REQUEST_UNLABELED]: evaluate,
     [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
