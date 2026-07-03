@@ -6,22 +6,12 @@ export const updateCommand: Command = {
   name: "update",
 
   async handle(context) {
-    const params = { owner: context.owner, repo: context.repo };
+    const ref = { owner: context.owner, repo: context.repo, number: context.issueNumber };
     const options = { botSlug: context.botSlug };
     if (context.isPullRequest) {
-      await evaluatePR(
-        config,
-        context.github,
-        { ...params, pull_number: context.issueNumber },
-        options,
-      );
+      await evaluatePR(config, context.github, ref, options);
     } else {
-      await evaluateIssue(
-        config,
-        context.github,
-        { ...params, issue_number: context.issueNumber },
-        options,
-      );
+      await evaluateIssue(config, context.github, ref, options);
     }
   },
 };

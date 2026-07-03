@@ -2,8 +2,8 @@ import type { Octokit } from "@octokit/rest";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
 import { contextFromIssue, contextFromPullRequest } from "./model/from-webhook.js";
-import type { GetIssueParams } from "./model/issue.js";
-import type { GetPullRequestParams } from "./model/pull-request.js";
+import type { IssueRef } from "./model/issue.js";
+import type { PullRequestRef } from "./model/pull-request.js";
 import type { Effect } from "./types.js";
 
 export interface EvaluateOptions {
@@ -15,10 +15,14 @@ export interface EvaluateOptions {
 export async function evaluatePR(
   registryConfig: RegistryConfig,
   github: Octokit,
-  params: GetPullRequestParams,
+  ref: PullRequestRef,
   options: EvaluateOptions = {},
 ): Promise<Effect[]> {
-  const { data: pr } = await github.pulls.get(params);
+  const { data: pr } = await github.pulls.get({
+    owner: ref.owner,
+    repo: ref.repo,
+    pull_number: ref.number,
+  });
 
   const context = contextFromPullRequest(github, pr, {
     botSlug: options.botSlug ?? "",
@@ -32,26 +36,25 @@ export async function evaluatePR(
 export async function evaluateIssue(
   registryConfig: RegistryConfig,
   github: Octokit,
-  params: GetIssueParams,
+  ref: IssueRef,
   options: EvaluateOptions = {},
 ): Promise<Effect[]> {
-  const { data: issue } = await github.issues.get(params);
+  const { data: issue } = await github.issues.get({
+    owner: ref.owner,
+    repo: ref.repo,
+    issue_number: ref.number,
+  });
 
   // PRs and issues share a numbering space; issues.get happily returns the
   // issue view of a PR. Route those through the PR path so PR rules run.
   if (issue.pull_request) {
-    return evaluatePR(
-      registryConfig,
-      github,
-      { owner: params.owner, repo: params.repo, pull_number: params.issue_number },
-      options,
-    );
+    return evaluatePR(registryConfig, github, ref, options);
   }
 
   const context = contextFromIssue(
     github,
     issue,
-    { owner: params.owner, repo: params.repo },
+    { owner: ref.owner, repo: ref.repo },
     {
       botSlug: options.botSlug ?? "",
       dryRun: options.dryRun,
@@ -83,7 +86,7 @@ export async function evaluateRecentPRs(
 
   for (const pr of recentPRs) {
     try {
-      await evaluatePR(registryConfig, github, { owner, repo, pull_number: pr.number }, options);
+      await evaluatePR(registryConfig, github, { owner, repo, number: pr.number }, options);
     } catch (err) {
       console.error(`Failed to evaluate PR ${repoFullName}#${pr.number}:`, err);
     }

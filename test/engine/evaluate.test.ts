@@ -33,7 +33,7 @@ describe("evaluatePR", () => {
     await evaluatePR(config, github as never, {
       owner: "home-assistant",
       repo: "core",
-      pull_number: 42,
+      number: 42,
     });
 
     expect(github.pulls.get).toHaveBeenCalledWith(expect.objectContaining({ pull_number: 42 }));
@@ -58,7 +58,7 @@ describe("evaluateIssue", () => {
     await evaluateIssue(config, github as never, {
       owner: "home-assistant",
       repo: "core",
-      issue_number: 7,
+      number: 7,
     });
 
     expect(github.issues.get).toHaveBeenCalledWith(expect.objectContaining({ issue_number: 7 }));
@@ -88,7 +88,7 @@ describe("evaluateIssue", () => {
     await evaluateIssue(config, github as never, {
       owner: "home-assistant",
       repo: "core",
-      issue_number: 42,
+      number: 42,
     });
 
     expect(github.pulls.get).toHaveBeenCalledWith(expect.objectContaining({ pull_number: 42 }));
