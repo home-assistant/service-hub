@@ -685,5 +685,3 @@ exports[`webhook fixture snapshots home-assistant-core pull_request_review.submi
   },
 ]
 `;
-
-exports[`webhook fixture snapshots home-assistant-core push.codeowners-touched 1`] = `[]`;

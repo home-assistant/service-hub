@@ -5,7 +5,6 @@ import { ensureDashboardCommentExists, upsertDashboardComment } from "./dashboar
 import { parseOverrides } from "./dashboard/overrides.js";
 import type { DashboardSection } from "./dashboard/types.js";
 import { EventType } from "./event.js";
-import { invalidateCodeowners } from "./model/repository.js";
 import type { RuleContext } from "./rule-context.js";
 import type { Command, Effect, Rule } from "./types.js";
 
@@ -187,11 +186,10 @@ async function convertPullRequestToDraft(github: Octokit, nodeId: string): Promi
 
 /** Convert the PR to draft unless it's already one */
 async function draftPRIfNotDraft(context: RuleContext): Promise<void> {
-  const target = context.target;
-  if (target?.kind !== "pull_request") return;
+  if (context.target.kind !== "pull_request") return;
   try {
-    if (await target.isDraft()) return;
-    await convertPullRequestToDraft(context.github, await target.nodeId());
+    if (await context.target.isDraft()) return;
+    await convertPullRequestToDraft(context.github, await context.target.nodeId());
   } catch (err) {
     log.warn("draftPRIfNotDraft failed", { error: String(err) });
   }
@@ -206,15 +204,14 @@ async function markPullRequestReadyForReview(github: Octokit, nodeId: string): P
 
 /** Remove the draft status unless the PR already has none. */
 async function readyPRIfDraft(context: RuleContext): Promise<void> {
-  const target = context.target;
-  if (target?.kind !== "pull_request") return;
-  if (!(await target.isDraft())) return;
-  await markPullRequestReadyForReview(context.github, await target.nodeId());
+  if (context.target.kind !== "pull_request") return;
+  if (!(await context.target.isDraft())) return;
+  await markPullRequestReadyForReview(context.github, await context.target.nodeId());
 }
 
 /** Update the PR branch; surface API failures (conflicts, …) to the thread. */
 async function updateBranchOrExplain(context: RuleContext): Promise<void> {
-  if (context.target?.kind !== "pull_request") return;
+  if (context.target.kind !== "pull_request") return;
   try {
     await context.github.pulls.updateBranch(context.pullParams());
   } catch (err) {
@@ -229,7 +226,7 @@ async function updateBranchOrExplain(context: RuleContext): Promise<void> {
 
 /** Re-draft if the existing ha-bot aggregate on head SHA is failing. */
 async function maybeRedraftOnReady(context: RuleContext): Promise<void> {
-  if (context.target?.kind !== "pull_request") return;
+  if (context.target.kind !== "pull_request") return;
   try {
     const headSha = await context.target.headSha();
     const { data: statuses } = await context.github.repos.listCommitStatusesForRef(
@@ -276,9 +273,7 @@ async function syncDashboardAndStatus(
   newSections: DashboardSection[],
   config: ApplyEffectsConfig,
 ): Promise<void> {
-  const target = context.target;
-  if (!target) return;
-  const overrides = parseOverrides(await target.body());
+  const overrides = parseOverrides(await context.target.body());
   const result = await upsertDashboardComment(
     context.github,
     context.issueParams(),
@@ -287,8 +282,8 @@ async function syncDashboardAndStatus(
     overrides,
   );
   if (!result) return;
-  if (target.kind !== "pull_request") return;
-  const headSha = await target.headSha();
+  if (context.target.kind !== "pull_request") return;
+  const headSha = await context.target.headSha();
   if (!headSha) return;
 
   const aggregate = aggregateDashboardStatus(result.sections);
@@ -431,7 +426,6 @@ function syntheticLabelContext(
   labels: string[],
 ): RuleContext | undefined {
   const target = context.target;
-  if (!target) return undefined;
   if (target.kind === "pull_request") {
     const pr = target.withLabels(labels);
     return change.action === "labeled"
@@ -459,7 +453,7 @@ async function runLabelLoop(
   initialEffects: Effect[],
 ): Promise<Effect[]> {
   const isLabelEffect = (e: Effect) => e.type === "addLabels" || e.type === "removeLabels";
-  if (!initialEffects.some(isLabelEffect) || !context.target) return initialEffects;
+  if (!initialEffects.some(isLabelEffect)) return initialEffects;
 
   const initialNames = new Set(await context.target.labels());
   const current = new Set(initialNames);
@@ -516,15 +510,6 @@ export async function dispatch(
 ): Promise<Effect[]> {
   if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW && !context.dryRun) {
     await maybeRedraftOnReady(context);
-  }
-
-  const event = context.event;
-  if (
-    event.type === EventType.PUSH &&
-    event.toDefaultBranch &&
-    event.touched.includes("CODEOWNERS")
-  ) {
-    invalidateCodeowners(context.repository);
   }
 
   const initialEffects = await runMatchedRules(registryConfig, context);

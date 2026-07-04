@@ -66,11 +66,7 @@ export function loadFixtures(dir: string): Fixture[] {
     .map((file) => {
       const name = file.slice(0, -".json".length);
       const [event, action] = name.split(".");
-      // Action-less deliveries (push) are keyed by the bare event name, so
-      // their fixtures are `<event>[.variant].json`.
-      const eventType = (
-        KNOWN_EVENT_TYPES.has(`${event}.${action}`) ? `${event}.${action}` : event
-      ) as EventType;
+      const eventType = `${event}.${action}` as EventType;
       if (!KNOWN_EVENT_TYPES.has(eventType)) {
         throw new Error(
           `Fixture "${file}" does not encode a known event type — name it <event>.<action>[.variant].json`,

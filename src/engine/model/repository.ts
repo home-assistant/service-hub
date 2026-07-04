@@ -16,15 +16,6 @@ const codeownersByRepo = new Map<
 >();
 
 /**
- * Drop the cached CODEOWNERS for a repo — called by the dispatcher when a
- * push to the default branch touches the file, so the next read refetches
- * immediately instead of waiting out the TTL.
- */
-export function invalidateCodeowners(repoFullName: string): void {
-  codeownersByRepo.delete(repoFullName);
-}
-
-/**
  * Read-model of the repository an event happened in. Everything sync here is
  * present in every webhook payload's `repository` object.
  */

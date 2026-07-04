@@ -12,7 +12,6 @@ import type {
   PullRequestReviewSubmittedEvent,
   PullRequestSynchronizeEvent,
   PullRequestUnlabeledEvent,
-  PushEvent,
 } from "@octokit/webhooks-types";
 import { CommandContext, parseCommand } from "../command-context.js";
 import type { RegistryConfig } from "../dispatch.js";
@@ -36,8 +35,7 @@ export type WebhookEventPayload =
   | PullRequestReopenedEvent
   | PullRequestReviewSubmittedEvent
   | PullRequestSynchronizeEvent
-  | PullRequestUnlabeledEvent
-  | PushEvent;
+  | PullRequestUnlabeledEvent;
 
 export interface AdapterOptions {
   botSlug: string;
@@ -152,22 +150,6 @@ function eventFromPayload(payload: WebhookEventPayload, eventType: EventType): R
         commentBody: p.comment?.body ?? "",
       };
     }
-    case EventType.PUSH: {
-      const p = payload as Partial<PushEvent>;
-      const ref = p.ref ?? "";
-      const touched = new Set<string>();
-      for (const commit of p.commits ?? []) {
-        for (const path of [...commit.added, ...commit.modified, ...commit.removed]) {
-          touched.add(path);
-        }
-      }
-      return {
-        type: eventType,
-        ref,
-        toDefaultBranch: ref === `refs/heads/${p.repository?.default_branch ?? ""}`,
-        touched: [...touched],
-      };
-    }
     default:
       return { type: eventType } as RuleEvent;
   }
@@ -224,7 +206,7 @@ export function contextFromWebhook(
     sender: senderFromLogin(payload.sender?.login ?? "", payload.sender?.type === "Bot"),
     repo,
     org: new Org(github, repo.owner),
-    target: eventType === EventType.PUSH ? null : targetFromPayload(github, payload, repo),
+    target: targetFromPayload(github, payload, repo),
     ...opts,
   });
 }
