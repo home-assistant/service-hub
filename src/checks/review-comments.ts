@@ -10,23 +10,13 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-const ACK_REACTIONS = ["+1", "heart", "hooray", "rocket"] as const;
 const SECTION_ID = "review-comments";
 const SECTION_TITLE = "Review comments";
 const MAX_LINKS = 10;
 
-/**
- * Acknowledgement via the reactions rollup each review comment carries —
- * no per-comment reaction fetches. The rollup has no reactor identity, so
- * any ack-type reaction counts, not just the PR author's.
- */
-function hasAckReaction(
-  reactions: Partial<Record<(typeof ACK_REACTIONS)[number], number>> | undefined,
-): boolean {
-  if (!reactions) return false;
-  return ACK_REACTIONS.some((kind) => (reactions[kind] ?? 0) > 0);
-}
-
+// Acknowledgement means an in-thread reply. Reactions can't count: GitHub
+// emits no webhook for them and they don't bump the PR's updated_at, so
+// neither an event nor the cron sweep would ever notice one.
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
   const authorLogin = (await ctx.target.authorLogin()).toLowerCase();
   const reviewComments = await ctx.target.reviewComments();
@@ -57,7 +47,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
       .map((c) => c.in_reply_to_id as number),
   );
 
-  const unresolved = topLevel.filter((c) => !repliedTo.has(c.id) && !hasAckReaction(c.reactions));
+  const unresolved = topLevel.filter((c) => !repliedTo.has(c.id));
 
   if (unresolved.length === 0) {
     return [
@@ -67,7 +57,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
           id: SECTION_ID,
           title: SECTION_TITLE,
           status: "pass",
-          message: "All inline review comments addressed (replied or acknowledged).",
+          message: "All inline review comments replied to.",
         },
       },
     ];
@@ -95,7 +85,7 @@ export const reviewComments: Rule = {
   name: "review-comments",
   description:
     "Surfaces unresolved inline review comments as a dashboard row; fails until each " +
-    "comment has been replied to or acknowledged via reaction.",
+    "comment has been replied to.",
   dashboardSections: [SECTION_ID],
   events: {
     [EventType.PULL_REQUEST_OPENED]: evaluate,

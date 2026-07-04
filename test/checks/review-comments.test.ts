@@ -55,7 +55,7 @@ describe("review-comments", () => {
     expect(result?.dashboard?.status).toBe("pass");
   });
 
-  it("passes when reviewer comment is acknowledged via reaction", async () => {
+  it("does not treat reactions as acknowledgement", async () => {
     const { github } = setupHarness([
       reviewComment({ id: 1, user: "reviewer", reactions: { "+1": 1 } }),
     ]);
@@ -66,7 +66,7 @@ describe("review-comments", () => {
     });
 
     const result = await runRule(reviewComments, context);
-    expect(result?.dashboard?.status).toBe("pass");
+    expect(result?.dashboard?.status).toBe("fail");
   });
 
   it("fails when reviewer comments are unaddressed and links to each one", async () => {
