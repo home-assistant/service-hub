@@ -14,7 +14,7 @@ bun run format       # Auto-fix formatting
 
 ## Webhook subscriptions
 
-The GitHub App only needs four event subscriptions: **Issues**, **Issue comment**, **Pull request**, and **Pull request review**. Everything else is dropped at the door (`KNOWN_EVENT_TYPES` in `src/index.ts`) — in particular CI events (workflow runs/jobs, check runs/suites) and pushes are pure noise today and make up the vast majority of delivery volume, so leave them unsubscribed. Two subscriptions will become necessary for planned work (see TODOs): **Workflow run** and **Check run**, for the CI-job-failure rules and for reading job results like `detect-non-english-issues` as flags.
+The GitHub App only needs four event subscriptions: **Issues**, **Issue comment**, **Pull request**, and **Pull request review**. Everything else is dropped at the door (`KNOWN_EVENT_TYPES` in `src/index.ts`) — in particular CI events (workflow runs/jobs, check runs/suites) and pushes are pure noise today and make up the vast majority of delivery volume, so leave them unsubscribed. Some subscriptions will become necessary for planned work (see TODOs): **Workflow run** and **Check run** for the CI-job-failure rules and for reading job results like `detect-non-english-issues` as flags, and **Pull request review comment** + **Pull request review thread** to re-run the `review-comments` check the moment an inline comment is replied to, acknowledged, or resolved — today that check only refreshes on PR-level events and the cron sweep.
 
 ## Overriding a dashboard check
 
