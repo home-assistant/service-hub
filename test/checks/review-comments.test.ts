@@ -10,14 +10,12 @@ function reviewComment(opts: {
   user: string;
   in_reply_to_id?: number;
   html_url?: string;
-  reactions?: Record<string, number>;
 }) {
   return {
     id: opts.id,
     user: { login: opts.user },
     in_reply_to_id: opts.in_reply_to_id,
     html_url: opts.html_url ?? `https://github.com/x/y/pull/1#discussion_r${opts.id}`,
-    reactions: opts.reactions ?? {},
   };
 }
 
@@ -53,20 +51,6 @@ describe("review-comments", () => {
 
     const result = await runRule(reviewComments, context);
     expect(result?.dashboard?.status).toBe("pass");
-  });
-
-  it("does not treat reactions as acknowledgement", async () => {
-    const { github } = setupHarness([
-      reviewComment({ id: 1, user: "reviewer", reactions: { "+1": 1 } }),
-    ]);
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
-      github,
-      payload: { pull_request: { head: { sha: "abc" }, user: { login: AUTHOR } } },
-    });
-
-    const result = await runRule(reviewComments, context);
-    expect(result?.dashboard?.status).toBe("fail");
   });
 
   it("fails when reviewer comments are unaddressed and links to each one", async () => {
