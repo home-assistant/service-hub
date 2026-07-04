@@ -1,5 +1,10 @@
 {
-  "files": [{ "filename": "homeassistant/components/hue/light.py", "additions": 12 }],
+  "files": [
+    {
+      "filename": "homeassistant/components/hue/light.py",
+      "additions": 12
+    }
+  ],
   "mergeableState": "dirty",
   "codeowners": "homeassistant/components/hue/* @balloob\n",
   "remote": {
@@ -9,6 +14,11 @@
       "quality_scale": "platinum",
       "codeowners": ["@balloob"]
     },
-    "analytics.home-assistant.io": { "integrations": { "hue": 150000, "mqtt": 90000 } }
+    "analytics.home-assistant.io": {
+      "integrations": {
+        "hue": 150000,
+        "mqtt": 90000
+      }
+    }
   }
 }

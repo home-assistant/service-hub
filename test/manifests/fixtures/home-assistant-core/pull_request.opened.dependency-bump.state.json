@@ -1,3 +1,8 @@
 {
-  "files": [{ "filename": "requirements_all.txt", "additions": 2 }]
+  "files": [
+    {
+      "filename": "requirements_all.txt",
+      "additions": 2
+    }
+  ]
 }

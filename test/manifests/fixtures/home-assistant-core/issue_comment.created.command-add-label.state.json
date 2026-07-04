@@ -4,7 +4,7 @@
       "domain": "hue",
       "name": "Philips Hue",
       "quality_scale": "platinum",
-      "codeowners": ["@justanotherariel"]
+      "codeowners": ["@contributor"]
     }
   }
 }

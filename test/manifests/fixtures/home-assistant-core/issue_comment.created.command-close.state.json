@@ -3,7 +3,7 @@
     "components/hue/manifest.json": {
       "domain": "hue",
       "name": "Philips Hue",
-      "codeowners": ["@justanotherariel"]
+      "codeowners": ["@contributor"]
     }
   }
 }

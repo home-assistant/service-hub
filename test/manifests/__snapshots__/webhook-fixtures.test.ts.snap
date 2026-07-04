@@ -61,7 +61,7 @@ exports[`webhook fixture snapshots home-assistant-core issues.labeled.integratio
     "type": "addAssignees",
   },
   {
-    "body": "Hey there @balloob, mind taking a look at this issue as it has been labeled with an integration (\`hue\`) you are listed as a [code owner](https://github.com/justanotherariel/hass_core/blob/HEAD/CODEOWNERS#L1) for? Thanks!",
+    "body": "Hey there @balloob, mind taking a look at this issue as it has been labeled with an integration (\`hue\`) you are listed as a [code owner](https://github.com/home-assistant/core/blob/HEAD/CODEOWNERS#L1) for? Thanks!",
     "type": "comment",
   },
 ]
@@ -189,7 +189,7 @@ exports[`webhook fixture snapshots home-assistant-core pull_request.labeled.inte
     "type": "addAssignees",
   },
   {
-    "body": "Hey there @balloob, mind taking a look at this pull request as it has been labeled with an integration (\`hue\`) you are listed as a [code owner](https://github.com/justanotherariel/hass_core/blob/HEAD/CODEOWNERS#L1) for? Thanks!",
+    "body": "Hey there @balloob, mind taking a look at this pull request as it has been labeled with an integration (\`hue\`) you are listed as a [code owner](https://github.com/home-assistant/core/blob/HEAD/CODEOWNERS#L1) for? Thanks!",
     "type": "comment",
   },
   {
@@ -273,7 +273,7 @@ exports[`webhook fixture snapshots home-assistant-core pull_request.opened.bugfi
     "type": "addAssignees",
   },
   {
-    "body": "Hey there @balloob, mind taking a look at this pull request as it has been labeled with an integration (\`hue\`) you are listed as a [code owner](https://github.com/justanotherariel/hass_core/blob/HEAD/CODEOWNERS#L1) for? Thanks!",
+    "body": "Hey there @balloob, mind taking a look at this pull request as it has been labeled with an integration (\`hue\`) you are listed as a [code owner](https://github.com/home-assistant/core/blob/HEAD/CODEOWNERS#L1) for? Thanks!",
     "type": "comment",
   },
   {
