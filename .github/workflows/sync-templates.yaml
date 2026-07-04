@@ -1,0 +1,48 @@
+name: Sync PR templates
+
+# Keep fixture bodies coupled to the upstream PR templates: vendor the live
+# template, re-render the fixture bodies from it, refresh the snapshots, and
+# open a PR when anything changed — its diff shows the template change, the
+# regenerated bodies, and the snapshot fallout in one place. A removed or
+# reworded checkbox that a fixture ticks fails the render step, turning the
+# scheduled run red instead of silently drifting.
+
+on:
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install
+
+      - run: bun run sync-templates
+
+      - run: bun run update-fixture-bodies
+
+      - run: bun test --update-snapshots
+
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bot/sync-pr-templates
+          delete-branch: true
+          commit-message: Sync fixture bodies with the upstream PR template
+          title: Sync fixture bodies with the upstream PR template
+          body: >-
+            The upstream PR template changed. This PR vendors the new template,
+            re-renders the fixture bodies from it, and refreshes the pipeline
+            snapshots — review the snapshot diff for behavioral fallout
+            (e.g. a type-of-change label disappearing means a rule no longer
+            matches the reworded checkbox).
