@@ -10,7 +10,8 @@
     "format": "biome check --write .",
     "test": "bun test",
     "test:coverage": "bun test --coverage",
-    "test:watch": "bun test --watch"
+    "test:watch": "bun test --watch",
+    "capture": "bun scripts/capture-webhooks.ts"
   },
   "dependencies": {
     "@octokit/auth-app": "^8.2.0",

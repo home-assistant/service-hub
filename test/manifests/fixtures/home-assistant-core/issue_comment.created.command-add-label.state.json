@@ -1,0 +1,10 @@
+{
+  "remote": {
+    "components/hue/manifest.json": {
+      "domain": "hue",
+      "name": "Philips Hue",
+      "quality_scale": "platinum",
+      "codeowners": ["@justanotherariel"]
+    }
+  }
+}

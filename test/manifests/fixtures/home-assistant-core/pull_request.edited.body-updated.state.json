@@ -1,0 +1,6 @@
+{
+  "files": [
+    { "filename": "homeassistant/components/hue/light.py", "additions": 12 },
+    { "filename": "tests/components/hue/test_light.py", "additions": 40 }
+  ]
+}

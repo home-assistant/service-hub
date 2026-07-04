@@ -1,0 +1,16 @@
+{
+  "files": [
+    { "filename": "homeassistant/components/hue/light.py", "additions": 12 },
+    { "filename": "tests/components/hue/test_light.py", "additions": 40 }
+  ],
+  "codeowners": "homeassistant/components/hue/* @balloob\n",
+  "remote": {
+    "components/hue/manifest.json": {
+      "domain": "hue",
+      "name": "Philips Hue",
+      "quality_scale": "platinum",
+      "codeowners": ["@balloob"]
+    },
+    "analytics.home-assistant.io": { "integrations": { "hue": 150000, "mqtt": 90000 } }
+  }
+}
