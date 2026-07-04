@@ -13,6 +13,13 @@ export enum EventType {
   PULL_REQUEST_UNLABELED = "pull_request.unlabeled",
 
   /**
+   * Repo-scoped (the only action-less webhook we consume): there is no
+   * target PR/issue, so `context.target` is null and label/dashboard
+   * effects don't apply. Rules get the pushed ref and the touched paths.
+   */
+  PUSH = "push",
+
+  /**
    * Synthetic PR event to reevaluate a rule (cron sweep, `/<slug> update`).
    */
   ON_DEMAND = "on_demand",
@@ -54,6 +61,14 @@ export interface RuleEventMap {
   };
   [EventType.PULL_REQUEST_SYNCHRONIZE]: { type: EventType.PULL_REQUEST_SYNCHRONIZE };
   [EventType.PULL_REQUEST_UNLABELED]: { type: EventType.PULL_REQUEST_UNLABELED; label: string };
+  [EventType.PUSH]: {
+    type: EventType.PUSH;
+    /** Full ref, e.g. "refs/heads/dev". */
+    ref: string;
+    toDefaultBranch: boolean;
+    /** Paths added, modified, or removed across the push's commits. */
+    touched: string[];
+  };
   [EventType.ON_DEMAND]: { type: EventType.ON_DEMAND };
   [EventType.ISSUES_ON_DEMAND]: { type: EventType.ISSUES_ON_DEMAND };
 }

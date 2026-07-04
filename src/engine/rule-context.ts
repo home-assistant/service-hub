@@ -29,6 +29,7 @@ interface TargetMap {
   [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: PullRequest;
   [EventType.PULL_REQUEST_SYNCHRONIZE]: PullRequest;
   [EventType.PULL_REQUEST_UNLABELED]: PullRequest;
+  [EventType.PUSH]: null;
   [EventType.ON_DEMAND]: PullRequest;
   [EventType.ISSUES_ON_DEMAND]: Issue;
 }
@@ -89,8 +90,9 @@ export class RuleContext<E extends EventType = EventType> {
     return this.sender.isBot;
   }
 
+  /** The target's number; 0 for repo-scoped events (push). */
   get number(): number {
-    return this.target.number;
+    return this.target?.number ?? 0;
   }
 
   /** Bot's commit-status creator login, e.g. "ha-bot[bot]". */

@@ -68,7 +68,8 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
   }
   const event = request.headers.get("x-github-event") ?? "";
   const action = (raw.action as string) ?? "";
-  const rawEventType = `${event}.${action}`;
+  // Action-less deliveries (push) are keyed by the bare event name.
+  const rawEventType = action ? `${event}.${action}` : event;
 
   // Skip events without repository scope
   if (!raw.repository || typeof raw.repository !== "object") {
@@ -114,7 +115,7 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
     }
   }
 
-  if (isPullRequestEvent(event) || isIssueEvent(event)) {
+  if (isPullRequestEvent(event) || isIssueEvent(event) || event === "push") {
     const context = contextFromWebhook(octokit, payload, eventType, {
       botSlug: env.BOT_SLUG,
       dryRun: isDryRun(env),
