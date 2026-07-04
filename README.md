@@ -34,6 +34,10 @@ Rules communicate through labels: one rule's `addLabels`/`removeLabels` effect c
 
 Commenting `/<slug> <command> [args]` on a PR or issue invokes a command (e.g. `/ha-bot rename New title`). Commands are declared per repo in the manifest next to the checks and, like checks, return effects rather than calling GitHub directly — a command's label changes run through the label loop, so label-triggered checks react to them immediately (the bot's own mutations arrive as self-webhooks, which are dropped). Each command declares its constraints — argument requirement, PR/issue scope, and permission tier (`none`, `code_owner` for the labeled integration's manifest code owners, `member` for org members) — which the dispatcher enforces before the handler runs. The invoking comment gets a 👍 reaction on success and a 👎 when the command is unknown, malformed, out of scope, denied, or fails.
 
+## Pipeline scenario snapshots
+
+Because rules (and commands) interact through the label loop, a change to one rule can alter side-effects far away from it. `test/manifests/` pins this down: each scenario runs a realistic webhook or command through the real manifest registry — full pipeline, label loop included — and snapshots the resulting effect list. If a rule change alters what the bot would do in any covered situation, the snapshot diff shows it. Review such diffs deliberately and regenerate with `bun test --update-snapshots`; add a scenario whenever a new rule interaction is worth pinning down.
+
 ## TODOs
 
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
