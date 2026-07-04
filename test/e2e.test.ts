@@ -1,7 +1,7 @@
 import { describe, expect, it, mock } from "bun:test";
-import type { Command } from "../src/commands/types.js";
+import type { CommandContext } from "../src/engine/command-context.js";
 import { EventType } from "../src/engine/event.js";
-import type { Rule } from "../src/engine/types.js";
+import type { Command, Rule } from "../src/engine/types.js";
 import { commentPayload, createE2EHarness, prOpenedPayload } from "./helpers/e2e.js";
 
 describe("e2e: webhook delivery", () => {
@@ -120,26 +120,32 @@ describe("e2e: webhook delivery", () => {
 });
 
 describe("e2e: bot commands", () => {
-  it("runs a matched /ha-bot command and posts a +1 reaction", async () => {
-    const handle = mock().mockResolvedValue(undefined);
-    const ping: Command = { name: "ping", handle };
+  const pingCommand = (handle: Command["handle"]): Command => ({
+    name: "ping",
+    description: "",
+    permission: "none",
+    handle,
+  });
+
+  it("runs a matched /ha-bot command, applies its effects, and posts a +1 reaction", async () => {
+    const handle = mock().mockResolvedValue([{ type: "setTitle", title: "pinged" }]);
 
     const harness = createE2EHarness({
-      commandConfig: {
-        repositories: { "home-assistant/core": [ping] },
+      config: {
+        repositories: {},
+        commands: { "home-assistant/core": [pingCommand(handle)] },
       },
     });
 
     const res = await harness.deliver("issue_comment", commentPayload("/ha-bot ping"));
 
     expect(res.status).toBe(200);
-    expect(handle).toHaveBeenCalledWith(
-      expect.objectContaining({
-        owner: "home-assistant",
-        repo: "core",
-        issueNumber: 1,
-        isPullRequest: true,
-      }),
+    const context = handle.mock.calls[0][0] as CommandContext;
+    expect(context.repository).toBe("home-assistant/core");
+    expect(context.number).toBe(1);
+    expect(context.target.kind).toBe("pull_request");
+    expect(harness.github.issues.update).toHaveBeenCalledWith(
+      expect.objectContaining({ issue_number: 1, title: "pinged" }),
     );
     expect(harness.github.reactions.createForIssueComment).toHaveBeenCalledWith(
       expect.objectContaining({ comment_id: 42, content: "+1" }),
@@ -150,8 +156,9 @@ describe("e2e: bot commands", () => {
     const handle = mock().mockResolvedValue(undefined);
 
     const harness = createE2EHarness({
-      commandConfig: {
-        repositories: { "home-assistant/core": [{ name: "ping", handle }] },
+      config: {
+        repositories: {},
+        commands: { "home-assistant/core": [pingCommand(handle)] },
       },
     });
 
@@ -163,9 +170,9 @@ describe("e2e: bot commands", () => {
     );
 
     expect(res.status).toBe(200);
-    expect(handle).toHaveBeenCalledWith(
-      expect.objectContaining({ issueNumber: 5, isPullRequest: false }),
-    );
+    const context = handle.mock.calls[0][0] as CommandContext;
+    expect(context.number).toBe(5);
+    expect(context.target.kind).toBe("issue");
     expect(harness.github.reactions.createForIssueComment).toHaveBeenCalledWith(
       expect.objectContaining({ comment_id: 42, content: "+1" }),
     );
@@ -173,8 +180,9 @@ describe("e2e: bot commands", () => {
 
   it("posts a -1 reaction when the command is unknown", async () => {
     const harness = createE2EHarness({
-      commandConfig: {
-        repositories: { "home-assistant/core": [{ name: "ping", handle: mock() }] },
+      config: {
+        repositories: {},
+        commands: { "home-assistant/core": [pingCommand(mock())] },
       },
     });
 
@@ -189,8 +197,9 @@ describe("e2e: bot commands", () => {
     const handle = mock();
 
     const harness = createE2EHarness({
-      commandConfig: {
-        repositories: { "home-assistant/core": [{ name: "ping", handle }] },
+      config: {
+        repositories: {},
+        commands: { "home-assistant/core": [pingCommand(handle)] },
       },
     });
 

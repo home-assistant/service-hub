@@ -1,14 +1,16 @@
 import type { Octokit } from "@octokit/rest";
 import { log } from "../log.js";
+import type { CommandContext } from "./command-context.js";
 import { ensureDashboardCommentExists, upsertDashboardComment } from "./dashboard/comment.js";
 import { parseOverrides } from "./dashboard/overrides.js";
 import type { DashboardSection } from "./dashboard/types.js";
 import { EventType } from "./event.js";
 import type { RuleContext } from "./rule-context.js";
-import type { Effect, Rule } from "./types.js";
+import type { Command, Effect, Rule } from "./types.js";
 
 export interface RegistryConfig {
   repositories: Record<string, Rule[]>;
+  commands?: Record<string, Command[]>;
 }
 
 export function matchRules(registryConfig: RegistryConfig, context: RuleContext): Rule[] {
@@ -57,6 +59,7 @@ async function applyEffects(
   const removeLabels = new Set<string>();
   const dashboardSections = new Map<string, DashboardSection>();
   const assignees = new Set<string>();
+  const removeAssignees = new Set<string>();
   // Set: the label loop can run a rule twice per dispatch; identical comments post once.
   const comments = new Set<string>();
   const ops: Promise<unknown>[] = [];
@@ -105,6 +108,24 @@ async function applyEffects(
           ),
         );
         break;
+      case "setTitle":
+        ops.push(context.github.issues.update(context.issueParams({ title: effect.title })));
+        break;
+      case "setState":
+        ops.push(context.github.issues.update(context.issueParams({ state: effect.state })));
+        break;
+      case "removeAssignees":
+        for (const a of effect.assignees) removeAssignees.add(a);
+        break;
+      case "convertToDraft":
+        ops.push(draftPRIfNotDraft(context));
+        break;
+      case "markReadyForReview":
+        ops.push(readyPRIfDraft(context));
+        break;
+      case "updateBranch":
+        ops.push(updateBranchOrExplain(context));
+        break;
     }
   }
 
@@ -138,6 +159,14 @@ async function applyEffects(
     );
   }
 
+  if (removeAssignees.size > 0) {
+    ops.push(
+      context.github.issues.removeAssignees(
+        context.issueParams({ assignees: [...removeAssignees] }),
+      ),
+    );
+  }
+
   const settled = await Promise.allSettled(ops);
   for (const outcome of settled) {
     if (outcome.status === "rejected") {
@@ -163,6 +192,35 @@ async function draftPRIfNotDraft(context: RuleContext): Promise<void> {
     await convertPullRequestToDraft(context.github, await context.target.nodeId());
   } catch (err) {
     log.warn("draftPRIfNotDraft failed", { error: String(err) });
+  }
+}
+
+async function markPullRequestReadyForReview(github: Octokit, nodeId: string): Promise<void> {
+  await github.graphql(
+    "mutation($id: ID!) { markPullRequestReadyForReview(input: {pullRequestId: $id}) { clientMutationId } }",
+    { id: nodeId },
+  );
+}
+
+/** Remove the draft status unless the PR already has none. */
+async function readyPRIfDraft(context: RuleContext): Promise<void> {
+  if (context.target.kind !== "pull_request") return;
+  if (!(await context.target.isDraft())) return;
+  await markPullRequestReadyForReview(context.github, await context.target.nodeId());
+}
+
+/** Update the PR branch; surface API failures (conflicts, …) to the thread. */
+async function updateBranchOrExplain(context: RuleContext): Promise<void> {
+  if (context.target.kind !== "pull_request") return;
+  try {
+    await context.github.pulls.updateBranch(context.pullParams());
+  } catch (err) {
+    const e = err as { response?: { data?: { message?: string } }; message?: string };
+    const message = e.response?.data?.message || e.message || "Unknown error";
+    await context.github.issues.createComment(
+      context.issueParams({ body: `Failed to update branch: ${message}` }),
+    );
+    throw err;
   }
 }
 
@@ -461,4 +519,111 @@ export async function dispatch(
     knownSectionIds: collectKnownDashboardSectionIds(registryConfig, context),
   });
   return effects;
+}
+
+export function findCommand(
+  registryConfig: RegistryConfig,
+  repository: string,
+  name: string,
+): Command | undefined {
+  return (registryConfig.commands?.[repository] ?? []).find((command) => command.name === name);
+}
+
+/** Why the invocation may not run, or undefined when it may. */
+async function commandRejection(
+  command: Command | undefined,
+  context: CommandContext,
+): Promise<string | undefined> {
+  if (!context.command) return "unparseable invocation";
+  if (!command) return `unknown command "${context.command.name}"`;
+  if (command.args === "required" && !context.command.args) return "missing argument";
+
+  const scope = command.scope ?? "both";
+  if (scope === "pull_request" && context.target.kind !== "pull_request") {
+    return "only available on pull requests";
+  }
+  if (scope === "issue" && context.target.kind !== "issue") return "only available on issues";
+
+  switch (command.permission) {
+    case "none":
+      return undefined;
+    case "member":
+      return (await context.senderIsMember()) ? undefined : "sender is not an org member";
+    case "code_owner":
+      return (await context.senderIsCodeOwner()) ? undefined : "sender is not a code owner";
+  }
+}
+
+async function react(context: CommandContext, content: "+1" | "-1"): Promise<void> {
+  if (context.dryRun) {
+    log.info("dry run", { repository: context.repository, reaction: content });
+    return;
+  }
+  try {
+    await context.github.reactions.createForIssueComment(
+      context.repoParams({ comment_id: context.commentId, content }),
+    );
+  } catch (err) {
+    log.warn("command reaction failed", { error: String(err) });
+  }
+}
+
+/**
+ * The command counterpart of dispatch(): validate the invocation against the
+ * command's declared constraints, run its handler, and apply the returned
+ * effects through the same label loop rules use — so a command's label
+ * changes re-trigger label-listening rules exactly like a human's would
+ * (command mutations arrive as self-webhooks, which the entrypoint drops).
+ * The invoking comment gets a 👍 on success and a 👎 on any rejection/error.
+ * Returns the applied effects (post label loop), undefined on rejection.
+ */
+export async function dispatchCommand(context: CommandContext): Promise<Effect[] | undefined> {
+  if (context.senderIsBot) return undefined;
+  const registryConfig = context.registry;
+
+  const command = context.command
+    ? findCommand(registryConfig, context.repository, context.command.name)
+    : undefined;
+  const rejection = await commandRejection(command, context);
+  if (rejection || !command) {
+    log.info("command rejected", {
+      repository: context.repository,
+      number: context.number,
+      sender: context.sender.login,
+      reason: rejection,
+    });
+    await react(context, "-1");
+    return undefined;
+  }
+
+  log.info("command", {
+    repository: context.repository,
+    number: context.number,
+    command: command.name,
+    sender: context.sender.login,
+  });
+
+  let effects: Effect[] | undefined;
+  try {
+    effects = await command.handle(context);
+  } catch (err) {
+    log.error("command failed", {
+      repository: context.repository,
+      number: context.number,
+      command: command.name,
+      error: String(err),
+    });
+    await react(context, "-1");
+    return undefined;
+  }
+
+  let finalEffects: Effect[] = [];
+  if (effects?.length) {
+    finalEffects = await runLabelLoop(registryConfig, context, effects);
+    await applyEffects(context, finalEffects, {
+      knownSectionIds: collectKnownDashboardSectionIds(registryConfig, context),
+    });
+  }
+  await react(context, "+1");
+  return finalEffects;
 }

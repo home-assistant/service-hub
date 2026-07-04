@@ -15,9 +15,28 @@ import { platinumApproval } from "../checks/platinum-approval.js";
 import { qualityScale } from "../checks/quality-scale.js";
 import { reviewComments } from "../checks/review-comments.js";
 import { wth } from "../checks/wth.js";
+import { close } from "../commands/close.js";
+import { addLabel } from "../commands/label-add.js";
+import { removeLabel } from "../commands/label-remove.js";
+import { markDraft } from "../commands/mark-draft.js";
+import { readyForReview } from "../commands/ready-for-review.js";
+import { rename } from "../commands/rename.js";
+import { reopen } from "../commands/reopen.js";
+import { unassign } from "../commands/unassign.js";
+import { update } from "../commands/update.js";
+import { updateBranch } from "../commands/update-branch.js";
 import type { RepoManifest } from "./types.js";
 
 const componentCodeowners = (domain: string) => `homeassistant/components/${domain}/*`;
+
+const MANAGEABLE_LABELS = [
+  "needs-more-information",
+  "problem in dependency",
+  "problem in custom component",
+  "problem in config",
+  "problem in device",
+  "feature-request",
+];
 
 export const homeAssistantCore: RepoManifest = {
   slug: "home-assistant/core",
@@ -51,5 +70,17 @@ export const homeAssistantCore: RepoManifest = {
     blockingLabels({
       "awaiting-frontend": { message: "This PR is awaiting changes to the frontend" },
     }),
+  ],
+  commands: [
+    update,
+    close,
+    reopen,
+    rename,
+    addLabel(MANAGEABLE_LABELS),
+    removeLabel(MANAGEABLE_LABELS),
+    unassign,
+    markDraft,
+    readyForReview,
+    updateBranch,
   ],
 };

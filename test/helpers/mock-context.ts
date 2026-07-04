@@ -21,6 +21,8 @@ export interface MockGitHub {
     get: MockFn;
     getLabel: MockFn;
     addAssignees: MockFn;
+    removeAssignees: MockFn;
+    update: MockFn;
   };
   pulls: {
     get: MockFn;
@@ -30,6 +32,7 @@ export interface MockGitHub {
     listReviews: MockFn;
     listReviewComments: MockFn;
     update: MockFn;
+    updateBranch: MockFn;
     requestReviewers: MockFn;
     dismissReview: MockFn;
     listCommits: MockFn;
@@ -44,6 +47,7 @@ export interface MockGitHub {
   };
   orgs: {
     getMembershipForUser: MockFn;
+    checkMembershipForUser: MockFn;
   };
   reactions: {
     createForIssueComment: MockFn;
@@ -117,6 +121,8 @@ export function createMockGitHub(): MockGitHub {
       get: mock().mockResolvedValue({ data: {} }),
       getLabel: mock().mockResolvedValue({ data: {} }),
       addAssignees: mock().mockResolvedValue({ data: {} }),
+      removeAssignees: mock().mockResolvedValue({ data: {} }),
+      update: mock().mockResolvedValue({ data: {} }),
     },
     pulls: {
       get: mock().mockResolvedValue({ data: {} }),
@@ -126,6 +132,7 @@ export function createMockGitHub(): MockGitHub {
       listReviews: mock().mockResolvedValue({ data: [] }),
       listReviewComments: mock().mockResolvedValue({ data: [] }),
       update: mock().mockResolvedValue({ data: {} }),
+      updateBranch: mock().mockResolvedValue({ data: {} }),
       requestReviewers: mock().mockResolvedValue({ data: {} }),
       dismissReview: mock().mockResolvedValue({ data: {} }),
       listCommits: mock().mockResolvedValue({ data: [] }),
@@ -140,6 +147,7 @@ export function createMockGitHub(): MockGitHub {
     },
     orgs: {
       getMembershipForUser: mock().mockResolvedValue({ data: { role: "member" } }),
+      checkMembershipForUser: mock().mockResolvedValue({ status: 204 }),
     },
     reactions: {
       createForIssueComment: mock().mockResolvedValue({ data: {} }),

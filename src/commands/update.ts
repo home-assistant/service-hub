@@ -1,17 +1,19 @@
 import { evaluateIssue, evaluatePR } from "../engine/evaluate.js";
-import { config } from "../manifests/index.js";
-import type { Command } from "./types.js";
+import type { Command } from "../engine/types.js";
 
-export const updateCommand: Command = {
+export const update: Command = {
   name: "update",
+  description: "Re-runs the bot's checks on the issue or pull request.",
+  permission: "none",
 
   async handle(context) {
-    const ref = { owner: context.owner, repo: context.repo, number: context.issueNumber };
-    const options = { botSlug: context.botSlug };
-    if (context.isPullRequest) {
-      await evaluatePR(config, context.github, ref, options);
+    const ref = { owner: context.repo.owner, repo: context.repo.name, number: context.number };
+    const options = { botSlug: context.botSlug, dryRun: context.dryRun };
+    if (context.target.kind === "pull_request") {
+      await evaluatePR(context.registry, context.github, ref, options);
     } else {
-      await evaluateIssue(config, context.github, ref, options);
+      await evaluateIssue(context.registry, context.github, ref, options);
     }
+    return undefined;
   },
 };

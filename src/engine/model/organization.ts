@@ -10,10 +10,36 @@ export class Org {
 
   private readonly github: Octokit;
   private teamCache = new Map<string, Promise<string[]>>();
+  private memberCache = new Map<string, Promise<boolean>>();
 
   constructor(github: Octokit, name: string) {
     this.github = github;
     this.name = name;
+  }
+
+  /** Whether the login is an organization member; false on any failure. */
+  hasMember(login: string): Promise<boolean> {
+    const key = login.toLowerCase();
+    let inflight = this.memberCache.get(key);
+    if (!inflight) {
+      inflight = this.github.orgs
+        .checkMembershipForUser({ org: this.name, username: login })
+        .then(() => true)
+        .catch((err: { status?: number }) => {
+          // 404: not a member; 302: the requester may not ask about this org.
+          if (err.status !== 404 && err.status !== 302) {
+            log.warn("Org.hasMember: fetch failed", {
+              org: this.name,
+              login,
+              error: String(err),
+            });
+            this.memberCache.delete(key);
+          }
+          return false;
+        });
+      this.memberCache.set(key, inflight);
+    }
+    return inflight;
   }
 
   /** Lowercased member logins of a team; empty on fetch failure. */

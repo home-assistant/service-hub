@@ -1,6 +1,5 @@
 import type { Octokit } from "@octokit/rest";
 import { sign } from "@octokit/webhooks-methods";
-import type { CommandRegistryConfig } from "../../src/commands/registry.js";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import type { Env } from "../../src/env.js";
 import { createBotApp } from "../../src/index.js";
@@ -9,11 +8,9 @@ import { createMockGitHub, type MockGitHub } from "./mock-context.js";
 const TEST_SECRET = "test-webhook-secret";
 
 const EMPTY_REGISTRY: RegistryConfig = { repositories: {} };
-const EMPTY_COMMAND_REGISTRY: CommandRegistryConfig = { repositories: {} };
 
 export interface E2EHarnessOptions {
   config?: RegistryConfig;
-  commandConfig?: CommandRegistryConfig;
   dryRun?: boolean;
 }
 
@@ -37,7 +34,6 @@ export function createE2EHarness(options: E2EHarnessOptions = {}): E2EHarness {
 
   const app = createBotApp({
     config: options.config ?? EMPTY_REGISTRY,
-    commandConfig: options.commandConfig ?? EMPTY_COMMAND_REGISTRY,
     createOctokit: () => github as unknown as Octokit,
   });
 

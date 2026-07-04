@@ -1,14 +1,16 @@
 import type { Octokit } from "@octokit/rest";
 import { verify } from "@octokit/webhooks-methods";
 import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
-import { dispatchCommand, isBotCommand } from "./commands/dispatch.js";
-import type { CommandRegistryConfig } from "./commands/registry.js";
-import { commandConfig } from "./commands/registry.js";
+import { isBotCommand } from "./engine/command-context.js";
 import type { RegistryConfig } from "./engine/dispatch.js";
-import { dispatch } from "./engine/dispatch.js";
+import { dispatch, dispatchCommand } from "./engine/dispatch.js";
 import { evaluateRecentPRs } from "./engine/evaluate.js";
 import { EventType } from "./engine/event.js";
-import { contextFromWebhook, type WebhookEventPayload } from "./engine/model/from-webhook.js";
+import {
+  commandContextFromWebhook,
+  contextFromWebhook,
+  type WebhookEventPayload,
+} from "./engine/model/from-webhook.js";
 import type { Env } from "./env.js";
 import { createOctokit, type GitHubAppConfig } from "./github/app.js";
 import { log } from "./log.js";
@@ -44,7 +46,6 @@ function isIssueEvent(event: string): boolean {
 
 export interface BotDeps {
   config: RegistryConfig;
-  commandConfig: CommandRegistryConfig;
   createOctokit: (env: Env) => Octokit;
 }
 
@@ -101,24 +102,14 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
   // Handle bot commands on PR and issue comments
   if (event === "issue_comment" && action === "created") {
     const commentPayload = payload as IssueCommentCreatedEvent;
-    const commentBody = commentPayload.comment.body ?? "";
-    const commandSlug = env.COMMAND_SLUG;
-    if (isBotCommand(commentBody, commandSlug)) {
-      await dispatchCommand(
-        deps.commandConfig,
-        {
-          github: octokit,
-          owner: commentPayload.repository.owner.login,
-          repo: commentPayload.repository.name,
-          issueNumber: commentPayload.issue.number,
-          isPullRequest: Boolean(commentPayload.issue.pull_request),
-          commentId: commentPayload.comment.id,
-          commentBody,
-          senderLogin: commentPayload.sender.login,
-          botSlug: env.BOT_SLUG,
-        },
-        commandSlug,
-      );
+    if (isBotCommand(commentPayload.comment.body ?? "", env.COMMAND_SLUG)) {
+      const context = commandContextFromWebhook(octokit, commentPayload, {
+        botSlug: env.BOT_SLUG,
+        dryRun: isDryRun(env),
+        commandSlug: env.COMMAND_SLUG,
+        registry: deps.config,
+      });
+      await dispatchCommand(context);
       return new Response("OK");
     }
   }
@@ -171,6 +162,5 @@ export function createScheduledHandler(deps: BotDeps): (env: Env) => Promise<voi
 
 export const defaultDeps: BotDeps = {
   config,
-  commandConfig,
   createOctokit: (env) => createOctokit(githubConfig(env)),
 };

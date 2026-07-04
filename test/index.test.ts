@@ -23,7 +23,6 @@ const { createBotApp } = await import("../src/index.js");
 
 const app = createBotApp({
   config: { repositories: {} },
-  commandConfig: { repositories: {} },
   createOctokit: () => ({}) as unknown as Octokit,
 });
 

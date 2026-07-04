@@ -1,3 +1,4 @@
+import type { CommandContext } from "./command-context.js";
 import type { DashboardSection } from "./dashboard/types.js";
 import type { EventType } from "./event.js";
 import type { RuleContext } from "./rule-context.js";
@@ -30,7 +31,15 @@ export type Effect =
   | {
       type: "requestReviewers";
       reviewers: string[];
-    };
+    }
+  | { type: "setTitle"; title: string }
+  | { type: "setState"; state: "open" | "closed" }
+  | { type: "removeAssignees"; assignees: string[] }
+  // Command-use only: rules must not emit this — the engine already converts
+  // the PR to draft when its checks fail (see syncDashboardAndStatus).
+  | { type: "convertToDraft" }
+  | { type: "markReadyForReview" }
+  | { type: "updateBranch" };
 
 export type EventHandler<E extends EventType> = (
   context: RuleContext<E>,
@@ -53,4 +62,24 @@ export interface Rule {
    */
   dashboardSections?: readonly string[];
   events: EventHandlers;
+}
+
+/** Who may invoke a command; enforced by the dispatcher before handle() runs. */
+export type CommandPermission = "none" | "code_owner" | "member";
+
+/**
+ * A comment command (`/<slug> <name> [args]`). Like rules, commands return
+ * Effects instead of mutating GitHub directly — label effects go through the
+ * label loop, so rules react to a command's changes exactly as they would to
+ * a human's. The declared constraints (args, scope, permission) are enforced
+ * by the dispatcher, which answers with a 👍/👎 reaction on the comment.
+ */
+export interface Command {
+  name: string;
+  description: string;
+  /** Whether the rest-of-line argument after the name is required. */
+  args?: "none" | "required";
+  scope?: "pull_request" | "issue" | "both";
+  permission: CommandPermission;
+  handle(context: CommandContext): Promise<Effect[] | undefined>;
 }

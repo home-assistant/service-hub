@@ -35,7 +35,7 @@ interface TargetMap {
 
 export type TargetFor<E extends EventType> = TargetMap[E];
 
-interface RuleContextParams<E extends EventType> {
+export interface RuleContextParams<E extends EventType> {
   github: Octokit;
   event: RuleEventOf<E>;
   sender: Sender;

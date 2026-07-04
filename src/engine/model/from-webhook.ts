@@ -13,6 +13,8 @@ import type {
   PullRequestSynchronizeEvent,
   PullRequestUnlabeledEvent,
 } from "@octokit/webhooks-types";
+import { CommandContext, parseCommand } from "../command-context.js";
+import type { RegistryConfig } from "../dispatch.js";
 import { EventType, type RuleEvent } from "../event.js";
 import { RuleContext } from "../rule-context.js";
 import { type GetIssueResponse, Issue, type IssueSeed } from "./issue.js";
@@ -206,6 +208,37 @@ export function contextFromWebhook(
     org: new Org(github, repo.owner),
     target: targetFromPayload(github, payload, repo),
     ...opts,
+  });
+}
+
+/** Build a CommandContext from an issue_comment.created delivery. */
+export function commandContextFromWebhook(
+  github: Octokit,
+  payload: IssueCommentCreatedEvent,
+  opts: AdapterOptions & { commandSlug: string; registry: RegistryConfig },
+): CommandContext {
+  const { commandSlug, registry, ...adapterOpts } = opts;
+  const repo = new Repo(github, {
+    owner: payload.repository.owner.login,
+    name: payload.repository.name,
+    fullName: payload.repository.full_name,
+    topics: (payload.repository as { topics?: string[] }).topics,
+  });
+
+  return new CommandContext({
+    github,
+    event: {
+      type: EventType.ISSUE_COMMENT_CREATED,
+      commentId: payload.comment?.id ?? 0,
+      commentBody: payload.comment?.body ?? "",
+    },
+    sender: senderFromLogin(payload.sender?.login ?? "", payload.sender?.type === "Bot"),
+    repo,
+    org: new Org(github, repo.owner),
+    target: targetFromPayload(github, payload, repo),
+    command: parseCommand(payload.comment?.body ?? "", commandSlug),
+    registry,
+    ...adapterOpts,
   });
 }
 

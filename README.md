@@ -30,6 +30,10 @@ Rules never see raw webhook payloads. Each dispatch hands them a `RuleContext`: 
 
 Rules communicate through labels: one rule's `addLabels`/`removeLabels` effect can be another rule's `labeled`/`unlabeled` trigger, so a rule only needs to listen for the events it actually cares about instead of every PR event. On each dispatch the engine simulates label changes in memory, re-dispatches the affected rules with synthetic `labeled`/`unlabeled` events (same entity, label state overridden), and repeats until the label set stabilizes. Only then are effects applied — with label effects collapsed to the net diff, so a label added and removed within one dispatch never flickers on GitHub, and labels already present aren't re-sent. Non-converging rule sets are cut off after 10 rounds and reported to Sentry.
 
+## Commands
+
+Commenting `/<slug> <command> [args]` on a PR or issue invokes a command (e.g. `/ha-bot rename New title`). Commands are declared per repo in the manifest next to the checks and, like checks, return effects rather than calling GitHub directly — a command's label changes run through the label loop, so label-triggered checks react to them immediately (the bot's own mutations arrive as self-webhooks, which are dropped). Each command declares its constraints — argument requirement, PR/issue scope, and permission tier (`none`, `code_owner` for the labeled integration's manifest code owners, `member` for org members) — which the dispatcher enforces before the handler runs. The invoking comment gets a 👍 reaction on success and a 👎 when the command is unknown, malformed, out of scope, denied, or fails.
+
 ## TODOs
 
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)

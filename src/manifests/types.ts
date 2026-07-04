@@ -1,4 +1,4 @@
-import type { Rule } from "../engine/types.js";
+import type { Command, Rule } from "../engine/types.js";
 
 /**
  * The authored description of what the bot does for one repository: a single
@@ -21,4 +21,6 @@ export interface RepoManifest {
   aliases?: string[];
   /** Every check that runs on this repo, in display order. */
   checks: Rule[];
+  /** Comment commands (`/<slug> <name>`) available on this repo. */
+  commands?: Command[];
 }

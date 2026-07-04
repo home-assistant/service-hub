@@ -1,5 +1,5 @@
 import type { RegistryConfig } from "../engine/dispatch.js";
-import type { Rule } from "../engine/types.js";
+import type { Command, Rule } from "../engine/types.js";
 import { homeAssistantCore } from "./home-assistant-core.js";
 import type { RepoManifest } from "./types.js";
 
@@ -7,11 +7,12 @@ import type { RepoManifest } from "./types.js";
 const MANIFESTS: RepoManifest[] = [homeAssistantCore];
 
 /**
- * Boot-time guardrails. The dispatcher silently dedupes checks by name, so a
- * duplicate name would hide a mis-wire; two checks claiming the same dashboard
- * section would fight over it. Fail loudly at module load instead.
+ * Boot-time guardrails. The dispatcher silently dedupes checks and commands
+ * by name, so a duplicate name would hide a mis-wire; two checks claiming the
+ * same dashboard section would fight over it. Fail loudly at module load
+ * instead.
  */
-function validate(slug: string, checks: Rule[]): void {
+function validate(slug: string, checks: Rule[], commands: Command[]): void {
   const names = new Set<string>();
   const sectionOwner = new Map<string, string>();
   for (const check of checks) {
@@ -29,20 +30,30 @@ function validate(slug: string, checks: Rule[]): void {
       sectionOwner.set(id, check.name);
     }
   }
+
+  const commandNames = new Set<string>();
+  for (const command of commands) {
+    if (commandNames.has(command.name)) {
+      throw new Error(`[${slug}] duplicate command name "${command.name}"`);
+    }
+    commandNames.add(command.name);
+  }
 }
 
 function build(): RegistryConfig {
   const repositories: Record<string, Rule[]> = {};
+  const commands: Record<string, Command[]> = {};
   for (const manifest of MANIFESTS) {
-    validate(manifest.slug, manifest.checks);
+    validate(manifest.slug, manifest.checks, manifest.commands ?? []);
     for (const slug of [manifest.slug, ...(manifest.aliases ?? [])]) {
       if (repositories[slug]) {
         throw new Error(`Repository "${slug}" is declared by more than one manifest`);
       }
       repositories[slug] = manifest.checks;
+      commands[slug] = manifest.commands ?? [];
     }
   }
-  return { repositories };
+  return { repositories, commands };
 }
 
 /**
