@@ -61,7 +61,10 @@ const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
  */
 export function loadFixtures(dir: string): Fixture[] {
   return readdirSync(dir)
-    .filter((file) => file.endsWith(".json") && !file.endsWith(".state.json"))
+    .filter(
+      (file) =>
+        file.endsWith(".json") && !file.endsWith(".state.json") && !file.endsWith(".body.json"),
+    )
     .sort()
     .map((file) => {
       const name = file.slice(0, -".json".length);

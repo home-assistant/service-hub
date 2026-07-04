@@ -1,0 +1,9 @@
+{
+  "check": [
+    "Bugfix (non-breaking change which fixes an issue)",
+    "Code quality improvements to existing code or addition of tests"
+  ],
+  "sections": {
+    "Proposed change": "Debounce brightness updates so hue lights stop flickering. Now with a regression test."
+  }
+}

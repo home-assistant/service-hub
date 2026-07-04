@@ -44,6 +44,10 @@ Because rules (and commands) interact through the label loop, a change to one ru
 
 To capture new fixtures, run `bun run capture` (a server that writes every delivery to `test/manifests/fixtures/_captured/`), point a tunnel at it (`npx smee-client --url <smee channel> --target http://localhost:8787/github/webhook`), and perform the actions on a repo the bot app is installed on. Copy the interesting captures into `fixtures/<repo>/` named `<event>.<action>[.variant].json` — the harness derives the delivery's event type from the filename, since GitHub sends it in a header, not the payload — and run `bun scripts/scrub-fixtures.ts` to normalize them (maps the capture fork onto the canonical repo, replaces the capturing user with a generic `contributor`, and blanks opaque identifiers while keeping their shape). An optional `<name>.state.json` sidecar stubs the world outside the payload: the PR's changed files, `mergeable_state`, CODEOWNERS content, and remote JSON endpoints (integration manifests, analytics).
 
+### PR template coupling
+
+Several rules parse the PR body, so fixture bodies must track the repo's real PR template. `bun run sync-templates` vendors each fixture repo's live `.github/PULL_REQUEST_TEMPLATE.md` into `fixtures/<repo>/_templates/`, and `bun run update-fixture-bodies` re-renders every fixture that has a `<name>.body.json` fill file (which checkboxes the contributor ticked, what prose goes under which heading) from that template — failing loudly if a referenced checkbox or heading no longer exists. The synthetic `pull_request.opened.all-change-types` fixture ticks every type-of-change box, so a template rewording of *any* option drops a label from its snapshot even when no other fixture exercises that option. Intended flow: a scheduled workflow runs sync + update + tests and opens a PR when the upstream template changed — its diff shows the template change, the regenerated bodies, and any snapshot fallout in one place.
+
 ## TODOs
 
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)

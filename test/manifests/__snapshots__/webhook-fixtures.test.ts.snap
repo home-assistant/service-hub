@@ -219,6 +219,89 @@ exports[`webhook fixture snapshots home-assistant-core pull_request.labeled.inte
 ]
 `;
 
+exports[`webhook fixture snapshots home-assistant-core pull_request.opened.all-change-types 1`] = `
+[
+  {
+    "section": {
+      "id": "merge-conflict",
+      "message": "No merge conflicts.",
+      "status": "pass",
+      "title": "Merge conflicts",
+    },
+    "type": "dashboardSection",
+  },
+  {
+    "section": {
+      "id": "merge-target",
+      "message": "This PR targets \`dev\`.",
+      "status": "pass",
+      "title": "Merge target",
+    },
+    "type": "dashboardSection",
+  },
+  {
+    "section": {
+      "id": "review-comments",
+      "message": "No inline review comments yet.",
+      "status": "skip",
+      "title": "Review comments",
+    },
+    "type": "dashboardSection",
+  },
+  {
+    "section": {
+      "id": "type-of-change",
+      "message": "Type of change: \`bugfix\`, \`dependency\`, \`new-integration\`, \`new-feature\`, \`deprecation\`, \`breaking-change\`, \`code-quality\`",
+      "status": "pass",
+      "title": "Type of change",
+    },
+    "type": "dashboardSection",
+  },
+  {
+    "section": {
+      "id": "new-integration-validation",
+      "message": "Validation passed.",
+      "status": "pass",
+      "title": "New integration validation",
+    },
+    "type": "dashboardSection",
+  },
+  {
+    "section": {
+      "id": "docs-missing",
+      "message": "Missing documentation PR",
+      "status": "fail",
+      "title": "Documentation",
+    },
+    "type": "dashboardSection",
+  },
+  {
+    "section": {
+      "id": "code-owner-approval",
+      "message": "Not a platinum integration — no code-owner approval required.",
+      "status": "skip",
+      "title": "Code owner approval",
+    },
+    "type": "dashboardSection",
+  },
+  {
+    "labels": [
+      "integration: awesome",
+      "Quality Scale: bronze",
+      "bugfix",
+      "dependency",
+      "new-integration",
+      "new-feature",
+      "deprecation",
+      "breaking-change",
+      "code-quality",
+      "has-tests",
+    ],
+    "type": "addLabels",
+  },
+]
+`;
+
 exports[`webhook fixture snapshots home-assistant-core pull_request.opened.bugfix-single-integration 1`] = `
 [
   {

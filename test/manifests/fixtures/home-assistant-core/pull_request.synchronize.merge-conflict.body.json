@@ -1,0 +1,4 @@
+{
+  "check": ["Bugfix (non-breaking change which fixes an issue)"],
+  "sections": { "Proposed change": "Debounce brightness updates so hue lights stop flickering." }
+}

@@ -1,0 +1,4 @@
+{
+  "check": ["New integration (thank you!)"],
+  "sections": { "Proposed change": "Adds support for Awesome Device via local push." }
+}

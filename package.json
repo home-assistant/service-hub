@@ -11,7 +11,9 @@
     "test": "bun test",
     "test:coverage": "bun test --coverage",
     "test:watch": "bun test --watch",
-    "capture": "bun scripts/capture-webhooks.ts"
+    "capture": "bun scripts/capture-webhooks.ts",
+    "sync-templates": "bun scripts/sync-templates.ts",
+    "update-fixture-bodies": "bun scripts/update-fixture-bodies.ts"
   },
   "dependencies": {
     "@octokit/auth-app": "^8.2.0",
