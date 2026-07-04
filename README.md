@@ -12,6 +12,10 @@ bun run check        # Run linter + type checker
 bun run format       # Auto-fix formatting
 ```
 
+## Webhook subscriptions
+
+The GitHub App only needs four event subscriptions: **Issues**, **Issue comment**, **Pull request**, and **Pull request review**. Everything else is dropped at the door (`KNOWN_EVENT_TYPES` in `src/index.ts`) — in particular CI events (workflow runs/jobs, check runs/suites) and pushes are pure noise today and make up the vast majority of delivery volume, so leave them unsubscribed. Two subscriptions will become necessary for planned work (see TODOs): **Workflow run** and **Check run**, for the CI-job-failure rules and for reading job results like `detect-non-english-issues` as flags.
+
 ## Overriding a dashboard check
 
 Failing or pending checks on the bot's PR dashboard can be overridden by adding a tag to the PR description, with an explanation of why this PR doesn't need to satisfy the rule:
