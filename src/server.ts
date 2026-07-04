@@ -3,8 +3,7 @@ import { loadEnv } from "./env.js";
 import { createBotApp, createScheduledHandler, defaultDeps } from "./index.js";
 import { log } from "./log.js";
 
-// Cron lookback is 10 minutes; fire every 5 to keep the old overlap window
-// the Cloudflare cron trigger ("*/5 * * * *") provided.
+// Cron lookback is 10 minutes; fire every 5 so consecutive runs overlap.
 const CRON_INTERVAL_MS = 5 * 60 * 1000;
 
 const env = loadEnv();

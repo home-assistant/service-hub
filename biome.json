@@ -14,14 +14,6 @@
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "files": {
-    "includes": [
-      "**",
-      "!**/node_modules",
-      "!**/dist",
-      "!**/coverage",
-      "!**/.wrangler",
-      "!**/.devenv",
-      "!**/.direnv"
-    ]
+    "includes": ["**", "!**/node_modules", "!**/dist", "!**/coverage", "!**/.devenv", "!**/.direnv"]
   }
 }

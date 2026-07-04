@@ -34,8 +34,7 @@ function required(name: keyof Env): string {
 
 /**
  * Build the runtime config from `process.env`. Bun auto-loads `.env`, so a
- * local `.env` file is enough for development. Defaults mirror the `[vars]`
- * block that used to live in `wrangler.toml`.
+ * local `.env` file is enough for development.
  */
 export function loadEnv(): Env {
   return {
