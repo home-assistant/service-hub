@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { removeLabel } from "../../src/commands/label-remove.js";
 import { unassign } from "../../src/commands/unassign.js";
-import { isBotCommand, parseCommand } from "../../src/engine/command-context.js";
+import { isBotCommand, parseCommands } from "../../src/engine/command-context.js";
 import { dispatchCommand } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
 import type { Command, Rule } from "../../src/engine/types.js";
@@ -20,37 +20,43 @@ const noopCommand = (overrides: Partial<Command> = {}): Command => ({
   ...overrides,
 });
 
-describe("parseCommand", () => {
+describe("parseCommands", () => {
   it("extracts the name and lowercases it", () => {
-    expect(parseCommand("/ha-bot UPDATE", "ha-bot")).toEqual({ name: "update" });
+    expect(parseCommands("/ha-bot UPDATE", "ha-bot")).toEqual([{ name: "update" }]);
   });
 
   it("captures a rest-of-line argument with spaces", () => {
-    expect(parseCommand("/ha-bot rename Awesome new title", "ha-bot")).toEqual({
-      name: "rename",
-      args: "Awesome new title",
-    });
-    expect(parseCommand("/ha-bot add-label problem in dependency", "ha-bot")).toEqual({
-      name: "add-label",
-      args: "problem in dependency",
-    });
+    expect(parseCommands("/ha-bot rename Awesome new title", "ha-bot")).toEqual([
+      { name: "rename", args: "Awesome new title" },
+    ]);
+    expect(parseCommands("/ha-bot add-label problem in dependency", "ha-bot")).toEqual([
+      { name: "add-label", args: "problem in dependency" },
+    ]);
   });
 
   it("matches on any line of the comment but not mid-line", () => {
-    expect(parseCommand("thanks!\n/ha-bot close", "ha-bot")).toEqual({ name: "close" });
-    expect(parseCommand("see /ha-bot close", "ha-bot")).toBeUndefined();
+    expect(parseCommands("thanks!\n/ha-bot close", "ha-bot")).toEqual([{ name: "close" }]);
+    expect(parseCommands("see /ha-bot close", "ha-bot")).toEqual([]);
   });
 
   it("does not swallow following lines into the argument", () => {
-    expect(parseCommand("/ha-bot rename New title\nmore text", "ha-bot")).toEqual({
-      name: "rename",
-      args: "New title",
-    });
+    expect(parseCommands("/ha-bot rename New title\nmore text", "ha-bot")).toEqual([
+      { name: "rename", args: "New title" },
+    ]);
   });
 
-  it("returns undefined without a command name", () => {
-    expect(parseCommand("/ha-bot", "ha-bot")).toBeUndefined();
-    expect(parseCommand("hello world", "ha-bot")).toBeUndefined();
+  it("parses several commands from one comment, in order, with prose between", () => {
+    expect(
+      parseCommands(
+        "looks good!\n/ha-bot rename New title\nsome explanation\n/ha-bot close",
+        "ha-bot",
+      ),
+    ).toEqual([{ name: "rename", args: "New title" }, { name: "close" }]);
+  });
+
+  it("returns an empty list without a command name", () => {
+    expect(parseCommands("/ha-bot", "ha-bot")).toEqual([]);
+    expect(parseCommands("hello world", "ha-bot")).toEqual([]);
   });
 });
 

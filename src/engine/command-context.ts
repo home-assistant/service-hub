@@ -20,33 +20,60 @@ export interface CommandInvocation {
   args?: string;
 }
 
-export function parseCommand(commentBody: string, slug: string): CommandInvocation | undefined {
-  const match = commentBody.match(
-    new RegExp(`^/${escapeRegExp(slug)}\\s+([\\w-]+)(?:[^\\S\\n]+(\\S[^\\n]*?))?[^\\S\\n]*$`, "im"),
+/**
+ * Every command in the comment, one per line that starts with `/<slug>`.
+ * Surrounding prose lines are ignored, so commands can be mixed with text
+ * and several commands can be stacked in one comment.
+ */
+export function parseCommands(commentBody: string, slug: string): CommandInvocation[] {
+  const re = new RegExp(
+    `^/${escapeRegExp(slug)}\\s+([\\w-]+)(?:[^\\S\\n]+(\\S[^\\n]*?))?[^\\S\\n]*$`,
+    "gim",
   );
-  if (!match) return undefined;
-  return { name: match[1].toLowerCase(), ...(match[2] ? { args: match[2] } : {}) };
+  return [...commentBody.matchAll(re)].map((match) => ({
+    name: match[1].toLowerCase(),
+    ...(match[2] ? { args: match[2] } : {}),
+  }));
 }
 
 export interface CommandContextParams extends RuleContextParams<EventType.ISSUE_COMMENT_CREATED> {
+  /** All invocations parsed from the comment, in order of appearance. */
+  invocations?: CommandInvocation[];
+  /** The invocation this context is scoped to (set via withInvocation). */
   command?: CommandInvocation;
   registry: RegistryConfig;
 }
 
 /**
  * What a command handler receives: everything a rule gets for the underlying
- * issue_comment.created event, plus the parsed invocation and permission
- * helpers. `command` is undefined when the comment addressed the bot but
- * didn't parse — the dispatcher answers those with a 👎 reaction.
+ * issue_comment.created event, plus the parsed invocations and permission
+ * helpers. `invocations` is empty when the comment addressed the bot but no
+ * line parsed — the dispatcher answers those with a 👎 reaction. The
+ * dispatcher scopes the context to one invocation at a time (`command`,
+ * `args`) via {@link withInvocation}.
  */
 export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED> {
+  readonly invocations: CommandInvocation[];
   readonly command?: CommandInvocation;
   readonly registry: RegistryConfig;
+  private readonly params: CommandContextParams;
 
   constructor(params: CommandContextParams) {
     super(params);
-    this.command = params.command;
+    this.params = params;
+    this.invocations = params.invocations ?? (params.command ? [params.command] : []);
+    this.command = params.command ?? this.invocations[0];
     this.registry = params.registry;
+  }
+
+  /** Same comment and caches, scoped to a single invocation. */
+  withInvocation(invocation: CommandInvocation): CommandContext {
+    const derived = new CommandContext({
+      ...this.params,
+      invocations: this.invocations,
+      command: invocation,
+    });
+    return derived;
   }
 
   get commentId(): number {

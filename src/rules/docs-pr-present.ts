@@ -1,6 +1,6 @@
 import { EventType } from "../engine/event.js";
+import { type CheckOutcome, check } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
-import type { Effect, Rule } from "../engine/types.js";
 import { extractAllLinks } from "../util/pr-body.js";
 import { HomeAssistantRepository } from "../util/repositories.js";
 
@@ -10,7 +10,7 @@ type HandledEvent =
   | EventType.PULL_REQUEST_UNLABELED
   | EventType.ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome> {
   const isReleasePR = (await ctx.target.baseRef()) === "master";
   const currentLabels = new Set(await ctx.target.labels());
 
@@ -21,32 +21,15 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
 
   // Skip when there's no signal that docs are needed.
   if (!docsApplies && !isReleasePR) {
-    return [
-      {
-        type: "dashboardSection",
-        section: {
-          id: "docs-missing",
-          title: "Documentation",
-          status: "skip",
-          message: "Not a new integration or platform — no documentation PR required.",
-        },
-      },
-    ];
+    return {
+      status: "skip",
+      message: "Not a new integration or platform — no documentation PR required.",
+    };
   }
 
   // Release PRs auto-approve regardless of docs link.
   if (isReleasePR) {
-    return [
-      {
-        type: "dashboardSection",
-        section: {
-          id: "docs-missing",
-          title: "Documentation",
-          status: "skip",
-          message: "Auto-approved — release PR.",
-        },
-      },
-    ];
+    return { status: "skip", message: "Auto-approved — release PR." };
   }
 
   let needsDocumentation = hasDocsMissingLabel;
@@ -57,27 +40,21 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
     needsDocumentation = linksToDocs.length === 0;
   }
 
-  return [
-    {
-      type: "dashboardSection",
-      section: {
-        id: "docs-missing",
-        title: "Documentation",
-        status: needsDocumentation ? "fail" : "pass",
-        message: needsDocumentation ? "Missing documentation PR" : "Documentation PR linked",
-      },
-    },
-  ];
+  return {
+    status: needsDocumentation ? "fail" : "pass",
+    message: needsDocumentation ? "Missing documentation PR" : "Documentation PR linked",
+  };
 }
 
-export const docsPrPresent: Rule = {
-  name: "docs-missing",
+export const docsPrPresent = check({
+  id: "docs-missing",
+  title: "Documentation",
   description: "Checks new integrations and platforms have a linked documentation PR",
-  dashboardSections: ["docs-missing"],
-  events: {
-    [EventType.PULL_REQUEST_EDITED]: evaluate,
-    [EventType.PULL_REQUEST_LABELED]: evaluate,
-    [EventType.PULL_REQUEST_UNLABELED]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
-  },
-};
+  events: [
+    EventType.PULL_REQUEST_EDITED,
+    EventType.PULL_REQUEST_LABELED,
+    EventType.PULL_REQUEST_UNLABELED,
+    EventType.ON_DEMAND,
+  ],
+  evaluate,
+});

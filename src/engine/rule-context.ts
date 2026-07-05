@@ -6,6 +6,7 @@ import type { Issue } from "./model/issue.js";
 import type { Org } from "./model/organization.js";
 import type { PullRequest } from "./model/pull-request.js";
 import type { Repo } from "./model/repository.js";
+import type { Command } from "./types.js";
 
 export interface Sender {
   login: string;
@@ -44,6 +45,10 @@ export interface RuleContextParams<E extends EventType> {
   target: TargetFor<E>;
   botSlug: string;
   dryRun?: boolean;
+  /** Comment-command prefix (`/<slug> <name>`), for rendering command help. */
+  commandSlug?: string;
+  /** The repo's registered comment commands, for rendering command help. */
+  commands?: readonly Command[];
 }
 
 /**
@@ -61,6 +66,8 @@ export class RuleContext<E extends EventType = EventType> {
   readonly target: TargetFor<E>;
   readonly botSlug: string;
   readonly dryRun: boolean;
+  readonly commandSlug: string;
+  readonly commands: readonly Command[];
 
   constructor(params: RuleContextParams<E>) {
     this.github = params.github;
@@ -71,6 +78,8 @@ export class RuleContext<E extends EventType = EventType> {
     this.target = params.target;
     this.botSlug = params.botSlug;
     this.dryRun = params.dryRun ?? false;
+    this.commandSlug = params.commandSlug ?? params.botSlug;
+    this.commands = params.commands ?? [];
   }
 
   get eventType(): E {
@@ -142,6 +151,8 @@ export class RuleContext<E extends EventType = EventType> {
       target: target ?? (this.target as unknown as TargetFor<F>),
       botSlug: this.botSlug,
       dryRun: this.dryRun,
+      commandSlug: this.commandSlug,
+      commands: this.commands,
     });
   }
 }

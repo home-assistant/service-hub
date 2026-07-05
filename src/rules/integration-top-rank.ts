@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EventType } from "../engine/event.js";
+import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 import { log } from "../log.js";
@@ -75,10 +76,13 @@ export const integrationTopRank: Rule = {
   name: "integration-top-rank",
   description:
     "Adds `Top 50/100/200` labels to PRs touching popular integrations, ranked from public analytics.",
-  events: {
-    [EventType.PULL_REQUEST_OPENED]: evaluate,
-    [EventType.PULL_REQUEST_EDITED]: evaluate,
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
-  },
+  events: on(
+    [
+      EventType.PULL_REQUEST_OPENED,
+      EventType.PULL_REQUEST_EDITED,
+      EventType.PULL_REQUEST_SYNCHRONIZE,
+      EventType.ON_DEMAND,
+    ],
+    evaluate,
+  ),
 };

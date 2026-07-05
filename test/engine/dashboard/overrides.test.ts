@@ -60,21 +60,21 @@ describe("applyOverrides", () => {
     { id: "d", title: "D", status: "skip", message: "n/a" },
   ];
 
-  it("downgrades fail to info and appends the reason while preserving the original message", () => {
+  it("downgrades fail to warn and appends the reason while preserving the original message", () => {
     const result = applyOverrides(sections, [{ id: "a", reason: "by-design" }]);
     expect(result[0]).toEqual({
       id: "a",
       title: "A",
-      status: "info",
+      status: "warn",
       message: "broken\nOverride: by-design",
     });
     expect(result.slice(1)).toEqual(sections.slice(1));
   });
 
-  it("downgrades pending to info", () => {
+  it("downgrades pending to warn", () => {
     const result = applyOverrides(sections, [{ id: "b", reason: "later" }]);
     expect(result[1]).toMatchObject({
-      status: "info",
+      status: "warn",
       message: "wait\nOverride: later",
     });
   });

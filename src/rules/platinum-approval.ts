@@ -1,6 +1,6 @@
 import { EventType } from "../engine/event.js";
+import { type CheckOutcome, check } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
-import type { Effect, Rule } from "../engine/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../util/integration.js";
 
 type HandledEvent =
@@ -9,7 +9,7 @@ type HandledEvent =
   | EventType.PULL_REQUEST_REVIEW_SUBMITTED
   | EventType.ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome> {
   const currentLabels = await ctx.target.labels();
   const integrations = currentLabels.filter((l) => l.startsWith("integration: "));
 
@@ -20,59 +20,25 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
 
   // Skip when this PR doesn't require code-owner approval at all.
   if (!isPlatinum) {
-    return [
-      {
-        type: "dashboardSection",
-        section: {
-          id: "code-owner-approval",
-          title: "Code owner approval",
-          status: "skip",
-          message: "Not a platinum integration — no code-owner approval required.",
-        },
-      },
-    ];
+    return {
+      status: "skip",
+      message: "Not a platinum integration — no code-owner approval required.",
+    };
   }
   if (integrations.length !== 1) {
-    return [
-      {
-        type: "dashboardSection",
-        section: {
-          id: "code-owner-approval",
-          title: "Code owner approval",
-          status: "skip",
-          message: "Touches zero or multiple integrations — code-owner approval not enforced.",
-        },
-      },
-    ];
+    return {
+      status: "skip",
+      message: "Touches zero or multiple integrations — code-owner approval not enforced.",
+    };
   }
   if (alreadyApproved) {
-    return [
-      {
-        type: "dashboardSection",
-        section: {
-          id: "code-owner-approval",
-          title: "Code owner approval",
-          status: "pass",
-          message: "Approved by a code owner.",
-        },
-      },
-    ];
+    return { status: "pass", message: "Approved by a code owner." };
   }
 
   const domain = integrations[0].substring(13);
   const manifest = await fetchIntegrationManifest(domain);
   if (!manifest?.codeowners?.length) {
-    return [
-      {
-        type: "dashboardSection",
-        section: {
-          id: "code-owner-approval",
-          title: "Code owner approval",
-          status: "skip",
-          message: `Integration \`${domain}\` has no code owners listed.`,
-        },
-      },
-    ];
+    return { status: "skip", message: `Integration \`${domain}\` has no code owners listed.` };
   }
 
   const reviews = await ctx.target.reviews();
@@ -82,41 +48,28 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   );
 
   if (approvedByOwner) {
-    return [
-      { type: "addLabels", labels: ["code-owner-approved"] },
-      {
-        type: "dashboardSection",
-        section: {
-          id: "code-owner-approval",
-          title: "Code owner approval",
-          status: "pass",
-          message: "Approved by a code owner.",
-        },
-      },
-    ];
+    return {
+      status: "pass",
+      message: "Approved by a code owner.",
+      effects: [{ type: "addLabels", labels: ["code-owner-approved"] }],
+    };
   }
 
-  return [
-    {
-      type: "dashboardSection",
-      section: {
-        id: "code-owner-approval",
-        title: "Code owner approval",
-        status: "fail",
-        message: "Platinum integration — needs approval from a code owner before merging.",
-      },
-    },
-  ];
+  return {
+    status: "fail",
+    message: "Platinum integration — needs approval from a code owner before merging.",
+  };
 }
 
-export const platinumApproval: Rule = {
-  name: "code-owner-approval",
+export const platinumApproval = check({
+  id: "code-owner-approval",
+  title: "Code owner approval",
   description: "Requires code owner approval for platinum quality scale integrations",
-  dashboardSections: ["code-owner-approval"],
-  events: {
-    [EventType.PULL_REQUEST_LABELED]: evaluate,
-    [EventType.PULL_REQUEST_UNLABELED]: evaluate,
-    [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
-  },
-};
+  events: [
+    EventType.PULL_REQUEST_LABELED,
+    EventType.PULL_REQUEST_UNLABELED,
+    EventType.PULL_REQUEST_REVIEW_SUBMITTED,
+    EventType.ON_DEMAND,
+  ],
+  evaluate,
+});

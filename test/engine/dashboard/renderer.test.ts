@@ -19,9 +19,10 @@ describe("dashboard renderer", () => {
     },
   ];
 
-  /** Everything from the `## Checks` heading onward — used to scope assertions away from the intro. */
+  /** The `## Checks` block — scoped away from the intro and the `## Context` block. */
   function checksSection(body: string): string {
-    return body.split("## Checks")[1] ?? "";
+    const afterHeading = body.split("## Checks")[1] ?? "";
+    return afterHeading.split("## Context")[0];
   }
 
   describe("renderDashboard", () => {
@@ -36,12 +37,38 @@ describe("dashboard renderer", () => {
     });
 
     it("collapses dashboard details, override syntax, and bot commands into one details block", () => {
-      const result = renderDashboard(sections, REPO);
+      const result = renderDashboard(sections, REPO, "pull_request", {
+        commands: [
+          {
+            name: "update",
+            description: "Re-runs the bot's checks.",
+            permission: "none",
+            handle: async () => undefined,
+          },
+          {
+            name: "mark-draft",
+            description: "Marks the pull request as draft.",
+            permission: "code_owner",
+            scope: "pull_request",
+            handle: async () => undefined,
+          },
+          {
+            name: "issue-only",
+            description: "Issue-scoped command.",
+            permission: "none",
+            scope: "issue",
+            handle: async () => undefined,
+          },
+        ],
+      });
       expect(result).toContain("More information about this dashboard");
       expect(result).toContain("Skip a check that doesn't apply");
       expect(result).toContain("ha-bot:ignore");
       expect(result).toContain("Bot commands");
-      expect(result).toContain("/ha-bot update");
+      expect(result).toContain("- `update` — Re-runs the bot's checks.");
+      expect(result).toContain("- `mark-draft` — Marks the pull request as draft. *(code owners)*");
+      // Issue-scoped commands don't show on the PR dashboard.
+      expect(result).not.toContain("issue-only");
     });
 
     it("shows a 'Things to address' lead-in when anything is failing", () => {
@@ -142,10 +169,10 @@ describe("dashboard renderer", () => {
       expect(beforeDetails).not.toContain("| Status |");
     });
 
-    it("renders pending and info rows together in the visible top section", () => {
+    it("renders pending and warn rows together in the visible top section", () => {
       const mixed: DashboardSection[] = [
         { id: "a", title: "A", status: "pending", message: "waiting" },
-        { id: "b", title: "B", status: "info", message: "fyi" },
+        { id: "b", title: "B", status: "warn", message: "careful" },
       ];
       const result = renderDashboard(mixed, REPO);
 
@@ -153,21 +180,31 @@ describe("dashboard renderer", () => {
       const checks = checksSection(result);
       const beforeDetails = checks.split("<details>")[0];
       expect(beforeDetails).toContain(":hourglass:");
-      expect(beforeDetails).toContain(":information_source:");
+      expect(beforeDetails).toContain(":warning:");
 
       // No combined "passed/skipped" block because nothing actually passed or skipped.
       expect(checks).not.toContain("<summary>");
     });
 
-    it("shows 'Everything's in order!' even when info-only rows are present", () => {
+    it("renders info sections under ## Context instead of the checks table", () => {
+      const sections: DashboardSection[] = [
+        { id: "a", title: "A", status: "pass", message: "ok" },
+        { id: "links", title: "Integration links", status: "info", message: "some links" },
+      ];
+      const result = renderDashboard(sections, REPO);
+      expect(result).toContain("## Context");
+      expect(result).toContain("**Integration links**");
+      const checks = checksSection(result);
+      expect(checks).not.toContain("Integration links");
+    });
+
+    it("omits the ## Checks block entirely for info-only sections", () => {
       const infoOnly: DashboardSection[] = [
-        { id: "merge-target", title: "Merge target", status: "info", message: "release branch" },
+        { id: "links", title: "Integration links", status: "info", message: "some links" },
       ];
       const result = renderDashboard(infoOnly, REPO);
-      expect(result).toContain("**✨ Everything's in order!**");
-      // The info row still shows in the visible section.
-      const checks = checksSection(result);
-      expect(checks).toContain(":information_source:");
+      expect(result).not.toContain("## Checks");
+      expect(result).toContain("## Context");
     });
 
     it("renders skipped checks with a minus icon inside the combined block", () => {

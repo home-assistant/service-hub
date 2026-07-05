@@ -28,10 +28,10 @@ export function parseOverrides(body: string | null | undefined): RuleOverride[] 
 }
 
 /**
- * Downgrades `fail` and `pending` sections to `info` when the PR author has
- * waived them via a `<!-- ha-bot:ignore -->` tag. Renders visibly (not in the
- * collapsed dropdown) with the original message and the reason, so reviewers
- * can see what was waived. `pass`/`info`/`skip` sections are never modified.
+ * Downgrades `fail` and `pending` sections to `warn` when the PR author has
+ * waived them via a `<!-- ha-bot:ignore -->` tag. Stays visible in the checks
+ * table (warning triangle) with the original message and the reason, so
+ * reviewers can see what was waived. Other statuses are never modified.
  */
 export function applyOverrides(
   sections: DashboardSection[],
@@ -47,7 +47,7 @@ export function applyOverrides(
     if (section.status !== "fail" && section.status !== "pending") return section;
     return {
       ...section,
-      status: "info",
+      status: "warn",
       message: `${section.message}\nOverride: ${o.reason}`,
     };
   });

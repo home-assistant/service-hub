@@ -1,4 +1,5 @@
 import { EventType } from "../engine/event.js";
+import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 import { fetchIntegrationManifest, QualityScale } from "../util/integration.js";
@@ -64,7 +65,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
 
     const stale = currentLabels.filter((n) => n.startsWith("Quality Scale: ") && n !== newLabel);
     if (stale.length > 0) {
-      effects.push({ type: "removeLabels", label: stale });
+      effects.push({ type: "removeLabels", labels: stale });
     }
   }
 
@@ -74,11 +75,14 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
 export const qualityScale: Rule = {
   name: "quality-scale",
   description: "Labels PRs with the highest quality scale among the integrations they touch.",
-  events: {
-    [EventType.PULL_REQUEST_OPENED]: evaluate,
-    [EventType.PULL_REQUEST_REOPENED]: evaluate,
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
-    [EventType.PULL_REQUEST_LABELED]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
-  },
+  events: on(
+    [
+      EventType.PULL_REQUEST_OPENED,
+      EventType.PULL_REQUEST_REOPENED,
+      EventType.PULL_REQUEST_SYNCHRONIZE,
+      EventType.PULL_REQUEST_LABELED,
+      EventType.ON_DEMAND,
+    ],
+    evaluate,
+  ),
 };

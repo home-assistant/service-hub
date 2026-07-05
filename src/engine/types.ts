@@ -17,10 +17,13 @@ export type Effect =
       issue_number: number;
       labels: string[];
     }
-  | { type: "removeLabels"; label: string[] }
+  | { type: "removeLabels"; labels: string[] }
   | { type: "addAssignees"; assignees: string[] }
   | { type: "comment"; body: string }
   | { type: "dashboardSection"; section: DashboardSection }
+  // Drop a section from the dashboard — for state-derived sections whose
+  // subject disappeared (e.g. the last `integration:` label was removed).
+  | { type: "removeDashboardSection"; id: string }
   | {
       type: "updatePullRequest";
       owner: string;
@@ -64,8 +67,11 @@ export interface Rule {
   events: EventHandlers;
 }
 
-/** Who may invoke a command; enforced by the dispatcher before handle() runs. */
-export type CommandPermission = "none" | "code_owner" | "member";
+/**
+ * Who may invoke a command; enforced by the dispatcher before handle() runs.
+ * `author` allows the target's author and org members.
+ */
+export type CommandPermission = "none" | "author" | "code_owner" | "member";
 
 /**
  * A comment command (`/<slug> <name> [args]`). Like rules, commands return
@@ -79,6 +85,11 @@ export interface Command {
   description: string;
   /** Whether the rest-of-line argument after the name is required. */
   args?: "none" | "required";
+  /**
+   * Sample invocation without the `/<slug> ` prefix (e.g. `rename A better
+   * title`), shown in rendered command help for arg-taking commands.
+   */
+  example?: string;
   scope?: "pull_request" | "issue" | "both";
   permission: CommandPermission;
   handle(context: CommandContext): Promise<Effect[] | undefined>;

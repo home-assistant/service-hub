@@ -6,6 +6,7 @@ export function removeLabel(manageable: readonly string[]): Command {
     name: "remove-label",
     description: `Removes a label (${manageable.join(", ")}) from the issue or pull request.`,
     args: "required",
+    example: `remove-label ${manageable[0]}`,
     permission: "code_owner",
 
     async handle(context) {
@@ -16,7 +17,7 @@ export function removeLabel(manageable: readonly string[]): Command {
       if (!(await context.target.labels()).includes(label)) {
         throw new Error(`Label "${label}" is not set`);
       }
-      return [{ type: "removeLabels", label: [label] }];
+      return [{ type: "removeLabels", labels: [label] }];
     },
   };
 }

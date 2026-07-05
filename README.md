@@ -24,7 +24,7 @@ Failing or pending checks on the bot's PR dashboard can be overridden by adding 
 <!-- ha-bot:ignore id="<section-id>" reason="<why this PR is an exception>" -->
 ```
 
-The `id` is the section ID shown in the dashboard's machine-readable markers (e.g. `merge-conflict`, `docs-missing`). Only `fail` and `pending` sections can be downgraded; `pass`/`info` checks ignore the tag. The original check message stays visible in the dashboard with an `Override: <reason>` line appended, so reviewers can see both what was flagged and why it was waived.
+The `id` is the section ID shown in the dashboard's machine-readable markers (e.g. `merge-conflict`, `docs-missing`). Only `fail` and `pending` sections can be downgraded — they become `warn`, which stays visible in the checks table with a warning triangle but no longer fails the aggregate; other statuses ignore the tag. The original check message stays visible with an `Override: <reason>` line appended, so reviewers can see both what was flagged and why it was waived.
 
 ## Rule context and entity model
 

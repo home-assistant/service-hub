@@ -118,7 +118,7 @@ describe("dispatch", () => {
       description: "",
       events: {
         [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "removeLabels", label: ["needs-rebase"] },
+          { type: "removeLabels", labels: ["needs-rebase"] },
         ],
       },
     };
@@ -147,7 +147,7 @@ describe("dispatch", () => {
       events: {
         [EventType.PULL_REQUEST_OPENED]: async () => [
           { type: "addLabels", labels: ["keep-me"] },
-          { type: "removeLabels", label: ["keep-me"] },
+          { type: "removeLabels", labels: ["keep-me"] },
         ],
       },
     };
@@ -262,7 +262,7 @@ describe("dispatch", () => {
       events: {
         [EventType.PULL_REQUEST_OPENED]: async () => [
           { type: "addLabels", labels: ["bugfix"] },
-          { type: "removeLabels", label: ["stale"] },
+          { type: "removeLabels", labels: ["stale"] },
         ],
       },
     };
@@ -625,7 +625,7 @@ describe("dispatch", () => {
       );
     });
 
-    it("downgrades a pending section to success (info, not skipped)", async () => {
+    it("downgrades a pending section to success (warn, not skipped)", async () => {
       const { github, config, context } = setupOverrideHarness(
         "pending",
         '<!-- ha-bot:ignore id="merge-conflict" reason="Known transient state" -->',
@@ -637,7 +637,7 @@ describe("dispatch", () => {
         expect.objectContaining({
           context: "ha-bot",
           state: "success",
-          description: "All checks passed",
+          description: "All checks passed (1 warning)",
         }),
       );
     });
@@ -1024,7 +1024,7 @@ describe("label loop", () => {
       description: "",
       events: {
         [EventType.PULL_REQUEST_LABELED]: async (ctx) =>
-          ctx.event.label === "Y" ? [{ type: "removeLabels", label: ["X"] }] : undefined,
+          ctx.event.label === "Y" ? [{ type: "removeLabels", labels: ["X"] }] : undefined,
       },
     };
 
@@ -1052,7 +1052,7 @@ describe("label loop", () => {
       name: "remover",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "removeLabels", label: ["stale"] }],
+        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "removeLabels", labels: ["stale"] }],
       },
     };
     const reactor: Rule = {
@@ -1157,7 +1157,7 @@ describe("label loop", () => {
       name: "flipper",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_LABELED]: async () => [{ type: "removeLabels", label: ["ping"] }],
+        [EventType.PULL_REQUEST_LABELED]: async () => [{ type: "removeLabels", labels: ["ping"] }],
         [EventType.PULL_REQUEST_UNLABELED]: async () => [{ type: "addLabels", labels: ["ping"] }],
       },
     };

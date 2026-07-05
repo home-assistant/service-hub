@@ -6,6 +6,7 @@ export const unassign: Command = {
   description:
     "Removes the given integration domain's label and its code owners from the assignees.",
   args: "required",
+  example: "unassign opensky",
   // The gate is against the domain argument, not the item's labels — the
   // sender must own the domain they're unassigning, so it's checked here.
   permission: "none",
@@ -21,7 +22,7 @@ export const unassign: Command = {
     const assignees = (await context.target.assigneeLogins()).filter((login) =>
       owners.includes(login.toLowerCase()),
     );
-    const effects: Effect[] = [{ type: "removeLabels", label: [`integration: ${domain}`] }];
+    const effects: Effect[] = [{ type: "removeLabels", labels: [`integration: ${domain}`] }];
     if (assignees.length) effects.push({ type: "removeAssignees", assignees });
     return effects;
   },

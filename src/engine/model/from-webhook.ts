@@ -13,10 +13,11 @@ import type {
   PullRequestSynchronizeEvent,
   PullRequestUnlabeledEvent,
 } from "@octokit/webhooks-types";
-import { CommandContext, parseCommand } from "../command-context.js";
+import { CommandContext, parseCommands } from "../command-context.js";
 import type { RegistryConfig } from "../dispatch.js";
 import { EventType, type RuleEvent } from "../event.js";
 import { RuleContext } from "../rule-context.js";
+import type { Command } from "../types.js";
 import { type GetIssueResponse, Issue, type IssueSeed } from "./issue.js";
 import { Org } from "./organization.js";
 import { type GetPullRequestResponse, PullRequest, type PullRequestSeed } from "./pull-request.js";
@@ -40,6 +41,8 @@ export type WebhookEventPayload =
 export interface AdapterOptions {
   botSlug: string;
   dryRun?: boolean;
+  commandSlug?: string;
+  commands?: readonly Command[];
 }
 
 /**
@@ -217,7 +220,7 @@ export function commandContextFromWebhook(
   payload: IssueCommentCreatedEvent,
   opts: AdapterOptions & { commandSlug: string; registry: RegistryConfig },
 ): CommandContext {
-  const { commandSlug, registry, ...adapterOpts } = opts;
+  const { registry, ...adapterOpts } = opts;
   const repo = new Repo(github, {
     owner: payload.repository.owner.login,
     name: payload.repository.name,
@@ -236,7 +239,7 @@ export function commandContextFromWebhook(
     repo,
     org: new Org(github, repo.owner),
     target: targetFromPayload(github, payload, repo),
-    command: parseCommand(payload.comment?.body ?? "", commandSlug),
+    invocations: parseCommands(payload.comment?.body ?? "", opts.commandSlug),
     registry,
     ...adapterOpts,
   });

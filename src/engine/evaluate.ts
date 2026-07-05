@@ -10,6 +10,11 @@ import type { Effect } from "./types.js";
 export interface EvaluateOptions {
   dryRun?: boolean;
   botSlug?: string;
+  commandSlug?: string;
+}
+
+function repoCommands(registryConfig: RegistryConfig, owner: string, repo: string) {
+  return registryConfig.commands?.[`${owner}/${repo}`] ?? [];
 }
 
 export async function evaluatePR(
@@ -27,6 +32,8 @@ export async function evaluatePR(
   const context = contextFromPullRequest(github, pr, {
     botSlug: options.botSlug ?? "",
     dryRun: options.dryRun,
+    commandSlug: options.commandSlug,
+    commands: repoCommands(registryConfig, ref.owner, ref.repo),
   });
 
   return dispatch(registryConfig, context);
@@ -57,6 +64,8 @@ export async function evaluateIssue(
     {
       botSlug: options.botSlug ?? "",
       dryRun: options.dryRun,
+      commandSlug: options.commandSlug,
+      commands: repoCommands(registryConfig, ref.owner, ref.repo),
     },
   );
 

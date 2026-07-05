@@ -1,11 +1,35 @@
+import { commandHelpLines, commandsForTarget } from "../engine/command-help.js";
 import { EventType } from "../engine/event.js";
 import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js";
+import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 
 type HandledEvent = EventType.ISSUES_LABELED | EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;
 
 const INTEGRATION_LABEL_PREFIX = "integration: ";
+
+/**
+ * Compact help block listing the commands a code owner may use on this item,
+ * from the repo's registered command list on the context.
+ */
+function commandHelp(ctx: RuleContext<HandledEvent>): string {
+  const available = commandsForTarget(ctx.commands, ctx.target.kind).filter(
+    (c) => c.permission !== "member",
+  );
+  if (available.length === 0) return "";
+
+  return [
+    "",
+    "<details><summary>Code owner commands</summary>",
+    "",
+    `Reply with \`/${ctx.commandSlug} <command>\`:`,
+    "",
+    ...commandHelpLines(ctx.commandSlug, available),
+    "",
+    "</details>",
+  ].join("\n");
+}
 
 async function processIntegration(
   ctx: RuleContext<HandledEvent>,
@@ -40,7 +64,9 @@ async function processIntegration(
   if (mentions.length > 0) {
     effects.push({
       type: "comment",
-      body: `Hey there ${mentions.join(", ")}, mind taking a look at this ${itemLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!`,
+      body:
+        `Hey there ${mentions.join(", ")}, mind taking a look at this ${itemLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!` +
+        commandHelp(ctx),
     });
   }
 
@@ -104,10 +130,9 @@ export function mentionCodeOwners(config: {
   return {
     name: "code-owner-mention",
     description: "Assigns and mentions code owners for integrations a PR/issue touches",
-    events: {
-      [EventType.ISSUES_LABELED]: handle,
-      [EventType.PULL_REQUEST_LABELED]: handle,
-      [EventType.ON_DEMAND]: handle,
-    },
+    events: on(
+      [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED, EventType.ON_DEMAND],
+      handle,
+    ),
   };
 }

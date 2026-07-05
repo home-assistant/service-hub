@@ -1,4 +1,5 @@
 import { EventType } from "../engine/event.js";
+import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 
@@ -50,11 +51,14 @@ export function blockingLabels(
     name: "blocking-labels",
     description: `Blocks PRs with labels: ${Object.keys(config).join(", ")}`,
     dashboardSections,
-    events: {
-      [EventType.PULL_REQUEST_LABELED]: buildEffects,
-      [EventType.PULL_REQUEST_UNLABELED]: buildEffects,
-      [EventType.PULL_REQUEST_SYNCHRONIZE]: buildEffects,
-      [EventType.ON_DEMAND]: buildEffects,
-    },
+    events: on(
+      [
+        EventType.PULL_REQUEST_LABELED,
+        EventType.PULL_REQUEST_UNLABELED,
+        EventType.PULL_REQUEST_SYNCHRONIZE,
+        EventType.ON_DEMAND,
+      ],
+      buildEffects,
+    ),
   };
 }

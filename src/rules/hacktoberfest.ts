@@ -1,4 +1,5 @@
 import { EventType } from "../engine/event.js";
+import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 
@@ -21,7 +22,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
 
   // On a closed-but-not-merged PR, strip the label if it's still there.
   if (isClosed && !isMerged && hasHacktoberfestLabel) {
-    return [{ type: "removeLabels", label: ["Hacktoberfest"] }];
+    return [{ type: "removeLabels", labels: ["Hacktoberfest"] }];
   }
 
   // On an open PR during October on a participating repo, label it.
@@ -33,9 +34,8 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
 export const hacktoberfest: Rule = {
   name: "hacktoberfest",
   description: "Labels PRs with 'Hacktoberfest' during October on participating repos",
-  events: {
-    [EventType.PULL_REQUEST_OPENED]: evaluate,
-    [EventType.PULL_REQUEST_CLOSED]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
-  },
+  events: on(
+    [EventType.PULL_REQUEST_OPENED, EventType.PULL_REQUEST_CLOSED, EventType.ON_DEMAND],
+    evaluate,
+  ),
 };

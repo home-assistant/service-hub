@@ -6,6 +6,7 @@ export function addLabel(manageable: readonly string[]): Command {
     name: "add-label",
     description: `Adds a label (${manageable.join(", ")}) to the issue or pull request.`,
     args: "required",
+    example: `add-label ${manageable[0]}`,
     permission: "code_owner",
 
     async handle(context) {

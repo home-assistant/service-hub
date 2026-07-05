@@ -1,12 +1,12 @@
 import { EventType } from "../engine/event.js";
+import { type CheckOutcome, check } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { Effect } from "../engine/types.js";
 import { ParsedPath } from "../util/parse-path.js";
 import { extractTasks } from "../util/pr-body.js";
 import { addsNewIntegration } from "./file-shape.js";
 
 const NEW_INTEGRATION_LABEL = "new-integration";
-const DASHBOARD_SECTION_ID = "type-of-change";
 
 const BODY_MATCHES: { description: string; labels: string[] }[] = [
   { description: "Bugfix (non-breaking change which fixes an issue)", labels: ["bugfix"] },
@@ -86,7 +86,7 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome> {
   const effects: Effect[] = [];
   const picked = pickedTypeLabels(await ctx.target.body());
 
@@ -103,7 +103,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
     (candidate) => current.has(candidate) && !pickedSet.has(candidate),
   );
   if (toRemove.length > 0) {
-    effects.push({ type: "removeLabels", label: toRemove });
+    effects.push({ type: "removeLabels", labels: toRemove });
   }
 
   // Consistency check: file shape vs. body checkbox, scoped to "new-integration"
@@ -127,32 +127,23 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   }
 
   const row = describeRow(rowState);
-  effects.push({
-    type: "dashboardSection",
-    section: {
-      id: DASHBOARD_SECTION_ID,
-      title: "Type of change",
-      status: row.status,
-      message: row.message,
-    },
-  });
-
-  return effects;
+  return { status: row.status, message: row.message, effects };
 }
 
-export const changeType: Rule = {
-  name: "type-of-change",
+export const changeType = check({
+  id: "type-of-change",
+  title: "Type of change",
   description:
     "Labels PRs with the change type(s) checked in the PR description (`bugfix`, " +
     "`new-integration`, …), keeps those labels in sync with the body, and surfaces " +
     "the type-of-change state — including a file-shape consistency check for " +
     "`new-integration` — as a dashboard row.",
   allowBots: false,
-  dashboardSections: [DASHBOARD_SECTION_ID],
-  events: {
-    [EventType.PULL_REQUEST_OPENED]: evaluate,
-    [EventType.PULL_REQUEST_EDITED]: evaluate,
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
-  },
-};
+  events: [
+    EventType.PULL_REQUEST_OPENED,
+    EventType.PULL_REQUEST_EDITED,
+    EventType.PULL_REQUEST_SYNCHRONIZE,
+    EventType.ON_DEMAND,
+  ],
+  evaluate,
+});

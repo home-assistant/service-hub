@@ -1,4 +1,5 @@
 import { EventType } from "../engine/event.js";
+import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 import { ParsedPath } from "../util/parse-path.js";
@@ -103,7 +104,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
 
   const effects: Effect[] = [];
   if (toAdd.length > 0) effects.push({ type: "addLabels", labels: toAdd });
-  if (toRemove.length > 0) effects.push({ type: "removeLabels", label: toRemove });
+  if (toRemove.length > 0) effects.push({ type: "removeLabels", labels: toRemove });
   return effects.length > 0 ? effects : undefined;
 }
 
@@ -113,10 +114,13 @@ export const fileShape: Rule = {
     "Labels PRs based on the shape of their changed files (`config-flow`, " +
     "`has-tests`, `core`, `new-platform`, `remove-platform`, `small-pr`, " +
     "`metadata-only`) and removes any of those labels that no longer apply.",
-  events: {
-    [EventType.PULL_REQUEST_OPENED]: evaluate,
-    [EventType.PULL_REQUEST_EDITED]: evaluate,
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
-  },
+  events: on(
+    [
+      EventType.PULL_REQUEST_OPENED,
+      EventType.PULL_REQUEST_EDITED,
+      EventType.PULL_REQUEST_SYNCHRONIZE,
+      EventType.ON_DEMAND,
+    ],
+    evaluate,
+  ),
 };

@@ -119,6 +119,15 @@ export class PullRequest {
     return this.coreField(this.seed.authorAssociation, (pr) => pr.author_association);
   }
 
+  /**
+   * Whether the author is affiliated with the repo (owner, org member, or
+   * collaborator). `author_association` is computed server-side.
+   */
+  async authorIsMember(): Promise<boolean> {
+    const assoc = await this.authorAssociation();
+    return assoc === "OWNER" || assoc === "MEMBER" || assoc === "COLLABORATOR";
+  }
+
   assigneeLogins(): Promise<string[]> {
     return this.coreField(this.seed.assigneeLogins, (pr) =>
       (pr.assignees ?? []).flatMap((a) => (a?.login ? [a.login] : [])),

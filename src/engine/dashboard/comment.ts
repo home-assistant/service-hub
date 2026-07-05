@@ -1,7 +1,13 @@
 import type { Octokit } from "@octokit/rest";
 import type { GetIssueParams } from "../model/issue.js";
 import { applyOverrides, type RuleOverride } from "./overrides.js";
-import { parseDashboard, renderDashboard, SENTINEL } from "./renderer.js";
+import {
+  type DashboardExtras,
+  type DashboardTarget,
+  parseDashboard,
+  renderDashboard,
+  SENTINEL,
+} from "./renderer.js";
 import type { DashboardSection } from "./types.js";
 
 export async function findDashboardCommentId(
@@ -35,7 +41,7 @@ export async function ensureDashboardCommentExists(
   if (existing) return;
   await github.issues.createComment({
     ...params,
-    body: `${SENTINEL}\n\n_Evaluating PR rules…_`,
+    body: `${SENTINEL}\n\n_Evaluating rules…_`,
   });
 }
 
@@ -51,8 +57,11 @@ export async function upsertDashboardComment(
   newSections: DashboardSection[],
   knownSectionIds?: ReadonlySet<string>,
   overrides?: RuleOverride[],
+  target: DashboardTarget = "pull_request",
+  extras: DashboardExtras = {},
+  removedSectionIds?: ReadonlySet<string>,
 ): Promise<UpsertedDashboard | null> {
-  if (newSections.length === 0) {
+  if (newSections.length === 0 && !removedSectionIds?.size) {
     return null;
   }
 
@@ -66,10 +75,11 @@ export async function upsertDashboardComment(
       existingSections = existingSections.filter((s) => knownSectionIds.has(s.id));
     }
 
-    // Merge existing+new by id (new wins)
+    // Merge existing+new by id (new wins), then apply removals.
     const byId = new Map<string, DashboardSection>();
     for (const s of existingSections) byId.set(s.id, s);
     for (const s of newSections) byId.set(s.id, s);
+    for (const id of removedSectionIds ?? []) byId.delete(id);
 
     // Apply overrides by contributor
     const merged = applyOverrides([...byId.values()], overrides ?? []);
@@ -77,14 +87,17 @@ export async function upsertDashboardComment(
       owner: params.owner,
       repo: params.repo,
       comment_id: existing.id,
-      body: renderDashboard(merged, `${params.owner}/${params.repo}`),
+      body: renderDashboard(merged, `${params.owner}/${params.repo}`, target, extras),
     });
     return { comment: { id: data.id, url: data.html_url }, sections: merged };
   }
+  // No existing comment: removals have nothing to act on.
+  if (newSections.length === 0) return null;
+
   const sections = applyOverrides(newSections, overrides ?? []);
   const { data } = await github.issues.createComment({
     ...params,
-    body: renderDashboard(sections, `${params.owner}/${params.repo}`),
+    body: renderDashboard(sections, `${params.owner}/${params.repo}`, target, extras),
   });
   return { comment: { id: data.id, url: data.html_url }, sections };
 }

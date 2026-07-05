@@ -58,6 +58,7 @@ async function applyEffects(
   const labels = new Set<string>();
   const removeLabels = new Set<string>();
   const dashboardSections = new Map<string, DashboardSection>();
+  const removedSections = new Set<string>();
   const assignees = new Set<string>();
   const removeAssignees = new Set<string>();
   // Set: the label loop can run a rule twice per dispatch; identical comments post once.
@@ -70,7 +71,7 @@ async function applyEffects(
         for (const l of effect.labels) labels.add(l);
         break;
       case "removeLabels":
-        for (const l of effect.label) removeLabels.add(l);
+        for (const l of effect.labels) removeLabels.add(l);
         break;
       case "addAssignees":
         for (const a of effect.assignees) assignees.add(a);
@@ -80,6 +81,9 @@ async function applyEffects(
         break;
       case "dashboardSection":
         dashboardSections.set(effect.section.id, effect.section);
+        break;
+      case "removeDashboardSection":
+        removedSections.add(effect.id);
         break;
       case "addLabelsCrossRepo":
         ops.push(
@@ -140,13 +144,21 @@ async function applyEffects(
     );
   }
 
-  if (dashboardSections.size > 0) {
+  // Emission wins over removal within a dispatch.
+  for (const id of dashboardSections.keys()) removedSections.delete(id);
+
+  if (dashboardSections.size > 0 || removedSections.size > 0) {
     // Post a placeholder dashboard *before* the other effects race, so the
     // dashboard is always the earliest comment on the PR. The real content
     // gets rendered by syncDashboardAndStatus below (which updates this
-    // placeholder via findDashboardCommentId).
-    await ensureDashboardCommentExists(context.github, context.issueParams());
-    ops.push(syncDashboardAndStatus(context, [...dashboardSections.values()], config));
+    // placeholder via findDashboardCommentId). Removals alone never create
+    // a dashboard — there'd be nothing to remove from.
+    if (dashboardSections.size > 0) {
+      await ensureDashboardCommentExists(context.github, context.issueParams());
+    }
+    ops.push(
+      syncDashboardAndStatus(context, [...dashboardSections.values()], removedSections, config),
+    );
   }
 
   for (const body of comments) {
@@ -246,6 +258,7 @@ function aggregateDashboardStatus(sections: DashboardSection[]): {
 } {
   const fails = sections.filter((s) => s.status === "fail").length;
   const pending = sections.filter((s) => s.status === "pending").length;
+  const warns = sections.filter((s) => s.status === "warn").length;
   const skipped = sections.filter((s) => s.status === "skip").length;
   if (pending > 0) {
     return { state: "pending", description: `${pending} check${pending === 1 ? "" : "s"} pending` };
@@ -253,9 +266,14 @@ function aggregateDashboardStatus(sections: DashboardSection[]): {
   if (fails > 0) {
     return { state: "failure", description: `${fails} check${fails === 1 ? "" : "s"} failing` };
   }
+  const extras = [
+    ...(warns > 0 ? [`${warns} warning${warns === 1 ? "" : "s"}`] : []),
+    ...(skipped > 0 ? [`${skipped} skipped`] : []),
+  ];
   return {
     state: "success",
-    description: skipped > 0 ? `All checks passed (${skipped} skipped)` : "All checks passed",
+    description:
+      extras.length > 0 ? `All checks passed (${extras.join(", ")})` : "All checks passed",
   };
 }
 
@@ -271,6 +289,7 @@ function aggregateDashboardStatus(sections: DashboardSection[]): {
 async function syncDashboardAndStatus(
   context: RuleContext,
   newSections: DashboardSection[],
+  removedSectionIds: ReadonlySet<string>,
   config: ApplyEffectsConfig,
 ): Promise<void> {
   const overrides = parseOverrides(await context.target.body());
@@ -280,6 +299,13 @@ async function syncDashboardAndStatus(
     newSections,
     config.knownSectionIds,
     overrides,
+    context.target.kind,
+    {
+      author: await context.target.authorLogin(),
+      commandSlug: context.commandSlug,
+      commands: context.commands,
+    },
+    removedSectionIds,
   );
   if (!result) return;
   if (context.target.kind !== "pull_request") return;
@@ -407,7 +433,7 @@ function labelChanges(
   const removed = new Set<string>();
   for (const effect of effects) {
     if (effect.type === "addLabels") for (const l of effect.labels) added.add(l);
-    else if (effect.type === "removeLabels") for (const l of effect.label) removed.add(l);
+    else if (effect.type === "removeLabels") for (const l of effect.labels) removed.add(l);
   }
   return {
     adds: [...added].filter((l) => !current.has(l)),
@@ -500,7 +526,7 @@ async function runLabelLoop(
   const netAdds = [...current].filter((name) => !initialNames.has(name));
   const netRemoves = [...initialNames].filter((name) => !current.has(name));
   if (netAdds.length > 0) effects.push({ type: "addLabels", labels: netAdds });
-  if (netRemoves.length > 0) effects.push({ type: "removeLabels", label: netRemoves });
+  if (netRemoves.length > 0) effects.push({ type: "removeLabels", labels: netRemoves });
   return effects;
 }
 
@@ -551,6 +577,12 @@ async function commandRejection(
       return (await context.senderIsMember()) ? undefined : "sender is not an org member";
     case "code_owner":
       return (await context.senderIsCodeOwner()) ? undefined : "sender is not a code owner";
+    case "author": {
+      const isAuthor =
+        context.sender.login.toLowerCase() === (await context.target.authorLogin()).toLowerCase();
+      if (isAuthor || (await context.senderIsMember())) return undefined;
+      return "sender is neither the author nor an org member";
+    }
   }
 }
 
@@ -569,61 +601,80 @@ async function react(context: CommandContext, content: "+1" | "-1"): Promise<voi
 }
 
 /**
- * The command counterpart of dispatch(): validate the invocation against the
- * command's declared constraints, run its handler, and apply the returned
- * effects through the same label loop rules use — so a command's label
- * changes re-trigger label-listening rules exactly like a human's would
- * (command mutations arrive as self-webhooks, which the entrypoint drops).
- * The invoking comment gets a 👍 on success and a 👎 on any rejection/error.
- * Returns the applied effects (post label loop), undefined on rejection.
+ * The command counterpart of dispatch(): validate each invocation in the
+ * comment against its command's declared constraints, run the handlers in
+ * order, and apply the collected effects through the same label loop rules
+ * use — so a command's label changes re-trigger label-listening rules
+ * exactly like a human's would (command mutations arrive as self-webhooks,
+ * which the entrypoint drops). A comment can carry several commands (one
+ * per `/<slug>` line) mixed with prose. The invoking comment gets a 👍 when
+ * every invocation ran and a 👎 when any was rejected or failed. Returns the
+ * applied effects (post label loop), undefined when nothing ran.
  */
 export async function dispatchCommand(context: CommandContext): Promise<Effect[] | undefined> {
   if (context.senderIsBot) return undefined;
   const registryConfig = context.registry;
 
-  const command = context.command
-    ? findCommand(registryConfig, context.repository, context.command.name)
-    : undefined;
-  const rejection = await commandRejection(command, context);
-  if (rejection || !command) {
+  if (context.invocations.length === 0) {
     log.info("command rejected", {
       repository: context.repository,
       number: context.number,
       sender: context.sender.login,
-      reason: rejection,
+      reason: "unparseable invocation",
     });
     await react(context, "-1");
     return undefined;
   }
 
-  log.info("command", {
-    repository: context.repository,
-    number: context.number,
-    command: command.name,
-    sender: context.sender.login,
-  });
+  const collected: Effect[] = [];
+  let anyRan = false;
+  let anyFailed = false;
 
-  let effects: Effect[] | undefined;
-  try {
-    effects = await command.handle(context);
-  } catch (err) {
-    log.error("command failed", {
+  for (const invocation of context.invocations) {
+    const invocationContext = context.withInvocation(invocation);
+    const command = findCommand(registryConfig, context.repository, invocation.name);
+    const rejection = await commandRejection(command, invocationContext);
+    if (rejection || !command) {
+      log.info("command rejected", {
+        repository: context.repository,
+        number: context.number,
+        command: invocation.name,
+        sender: context.sender.login,
+        reason: rejection,
+      });
+      anyFailed = true;
+      continue;
+    }
+
+    log.info("command", {
       repository: context.repository,
       number: context.number,
       command: command.name,
-      error: String(err),
+      sender: context.sender.login,
     });
-    await react(context, "-1");
-    return undefined;
+
+    try {
+      const effects = await command.handle(invocationContext);
+      if (effects?.length) collected.push(...effects);
+      anyRan = true;
+    } catch (err) {
+      log.error("command failed", {
+        repository: context.repository,
+        number: context.number,
+        command: command.name,
+        error: String(err),
+      });
+      anyFailed = true;
+    }
   }
 
   let finalEffects: Effect[] = [];
-  if (effects?.length) {
-    finalEffects = await runLabelLoop(registryConfig, context, effects);
+  if (collected.length) {
+    finalEffects = await runLabelLoop(registryConfig, context, collected);
     await applyEffects(context, finalEffects, {
       knownSectionIds: collectKnownDashboardSectionIds(registryConfig, context),
     });
   }
-  await react(context, "+1");
-  return finalEffects;
+  await react(context, anyFailed ? "-1" : "+1");
+  return anyRan ? finalEffects : undefined;
 }

@@ -1,6 +1,6 @@
 import { EventType } from "../engine/event.js";
+import { type CheckOutcome, check } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
-import type { Effect, Rule } from "../engine/types.js";
 import { ParsedPath } from "../util/parse-path.js";
 
 type HandledEvent =
@@ -9,23 +9,10 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-const SECTION_ID = "new-integration-validation";
-const SECTION_TITLE = "New integration validation";
-
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome> {
   const hasNewIntegrationLabel = (await ctx.target.labels()).includes("new-integration");
   if (!hasNewIntegrationLabel) {
-    return [
-      {
-        type: "dashboardSection",
-        section: {
-          id: SECTION_ID,
-          title: SECTION_TITLE,
-          status: "skip",
-          message: "Not a new-integration PR.",
-        },
-      },
-    ];
+    return { status: "skip", message: "Not a new-integration PR." };
   }
 
   const files = await ctx.target.files();
@@ -50,40 +37,20 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[]> {
   }
 
   if (issues.length === 0) {
-    return [
-      {
-        type: "dashboardSection",
-        section: {
-          id: SECTION_ID,
-          title: SECTION_TITLE,
-          status: "pass",
-          message: "Validation passed.",
-        },
-      },
-    ];
+    return { status: "pass", message: "Validation passed." };
   }
-
-  return [
-    {
-      type: "dashboardSection",
-      section: {
-        id: SECTION_ID,
-        title: SECTION_TITLE,
-        status: "fail",
-        message: issues.map((i) => `- ${i}`).join("\n"),
-      },
-    },
-  ];
+  return { status: "fail", message: issues.map((i) => `- ${i}`).join("\n") };
 }
 
-export const newIntegrationValidation: Rule = {
-  name: "new-integration-validation",
+export const newIntegrationValidation = check({
+  id: "new-integration-validation",
+  title: "New integration validation",
   description: "Validates new-integration PRs for platform count and brand folder placement",
-  dashboardSections: [SECTION_ID],
-  events: {
-    [EventType.PULL_REQUEST_LABELED]: evaluate,
-    [EventType.PULL_REQUEST_UNLABELED]: evaluate,
-    [EventType.PULL_REQUEST_SYNCHRONIZE]: evaluate,
-    [EventType.ON_DEMAND]: evaluate,
-  },
-};
+  events: [
+    EventType.PULL_REQUEST_LABELED,
+    EventType.PULL_REQUEST_UNLABELED,
+    EventType.PULL_REQUEST_SYNCHRONIZE,
+    EventType.ON_DEMAND,
+  ],
+  evaluate,
+});

@@ -1,4 +1,5 @@
 import { close } from "../commands/close.js";
+import { ignore } from "../commands/ignore.js";
 import { addLabel } from "../commands/label-add.js";
 import { removeLabel } from "../commands/label-remove.js";
 import { markDraft } from "../commands/mark-draft.js";
@@ -15,16 +16,19 @@ import { dependencyBump } from "../rules/dependency-bump.js";
 import { docsParenting } from "../rules/docs-parenting.js";
 import { docsPrPresent } from "../rules/docs-pr-present.js";
 import { fileShape } from "../rules/file-shape.js";
-import { hacktoberfest } from "../rules/hacktoberfest.js";
 import { integrationDomain } from "../rules/integration-domain.js";
 import { integrationTopRank } from "../rules/integration-top-rank.js";
+import { issueContext } from "../rules/issue-context.js";
+import { issueLinks } from "../rules/issue-links.js";
 import { mergeConflict } from "../rules/merge-conflict.js";
 import { mergeTarget } from "../rules/merge-target.js";
 import { newIntegrationValidation } from "../rules/new-integration-validation.js";
 import { platinumApproval } from "../rules/platinum-approval.js";
 import { qualityScale } from "../rules/quality-scale.js";
 import { reviewComments } from "../rules/review-comments.js";
-import { wth } from "../rules/wth.js";
+import { setIntegration } from "../rules/set-integration.js";
+import { coreIssueContext } from "./home-assistant-core-issue-context.js";
+import { homeAssistantOrgRules } from "./home-assistant-org.js";
 import type { RepoManifest } from "./types.js";
 
 const componentCodeowners = (domain: string) => `homeassistant/components/${domain}/*`;
@@ -49,6 +53,11 @@ export const homeAssistantCore: RepoManifest = {
     newIntegrationValidation,
     mentionCodeOwners({ pathPattern: componentCodeowners }),
 
+    // Issues
+    setIntegration,
+    issueLinks,
+    issueContext(coreIssueContext),
+
     // Docs
     docsPrPresent,
     docsParenting,
@@ -65,14 +74,16 @@ export const homeAssistantCore: RepoManifest = {
     changeType,
     fileShape,
     dependencyBump,
-    hacktoberfest,
-    wth,
     blockingLabels({
       "awaiting-frontend": { message: "This PR is awaiting changes to the frontend" },
     }),
+
+    // Org-wide
+    ...homeAssistantOrgRules,
   ],
   commands: [
     update,
+    ignore,
     close,
     reopen,
     rename,

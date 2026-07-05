@@ -262,7 +262,7 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
         labels.push(...e.labels);
         break;
       case "removeLabels":
-        removeLabels.push(...e.label);
+        removeLabels.push(...e.labels);
         break;
       case "comment":
         comments.push(e.body);

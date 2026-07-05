@@ -118,6 +118,8 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
     const context = contextFromWebhook(octokit, payload, eventType, {
       botSlug: env.BOT_SLUG,
       dryRun: isDryRun(env),
+      commandSlug: env.COMMAND_SLUG,
+      commands: deps.config.commands?.[payload.repository.full_name] ?? [],
     });
     await dispatch(deps.config, context);
   }
@@ -154,6 +156,7 @@ export function createScheduledHandler(deps: BotDeps): (env: Env) => Promise<voi
         evaluateRecentPRs(deps.config, octokit, repo, since, {
           dryRun,
           botSlug: env.BOT_SLUG,
+          commandSlug: env.COMMAND_SLUG,
         }),
       ),
     );

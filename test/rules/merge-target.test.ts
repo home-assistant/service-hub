@@ -45,18 +45,18 @@ describe("merge-target", () => {
     expect(result?.dashboard?.message).toContain("`some-feature-branch`");
   });
 
-  it("downgrades to info when an org MEMBER targets a non-dev branch", async () => {
+  it("downgrades to warn when an org MEMBER targets a non-dev branch", async () => {
     const result = await runRule(mergeTarget, contextTargeting("master", "MEMBER"));
-    expect(result?.dashboard?.status).toBe("info");
+    expect(result?.dashboard?.status).toBe("warn");
     expect(result?.dashboard?.message).toContain("release branch");
   });
 
-  it("downgrades to info for OWNER and COLLABORATOR too", async () => {
+  it("downgrades to warn for OWNER and COLLABORATOR too", async () => {
     const owner = await runRule(mergeTarget, contextTargeting("rc", "OWNER"));
-    expect(owner?.dashboard?.status).toBe("info");
+    expect(owner?.dashboard?.status).toBe("warn");
 
     const collab = await runRule(mergeTarget, contextTargeting("rc", "COLLABORATOR"));
-    expect(collab?.dashboard?.status).toBe("info");
+    expect(collab?.dashboard?.status).toBe("warn");
   });
 
   it("does not emit any labels", async () => {
