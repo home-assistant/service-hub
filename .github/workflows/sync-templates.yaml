@@ -30,11 +30,21 @@ jobs:
 
       - run: bun run sync-templates
 
-      - run: bun run update-fixture-bodies
+      # Stop early when the vendored template is unchanged — later steps
+      # refresh snapshots, and running them anyway would fold unrelated
+      # snapshot drift into a "template sync" PR.
+      - name: Detect template changes
+        id: template
+        run: echo "changed=$(git diff --quiet && echo false || echo true)" >> "$GITHUB_OUTPUT"
 
-      - run: bun test --update-snapshots
+      - if: steps.template.outputs.changed == 'true'
+        run: bun run update-fixture-bodies
 
-      - uses: peter-evans/create-pull-request@v7
+      - if: steps.template.outputs.changed == 'true'
+        run: bun test --update-snapshots
+
+      - if: steps.template.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
         with:
           branch: bot/sync-pr-templates
           delete-branch: true
