@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { changeType } from "../../src/checks/change-type.js";
 import { EventType } from "../../src/engine/event.js";
+import { changeType } from "../../src/rules/change-type.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string, overrides: { status?: string; additions?: number } = {}) {

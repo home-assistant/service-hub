@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { mergeTarget } from "../../src/checks/merge-target.js";
 import { EventType } from "../../src/engine/event.js";
+import { mergeTarget } from "../../src/rules/merge-target.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 function contextTargeting(baseRef: string, authorAssociation = "NONE") {

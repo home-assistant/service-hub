@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { reviewComments } from "../../src/checks/review-comments.js";
 import { EventType } from "../../src/engine/event.js";
+import { reviewComments } from "../../src/rules/review-comments.js";
 import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 const AUTHOR = "pr-author";

@@ -7,27 +7,27 @@ import type { RepoManifest } from "./types.js";
 const MANIFESTS: RepoManifest[] = [homeAssistantCore];
 
 /**
- * Boot-time guardrails. The dispatcher silently dedupes checks and commands
- * by name, so a duplicate name would hide a mis-wire; two checks claiming the
+ * Boot-time guardrails. The dispatcher silently dedupes rules and commands
+ * by name, so a duplicate name would hide a mis-wire; two rules claiming the
  * same dashboard section would fight over it. Fail loudly at module load
  * instead.
  */
-function validate(slug: string, checks: Rule[], commands: Command[]): void {
+function validate(slug: string, rules: Rule[], commands: Command[]): void {
   const names = new Set<string>();
   const sectionOwner = new Map<string, string>();
-  for (const check of checks) {
-    if (names.has(check.name)) {
-      throw new Error(`[${slug}] duplicate check name "${check.name}"`);
+  for (const rule of rules) {
+    if (names.has(rule.name)) {
+      throw new Error(`[${slug}] duplicate rule name "${rule.name}"`);
     }
-    names.add(check.name);
-    for (const id of check.dashboardSections ?? []) {
+    names.add(rule.name);
+    for (const id of rule.dashboardSections ?? []) {
       const owner = sectionOwner.get(id);
       if (owner) {
         throw new Error(
-          `[${slug}] dashboard section "${id}" claimed by both "${owner}" and "${check.name}"`,
+          `[${slug}] dashboard section "${id}" claimed by both "${owner}" and "${rule.name}"`,
         );
       }
-      sectionOwner.set(id, check.name);
+      sectionOwner.set(id, rule.name);
     }
   }
 
@@ -44,12 +44,12 @@ function build(): RegistryConfig {
   const repositories: Record<string, Rule[]> = {};
   const commands: Record<string, Command[]> = {};
   for (const manifest of MANIFESTS) {
-    validate(manifest.slug, manifest.checks, manifest.commands ?? []);
+    validate(manifest.slug, manifest.rules, manifest.commands ?? []);
     for (const slug of [manifest.slug, ...(manifest.aliases ?? [])]) {
       if (repositories[slug]) {
         throw new Error(`Repository "${slug}" is declared by more than one manifest`);
       }
-      repositories[slug] = manifest.checks;
+      repositories[slug] = manifest.rules;
       commands[slug] = manifest.commands ?? [];
     }
   }
@@ -58,7 +58,7 @@ function build(): RegistryConfig {
 
 /**
  * The dispatcher's registry, assembled from every {@link RepoManifest}. One
- * config serves both PR and issue webhooks — `matchRules` filters each check
+ * config serves both PR and issue webhooks — `matchRules` filters each rule
  * by the events it declares.
  */
 export const config: RegistryConfig = build();

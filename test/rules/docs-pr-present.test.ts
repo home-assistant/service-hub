@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { docsPrPresent } from "../../src/checks/docs-pr-present.js";
-import { fileShape } from "../../src/checks/file-shape.js";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import { dispatch } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
+import { docsPrPresent } from "../../src/rules/docs-pr-present.js";
+import { fileShape } from "../../src/rules/file-shape.js";
 import {
   createMockContext,
   createMockGitHub,

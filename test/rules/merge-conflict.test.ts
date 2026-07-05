@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { mergeConflict } from "../../src/checks/merge-conflict.js";
 import { EventType } from "../../src/engine/event.js";
+import { mergeConflict } from "../../src/rules/merge-conflict.js";
 import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 describe("merge-conflict", () => {

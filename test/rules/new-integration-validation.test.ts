@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { fileShape } from "../../src/checks/file-shape.js";
-import { newIntegrationValidation } from "../../src/checks/new-integration-validation.js";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import { dispatch } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
+import { fileShape } from "../../src/rules/file-shape.js";
+import { newIntegrationValidation } from "../../src/rules/new-integration-validation.js";
 import {
   createMockContext,
   createMockGitHub,

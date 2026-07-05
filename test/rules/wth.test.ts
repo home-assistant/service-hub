@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
-import { wth } from "../../src/checks/wth.js";
 import { EventType } from "../../src/engine/event.js";
+import { wth } from "../../src/rules/wth.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("wth", () => {

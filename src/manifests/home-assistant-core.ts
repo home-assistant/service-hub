@@ -1,20 +1,3 @@
-import { blockingLabels } from "../checks/blocking-labels.js";
-import { changeType } from "../checks/change-type.js";
-import { mentionCodeOwners } from "../checks/code-owner-mention.js";
-import { dependencyBump } from "../checks/dependency-bump.js";
-import { docsParenting } from "../checks/docs-parenting.js";
-import { docsPrPresent } from "../checks/docs-pr-present.js";
-import { fileShape } from "../checks/file-shape.js";
-import { hacktoberfest } from "../checks/hacktoberfest.js";
-import { integrationDomain } from "../checks/integration-domain.js";
-import { integrationTopRank } from "../checks/integration-top-rank.js";
-import { mergeConflict } from "../checks/merge-conflict.js";
-import { mergeTarget } from "../checks/merge-target.js";
-import { newIntegrationValidation } from "../checks/new-integration-validation.js";
-import { platinumApproval } from "../checks/platinum-approval.js";
-import { qualityScale } from "../checks/quality-scale.js";
-import { reviewComments } from "../checks/review-comments.js";
-import { wth } from "../checks/wth.js";
 import { close } from "../commands/close.js";
 import { addLabel } from "../commands/label-add.js";
 import { removeLabel } from "../commands/label-remove.js";
@@ -25,6 +8,23 @@ import { reopen } from "../commands/reopen.js";
 import { unassign } from "../commands/unassign.js";
 import { update } from "../commands/update.js";
 import { updateBranch } from "../commands/update-branch.js";
+import { blockingLabels } from "../rules/blocking-labels.js";
+import { changeType } from "../rules/change-type.js";
+import { mentionCodeOwners } from "../rules/code-owner-mention.js";
+import { dependencyBump } from "../rules/dependency-bump.js";
+import { docsParenting } from "../rules/docs-parenting.js";
+import { docsPrPresent } from "../rules/docs-pr-present.js";
+import { fileShape } from "../rules/file-shape.js";
+import { hacktoberfest } from "../rules/hacktoberfest.js";
+import { integrationDomain } from "../rules/integration-domain.js";
+import { integrationTopRank } from "../rules/integration-top-rank.js";
+import { mergeConflict } from "../rules/merge-conflict.js";
+import { mergeTarget } from "../rules/merge-target.js";
+import { newIntegrationValidation } from "../rules/new-integration-validation.js";
+import { platinumApproval } from "../rules/platinum-approval.js";
+import { qualityScale } from "../rules/quality-scale.js";
+import { reviewComments } from "../rules/review-comments.js";
+import { wth } from "../rules/wth.js";
 import type { RepoManifest } from "./types.js";
 
 const componentCodeowners = (domain: string) => `homeassistant/components/${domain}/*`;
@@ -41,7 +41,7 @@ const MANAGEABLE_LABELS = [
 export const homeAssistantCore: RepoManifest = {
   slug: "home-assistant/core",
   aliases: ["justanotherariel/hass_core"],
-  checks: [
+  rules: [
     // Integrations
     integrationDomain,
     integrationTopRank,

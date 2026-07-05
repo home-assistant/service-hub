@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
-import { qualityScale } from "../../src/checks/quality-scale.js";
 import { EventType } from "../../src/engine/event.js";
+import { qualityScale } from "../../src/rules/quality-scale.js";
 import { QualityScale } from "../../src/util/integration.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 

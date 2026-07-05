@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { fileShape } from "../../src/checks/file-shape.js";
 import { EventType } from "../../src/engine/event.js";
+import { fileShape } from "../../src/rules/file-shape.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string, overrides: { status?: string; additions?: number } = {}) {

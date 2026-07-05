@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { dependencyBump } from "../../src/checks/dependency-bump.js";
 import { EventType } from "../../src/engine/event.js";
+import { dependencyBump } from "../../src/rules/dependency-bump.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string) {

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, mock } from "bun:test";
-import { integrationTopRank } from "../../src/checks/integration-top-rank.js";
 import { EventType } from "../../src/engine/event.js";
+import { integrationTopRank } from "../../src/rules/integration-top-rank.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
 
 function makeFile(filename: string, overrides: { status?: string; additions?: number } = {}) {

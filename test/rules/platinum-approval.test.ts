@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
-import { integrationDomain } from "../../src/checks/integration-domain.js";
-import { platinumApproval } from "../../src/checks/platinum-approval.js";
-import { qualityScale } from "../../src/checks/quality-scale.js";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import { dispatch } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
+import { integrationDomain } from "../../src/rules/integration-domain.js";
+import { platinumApproval } from "../../src/rules/platinum-approval.js";
+import { qualityScale } from "../../src/rules/quality-scale.js";
 import {
   createMockContext,
   createMockGitHub,

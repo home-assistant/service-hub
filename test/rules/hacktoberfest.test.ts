@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
-import { hacktoberfest } from "../../src/checks/hacktoberfest.js";
 import { EventType } from "../../src/engine/event.js";
+import { hacktoberfest } from "../../src/rules/hacktoberfest.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("hacktoberfest", () => {

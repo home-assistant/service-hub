@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { mentionCodeOwners } from "../../src/checks/code-owner-mention.js";
-import { integrationDomain } from "../../src/checks/integration-domain.js";
 import type { RegistryConfig } from "../../src/engine/dispatch.js";
 import { dispatch } from "../../src/engine/dispatch.js";
 import { EventType } from "../../src/engine/event.js";
+import { mentionCodeOwners } from "../../src/rules/code-owner-mention.js";
+import { integrationDomain } from "../../src/rules/integration-domain.js";
 import {
   createMockContext,
   createMockGitHub,

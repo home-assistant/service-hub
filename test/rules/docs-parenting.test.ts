@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { docsParenting } from "../../src/checks/docs-parenting.js";
 import { EventType } from "../../src/engine/event.js";
+import { docsParenting } from "../../src/rules/docs-parenting.js";
 import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 describe("docs-parenting-code-side", () => {

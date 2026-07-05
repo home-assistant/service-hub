@@ -14,7 +14,7 @@ bun run format       # Auto-fix formatting
 
 ## Webhook subscriptions
 
-The GitHub App only needs four event subscriptions: **Issues**, **Issue comment**, **Pull request**, and **Pull request review**. Everything else is dropped at the door (`KNOWN_EVENT_TYPES` in `src/index.ts`) — in particular CI events (workflow runs/jobs, check runs/suites) and pushes are pure noise today and make up the vast majority of delivery volume, so leave them unsubscribed. Some subscriptions will become necessary for planned work (see TODOs): **Workflow run** and **Check run** for the CI-job-failure rules and for reading job results like `detect-non-english-issues` as flags, and **Pull request review comment** + **Pull request review thread** to re-run the `review-comments` check the moment an inline comment is replied to, acknowledged, or resolved — today that check only refreshes on PR-level events and the cron sweep.
+The GitHub App only needs four event subscriptions: **Issues**, **Issue comment**, **Pull request**, and **Pull request review**. Everything else is dropped at the door (`KNOWN_EVENT_TYPES` in `src/index.ts`) — in particular CI events (workflow runs/jobs, check runs/suites) and pushes are pure noise today and make up the vast majority of delivery volume, so leave them unsubscribed. Some subscriptions will become necessary for planned work (see TODOs): **Workflow run** and **Check run** for the CI-job-failure rules and for reading job results like `detect-non-english-issues` as flags, and **Pull request review comment** + **Pull request review thread** to re-run the `review-comments` rule the moment an inline comment is replied to, acknowledged, or resolved — today that rule only refreshes on PR-level events and the cron sweep.
 
 ## Overriding a dashboard check
 
@@ -36,7 +36,7 @@ Rules communicate through labels: one rule's `addLabels`/`removeLabels` effect c
 
 ## Commands
 
-Commenting `/<slug> <command> [args]` on a PR or issue invokes a command (e.g. `/ha-bot rename New title`). Commands are declared per repo in the manifest next to the checks and, like checks, return effects rather than calling GitHub directly — a command's label changes run through the label loop, so label-triggered checks react to them immediately (the bot's own mutations arrive as self-webhooks, which are dropped). Each command declares its constraints — argument requirement, PR/issue scope, and permission tier (`none`, `code_owner` for the labeled integration's manifest code owners, `member` for org members) — which the dispatcher enforces before the handler runs. The invoking comment gets a 👍 reaction on success and a 👎 when the command is unknown, malformed, out of scope, denied, or fails.
+Commenting `/<slug> <command> [args]` on a PR or issue invokes a command (e.g. `/ha-bot rename New title`). Commands are declared per repo in the manifest next to the rules and, like rules, return effects rather than calling GitHub directly — a command's label changes run through the label loop, so label-triggered rules react to them immediately (the bot's own mutations arrive as self-webhooks, which are dropped). Each command declares its constraints — argument requirement, PR/issue scope, and permission tier (`none`, `code_owner` for the labeled integration's manifest code owners, `member` for org members) — which the dispatcher enforces before the handler runs. The invoking comment gets a 👍 reaction on success and a 👎 when the command is unknown, malformed, out of scope, denied, or fails.
 
 ## Webhook fixture snapshots
 
