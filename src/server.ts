@@ -1,4 +1,6 @@
 import * as Sentry from "@sentry/bun";
+import { startDiscordGateway } from "./discord/engine/gateway.js";
+import { discordRegistry } from "./discord/manifests/index.js";
 import { loadEnv } from "./env.js";
 import { createBotApp, createScheduledHandler, defaultDeps } from "./github/webhook.js";
 import { log } from "./log.js";
@@ -35,3 +37,12 @@ log.info(`ha-github-bot listening on http://localhost:${server.port}`);
 setInterval(() => {
   handleScheduled(env).catch((err) => log.exception(err));
 }, CRON_INTERVAL_MS);
+
+if (env.DISCORD_TOKEN) {
+  startDiscordGateway(discordRegistry, {
+    token: env.DISCORD_TOKEN,
+    dryRun: env.DRY_RUN === "1",
+  }).catch((err) => {
+    log.exception(err instanceof Error ? err : new Error(String(err)));
+  });
+}

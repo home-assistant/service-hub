@@ -13,6 +13,10 @@ export interface Env {
   // `/${COMMAND_SLUG} <command>`.
   COMMAND_SLUG: string;
 
+  // Discord bot token. The gateway only starts when this is set —
+  // absence means "no Discord", not a misconfiguration.
+  DISCORD_TOKEN?: string;
+
   // Sentry
   SENTRY_DSN: string;
 
@@ -44,6 +48,7 @@ export function loadEnv(): Env {
     GITHUB_WEBHOOK_SECRET: required("GITHUB_WEBHOOK_SECRET"),
     BOT_SLUG: process.env.BOT_SLUG ?? "home-assistant",
     COMMAND_SLUG: process.env.COMMAND_SLUG ?? "ha-bot",
+    DISCORD_TOKEN: process.env.DISCORD_TOKEN,
     SENTRY_DSN: process.env.SENTRY_DSN ?? "",
     ENVIRONMENT: process.env.ENVIRONMENT ?? "production",
     DRY_RUN: process.env.DRY_RUN,

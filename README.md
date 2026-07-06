@@ -1,6 +1,6 @@
 # ha-github-bot
 
-A Bun server that handles GitHub webhooks for the Home Assistant organization. It automates PR labeling, documentation enforcement, code owner notifications, and more. CLA checking is handled by the legacy bot in `service-hub/github-bot`.
+A Bun server that automates the Home Assistant organization's GitHub repos and Discord guilds. Two engines share the process, cleanly separated under `src/github/` and `src/discord/`: the GitHub engine handles webhooks (PR labeling, documentation enforcement, code owner notifications, dashboard checks), the Discord engine handles gateway events (slash commands, message listeners). CLA checking is handled by the legacy bot in `service-hub/github-bot`.
 
 ## Development
 
@@ -48,10 +48,21 @@ To capture new fixtures, run `bun run capture` (a server that writes every deliv
 
 Several rules parse the PR body, so fixture bodies must track the repo's real PR template. `bun run sync-templates` vendors each fixture repo's live `.github/PULL_REQUEST_TEMPLATE.md` into `fixtures/<repo>/_templates/`, and `bun run update-fixture-bodies` re-renders every fixture that has a `<name>.body.json` fill file (which checkboxes the contributor ticked, what prose goes under which heading) from that template — failing loudly if a referenced checkbox or heading no longer exists. The synthetic `pull_request.opened.all-change-types` fixture ticks every type-of-change box, so a template rewording of *any* option drops a label from its snapshot even when no other fixture exercises that option. Intended flow: a scheduled workflow runs sync + update + tests and opens a PR when the upstream template changed — its diff shows the template change, the regenerated bodies, and any snapshot fallout in one place.
 
+## Discord engine
+
+`src/discord/` is the message engine: the Discord counterpart of the GitHub rules engine, ported from the legacy bot. The same philosophy applies — handlers never see discord.js objects. The gateway adapter (`src/discord/engine/gateway.ts`, the only file that imports discord.js) normalizes gateway events into plain serializable events, and handlers return `DiscordEffect`s (`reply`, `showModal`, `autocomplete`, `sendMessage`, `deleteMessage`) that an applier executes through ports the adapter implements.
+
+What runs where is declared per guild in `src/discord/manifests/` (mirroring the GitHub repo manifests): slash commands and gateway listeners, with the common set spread into each guild. On startup the gateway replaces each manifest guild's registered slash commands with the manifest's, so stale commands from earlier deploys drop off. A command that opens a modal also owns the submit — modal `customId`s are prefixed `<command>:` and routed back by that prefix.
+
+The gateway only starts when `DISCORD_TOKEN` is set; without it the bot is GitHub-only. The reverse direction — GitHub rules emitting Discord notifications — is deliberately not wired up yet: see the commented `notify` effect in `src/github/engine/types.ts`.
+
+### Discord fixture snapshots
+
+`test/discord/manifests/` mirrors the GitHub webhook fixture suite: every fixture in `fixtures/<guild>/` is a normalized Discord event replayed through the real guild registry — routing, error handling, and default acknowledgement included — with the resulting effect list snapshotted. A `<name>.state.json` sidecar stubs the world outside the event (remote JSON/YAML endpoints, pinned messages). To capture real events, run `bun run capture-discord` with a `DISCORD_TOKEN` for a test bot: it starts the full gateway (commands register and answer) and additionally writes every normalized event to `fixtures/_captured/`.
+
 ## TODOs
 
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
-- Add sentry logging
 - Check what happens when a dispatch for a PR is currently running, but a new webhook enters for the same PR. We should probably queue those, such that a later webhook can't finish before an earlier one.
 
 ### CLA Check
@@ -61,8 +72,9 @@ Several rules parse the PR body, so fixture bodies must track the repo's real PR
 - CLA Check: revoke and discard github token already in `/cla-sign/authorize` and only send back the form fields to the frontend.
 
 ### Discord
-- Add Slack/Discord commands
-- Create Slack/Discord effects (sendMessage, deleteMessage, addReaction...)
+- Enable the `notify` effect (GitHub rules → Discord messages) once the Discord engine runs in production
+- Slack: decide whether it becomes a second adapter behind the message engine
+- Discord: addReaction effect (not needed by the ported legacy features)
 - Discord: Update the dashboard with discord links or the thread or message if the issue/pr has been mentioned there.
 - Discord: Send a discord message when nightly build or dev CI fails.
 - Discord: Send a discrod message when a flaky test is detected with a threshold (failed more than x times last month).

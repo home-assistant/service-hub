@@ -43,6 +43,12 @@ export type Effect =
   | { type: "convertToDraft" }
   | { type: "markReadyForReview" }
   | { type: "updateBranch" };
+// Cross-engine notification, disabled until the Discord engine goes live:
+// a GitHub rule states a fact ({ type: "notify", topic, data }) and the
+// message engine owns which channel it goes to and how it renders. To
+// enable, add the variant to the union above and hand notify effects to the
+// Discord engine in applyEffects (dispatch.ts).
+//  | { type: "notify"; topic: string; data: Record<string, unknown> }
 
 export type EventHandler<E extends EventType> = (
   context: RuleContext<E>,

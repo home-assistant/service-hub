@@ -1,0 +1,192 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`discord fixture snapshots esphome command.component 1`] = `
+[
+  {
+    "embeds": [
+      {
+        "fields": [
+          {
+            "inline": true,
+            "name": "Documentation",
+            "value": "[View the documentation](https://esphome.io/components/switch/gpio.html)",
+          },
+          {
+            "inline": true,
+            "name": "Source",
+            "value": "[View the source on GitHub](https://github.com/esphome/esphome/tree/dev/esphome/components/switch/gpio)",
+          },
+        ],
+        "image": "https://esphome.io/_images/gpio.svg",
+        "title": "GPIO Switch",
+      },
+    ],
+    "type": "reply",
+  },
+]
+`;
+
+exports[`discord fixture snapshots home-assistant autocomplete.integration 1`] = `
+[
+  {
+    "choices": [
+      {
+        "name": "Philips Hue",
+        "value": "hue",
+      },
+      {
+        "name": "Huum",
+        "value": "huum",
+      },
+    ],
+    "type": "autocomplete",
+  },
+]
+`;
+
+exports[`discord fixture snapshots home-assistant command.component.unknown-here 1`] = `
+[
+  {
+    "content": "Unknown command",
+    "ephemeral": true,
+    "type": "reply",
+  },
+]
+`;
+
+exports[`discord fixture snapshots home-assistant command.integration 1`] = `
+[
+  {
+    "embeds": [
+      {
+        "description": "Instructions on how to integrate Philips Hue bridge and paired lights within Home Assistant.",
+        "fields": [
+          {
+            "inline": true,
+            "name": "Documentation",
+            "value": "[View the documentation](https://www.home-assistant.io/integrations/hue/)",
+          },
+          {
+            "inline": true,
+            "name": "Quality scale",
+            "value": "[:trophy: Platinum](https://www.home-assistant.io/docs/quality_scale/)",
+          },
+          {
+            "inline": true,
+            "name": "IoT Class",
+            "value": "[local_push](https://developers.home-assistant.io/docs/creating_integration_manifest#iot-class)",
+          },
+          {
+            "inline": true,
+            "name": "Integration type",
+            "value": "[hub](https://developers.home-assistant.io/docs/creating_integration_manifest#integration-type)",
+          },
+          {
+            "inline": true,
+            "name": "Source",
+            "value": "[View the source on GitHub](https://github.com/home-assistant/core/tree/dev/homeassistant/components/hue)",
+          },
+          {
+            "inline": true,
+            "name": "Issues",
+            "value": "[View known issues](https://github.com/home-assistant/core/issues?q=is%3Aissue+is%3Aopen+label%3A%22integration%3A+hue%22)",
+          },
+        ],
+        "thumbnail": "https://brands.home-assistant.io/hue/dark_logo.png",
+        "title": "Philips Hue",
+      },
+    ],
+    "type": "reply",
+  },
+]
+`;
+
+exports[`discord fixture snapshots home-assistant command.message 1`] = `
+[
+  {
+    "embeds": [
+      {
+        "description": "<@706570390239433720> You can find your logs under Settings -> System -> Logs",
+        "fields": [
+          {
+            "inline": true,
+            "name": "Documentation",
+            "value": "https://www.home-assistant.io/docs/troubleshooting/",
+          },
+        ],
+        "image": undefined,
+        "title": undefined,
+      },
+    ],
+    "type": "reply",
+  },
+]
+`;
+
+exports[`discord fixture snapshots home-assistant command.topic 1`] = `
+[
+  {
+    "embeds": [
+      {
+        "description": "<@706570390239433720> Get help with your configuration.yaml",
+        "title": "The topic of this channel is:",
+      },
+    ],
+    "type": "reply",
+  },
+]
+`;
+
+exports[`discord fixture snapshots home-assistant message_created.long-paste 1`] = `
+[
+  {
+    "channelId": "330944238910963717",
+    "content": "<@662789330969723649> I converted your message into a file since it's above 15 lines :+1:",
+    "files": [
+      {
+        "content": 
+"automation:
+  - alias: Turn on lights at sunset
+    trigger:
+      - platform: sun
+        event: sunset
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.living_room
+  - alias: Turn off lights at sunrise
+    trigger:
+      - platform: sun
+        event: sunrise
+    action:
+      - service: light.turn_off
+        target:
+          entity_id: light.living_room"
+,
+        "name": "configuration_contributor_1390000000000000001.yaml",
+      },
+    ],
+    "type": "sendMessage",
+  },
+  {
+    "channelId": "330944238910963717",
+    "messageId": "1390000000000000001",
+    "type": "deleteMessage",
+  },
+]
+`;
+
+exports[`discord fixture snapshots home-assistant modal_submit.my 1`] = `
+[
+  {
+    "embeds": [
+      {
+        "description": "start setting up a new integration",
+        "title": "Add integration: Philips Hue",
+        "url": "https://my.home-assistant.io/redirect/config_flow_start/?domain=hue",
+      },
+    ],
+    "type": "reply",
+  },
+]
+`;

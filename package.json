@@ -12,6 +12,7 @@
     "test:coverage": "bun test --coverage",
     "test:watch": "bun test --watch",
     "capture": "bun scripts/capture-webhooks.ts",
+    "capture-discord": "bun scripts/capture-discord.ts",
     "sync-templates": "bun scripts/sync-templates.ts",
     "update-fixture-bodies": "bun scripts/update-fixture-bodies.ts"
   },
@@ -21,6 +22,7 @@
     "@octokit/webhooks-methods": "^6.0.0",
     "@octokit/webhooks-types": "^7.6.1",
     "@sentry/bun": "^10.51.0",
+    "discord.js": "^14.26.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
