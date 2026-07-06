@@ -1,5 +1,4 @@
 import type { Octokit } from "@octokit/rest";
-import { log } from "../../../log.js";
 import type { Organization, Repository } from "../../../util/repositories.js";
 
 const CODEOWNERS_TTL_MS = 5 * 60 * 1000;
@@ -43,16 +42,16 @@ export class Repo {
     return this.owner as Organization;
   }
 
-  /** Raw CODEOWNERS file content at HEAD, or null if absent/unreadable. */
+  /**
+   * Raw CODEOWNERS file content at HEAD, or null if the repo has none.
+   * Fetch failures (auth, rate limit, network) propagate to the caller.
+   */
   codeownersContent(): Promise<string | null> {
     if (!this.codeownersCache) {
       this.codeownersCache = this.fetchCodeowners().catch((err) => {
-        log.warn("Repo.codeownersContent: fetch failed", {
-          repository: this.fullName,
-          error: String(err),
-        });
         this.codeownersCache = undefined;
-        return null;
+        if ((err as { status?: number }).status === 404) return null;
+        throw err;
       });
     }
     return this.codeownersCache;

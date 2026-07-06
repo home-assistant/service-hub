@@ -25,8 +25,9 @@ export const log = {
     Sentry.logger.error(message, attributes);
   },
 
-  exception(err: unknown): void {
-    console.error(err);
-    Sentry.captureException(err);
+  exception(err: unknown, attributes?: Attributes): void {
+    if (attributes) console.error(err, attributes);
+    else console.error(err);
+    Sentry.captureException(err, attributes ? { extra: attributes } : undefined);
   },
 };

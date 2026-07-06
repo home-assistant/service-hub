@@ -405,11 +405,10 @@ async function runMatchedRules(
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
     if (outcome.status === "rejected") {
-      log.error("rule failed", {
+      log.exception(outcome.reason, {
         rule: matched[i].name,
         repository: context.repository,
         number: context.number,
-        error: String(outcome.reason),
       });
     } else if (outcome.value) {
       effects.push(...outcome.value);

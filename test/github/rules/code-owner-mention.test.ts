@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { dispatch } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
-import { mentionCodeOwners } from "../../../src/github/rules/code-owner-mention.js";
+import { MENTION_MARKER, mentionCodeOwners } from "../../../src/github/rules/code-owner-mention.js";
 import { integrationDomain } from "../../../src/github/rules/integration-domain.js";
 import {
   createMockContext,
@@ -91,6 +91,41 @@ describe("mention-code-owners", () => {
     expect(result?.comment).toBeUndefined();
   });
 
+  it("does not post again when a mention comment already exists", async () => {
+    const github = createMockGitHub();
+    const codeowners = `homeassistant/components/hue/* @balloob`;
+
+    github.repos.getContent.mockResolvedValue({
+      data: { content: btoa(codeowners) },
+    });
+    github.issues.listComments.mockResolvedValue({
+      data: [
+        {
+          user: { login: "bot[bot]" },
+          body: `${MENTION_MARKER}\n\nHey there @someone-else, mind taking a look?`,
+        },
+      ],
+    });
+    github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
+
+    const context = createMockIssueContext({
+      eventType: EventType.ISSUES_LABELED,
+      github,
+      payload: {
+        label: { name: "integration: hue" },
+        issue: {
+          user: { login: "reporter" },
+          assignees: [],
+          body: "",
+          labels: [{ name: "integration: hue" }],
+        },
+      },
+    });
+
+    const result = await runRule(rule, context);
+    expect(result).toBeUndefined();
+  });
+
   it("does not mention or assign the PR author", async () => {
     const github = createMockGitHub();
     const codeowners = `homeassistant/components/hue/* @reporter`;
@@ -116,13 +151,14 @@ describe("mention-code-owners", () => {
     });
 
     const result = await runRule(rule, context);
-    expect(result?.assignees).toBeUndefined();
-    expect(result?.labels).toContain("by-code-owner");
+    expect(result).toBeUndefined();
   });
 
-  it("returns undefined when CODEOWNERS file is not found", async () => {
+  it("raises when CODEOWNERS file is not found", async () => {
     const github = createMockGitHub();
-    github.repos.getContent.mockRejectedValue(new Error("Not found"));
+    github.repos.getContent.mockRejectedValue(
+      Object.assign(new Error("Not Found"), { status: 404 }),
+    );
 
     const context = createMockIssueContext({
       eventType: EventType.ISSUES_LABELED,
@@ -133,8 +169,7 @@ describe("mention-code-owners", () => {
       },
     });
 
-    const result = await runRule(rule, context);
-    expect(result).toBeUndefined();
+    expect(runRule(rule, context)).rejects.toThrow("No CODEOWNERS file");
   });
 
   it("returns undefined when integration is not in CODEOWNERS", async () => {

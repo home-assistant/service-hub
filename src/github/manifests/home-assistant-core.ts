@@ -10,6 +10,7 @@ import { unassign } from "../commands/unassign.js";
 import { update } from "../commands/update.js";
 import { updateBranch } from "../commands/update-branch.js";
 import { blockingLabels } from "../rules/blocking-labels.js";
+import { byCodeOwner } from "../rules/by-code-owner.js";
 import { changeType } from "../rules/change-type.js";
 import { mentionCodeOwners } from "../rules/code-owner-mention.js";
 import { dependencyBump } from "../rules/dependency-bump.js";
@@ -52,6 +53,7 @@ export const homeAssistantCore: RepoManifest = {
     qualityScale,
     newIntegrationValidation,
     mentionCodeOwners({ pathPattern: componentCodeowners }),
+    byCodeOwner({ pathPattern: componentCodeowners }),
 
     // Issues
     setIntegration,

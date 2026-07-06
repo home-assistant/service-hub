@@ -213,7 +213,7 @@ describe("dispatch", () => {
 
   it("continues processing when a rule throws", async () => {
     const github = createMockGitHub();
-    const logErrorSpy = spyOn(log, "error").mockImplementation(() => {});
+    const logExceptionSpy = spyOn(log, "exception").mockImplementation(() => {});
 
     const failingRule: Rule = {
       name: "failing",
@@ -241,15 +241,15 @@ describe("dispatch", () => {
 
     await dispatch(config, context);
 
-    expect(logErrorSpy).toHaveBeenCalledWith(
-      "rule failed",
-      expect.objectContaining({ rule: "failing", error: expect.stringContaining("Rule exploded") }),
+    expect(logExceptionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Rule exploded" }),
+      expect.objectContaining({ rule: "failing" }),
     );
     expect(github.issues.addLabels).toHaveBeenCalledWith(
       expect.objectContaining({ labels: ["still-works"] }),
     );
 
-    logErrorSpy.mockRestore();
+    logExceptionSpy.mockRestore();
   });
 
   it("in dry-run, returns effects but does not call GitHub", async () => {

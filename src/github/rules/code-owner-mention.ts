@@ -9,6 +9,12 @@ type HandledEvent = EventType.ISSUES_LABELED | EventType.PULL_REQUEST_LABELED | 
 
 const INTEGRATION_LABEL_PREFIX = "integration: ";
 
+// One ping per item: a comment carrying this marker means owners were already
+// mentioned, and no further mention comments are posted — even if new
+// integrations or code owners show up later. Assignment can fail silently
+// (owners without repo access), so comment presence is the only reliable state.
+export const MENTION_MARKER = "<!-- ha-bot:code-owner-mention -->";
+
 /**
  * Compact help block listing the commands a code owner may use on this item,
  * from the repo's registered command list on the context.
@@ -31,7 +37,7 @@ function commandHelp(ctx: RuleContext<HandledEvent>): string {
   ].join("\n");
 }
 
-async function processIntegration(
+function processIntegration(
   ctx: RuleContext<HandledEvent>,
   integrationName: string,
   codeownersContent: string,
@@ -40,7 +46,7 @@ async function processIntegration(
   authorLogin: string,
   assignees: string[],
   commenters: string[],
-): Promise<Effect[]> {
+): Effect[] {
   if (!codeownersContent.includes(integrationName)) return [];
 
   const entries = parseCodeOwners(codeownersContent);
@@ -65,25 +71,15 @@ async function processIntegration(
     effects.push({
       type: "comment",
       body:
-        `Hey there ${mentions.join(", ")}, mind taking a look at this ${itemLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!` +
+        `${MENTION_MARKER}\n\nHey there ${mentions.join(", ")}, mind taking a look at this ${itemLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!` +
         commandHelp(ctx),
     });
-  }
-
-  const expandedOwners = await ctx.org.expandTeams(owners);
-  if (expandedOwners.includes(authorLogin)) {
-    effects.push({ type: "addLabels", labels: ["by-code-owner"] });
   }
 
   return effects;
 }
 
 async function collectIntegrationNames(ctx: RuleContext<HandledEvent>): Promise<string[]> {
-  // State-based: the `integration:` labels currently on the item, whether
-  // the trigger is a label event or on_demand. Re-processing an integration
-  // is idempotent — owners already assigned or heard from aren't re-pinged.
-  // A labeled/unlabeled event for a non-integration label can't change the
-  // outcome, so skip those cheaply.
   if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return [];
 
   return (await ctx.target.labels())
@@ -99,29 +95,36 @@ export function mentionCodeOwners(config: {
     const integrationNames = await collectIntegrationNames(ctx);
     if (integrationNames.length === 0) return;
 
+    // The rule is only registered on repos that have a CODEOWNERS file, so a
+    // missing one is a misconfiguration — surface it instead of no-opping.
     const codeownersContent = await ctx.repo.codeownersContent();
-    if (!codeownersContent) return;
+    if (!codeownersContent) {
+      throw new Error(`No CODEOWNERS file in ${ctx.repository}`);
+    }
+
+    const comments = await ctx.target.issueComments();
+    if (comments.some((c) => c.body?.includes(MENTION_MARKER))) return;
 
     const authorLogin = (await ctx.target.authorLogin()).toLowerCase();
     const assignees = (await ctx.target.assigneeLogins()).map((a) => a.toLowerCase());
-    const comments = await ctx.target.issueComments();
     const commenters = comments.map((c) => c.user?.login?.toLowerCase() ?? "");
 
     const itemLabel = config.itemLabel ?? (ctx.target.kind === "issue" ? "issue" : "pull request");
 
     const effects: Effect[] = [];
     for (const integrationName of integrationNames) {
-      const integrationEffects = await processIntegration(
-        ctx,
-        integrationName,
-        codeownersContent,
-        config.pathPattern,
-        itemLabel,
-        authorLogin,
-        assignees,
-        commenters,
+      effects.push(
+        ...processIntegration(
+          ctx,
+          integrationName,
+          codeownersContent,
+          config.pathPattern,
+          itemLabel,
+          authorLogin,
+          assignees,
+          commenters,
+        ),
       );
-      effects.push(...integrationEffects);
     }
 
     return effects.length > 0 ? effects : undefined;

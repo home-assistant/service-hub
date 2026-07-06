@@ -27,7 +27,9 @@ describe("Repo", () => {
 
   it("returns null when CODEOWNERS is missing", async () => {
     const github = createMockGitHub();
-    github.repos.getContent.mockRejectedValue(new Error("404"));
+    github.repos.getContent.mockRejectedValue(
+      Object.assign(new Error("Not Found"), { status: 404 }),
+    );
     const repo = new Repo(asOctokit(github), {
       owner: "home-assistant",
       name: "core",
@@ -35,6 +37,20 @@ describe("Repo", () => {
     });
 
     expect(await repo.codeownersContent()).toBeNull();
+  });
+
+  it("propagates non-404 CODEOWNERS fetch failures", async () => {
+    const github = createMockGitHub();
+    github.repos.getContent.mockRejectedValue(
+      Object.assign(new Error("rate limited"), { status: 403 }),
+    );
+    const repo = new Repo(asOctokit(github), {
+      owner: "home-assistant",
+      name: "core",
+      fullName: "home-assistant/core",
+    });
+
+    expect(repo.codeownersContent()).rejects.toThrow("rate limited");
   });
 });
 
