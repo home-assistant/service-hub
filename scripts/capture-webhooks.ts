@@ -1,10 +1,10 @@
 /**
- * Webhook capture server for seeding test/manifests fixtures from real
+ * Webhook capture server for seeding test/github/manifests fixtures from real
  * GitHub deliveries. Point a tunnel (e.g. smee.io) at
  * http://localhost:8787/github/webhook, perform actions on a repo the bot
  * app is installed on, and every delivery lands in the capture directory as
  * `<event>.<action>-<delivery-id>.json` — the raw payload, ready to be
- * renamed into test/manifests/fixtures/<repo>/ (the harness derives the
+ * renamed into test/github/manifests/fixtures/<repo>/ (the harness derives the
  * event type from the `<event>.<action>` filename prefix).
  *
  * Usage: bun scripts/capture-webhooks.ts [output-dir]
@@ -13,7 +13,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 
 const port = Number(process.env.PORT ?? 8787);
-const outDir = process.argv[2] ?? "test/manifests/fixtures/_captured";
+const outDir = process.argv[2] ?? "test/github/manifests/fixtures/_captured";
 mkdirSync(outDir, { recursive: true });
 
 Bun.serve({

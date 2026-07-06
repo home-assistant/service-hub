@@ -12,7 +12,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const FIXTURES_ROOT = "test/manifests/fixtures";
+const FIXTURES_ROOT = "test/github/manifests/fixtures";
 
 interface BodyFill {
   /** Checkbox descriptions to tick, matched verbatim against `- [ ] <desc>`. */

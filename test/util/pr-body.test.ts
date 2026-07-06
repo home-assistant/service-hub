@@ -7,7 +7,7 @@ import {
   extractPullRequestURLLinks,
   extractTasks,
 } from "../../src/util/pr-body.js";
-import { lastSegment } from "../helpers/mock-context.js";
+import { lastSegment } from "../github/helpers/mock-context.js";
 
 describe("extractIssuesOrPullRequestMarkdownLinks", () => {
   it("extracts a single markdown-style reference", () => {

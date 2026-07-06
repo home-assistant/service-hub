@@ -11,7 +11,7 @@
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const FIXTURES_ROOT = "test/manifests/fixtures";
+const FIXTURES_ROOT = "test/github/manifests/fixtures";
 
 /** Applied to every string value, in order. */
 const REPLACEMENTS: [RegExp, string][] = [

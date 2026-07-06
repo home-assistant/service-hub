@@ -1,4 +1,4 @@
-import type { ListPullRequestFiles } from "../engine/model/pull-request.js";
+import type { ListPullRequestFiles } from "../github/engine/model/pull-request.js";
 import { log } from "../log.js";
 import { coreComponents, entityPlatforms } from "./components.js";
 

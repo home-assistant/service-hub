@@ -1,6 +1,6 @@
 /**
  * Vendor each fixture repo's live PR template into
- * test/manifests/fixtures/<repo>/_templates/, so fixture bodies can be
+ * test/github/manifests/fixtures/<repo>/_templates/, so fixture bodies can be
  * regenerated from the real thing (scripts/update-fixture-bodies.ts) and
  * template changes upstream show up as a diff here.
  *
@@ -9,7 +9,7 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const FIXTURES_ROOT = "test/manifests/fixtures";
+const FIXTURES_ROOT = "test/github/manifests/fixtures";
 
 /** The repo a fixture directory's deliveries came from, per its payloads. */
 function repoSlug(dir: string): string {

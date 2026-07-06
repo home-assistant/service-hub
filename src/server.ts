@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/bun";
 import { loadEnv } from "./env.js";
-import { createBotApp, createScheduledHandler, defaultDeps } from "./index.js";
+import { createBotApp, createScheduledHandler, defaultDeps } from "./github/webhook.js";
 import { log } from "./log.js";
 
 // Cron lookback is 10 minutes; fire every 5 so consecutive runs overlap.
