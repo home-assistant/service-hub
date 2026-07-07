@@ -25,6 +25,7 @@ import { MergeConflictChecker } from './handlers/merge_conflict';
 import { MonthOfWTH } from './handlers/month_of_wth';
 import { NewIntegrationsHandler } from './handlers/new_integrations';
 import { PlatinumReview } from './handlers/platinum_review';
+import { PrTemplate } from './handlers/pr_template';
 import { QualityScaleLabeler } from './handlers/quality_scale';
 import { RequiredLabels } from './handlers/required_labels';
 import { ReviewDrafter } from './handlers/review_drafter';
@@ -53,6 +54,7 @@ import { ValidateCla } from './handlers/validate-cla';
     MonthOfWTH,
     NewIntegrationsHandler,
     PlatinumReview,
+    PrTemplate,
     QualityScaleLabeler,
     RequiredLabels,
     ReviewDrafter,
