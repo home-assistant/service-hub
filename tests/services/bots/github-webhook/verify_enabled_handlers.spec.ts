@@ -130,6 +130,7 @@ describe('GithubWebhookModule', () => {
         'DocsMissing',
         'NewIntegrationsHandler',
         'PlatinumReview',
+        'PrContext',
         'QualityScaleLabeler',
         'RequiredLabels',
         'ValidateCla',
