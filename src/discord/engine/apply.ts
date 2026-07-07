@@ -34,7 +34,8 @@ export interface EffectPorts {
 /**
  * Apply dispatched effects through the ports. Sequential on purpose: replies
  * must land before follow-up channel operations, and effect lists are short.
- * Failures are logged per effect so one bad send doesn't sink the rest.
+ * A failure aborts the remaining effects — later ones can be destructive
+ * follow-ups (deleting a message that should have been reposted first).
  */
 export async function applyDiscordEffects(
   effects: DiscordEffect[],
@@ -66,7 +67,11 @@ export async function applyDiscordEffects(
           break;
       }
     } catch (err) {
-      log.warn("discord: effect failed", { effect: effect.type, error: String(err) });
+      log.warn("discord: effect failed, skipping the rest", {
+        effect: effect.type,
+        error: String(err),
+      });
+      return;
     }
   }
 }

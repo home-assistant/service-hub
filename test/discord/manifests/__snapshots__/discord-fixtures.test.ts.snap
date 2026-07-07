@@ -17,7 +17,7 @@ exports[`discord fixture snapshots esphome command.component 1`] = `
             "value": "[View the source on GitHub](https://github.com/esphome/esphome/tree/dev/esphome/components/switch/gpio)",
           },
         ],
-        "image": "https://esphome.io/_images/gpio.svg",
+        "thumbnail": "https://esphome.io/_images/gpio.svg",
         "title": "GPIO Switch",
       },
     ],

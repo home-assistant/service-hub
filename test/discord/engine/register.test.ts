@@ -6,10 +6,11 @@ import { buildCommandRegistrations } from "../../../src/discord/engine/register.
 describe("buildCommandRegistrations", () => {
   it("maps option kinds onto Discord API option types", () => {
     expect(buildCommandRegistrations([ping, message])).toEqual([
-      { name: "ping", description: "Returns pong" },
+      { name: "ping", description: "Returns pong", default_member_permissions: "2147483648" },
       {
         name: "message",
         description: "Returns a predefined message",
+        default_member_permissions: "2147483648",
         options: [
           {
             type: 3,

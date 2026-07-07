@@ -33,7 +33,7 @@ export const component: SlashCommand = {
         embeds: [
           {
             title: data.title,
-            image: data.image,
+            thumbnail: data.image,
             fields: [
               {
                 name: "Documentation",

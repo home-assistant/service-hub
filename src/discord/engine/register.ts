@@ -5,9 +5,14 @@ import type { CommandOptionSpec, SlashCommand } from "./types.js";
 // without discord.js.
 const OPTION_TYPE = { string: 3, mentionable: 9 } as const;
 
+// PermissionFlagsBits.UseApplicationCommands, so roles that revoke the
+// permission (mute patterns) can't use the bot's commands.
+const DEFAULT_MEMBER_PERMISSIONS = (1n << 31n).toString();
+
 export interface CommandRegistration {
   name: string;
   description: string;
+  default_member_permissions: string;
   options?: {
     type: number;
     name: string;
@@ -35,6 +40,7 @@ export function buildCommandRegistrations(commands: SlashCommand[]): CommandRegi
   return commands.map((command) => ({
     name: command.name,
     description: command.description,
+    default_member_permissions: DEFAULT_MEMBER_PERMISSIONS,
     ...(command.options?.length ? { options: command.options.map(registrationOption) } : {}),
   }));
 }

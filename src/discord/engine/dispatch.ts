@@ -36,8 +36,18 @@ function errorReply(err: unknown): DiscordEffect {
   };
 }
 
-function reportException(err: unknown): void {
-  log.exception(err instanceof Error ? err : new Error(String(err)));
+/** Sentry events need to say where they came from without the transcript. */
+function reportException(
+  err: unknown,
+  context: DiscordContext,
+  attributes: Record<string, string>,
+): void {
+  log.exception(err instanceof Error ? err : new Error(String(err)), {
+    guildId: context.guildId,
+    channel: context.channel.name,
+    user: context.user.username,
+    ...attributes,
+  });
 }
 
 function isAnswered(effects: DiscordEffect[]): boolean {
@@ -70,7 +80,7 @@ async function dispatchCommand(
       ? effects
       : [...effects, { type: "reply", content: "Command completed", ephemeral: true }];
   } catch (err) {
-    reportException(err);
+    reportException(err, context, { command: name });
     return [errorReply(err)];
   }
 }
@@ -84,7 +94,7 @@ async function dispatchAutocomplete(
   try {
     return [{ type: "autocomplete", choices: await command.autocomplete(context) }];
   } catch (err) {
-    reportException(err);
+    reportException(err, context, { command: context.event.command });
     // Still answer the interaction — an empty list renders as "no results".
     return [{ type: "autocomplete", choices: [] }];
   }
@@ -103,7 +113,7 @@ async function dispatchModal(
   try {
     return (await command.handleModal(context)) ?? [];
   } catch (err) {
-    reportException(err);
+    reportException(err, context, { customId: context.event.customId });
     return [errorReply(err)];
   }
 }
@@ -120,7 +130,7 @@ async function dispatchMessage(
     try {
       effects.push(...((await handler(context)) ?? []));
     } catch (err) {
-      log.error("discord: listener failed", { listener: listener.name, error: String(err) });
+      reportException(err, context, { listener: listener.name });
     }
   }
   return effects;
