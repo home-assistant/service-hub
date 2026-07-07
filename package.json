@@ -12,6 +12,7 @@
     "test:coverage": "bun test --coverage",
     "test:watch": "bun test --watch",
     "capture": "bun scripts/capture-webhooks.ts",
+    "scrub": "bun scripts/capture-webhooks.ts scrub",
     "capture-discord": "bun scripts/capture-discord.ts",
     "sync-templates": "bun scripts/sync-templates.ts",
     "update-fixture-bodies": "bun scripts/update-fixture-bodies.ts"
