@@ -18,13 +18,7 @@ The GitHub App only needs four event subscriptions: **Issues**, **Issue comment*
 
 ## Overriding a dashboard check
 
-Failing or pending checks on the bot's PR dashboard can be overridden by adding a tag to the PR description, with an explanation of why this PR doesn't need to satisfy the rule:
-
-```html
-<!-- ha-bot:ignore id="<section-id>" reason="<why this PR is an exception>" -->
-```
-
-The `id` is the section ID shown in the dashboard's machine-readable markers (e.g. `merge-conflict`, `docs-missing`). Only `fail` and `pending` sections can be downgraded — they become `warn`, which stays visible in the checks table with a warning triangle but no longer fails the aggregate; other statuses ignore the tag. The original check message stays visible with an `Override: <reason>` line appended, so reviewers can see both what was flagged and why it was waived.
+Failing or pending checks on the bot's PR dashboard can be waived with the `/ha-bot ignore "<check name>" "<reason>"` comment command, using the check's display title from the dashboard table. Under the hood the command appends `<!-- ha-bot:ignore id="<section-id>" reason="<why>" -->` to the PR description, which is the single source of truth for overrides — removing the tag from the description un-waives the check. Only `fail` and `pending` sections can be downgraded — they become `warn`, which stays visible in the checks table with a warning triangle but no longer fails the aggregate; other statuses ignore the tag. The original check message stays visible with an `Override: <reason>` line appended, so reviewers can see both what was flagged and why it was waived.
 
 ## Rule context and entity model
 
@@ -36,7 +30,7 @@ Rules communicate through labels: one rule's `addLabels`/`removeLabels` effect c
 
 ## Commands
 
-Commenting `/<slug> <command> [args]` on a PR or issue invokes a command (e.g. `/ha-bot rename New title`). Commands are declared per repo in the manifest next to the rules and, like rules, return effects rather than calling GitHub directly — a command's label changes run through the label loop, so label-triggered rules react to them immediately (the bot's own mutations arrive as self-webhooks, which are dropped). Each command declares its constraints — argument requirement, PR/issue scope, and permission tier (`none`, `code_owner` for the labeled integration's manifest code owners, `member` for org members) — which the dispatcher enforces before the handler runs. The invoking comment gets a 👍 reaction on success and a 👎 when the command is unknown, malformed, out of scope, denied, or fails.
+Commenting `/<slug> <command> ["<arg>" …]` on a PR or issue invokes a command (e.g. `/ha-bot rename "New title"`); every argument is wrapped in double quotes, and the dispatcher hands them to the handler unquoted. Commands are declared per repo in the manifest next to the rules and, like rules, return effects rather than calling GitHub directly — a command's label changes run through the label loop, so label-triggered rules react to them immediately (the bot's own mutations arrive as self-webhooks, which are dropped). Each command declares its constraints — argument requirement, PR/issue scope, and permission tier (`none`, `code_owner` for the labeled integration's manifest code owners, `member` for org members) — which the dispatcher enforces before the handler runs. The invoking comment gets a 👍 reaction on success and a 👎 when the command is unknown, malformed, out of scope, denied, or fails.
 
 ## Webhook fixture snapshots
 
@@ -63,7 +57,7 @@ The gateway only starts when `DISCORD_TOKEN` is set; without it the bot is GitHu
 ## TODOs
 
 - On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
-- Check what happens when a dispatch for a PR is currently running, but a new webhook enters for the same PR. We should probably queue those, such that a later webhook can't finish before an earlier one.
+- Update the Discord message path inside `src/discord/commands/info.ts`
 
 ### CLA Check
 - Add CLA Check
@@ -96,3 +90,7 @@ The gateway only starts when `DISCORD_TOKEN` is set; without it the bot is GitHu
 - convert other github/ci jobs into messages like `detect-non-english-issues`. These jobs should set flags which our bot can read instead.
 - info: they touched 'meta files': a pr should only touch a single meta file or no meta file. e.g. Agents.md, lock files, github actions, etc
 - Have a list of 'legacy' integrations which should not be worked on until something has been fixed. E.g. https://github.com/home-assistant/core/pull/163497 (According to ADR 7 this is required before new features can be accepted for an integration.)
+- Some kind of notification system to core developers to look at PRs which haven't gotten a response for more than x days (e.g. 1 or 2 months). Maybe auto assign on a rotation basis to core developers which are then responsible for that PR? Could be an issue dashboard or epic? 
+- Check if awaiting-frontend / awaiting-backend could be automated?
+- If an arch discussion is linked, check if it has been aproved. Put the PR in draft until it is approved.
+- Create a comment if person force pushes to PR 'Please do not force push'.

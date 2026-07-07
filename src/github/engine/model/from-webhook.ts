@@ -137,7 +137,8 @@ function eventFromPayload(payload: WebhookEventPayload, eventType: EventType): R
       const p = payload as PullRequestClosedEvent;
       return { type: eventType, merged: p.pull_request.merged === true };
     }
-    case EventType.PULL_REQUEST_REVIEW_SUBMITTED: {
+    case EventType.PULL_REQUEST_REVIEW_SUBMITTED:
+    case EventType.PULL_REQUEST_REVIEW_DISMISSED: {
       const p = payload as Partial<PullRequestReviewSubmittedEvent>;
       return {
         type: eventType,

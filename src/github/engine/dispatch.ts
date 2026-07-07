@@ -1,8 +1,13 @@
 import type { Octokit } from "@octokit/rest";
 import { log } from "../../log.js";
 import type { CommandContext } from "./command-context.js";
-import { ensureDashboardCommentExists, upsertDashboardComment } from "./dashboard/comment.js";
+import {
+  ensureDashboardCommentExists,
+  findDashboardCommentId,
+  upsertDashboardComment,
+} from "./dashboard/comment.js";
 import { parseOverrides } from "./dashboard/overrides.js";
+import { parseDashboard } from "./dashboard/renderer.js";
 import type { DashboardSection } from "./dashboard/types.js";
 import { EventType } from "./event.js";
 import type { RuleContext } from "./rule-context.js";
@@ -31,7 +36,7 @@ function collectKnownDashboardSectionIds(
   const ids = new Set<string>();
   const rules = registryConfig.repositories[context.repository] ?? [];
   for (const rule of rules) {
-    if (rule.dashboardSections) for (const id of rule.dashboardSections) ids.add(id);
+    if (rule.dashboardSections) for (const { id } of rule.dashboardSections) ids.add(id);
   }
   return ids;
 }
@@ -236,35 +241,47 @@ async function updateBranchOrExplain(context: RuleContext): Promise<void> {
   }
 }
 
-/** Re-draft if the existing ha-bot aggregate on head SHA is failing. */
+/** Re-draft if the PR's dashboard still has failing (not pending) checks. */
 async function maybeRedraftOnReady(context: RuleContext): Promise<void> {
   if (context.target.kind !== "pull_request") return;
   try {
-    const headSha = await context.target.headSha();
-    const { data: statuses } = await context.github.repos.listCommitStatusesForRef(
-      context.repoParams({ ref: headSha, per_page: 100 }),
-    );
-    const haBot = statuses.find((s) => s.context === HA_BOT_STATUS_CONTEXT);
-    if (haBot?.state !== "failure") return;
+    const existing = await findDashboardCommentId(context.github, context.issueParams());
+    if (!existing) return;
+    if (!parseDashboard(existing.body).some((s) => s.status === "fail")) return;
     await draftPRIfNotDraft(context);
   } catch (err) {
     log.warn("maybeRedraftOnReady failed", { error: String(err) });
   }
 }
 
+/**
+ * `pending` sections fail the aggregate like `fail` ones — both block the
+ * merge — but only `fail` drafts the PR: pending checks wait on someone other
+ * than the author (e.g. a code-owner review), and a draft would hide the PR
+ * from the very people who can resolve them.
+ */
 function aggregateDashboardStatus(sections: DashboardSection[]): {
-  state: "success" | "failure" | "pending";
+  state: "success" | "failure";
   description: string;
+  shouldDraft: boolean;
 } {
   const fails = sections.filter((s) => s.status === "fail").length;
   const pending = sections.filter((s) => s.status === "pending").length;
   const warns = sections.filter((s) => s.status === "warn").length;
   const skipped = sections.filter((s) => s.status === "skip").length;
-  if (pending > 0) {
-    return { state: "pending", description: `${pending} check${pending === 1 ? "" : "s"} pending` };
-  }
   if (fails > 0) {
-    return { state: "failure", description: `${fails} check${fails === 1 ? "" : "s"} failing` };
+    return {
+      state: "failure",
+      description: `${fails} check${fails === 1 ? "" : "s"} failing`,
+      shouldDraft: true,
+    };
+  }
+  if (pending > 0) {
+    return {
+      state: "failure",
+      description: `${pending} check${pending === 1 ? "" : "s"} pending`,
+      shouldDraft: false,
+    };
   }
   const extras = [
     ...(warns > 0 ? [`${warns} warning${warns === 1 ? "" : "s"}`] : []),
@@ -274,6 +291,7 @@ function aggregateDashboardStatus(sections: DashboardSection[]): {
     state: "success",
     description:
       extras.length > 0 ? `All checks passed (${extras.join(", ")})` : "All checks passed",
+    shouldDraft: false,
   };
 }
 
@@ -328,7 +346,7 @@ async function syncDashboardAndStatus(
       target_url: result.comment.url,
     }),
   );
-  if (aggregate.state === "failure") {
+  if (aggregate.shouldDraft) {
     await draftPRIfNotDraft(context);
   }
   await sweep;
@@ -561,7 +579,10 @@ async function commandRejection(
 ): Promise<string | undefined> {
   if (!context.command) return "unparseable invocation";
   if (!command) return `unknown command "${context.command.name}"`;
-  if (command.args === "required" && !context.command.args) return "missing argument";
+  if (context.command.malformed) return 'arguments must be wrapped in quotes: `"<argument>"`';
+  if (command.args === "required" && context.command.args.length === 0) {
+    return "missing argument";
+  }
 
   const scope = command.scope ?? "both";
   if (scope === "pull_request" && context.target.kind !== "pull_request") {

@@ -6,11 +6,12 @@ export function addLabel(manageable: readonly string[]): Command {
     name: "add-label",
     description: `Adds a label (${manageable.join(", ")}) to the issue or pull request.`,
     args: "required",
-    example: `add-label ${manageable[0]}`,
+    example: `add-label "${manageable[0]}"`,
     permission: "code_owner",
 
     async handle(context) {
-      const label = context.args ?? "";
+      if (context.args.length !== 1) throw new Error('usage: add-label "<label>"');
+      const label = context.args[0];
       if (!valid.has(label)) {
         throw new Error(`Label "${label}" is not manageable via commands`);
       }

@@ -58,18 +58,28 @@ export type EventHandlers = {
   [E in EventType]?: EventHandler<E>;
 };
 
+/**
+ * A dashboard section a rule may write. The title doubles as the section's
+ * user-facing name — commands like `ignore` resolve it back to the ID, so it
+ * must match what the section renders.
+ */
+export interface DashboardSectionClaim {
+  id: string;
+  title: string;
+}
+
 export interface Rule {
   name: string;
   description: string;
   allowBots?: boolean;
   /**
-   * Dashboard section IDs this rule may emit. The dispatcher takes the union
+   * Dashboard sections this rule may emit. The dispatcher takes the union
    * across all rules registered for the repo/org and uses it to sweep stale
    * sections out of the dashboard comment — any section in the existing
    * comment whose ID isn't claimed by some live rule gets removed on the
    * next dashboard write.
    */
-  dashboardSections?: readonly string[];
+  dashboardSections?: readonly DashboardSectionClaim[];
   events: EventHandlers;
 }
 
@@ -89,11 +99,11 @@ export type CommandPermission = "none" | "author" | "code_owner" | "member";
 export interface Command {
   name: string;
   description: string;
-  /** Whether the rest-of-line argument after the name is required. */
+  /** Whether at least one `"quoted"` argument after the name is required. */
   args?: "none" | "required";
   /**
-   * Sample invocation without the `/<slug> ` prefix (e.g. `rename A better
-   * title`), shown in rendered command help for arg-taking commands.
+   * Sample invocation without the `/<slug> ` prefix (e.g. `rename "A better
+   * title"`), shown in rendered command help for arg-taking commands.
    */
   example?: string;
   scope?: "pull_request" | "issue" | "both";

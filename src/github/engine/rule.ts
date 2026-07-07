@@ -63,7 +63,7 @@ export function check<E extends EventType>(config: CheckConfig<E>): Rule {
     name: config.name ?? config.id,
     description: config.description,
     allowBots: config.allowBots,
-    dashboardSections: [config.id],
+    dashboardSections: [{ id: config.id, title: config.title }],
     events: on(config.events, handler),
   };
 }

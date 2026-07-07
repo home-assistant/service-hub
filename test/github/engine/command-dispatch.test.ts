@@ -22,36 +22,50 @@ const noopCommand = (overrides: Partial<Command> = {}): Command => ({
 
 describe("parseCommands", () => {
   it("extracts the name and lowercases it", () => {
-    expect(parseCommands("/ha-bot UPDATE", "ha-bot")).toEqual([{ name: "update" }]);
+    expect(parseCommands("/ha-bot UPDATE", "ha-bot")).toEqual([{ name: "update", args: [] }]);
   });
 
-  it("captures a rest-of-line argument with spaces", () => {
-    expect(parseCommands("/ha-bot rename Awesome new title", "ha-bot")).toEqual([
-      { name: "rename", args: "Awesome new title" },
+  it("extracts quoted arguments without their quotes", () => {
+    expect(parseCommands('/ha-bot rename "Awesome new title"', "ha-bot")).toEqual([
+      { name: "rename", args: ["Awesome new title"] },
     ]);
-    expect(parseCommands("/ha-bot add-label problem in dependency", "ha-bot")).toEqual([
-      { name: "add-label", args: "problem in dependency" },
+    expect(
+      parseCommands('/ha-bot ignore "Merge conflicts" "Broken rule, no conflicts"', "ha-bot"),
+    ).toEqual([{ name: "ignore", args: ["Merge conflicts", "Broken rule, no conflicts"] }]);
+  });
+
+  it("flags unquoted argument text as malformed", () => {
+    expect(parseCommands("/ha-bot rename Awesome new title", "ha-bot")).toEqual([
+      { name: "rename", args: [], malformed: true },
+    ]);
+    expect(parseCommands('/ha-bot ignore "Merge conflicts" trailing', "ha-bot")).toEqual([
+      { name: "ignore", args: ["Merge conflicts"], malformed: true },
     ]);
   });
 
   it("matches on any line of the comment but not mid-line", () => {
-    expect(parseCommands("thanks!\n/ha-bot close", "ha-bot")).toEqual([{ name: "close" }]);
+    expect(parseCommands("thanks!\n/ha-bot close", "ha-bot")).toEqual([
+      { name: "close", args: [] },
+    ]);
     expect(parseCommands("see /ha-bot close", "ha-bot")).toEqual([]);
   });
 
   it("does not swallow following lines into the argument", () => {
-    expect(parseCommands("/ha-bot rename New title\nmore text", "ha-bot")).toEqual([
-      { name: "rename", args: "New title" },
+    expect(parseCommands('/ha-bot rename "New title"\nmore text', "ha-bot")).toEqual([
+      { name: "rename", args: ["New title"] },
     ]);
   });
 
   it("parses several commands from one comment, in order, with prose between", () => {
     expect(
       parseCommands(
-        "looks good!\n/ha-bot rename New title\nsome explanation\n/ha-bot close",
+        'looks good!\n/ha-bot rename "New title"\nsome explanation\n/ha-bot close',
         "ha-bot",
       ),
-    ).toEqual([{ name: "rename", args: "New title" }, { name: "close" }]);
+    ).toEqual([
+      { name: "rename", args: ["New title"] },
+      { name: "close", args: [] },
+    ]);
   });
 
   it("returns an empty list without a command name", () => {
@@ -240,7 +254,7 @@ describe("code_owner permission and commands", () => {
   });
 
   it("unassign removes the integration label and its code-owner assignees", async () => {
-    const { context, github } = makeContext("/ha-bot unassign awesome", {
+    const { context, github } = makeContext('/ha-bot unassign "awesome"', {
       registry: registryWith(unassign),
       issue: {
         labels: [{ name: "integration: awesome" }],
@@ -261,7 +275,7 @@ describe("code_owner permission and commands", () => {
 
   it("remove-label rejects labels that are not set", async () => {
     const command = removeLabel(["needs-more-information"]);
-    const { context, github } = makeContext("/ha-bot remove-label needs-more-information", {
+    const { context, github } = makeContext('/ha-bot remove-label "needs-more-information"', {
       registry: registryWith(command),
       issue: { labels: [{ name: "integration: awesome" }] },
     });

@@ -16,8 +16,23 @@ export function isBotCommand(commentBody: string, slug: string): boolean {
 
 export interface CommandInvocation {
   name: string;
-  /** Rest of the line after the name; may contain spaces (titles, labels). */
-  args?: string;
+  /** Arguments, each written `"quoted"` on the command line, unquoted here. */
+  args: string[];
+  /** True when the line carried text that wasn't a well-formed quoted argument. */
+  malformed?: boolean;
+}
+
+/** Tokenize the rest of a command line into `"quoted"` arguments. */
+function parseArgs(rest: string | undefined): Pick<CommandInvocation, "args" | "malformed"> {
+  const args: string[] = [];
+  let remaining = (rest ?? "").trim();
+  while (remaining) {
+    const match = remaining.match(/^"([^"]+)"(?:\s+|$)/);
+    if (!match) return { args, malformed: true };
+    args.push(match[1]);
+    remaining = remaining.slice(match[0].length);
+  }
+  return { args };
 }
 
 /**
@@ -32,7 +47,7 @@ export function parseCommands(commentBody: string, slug: string): CommandInvocat
   );
   return [...commentBody.matchAll(re)].map((match) => ({
     name: match[1].toLowerCase(),
-    ...(match[2] ? { args: match[2] } : {}),
+    ...parseArgs(match[2]),
   }));
 }
 
@@ -80,8 +95,8 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
     return this.event.commentId;
   }
 
-  get args(): string | undefined {
-    return this.command?.args;
+  get args(): string[] {
+    return this.command?.args ?? [];
   }
 
   /**

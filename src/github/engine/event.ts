@@ -9,6 +9,7 @@ export enum EventType {
   PULL_REQUEST_REOPENED = "pull_request.reopened",
   PULL_REQUEST_READY_FOR_REVIEW = "pull_request.ready_for_review",
   PULL_REQUEST_REVIEW_SUBMITTED = "pull_request_review.submitted",
+  PULL_REQUEST_REVIEW_DISMISSED = "pull_request_review.dismissed",
   PULL_REQUEST_SYNCHRONIZE = "pull_request.synchronize",
   PULL_REQUEST_UNLABELED = "pull_request.unlabeled",
 
@@ -49,6 +50,11 @@ export interface RuleEventMap {
   [EventType.PULL_REQUEST_READY_FOR_REVIEW]: { type: EventType.PULL_REQUEST_READY_FOR_REVIEW };
   [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: {
     type: EventType.PULL_REQUEST_REVIEW_SUBMITTED;
+    reviewState: string;
+    reviewer: string;
+  };
+  [EventType.PULL_REQUEST_REVIEW_DISMISSED]: {
+    type: EventType.PULL_REQUEST_REVIEW_DISMISSED;
     reviewState: string;
     reviewer: string;
   };

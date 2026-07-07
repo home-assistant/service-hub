@@ -6,11 +6,12 @@ export function removeLabel(manageable: readonly string[]): Command {
     name: "remove-label",
     description: `Removes a label (${manageable.join(", ")}) from the issue or pull request.`,
     args: "required",
-    example: `remove-label ${manageable[0]}`,
+    example: `remove-label "${manageable[0]}"`,
     permission: "code_owner",
 
     async handle(context) {
-      const label = context.args ?? "";
+      if (context.args.length !== 1) throw new Error('usage: remove-label "<label>"');
+      const label = context.args[0];
       if (!valid.has(label)) {
         throw new Error(`Label "${label}" is not manageable via commands`);
       }

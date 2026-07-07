@@ -24,7 +24,7 @@ exports[`webhook fixture snapshots home-assistant-core issue_comment.created.com
     "section": {
       "id": "code-owner-approval",
       "message": "Platinum integration — needs approval from a code owner before merging.",
-      "status": "fail",
+      "status": "pending",
       "title": "Code owner approval",
     },
     "type": "dashboardSection",
@@ -222,7 +222,7 @@ Hey there @balloob, mind taking a look at this pull request as it has been label
     "section": {
       "id": "code-owner-approval",
       "message": "Platinum integration — needs approval from a code owner before merging.",
-      "status": "fail",
+      "status": "pending",
       "title": "Code owner approval",
     },
     "type": "dashboardSection",
@@ -393,7 +393,7 @@ Hey there @balloob, mind taking a look at this pull request as it has been label
     "section": {
       "id": "code-owner-approval",
       "message": "Platinum integration — needs approval from a code owner before merging.",
-      "status": "fail",
+      "status": "pending",
       "title": "Code owner approval",
     },
     "type": "dashboardSection",
@@ -624,7 +624,7 @@ exports[`webhook fixture snapshots home-assistant-core pull_request.reopened 1`]
     "section": {
       "id": "code-owner-approval",
       "message": "Platinum integration — needs approval from a code owner before merging.",
-      "status": "fail",
+      "status": "pending",
       "title": "Code owner approval",
     },
     "type": "dashboardSection",
@@ -707,7 +707,7 @@ exports[`webhook fixture snapshots home-assistant-core pull_request.synchronize.
     "section": {
       "id": "code-owner-approval",
       "message": "Platinum integration — needs approval from a code owner before merging.",
-      "status": "fail",
+      "status": "pending",
       "title": "Code owner approval",
     },
     "type": "dashboardSection",

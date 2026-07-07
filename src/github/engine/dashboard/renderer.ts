@@ -81,11 +81,7 @@ function prIntro(friendlyName: string, slug: string, extras: DashboardExtras): s
     "",
     "### Skip a check that doesn't apply",
     "",
-    `If you think a check doesn't apply to your PR (or the rule is bugged), comment \`/${slug} ignore <section-id> <reason>\` or add the following snippet to your PR description. This will mark the rule as exempt and let you put your PR in 'Ready for review'.`,
-    "",
-    "```html",
-    '<!-- ha-bot:ignore id="<section-id>" reason="<why>" -->',
-    "```",
+    `If you think a check doesn't apply to your PR (or the rule is bugged), comment \`/${slug} ignore "<check name>" "<reason>"\` — the check name as shown in the table above. This will mark the rule as exempt and let you put your PR in 'Ready for review'.`,
     "",
     "### Bot commands",
     "",
@@ -118,12 +114,13 @@ export function renderDashboard(
 ): string {
   const friendlyName = FRIENDLY_NAMES[repo] ?? repo;
   const slug = extras.commandSlug ?? "ha-bot";
-  const failing = sections.filter((s) => s.status === "fail" || s.status === "pending");
+  const failing = sections.filter((s) => s.status === "fail");
+  const pending = sections.filter((s) => s.status === "pending");
   const warning = sections.filter((s) => s.status === "warn");
   const info = sections.filter((s) => s.status === "info");
   const passing = sections.filter((s) => s.status === "pass");
   const skipped = sections.filter((s) => s.status === "skip");
-  const visible = [...failing, ...warning];
+  const visible = [...failing, ...pending, ...warning];
   const hasChecks = visible.length > 0 || passing.length > 0 || skipped.length > 0;
 
   const sectionData = sections.map(

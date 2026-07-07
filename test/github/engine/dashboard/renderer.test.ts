@@ -63,7 +63,7 @@ describe("dashboard renderer", () => {
       });
       expect(result).toContain("More information about this dashboard");
       expect(result).toContain("Skip a check that doesn't apply");
-      expect(result).toContain("ha-bot:ignore");
+      expect(result).toContain('ignore "<check name>" "<reason>"');
       expect(result).toContain("Bot commands");
       expect(result).toContain("- `update` — Re-runs the bot's checks.");
       expect(result).toContain("- `mark-draft` — Marks the pull request as draft. *(code owners)*");
@@ -84,12 +84,13 @@ describe("dashboard renderer", () => {
       expect(result).not.toContain("Things to address");
     });
 
-    it("treats pending sections as failing for the lead-in", () => {
+    it("shows pending sections in the main table without the 'Things to address' lead-in", () => {
       const pending: DashboardSection[] = [
         { id: "a", title: "A", status: "pending", message: "waiting" },
       ];
       const result = renderDashboard(pending, REPO);
-      expect(result).toContain("Things to address:");
+      expect(result).not.toContain("Things to address");
+      expect(result).toContain("| :hourglass: | A | waiting |");
     });
 
     it("renders failing checks in the main table", () => {

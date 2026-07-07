@@ -38,7 +38,7 @@ describe("platinum-approval", () => {
     expect(result?.dashboard?.status).toBe("skip");
   });
 
-  it("fails when platinum integration has no code owner approval", async () => {
+  it("is pending when platinum integration has no code owner approval", async () => {
     const github = createMockGitHub();
     github.pulls.listReviews.mockResolvedValue({ data: [] });
 
@@ -69,7 +69,7 @@ describe("platinum-approval", () => {
     });
 
     const result = await runRule(platinumApproval, context);
-    expect(result?.dashboard?.status).toBe("fail");
+    expect(result?.dashboard?.status).toBe("pending");
     expect(result?.dashboard?.message).toContain("needs approval from a code owner");
   });
 
@@ -109,6 +109,48 @@ describe("platinum-approval", () => {
     const result = await runRule(platinumApproval, context);
     expect(result?.dashboard?.status).toBe("pass");
     expect(result?.labels).toContain("code-owner-approved");
+  });
+
+  it("removes the approval label when the owner approval was dismissed", async () => {
+    const github = createMockGitHub();
+    github.pulls.listReviews.mockResolvedValue({
+      data: [{ state: "DISMISSED", user: { login: "balloob", type: "User" } }],
+    });
+    github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
+
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        domain: "hue",
+        name: "Hue",
+        codeowners: ["@balloob"],
+        quality_scale: "platinum",
+        config_flow: true,
+        dependencies: [],
+        documentation: "",
+        requirements: [],
+        iot_class: "local_polling",
+      }),
+    });
+
+    const context = createMockContext({
+      eventType: EventType.PULL_REQUEST_REVIEW_DISMISSED,
+      github,
+      payload: {
+        pull_request: {
+          labels: [
+            { name: "integration: hue" },
+            { name: "Quality Scale: platinum" },
+            { name: "code-owner-approved" },
+          ],
+          head: { sha: "abc123" },
+        },
+      },
+    });
+
+    const result = await runRule(platinumApproval, context);
+    expect(result?.dashboard?.status).toBe("pending");
+    expect(result?.removeLabels).toContain("code-owner-approved");
   });
 
   it("succeeds when by-code-owner label is present", async () => {
@@ -183,12 +225,13 @@ describe("platinum-approval", () => {
     expect(result?.dashboard?.status).toBe("skip");
   });
 
-  it("listens to label events, review submission, and on_demand", () => {
+  it("listens to label events, review submission/dismissal, and on_demand", () => {
     expect(Object.keys(platinumApproval.events).sort()).toEqual(
       [
         EventType.PULL_REQUEST_LABELED,
         EventType.PULL_REQUEST_UNLABELED,
         EventType.PULL_REQUEST_REVIEW_SUBMITTED,
+        EventType.PULL_REQUEST_REVIEW_DISMISSED,
         EventType.ON_DEMAND,
       ].sort(),
     );
@@ -234,7 +277,7 @@ describe("platinum-approval", () => {
     expect(effects).toContainEqual(
       expect.objectContaining({
         type: "dashboardSection",
-        section: expect.objectContaining({ id: "code-owner-approval", status: "fail" }),
+        section: expect.objectContaining({ id: "code-owner-approval", status: "pending" }),
       }),
     );
     expect(github.issues.addLabels).toHaveBeenCalledWith(

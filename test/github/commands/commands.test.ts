@@ -68,19 +68,26 @@ describe("close / reopen", () => {
 });
 
 describe("rename", () => {
-  it("sets a multi-word title", async () => {
-    const { context, github } = asCodeOwner("/ha-bot rename Awesome new title");
+  it("sets a quoted multi-word title", async () => {
+    const { context, github } = asCodeOwner('/ha-bot rename "Awesome new title"');
     await dispatchCommand(context);
     expect(github.issues.update).toHaveBeenCalledWith(
       expect.objectContaining({ issue_number: 1, title: "Awesome new title" }),
     );
     expectReaction(github, "+1");
   });
+
+  it("rejects an unquoted title", async () => {
+    const { context, github } = asCodeOwner("/ha-bot rename Awesome new title");
+    await dispatchCommand(context);
+    expect(github.issues.update).not.toHaveBeenCalled();
+    expectReaction(github, "-1");
+  });
 });
 
 describe("add-label / remove-label", () => {
   it("adds an allowlisted label", async () => {
-    const { context, github } = asCodeOwner("/ha-bot add-label needs-more-information");
+    const { context, github } = asCodeOwner('/ha-bot add-label "needs-more-information"');
     await dispatchCommand(context);
     expect(github.issues.addLabels).toHaveBeenCalledWith(
       expect.objectContaining({ labels: ["needs-more-information"] }),
@@ -89,7 +96,7 @@ describe("add-label / remove-label", () => {
   });
 
   it("rejects labels outside the allowlist", async () => {
-    const { context, github } = asCodeOwner("/ha-bot add-label second-opinion-wanted");
+    const { context, github } = asCodeOwner('/ha-bot add-label "second-opinion-wanted"');
     await dispatchCommand(context);
     expect(github.issues.addLabels).not.toHaveBeenCalled();
     expectReaction(github, "-1");
@@ -97,10 +104,13 @@ describe("add-label / remove-label", () => {
 
   it("removes a present allowlisted label", async () => {
     const command = removeLabel(["needs-more-information"]);
-    const { context, github } = makeCommandContext("/ha-bot remove-label needs-more-information", {
-      registry: registryWith(command),
-      issue: { labels: [{ name: "integration: awesome" }, { name: "needs-more-information" }] },
-    });
+    const { context, github } = makeCommandContext(
+      '/ha-bot remove-label "needs-more-information"',
+      {
+        registry: registryWith(command),
+        issue: { labels: [{ name: "integration: awesome" }, { name: "needs-more-information" }] },
+      },
+    );
     await dispatchCommand(context);
     expect(github.issues.removeLabel).toHaveBeenCalledWith(
       expect.objectContaining({ name: "needs-more-information" }),

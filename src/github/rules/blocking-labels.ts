@@ -43,9 +43,10 @@ export function blockingLabels(
     });
   }
 
-  const dashboardSections = Object.keys(config).map(
-    (label) => `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
-  );
+  const dashboardSections = Object.keys(config).map((label) => ({
+    id: `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
+    title: `Blocking: ${label}`,
+  }));
 
   return {
     name: "blocking-labels",

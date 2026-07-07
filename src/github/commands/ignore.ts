@@ -10,27 +10,25 @@ import type { Command } from "../engine/types.js";
  */
 export const ignore: Command = {
   name: "ignore",
-  description: "Waives a dashboard check: `ignore <section-id> <reason>`.",
+  description: 'Waives a dashboard check: `ignore "<check name>" "<reason>"`.',
   args: "required",
-  example: "ignore merge-conflict Will rebase before merging",
+  example: 'ignore "Merge conflicts" "Broken rule, no merge conflicts present"',
   scope: "pull_request",
   permission: "author",
 
   async handle(context) {
-    const args = (context.args ?? "").trim();
-    const spaceIndex = args.search(/\s/);
-    const id = spaceIndex === -1 ? args : args.slice(0, spaceIndex);
-    const reason = spaceIndex === -1 ? "" : args.slice(spaceIndex + 1).trim();
-    if (!id || !reason) throw new Error("usage: ignore <section-id> <reason>");
+    if (context.args.length !== 2) throw new Error('usage: ignore "<check name>" "<reason>"');
+    const [name, reason] = context.args;
 
-    const knownIds = new Set(
-      (context.registry.repositories[context.repository] ?? []).flatMap(
-        (rule) => rule.dashboardSections ?? [],
-      ),
+    // Users see a check's title on the dashboard, not its section ID —
+    // resolve the title against the registry's section claims.
+    const claims = (context.registry.repositories[context.repository] ?? []).flatMap(
+      (rule) => rule.dashboardSections ?? [],
     );
-    if (!knownIds.has(id)) throw new Error(`unknown dashboard section "${id}"`);
+    const claim = claims.find((c) => c.title.toLowerCase() === name.trim().toLowerCase());
+    if (!claim) throw new Error(`unknown dashboard check "${name}"`);
 
-    const tag = `<!-- ha-bot:ignore id="${id}" reason="${reason.replaceAll('"', "'")}" -->`;
+    const tag = `<!-- ha-bot:ignore id="${claim.id}" reason="${reason}" -->`;
     if (context.dryRun) {
       log.info("dry run", { repository: context.repository, ignoreTag: tag });
       return undefined;

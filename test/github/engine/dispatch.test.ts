@@ -404,9 +404,9 @@ describe("dispatch", () => {
       );
     });
 
-    it("writes a pending ha-bot status when any section is pending", async () => {
+    it("writes a failing ha-bot status when a section is pending", async () => {
       const { github, config, context } = setupHarness([
-        { id: "a", status: "fail" },
+        { id: "a", status: "pass" },
         { id: "b", status: "pending" },
       ]);
       await dispatch(config, context);
@@ -414,7 +414,8 @@ describe("dispatch", () => {
       expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
         expect.objectContaining({
           context: "ha-bot",
-          state: "pending",
+          state: "failure",
+          description: expect.stringContaining("1 check pending"),
         }),
       );
     });
@@ -452,7 +453,7 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "rule",
         description: "",
-        dashboardSections: ["x"],
+        dashboardSections: [{ id: "x", title: "x" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
@@ -506,11 +507,17 @@ describe("dispatch", () => {
       expect(github.graphql).not.toHaveBeenCalled();
     });
 
-    it("on ready_for_review with an existing failing ha-bot status, drafts immediately", async () => {
+    function dashboardComment(status: "fail" | "pending" | "pass") {
+      const section = { id: "x", title: "x", status, message: "msg" };
+      return {
+        id: 1,
+        body: `<!-- ha-bot-dashboard -->\n<!-- section:x:${JSON.stringify(section)} -->`,
+      };
+    }
+
+    it("on ready_for_review with a failing dashboard section, drafts immediately", async () => {
       const github = createMockGitHub();
-      github.repos.listCommitStatusesForRef.mockResolvedValue({
-        data: [{ id: 1, context: "ha-bot", state: "failure", creator: { login: "ha-bot[bot]" } }],
-      });
+      github.paginate.mockImplementation(async () => [dashboardComment("fail")]);
 
       const config: RegistryConfig = { repositories: {} };
       const context = createMockContext({
@@ -527,11 +534,9 @@ describe("dispatch", () => {
       );
     });
 
-    it("on ready_for_review with a passing ha-bot status, does not draft", async () => {
+    it("on ready_for_review with only a pending dashboard section, does not draft", async () => {
       const github = createMockGitHub();
-      github.repos.listCommitStatusesForRef.mockResolvedValue({
-        data: [{ id: 1, context: "ha-bot", state: "success", creator: { login: "ha-bot[bot]" } }],
-      });
+      github.paginate.mockImplementation(async () => [dashboardComment("pending")]);
 
       const config: RegistryConfig = { repositories: {} };
       const context = createMockContext({
@@ -544,9 +549,9 @@ describe("dispatch", () => {
       expect(github.graphql).not.toHaveBeenCalled();
     });
 
-    it("on ready_for_review with no ha-bot status yet, does not draft", async () => {
+    it("on ready_for_review with no dashboard comment yet, does not draft", async () => {
       const github = createMockGitHub();
-      github.repos.listCommitStatusesForRef.mockResolvedValue({ data: [] });
+      github.paginate.mockImplementation(async () => []);
 
       const config: RegistryConfig = { repositories: {} };
       const context = createMockContext({
@@ -575,7 +580,10 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "rule-with-override",
         description: "",
-        dashboardSections: ["merge-conflict", ...extraSections.map((s) => s.id)],
+        dashboardSections: [
+          { id: "merge-conflict", title: "merge-conflict" },
+          ...extraSections.map((s) => ({ id: s.id, title: s.id })),
+        ],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
@@ -726,7 +734,10 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "other-rule",
         description: "",
-        dashboardSections: ["merge-conflict", "other"],
+        dashboardSections: [
+          { id: "merge-conflict", title: "merge-conflict" },
+          { id: "other", title: "other" },
+        ],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
@@ -795,7 +806,7 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "live-rule",
         description: "",
-        dashboardSections: ["still-live"],
+        dashboardSections: [{ id: "still-live", title: "still-live" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
@@ -844,7 +855,7 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "with-dashboard",
         description: "",
-        dashboardSections: ["live"],
+        dashboardSections: [{ id: "live", title: "live" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
@@ -912,7 +923,7 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "rule",
         description: "",
-        dashboardSections: ["live"],
+        dashboardSections: [{ id: "live", title: "live" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
@@ -956,7 +967,7 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "rule",
         description: "",
-        dashboardSections: ["live"],
+        dashboardSections: [{ id: "live", title: "live" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {

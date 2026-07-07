@@ -28,6 +28,7 @@ interface TargetMap {
   [EventType.PULL_REQUEST_REOPENED]: PullRequest;
   [EventType.PULL_REQUEST_READY_FOR_REVIEW]: PullRequest;
   [EventType.PULL_REQUEST_REVIEW_SUBMITTED]: PullRequest;
+  [EventType.PULL_REQUEST_REVIEW_DISMISSED]: PullRequest;
   [EventType.PULL_REQUEST_SYNCHRONIZE]: PullRequest;
   [EventType.PULL_REQUEST_UNLABELED]: PullRequest;
   [EventType.ON_DEMAND]: PullRequest;
