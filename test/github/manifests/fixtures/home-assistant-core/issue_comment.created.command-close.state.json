@@ -1,9 +1,3 @@
 {
-  "remote": {
-    "components/hue/manifest.json": {
-      "domain": "hue",
-      "name": "Philips Hue",
-      "codeowners": ["@contributor"]
-    }
-  }
+  "codeowners": "/homeassistant/components/hue/ @contributor\n"
 }

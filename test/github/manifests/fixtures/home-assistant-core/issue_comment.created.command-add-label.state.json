@@ -1,4 +1,5 @@
 {
+  "codeowners": "/homeassistant/components/hue/ @contributor\n",
   "remote": {
     "components/hue/manifest.json": {
       "domain": "hue",

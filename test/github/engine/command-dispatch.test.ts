@@ -131,8 +131,23 @@ describe("dispatchCommand", () => {
     expectReaction(github, "-1");
   });
 
-  it("gates member commands on org membership", async () => {
-    const command = noopCommand({ permission: "member" });
+  it("gates author commands on authorship or org membership", async () => {
+    const command = noopCommand({ permission: "author" });
+    const github = createMockGitHub();
+    github.orgs.checkMembershipForUser.mockRejectedValue({ status: 404 });
+    const { context } = makeContext("/ha-bot ping", {
+      github,
+      registry: registryWith(command),
+      sender: { login: "stranger", type: "User" },
+    });
+
+    await dispatchCommand(context);
+    expect(command.handle).not.toHaveBeenCalled();
+    expectReaction(github, "-1");
+  });
+
+  it("allows author commands for the non-member author", async () => {
+    const command = noopCommand({ permission: "author" });
     const github = createMockGitHub();
     github.orgs.checkMembershipForUser.mockRejectedValue({ status: 404 });
     const { context } = makeContext("/ha-bot ping", {
@@ -141,14 +156,15 @@ describe("dispatchCommand", () => {
     });
 
     await dispatchCommand(context);
-    expect(command.handle).not.toHaveBeenCalled();
-    expectReaction(github, "-1");
+    expect(command.handle).toHaveBeenCalled();
+    expectReaction(github, "+1");
   });
 
-  it("allows member commands for org members", async () => {
-    const command = noopCommand({ permission: "member" });
+  it("allows author commands for org members who are not the author", async () => {
+    const command = noopCommand({ permission: "author" });
     const { context, github } = makeContext("/ha-bot ping", {
       registry: registryWith(command),
+      sender: { login: "someoneelse", type: "User" },
     });
 
     await dispatchCommand(context);
@@ -209,6 +225,7 @@ describe("dispatchCommand", () => {
 describe("code_owner permission and commands", () => {
   const originalFetch = globalThis.fetch;
 
+  // The unassign handler still reads the integration manifest.
   beforeEach(() => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -224,9 +241,22 @@ describe("code_owner permission and commands", () => {
     globalThis.fetch = originalFetch;
   });
 
-  it("allows a code owner of the single labeled integration", async () => {
+  /** A mock GitHub whose CODEOWNERS makes `owner` own `awesome`, membership 404s. */
+  function nonMemberGitHub(owner = "@testuser") {
+    const github = createMockGitHub();
+    github.orgs.checkMembershipForUser.mockRejectedValue({ status: 404 });
+    github.repos.getContent.mockResolvedValue({
+      data: { content: btoa(`/homeassistant/components/awesome/ ${owner}\n`) },
+      headers: {},
+    });
+    return github;
+  }
+
+  it("allows a non-member CODEOWNERS owner of the single labeled integration", async () => {
     const command = noopCommand({ permission: "code_owner" });
-    const { context, github } = makeContext("/ha-bot ping", {
+    const github = nonMemberGitHub();
+    const { context } = makeContext("/ha-bot ping", {
+      github,
       registry: registryWith(command),
       issue: { labels: [{ name: "integration: awesome" }] },
     });
@@ -236,15 +266,62 @@ describe("code_owner permission and commands", () => {
     expectReaction(github, "+1");
   });
 
-  it("denies non-code-owners and unlabeled items", async () => {
+  it("allows org members who are not code owners", async () => {
     const command = noopCommand({ permission: "code_owner" });
-    const { context: noLabel, github: g1 } = makeContext("/ha-bot ping", {
+    const { context, github } = makeContext("/ha-bot ping", {
+      registry: registryWith(command),
+      sender: { login: "stranger", type: "User" },
+    });
+
+    await dispatchCommand(context);
+    expect(command.handle).toHaveBeenCalled();
+    expectReaction(github, "+1");
+  });
+
+  it("answers membership from the comment's MEMBER association without an API call", async () => {
+    const command = noopCommand({ permission: "code_owner" });
+    const github = createMockGitHub();
+    github.orgs.checkMembershipForUser.mockRejectedValue(new Error("must not be called"));
+    const { context } = makeContext("/ha-bot ping", {
+      github,
+      registry: registryWith(command),
+      senderAssociation: "MEMBER",
+    });
+
+    await dispatchCommand(context);
+    expect(command.handle).toHaveBeenCalled();
+    expect(github.orgs.checkMembershipForUser).not.toHaveBeenCalled();
+    expectReaction(github, "+1");
+  });
+
+  it("does not trust an OWNER association (personal repos); the API decides", async () => {
+    const command = noopCommand({ permission: "code_owner" });
+    const github = nonMemberGitHub("@balloob");
+    const { context } = makeContext("/ha-bot ping", {
+      github,
+      registry: registryWith(command),
+      issue: { labels: [{ name: "integration: awesome" }] },
+      senderAssociation: "OWNER",
+    });
+
+    await dispatchCommand(context);
+    expect(command.handle).not.toHaveBeenCalled();
+    expectReaction(github, "-1");
+  });
+
+  it("denies non-member non-code-owners and unlabeled items", async () => {
+    const command = noopCommand({ permission: "code_owner" });
+    const g1 = nonMemberGitHub();
+    const { context: noLabel } = makeContext("/ha-bot ping", {
+      github: g1,
       registry: registryWith(command),
     });
     await dispatchCommand(noLabel);
     expectReaction(g1, "-1");
 
-    const { context: wrongUser, github: g2 } = makeContext("/ha-bot ping", {
+    const g2 = nonMemberGitHub("@balloob");
+    const { context: wrongUser } = makeContext("/ha-bot ping", {
+      github: g2,
       registry: registryWith(command),
       issue: { labels: [{ name: "integration: awesome" }] },
       sender: { login: "stranger", type: "User" },

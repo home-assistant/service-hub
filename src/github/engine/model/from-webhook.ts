@@ -237,6 +237,7 @@ export function commandContextFromWebhook(
       commentBody: payload.comment?.body ?? "",
     },
     sender: senderFromLogin(payload.sender?.login ?? "", payload.sender?.type === "Bot"),
+    senderAssociation: payload.comment?.author_association,
     repo,
     org: new Org(github, repo.owner),
     target: targetFromPayload(github, payload, repo),

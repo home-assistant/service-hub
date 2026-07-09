@@ -35,6 +35,8 @@ export interface FixtureState {
   mergeableState?: string;
   /** Raw CODEOWNERS content served for the repo. */
   codeowners?: string;
+  /** Org member logins (orgs.checkMembershipForUser); nobody by default. */
+  members?: string[];
   /** URL substring → JSON body served by the fetch mock; other URLs 404. */
   remote?: Record<string, unknown>;
   /** Extra fields served by pulls.get hydration (draft, node_id, …). */
@@ -236,6 +238,11 @@ function createRecordingGitHub(): {
 export async function runFixture(fixture: Fixture): Promise<RecordedCall[]> {
   const { github, octokit, recorded } = createRecordingGitHub();
   github.pulls.get.mockResolvedValue({ data: hydrationPullRequest(fixture) });
+  const members = fixture.state.members ?? [];
+  github.orgs.checkMembershipForUser.mockImplementation(
+    async ({ username }: { username: string }) =>
+      members.includes(username) ? { status: 204 } : Promise.reject({ status: 404 }),
+  );
   if (fixture.state.codeowners) {
     github.repos.getContent.mockResolvedValue({
       data: { content: btoa(fixture.state.codeowners) },

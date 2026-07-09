@@ -1,17 +1,17 @@
 import type { Command, CommandPermission } from "./types.js";
 
-/** Broadest audience first: everyone → author → members → code owners. */
+/** Broadest audience first: everyone → author → code owners. */
 const PERMISSION_RANK: Record<CommandPermission, number> = {
   none: 0,
   author: 1,
-  member: 2,
-  code_owner: 3,
+  code_owner: 2,
 };
 
+// Org members can invoke everything and need no reminding — the notes only
+// name the non-member audience each command is really for.
 const PERMISSION_NOTES: Record<CommandPermission, string> = {
   none: "",
-  author: " *(author or members)*",
-  member: " *(members)*",
+  author: " *(author)*",
   code_owner: " *(code owners)*",
 };
 

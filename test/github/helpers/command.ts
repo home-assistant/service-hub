@@ -12,6 +12,8 @@ export interface MakeCommandContextOptions {
   registry?: RegistryConfig;
   issue?: Record<string, unknown>;
   sender?: { login: string; type: string };
+  /** The comment's author_association; NONE unless a test says otherwise. */
+  senderAssociation?: string;
 }
 
 export function makeCommandContext(
@@ -36,7 +38,12 @@ export function makeCommandContext(
       assignees: [] as { login: string }[],
       ...options.issue,
     },
-    comment: { id: 42, body, user: { login: "testuser" } },
+    comment: {
+      id: 42,
+      body,
+      user: { login: "testuser" },
+      author_association: options.senderAssociation ?? "NONE",
+    },
   };
   const context = commandContextFromWebhook(
     github as unknown as Octokit,
@@ -54,6 +61,9 @@ export function registryWith(command: Command, rules: Rule[] = []): RegistryConf
   return {
     repositories: { "home-assistant/core": rules },
     commands: { "home-assistant/core": [command] },
+    integrationPaths: {
+      "home-assistant/core": (domain) => `homeassistant/components/${domain}/*`,
+    },
   };
 }
 

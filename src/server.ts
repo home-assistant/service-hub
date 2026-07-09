@@ -15,7 +15,6 @@ Sentry.init({
   dsn: env.SENTRY_DSN,
   environment: env.ENVIRONMENT,
   tracesSampleRate: 1.0,
-  // Logs are shipped through src/log.ts (Sentry.logger with attributes).
   enableLogs: true,
 });
 

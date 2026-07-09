@@ -81,18 +81,6 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
   const ownBotLogin = `${env.BOT_SLUG}[bot]`;
   const selfWebhook = senderLogin.toLowerCase() === ownBotLogin.toLowerCase();
 
-  log.info("webhook", {
-    webhook: rawEventType,
-    repo: payload.repository.full_name,
-    sender: payload.sender?.login,
-    number:
-      ("pull_request" in payload && payload.pull_request?.number) ||
-      ("issue" in payload && payload.issue?.number) ||
-      undefined,
-    delivery: request.headers.get("x-github-delivery"),
-    ...(selfWebhook ? { ignored: "self-webhook" } : known ? {} : { ignored: "unknown event type" }),
-  });
-
   // Skip self-webhooks and events we don't have a rule for
   if (selfWebhook || !known) return new Response("OK");
 
@@ -131,12 +119,12 @@ export function createBotApp(deps: BotDeps): RequestHandler {
   return async (request, env) => {
     const url = new URL(request.url);
 
-    if (request.method === "GET" && url.pathname === "/health") {
-      return new Response("OK");
-    }
-
     if (request.method === "POST" && url.pathname === "/github/webhook") {
       return handleWebhook(deps, request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/health") {
+      return new Response("OK");
     }
 
     return new Response("Not Found", { status: 404 });

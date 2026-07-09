@@ -20,9 +20,7 @@ export const MENTION_MARKER = "<!-- ha-bot:code-owner-mention -->";
  * from the repo's registered command list on the context.
  */
 function commandHelp(ctx: RuleContext<HandledEvent>): string {
-  const available = commandsForTarget(ctx.commands, ctx.target.kind).filter(
-    (c) => c.permission !== "member",
-  );
+  const available = commandsForTarget(ctx.commands, ctx.target.kind);
   if (available.length === 0) return "";
 
   return [

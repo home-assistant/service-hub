@@ -1,6 +1,7 @@
-import { fetchIntegrationManifest } from "../../util/integration.js";
+import { log } from "../../log.js";
 import type { RegistryConfig } from "./dispatch.js";
 import type { EventType } from "./event.js";
+import { matchCodeOwners, parseCodeOwners } from "./model/codeowners.js";
 import { RuleContext, type RuleContextParams } from "./rule-context.js";
 
 const INTEGRATION_LABEL_PREFIX = "integration: ";
@@ -57,6 +58,8 @@ export interface CommandContextParams extends RuleContextParams<EventType.ISSUE_
   /** The invocation this context is scoped to (set via withInvocation). */
   command?: CommandInvocation;
   registry: RegistryConfig;
+  /** The comment's `author_association` from the webhook payload. */
+  senderAssociation?: string;
 }
 
 /**
@@ -71,6 +74,7 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
   readonly invocations: CommandInvocation[];
   readonly command?: CommandInvocation;
   readonly registry: RegistryConfig;
+  readonly senderAssociation?: string;
   private readonly params: CommandContextParams;
 
   constructor(params: CommandContextParams) {
@@ -79,6 +83,7 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
     this.invocations = params.invocations ?? (params.command ? [params.command] : []);
     this.command = params.command ?? this.invocations[0];
     this.registry = params.registry;
+    this.senderAssociation = params.senderAssociation;
   }
 
   /** Same comment and caches, scoped to a single invocation. */
@@ -100,9 +105,10 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
   }
 
   /**
-   * Whether the sender is a code owner of `domain`'s integration manifest;
-   * without a domain, of the item's single `integration:`-labeled domain.
-   * Ambiguous (zero or several labeled integrations) means no.
+   * Whether the sender owns `domain` per the repo's CODEOWNERS file (cached
+   * process-wide); without a domain, the item's single `integration:`-labeled
+   * domain. Ambiguous (zero or several labeled integrations), no registered
+   * integration path for the repo, or a CODEOWNERS fetch failure all mean no.
    */
   async senderIsCodeOwner(domain?: string): Promise<boolean> {
     const domains = domain
@@ -112,13 +118,34 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
           .map((label) => label.slice(INTEGRATION_LABEL_PREFIX.length));
     if (domains.length !== 1) return false;
 
-    const manifest = await fetchIntegrationManifest(domains[0]);
-    if (!manifest?.codeowners?.length) return false;
-    const owners = await this.org.expandTeams(manifest.codeowners);
+    const integrationPath = this.registry.integrationPaths?.[this.repository];
+    if (!integrationPath) return false;
+
+    let content: string | null;
+    try {
+      content = await this.repo.codeownersContent();
+    } catch (err) {
+      log.warn("senderIsCodeOwner: CODEOWNERS fetch failed", {
+        repository: this.repository,
+        error: String(err),
+      });
+      return false;
+    }
+    if (!content) return false;
+
+    const match = matchCodeOwners(integrationPath(domains[0]), parseCodeOwners(content));
+    if (!match) return false;
+    const owners = await this.org.expandTeams(match.owners);
     return owners.includes(this.sender.login.toLowerCase());
   }
 
-  senderIsMember(): Promise<boolean> {
+  /**
+   * Org membership, answered from the payload's `author_association` when it
+   * already says MEMBER (no API call); anything else falls back to the API —
+   * the field can't prove non-membership (e.g. OWNER on a personal repo).
+   */
+  async senderIsMember(): Promise<boolean> {
+    if (this.senderAssociation === "MEMBER") return true;
     return this.org.hasMember(this.sender.login);
   }
 }

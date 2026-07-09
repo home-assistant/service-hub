@@ -1,6 +1,15 @@
 import type { Octokit } from "@octokit/rest";
 import { log } from "../../../log.js";
 
+const TEAM_TTL_MS = 15 * 60 * 1000;
+
+/**
+ * Cross-event team-roster cache (org-internal teams like @home-assistant/core
+ * change rarely). Keyed by client so each test's mock Octokit gets its own
+ * cache; production uses one long-lived client, so entries span deliveries.
+ */
+const teamsByClient = new WeakMap<Octokit, Map<string, { members: string[]; fetchedAt: number }>>();
+
 /**
  * Read-model of the organization an event happened in. Team membership is
  * cached per team slug for the dispatch.
@@ -44,11 +53,26 @@ export class Org {
 
   /** Lowercased member logins of a team; empty on fetch failure. */
   teamMembers(teamSlug: string): Promise<string[]> {
+    let shared = teamsByClient.get(this.github);
+    if (!shared) {
+      shared = new Map();
+      teamsByClient.set(this.github, shared);
+    }
+    const key = `${this.name}/${teamSlug}`;
+    const cached = shared.get(key);
+    if (cached && Date.now() - cached.fetchedAt < TEAM_TTL_MS) {
+      return Promise.resolve(cached.members);
+    }
+
     let inflight = this.teamCache.get(teamSlug);
     if (!inflight) {
       inflight = this.github.teams
         .listMembersInOrg({ org: this.name, team_slug: teamSlug })
-        .then((r) => r.data.map((m) => m.login.toLowerCase()))
+        .then((r) => {
+          const members = r.data.map((m) => m.login.toLowerCase());
+          shared.set(key, { members, fetchedAt: Date.now() });
+          return members;
+        })
         .catch((err) => {
           log.warn("Org.teamMembers: fetch failed", {
             org: this.name,

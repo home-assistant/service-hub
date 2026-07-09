@@ -43,6 +43,7 @@ function validate(slug: string, rules: Rule[], commands: Command[]): void {
 function build(): RegistryConfig {
   const repositories: Record<string, Rule[]> = {};
   const commands: Record<string, Command[]> = {};
+  const integrationPaths: Record<string, (domain: string) => string> = {};
   for (const manifest of MANIFESTS) {
     validate(manifest.slug, manifest.rules, manifest.commands ?? []);
     for (const slug of [manifest.slug, ...(manifest.aliases ?? [])]) {
@@ -51,9 +52,10 @@ function build(): RegistryConfig {
       }
       repositories[slug] = manifest.rules;
       commands[slug] = manifest.commands ?? [];
+      if (manifest.integrationPath) integrationPaths[slug] = manifest.integrationPath;
     }
   }
-  return { repositories, commands };
+  return { repositories, commands, integrationPaths };
 }
 
 /**

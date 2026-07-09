@@ -12,8 +12,9 @@ import { dispatchCommand } from "../../../src/github/engine/dispatch.js";
 import { expectReaction, makeCommandContext, registryWith } from "../helpers/command.js";
 import { createMockGitHub, type MockGitHub } from "../helpers/mock-context.js";
 
-// All commands except `update` are code_owner-gated: give the item a single
-// `integration: awesome` label and serve a manifest owning `testuser`.
+// All commands except `update` are code_owner-gated; `testuser` passes as an
+// org member (the mock's default). The manifest fetch mock feeds the rules
+// that label effects trigger (quality scale, platinum approval).
 const CODE_OWNER_ISSUE = { labels: [{ name: "integration: awesome" }] };
 const originalFetch = globalThis.fetch;
 

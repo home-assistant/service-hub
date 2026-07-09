@@ -85,9 +85,10 @@ export interface Rule {
 
 /**
  * Who may invoke a command; enforced by the dispatcher before handle() runs.
- * `author` allows the target's author and org members.
+ * Org members may invoke everything: `author` additionally allows the
+ * target's author, `code_owner` the labeled integration's code owners.
  */
-export type CommandPermission = "none" | "author" | "code_owner" | "member";
+export type CommandPermission = "none" | "author" | "code_owner";
 
 /**
  * A comment command (`/<slug> <name> [args]`). Like rules, commands return

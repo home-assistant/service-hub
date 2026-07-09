@@ -16,6 +16,8 @@ import type { Command, Effect, Rule } from "./types.js";
 export interface RegistryConfig {
   repositories: Record<string, Rule[]>;
   commands?: Record<string, Command[]>;
+  /** Per-repo CODEOWNERS path for an integration domain (code-owner checks). */
+  integrationPaths?: Record<string, (domain: string) => string>;
 }
 
 export function matchRules(registryConfig: RegistryConfig, context: RuleContext): Rule[] {
@@ -593,10 +595,12 @@ async function commandRejection(
   switch (command.permission) {
     case "none":
       return undefined;
-    case "member":
-      return (await context.senderIsMember()) ? undefined : "sender is not an org member";
-    case "code_owner":
-      return (await context.senderIsCodeOwner()) ? undefined : "sender is not a code owner";
+    case "code_owner": {
+      if ((await context.senderIsMember()) || (await context.senderIsCodeOwner())) {
+        return undefined;
+      }
+      return "sender is neither a code owner nor an org member";
+    }
     case "author": {
       const isAuthor =
         context.sender.login.toLowerCase() === (await context.target.authorLogin()).toLowerCase();

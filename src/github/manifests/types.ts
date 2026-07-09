@@ -23,4 +23,9 @@ export interface RepoManifest {
   rules: Rule[];
   /** Comment commands (`/<slug> <name>`) available on this repo. */
   commands?: Command[];
+  /**
+   * CODEOWNERS path of an integration domain (e.g. `hue` →
+   * `homeassistant/components/hue/*`); backs the code-owner permission check.
+   */
+  integrationPath?: (domain: string) => string;
 }
