@@ -1,20 +1,23 @@
 import { afterAll, beforeAll, describe, expect, it, setSystemTime } from "bun:test";
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { stringify } from "yaml";
 import { loadFixtures, runFixture } from "./harness.js";
 
 /**
  * Full-pipeline snapshots from captured GitHub webhooks: every fixture in
  * fixtures/<repo>/ is a real delivery (see scripts/capture-webhooks.ts)
- * replayed through the real manifest registry — label loop included, so
- * cross-rule and command→rule cascades land in the output. A change to any
- * rule that alters what the bot would do for a covered delivery shows up as
- * a snapshot diff.
+ * replayed through the real manifest registry and real effect application —
+ * label loop, dashboard rendering, and command reactions included. The
+ * `<name>.expected.yaml` sidecar holds the GitHub API writes the delivery
+ * produces, in call order; a change to any rule that alters what the bot
+ * would do for a covered delivery shows up as a diff there.
  *
- * Regenerate intentionally with `bun test --update-snapshots`.
+ * Regenerate intentionally with `UPDATE_FIXTURES=1 bun test manifests`.
  */
 
 const FIXTURES_ROOT = join(import.meta.dir, "fixtures");
+const UPDATE = process.env.UPDATE_FIXTURES === "1";
 
 describe("webhook fixture snapshots", () => {
   beforeAll(() => {
@@ -32,7 +35,19 @@ describe("webhook fixture snapshots", () => {
     describe(repoDir, () => {
       for (const fixture of loadFixtures(join(FIXTURES_ROOT, repoDir))) {
         it(fixture.name, async () => {
-          expect(await runFixture(fixture)).toMatchSnapshot();
+          const calls = stringify(await runFixture(fixture), { lineWidth: 0 });
+          const expectedPath = join(FIXTURES_ROOT, repoDir, `${fixture.name}.expected.yaml`);
+
+          if (UPDATE) {
+            writeFileSync(expectedPath, calls);
+            return;
+          }
+          if (!existsSync(expectedPath)) {
+            throw new Error(
+              `No expected calls for "${fixture.name}" — generate with UPDATE_FIXTURES=1 bun test manifests`,
+            );
+          }
+          expect(calls).toBe(readFileSync(expectedPath, "utf8"));
         });
       }
     });

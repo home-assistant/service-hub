@@ -1,0 +1,12 @@
+- call: issues.update
+  params:
+    issue_number: 23
+    owner: contributor
+    repo: core
+    state: closed
+- call: reactions.createForIssueComment
+  params:
+    owner: contributor
+    repo: core
+    comment_id: 1111111111
+    content: "+1"

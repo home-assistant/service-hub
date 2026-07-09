@@ -1,0 +1,60 @@
+- call: issues.createComment
+  params:
+    issue_number: 21
+    owner: contributor
+    repo: core
+    body: |-
+      <!-- ha-bot-dashboard -->
+
+      _Evaluating rules…_
+- call: issues.updateComment
+  params:
+    owner: contributor
+    repo: core
+    comment_id: 1000
+    body: |-
+      <!-- ha-bot-dashboard -->
+
+      👋 Hi! Thanks for contributing to **contributor/core**.
+
+      This is your PR dashboard which flags anything you need to address before your PR can be reviewed. Once everything is green, you can press the **'Ready for review'** button at the bottom of the page to notify reviewers to take a look.
+
+      <details><summary>More information about this dashboard</summary>
+
+      This dashboard automatically updates on every change to this PR and reevaluates the rules as you go. Until everything has been addressed, the PR stays in draft and you won't be able to put it into review.
+
+      ### Skip a check that doesn't apply
+
+      If you think a check doesn't apply to your PR (or the rule is bugged), comment `/ha-bot ignore "<check name>" "<reason>"` — the check name as shown in the table above. This will mark the rule as exempt and let you put your PR in 'Ready for review'.
+
+      ### Bot commands
+
+
+      </details>
+
+      ## Checks
+
+      **✨ Everything's in order!**
+
+      <details>
+      <summary>1 check skipped</summary>
+
+      | Status | Check | Details |
+      |--------|-------|---------|
+      | :heavy_minus_sign: | Review comments | No inline review comments yet. |
+
+      </details>
+
+      ---
+      <sub>Last updated: 2026-06-15T12:00:00.000Z</sub>
+
+      <!-- section:review-comments:{"id":"review-comments","title":"Review comments","status":"skip","message":"No inline review comments yet."} -->
+- call: repos.createCommitStatus
+  params:
+    owner: contributor
+    repo: core
+    sha: 8d8e8fa31782e096a8cc7762618c0d2edfb02649
+    context: ha-bot
+    state: success
+    description: All checks passed (1 skipped)
+    target_url: https://github.com/contributor/core/issues/21#issuecomment-1000

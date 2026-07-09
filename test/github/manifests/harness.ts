@@ -11,9 +11,8 @@ import {
   type WebhookEventPayload,
 } from "../../../src/github/engine/model/from-webhook.js";
 import type { RuleContext } from "../../../src/github/engine/rule-context.js";
-import type { Effect } from "../../../src/github/engine/types.js";
 import { config } from "../../../src/github/manifests/index.js";
-import { createMockGitHub } from "../helpers/mock-context.js";
+import { createMockGitHub, type MockGitHub } from "../helpers/mock-context.js";
 
 const BOT_SLUG = "ha-bot";
 const COMMAND_SLUG = "ha-bot";
@@ -139,33 +138,103 @@ function seedFiles(context: RuleContext, files: FixtureFile[]): void {
   );
 }
 
+/** One GitHub write the pipeline performed, in call order. */
+export interface RecordedCall {
+  call: string;
+  params: unknown;
+}
+
 /**
- * Collapse the raw effect stream to what the bot would actually do, mirroring
- * applyEffects' batching: the label loop re-emits a rule's dashboard sections
- * and comments every round, and only the final occurrence lands on GitHub.
- * Keyed dedupe (last write wins, first-seen order) keeps snapshots about
- * outcomes instead of loop rounds.
+ * Mutating endpoints — the bot's outputs. Read calls (hydration, comment
+ * listing, status sweeps) stay out of the recording.
  */
-function normalizeEffects(effects: Effect[]): Effect[] {
-  const byKey = new Map<string, Effect>();
-  for (const effect of effects) {
-    const key =
-      effect.type === "dashboardSection"
-        ? `dashboardSection:${effect.section.id}`
-        : JSON.stringify(effect);
-    byKey.set(key, effect);
+const WRITE_CALLS = new Set([
+  "issues.addLabels",
+  "issues.removeLabel",
+  "issues.addAssignees",
+  "issues.removeAssignees",
+  "issues.update",
+  "issues.createComment",
+  "issues.updateComment",
+  "pulls.update",
+  "pulls.updateBranch",
+  "pulls.requestReviewers",
+  "pulls.createReview",
+  "pulls.dismissReview",
+  "repos.createCommitStatus",
+  "reactions.createForIssueComment",
+  "graphql",
+]);
+
+/**
+ * A mock Octokit that records every write in call order and keeps a stateful
+ * comment store, so the dashboard upsert behaves like the real API: the
+ * placeholder posted first is found again and updated, not re-created.
+ */
+function createRecordingGitHub(): {
+  github: MockGitHub;
+  octokit: Octokit;
+  recorded: RecordedCall[];
+} {
+  const github = createMockGitHub();
+  const recorded: RecordedCall[] = [];
+
+  const comments: { id: number; body: string; html_url: string }[] = [];
+  github.issues.createComment.mockImplementation(
+    async (params: { owner: string; repo: string; issue_number: number; body: string }) => {
+      const id = 1000 + comments.length;
+      const comment = {
+        id,
+        body: params.body,
+        html_url: `https://github.com/${params.owner}/${params.repo}/issues/${params.issue_number}#issuecomment-${id}`,
+      };
+      comments.push(comment);
+      return { data: comment };
+    },
+  );
+  github.issues.updateComment.mockImplementation(
+    async (params: { comment_id: number; body: string }) => {
+      const comment = comments.find((c) => c.id === params.comment_id);
+      if (comment) comment.body = params.body;
+      return { data: { id: params.comment_id, html_url: comment?.html_url } };
+    },
+  );
+  github.issues.listComments.mockImplementation(async () => ({ data: comments }));
+
+  const record =
+    (path: string, fn: (...args: unknown[]) => unknown) =>
+    (...args: unknown[]) => {
+      recorded.push({
+        call: path,
+        params: path === "graphql" ? { query: args[0], variables: args[1] } : args[0],
+      });
+      return fn(...args);
+    };
+
+  const octokit = { ...github } as unknown as Record<string, unknown>;
+  for (const [ns, members] of Object.entries(github)) {
+    if (typeof members === "function") continue;
+    const nsCopy: Record<string, unknown> = { ...members };
+    for (const [name, fn] of Object.entries(members)) {
+      const path = `${ns}.${name}`;
+      if (WRITE_CALLS.has(path)) nsCopy[name] = record(path, fn);
+    }
+    octokit[ns] = nsCopy;
   }
-  return [...byKey.values()];
+  octokit.graphql = record("graphql", github.graphql);
+
+  return { github, octokit: octokit as unknown as Octokit, recorded };
 }
 
 /**
  * Replay one captured delivery through the real pipeline — the same routing
  * the webhook entrypoint does (command comments go through dispatchCommand,
  * everything else through rule dispatch), against the real manifest registry
- * resolved from payload.repository. Returns the final effects.
+ * resolved from payload.repository. Runs effect application for real against
+ * the recording mock and returns the GitHub writes in call order.
  */
-export async function runFixture(fixture: Fixture): Promise<Effect[] | undefined> {
-  const github = createMockGitHub();
+export async function runFixture(fixture: Fixture): Promise<RecordedCall[]> {
+  const { github, octokit, recorded } = createRecordingGitHub();
   github.pulls.get.mockResolvedValue({ data: hydrationPullRequest(fixture) });
   if (fixture.state.codeowners) {
     github.repos.getContent.mockResolvedValue({
@@ -181,24 +250,25 @@ export async function runFixture(fixture: Fixture): Promise<Effect[] | undefined
       const body = (fixture.payload as { comment?: { body?: string } }).comment?.body ?? "";
       if (isBotCommand(body, COMMAND_SLUG)) {
         const context = commandContextFromWebhook(
-          github as unknown as Octokit,
+          octokit,
           fixture.payload as unknown as IssueCommentCreatedEvent,
-          { botSlug: BOT_SLUG, commandSlug: COMMAND_SLUG, dryRun: true, registry: config },
+          { botSlug: BOT_SLUG, commandSlug: COMMAND_SLUG, registry: config },
         );
         if (fixture.state.files) seedFiles(context, fixture.state.files);
-        const effects = await dispatchCommand(context);
-        return effects && normalizeEffects(effects);
+        await dispatchCommand(context);
+        return recorded;
       }
     }
 
     const context = contextFromWebhook(
-      github as unknown as Octokit,
+      octokit,
       fixture.payload as unknown as WebhookEventPayload,
       fixture.eventType,
-      { botSlug: BOT_SLUG, dryRun: true },
+      { botSlug: BOT_SLUG },
     );
     if (fixture.state.files) seedFiles(context, fixture.state.files);
-    return normalizeEffects(await dispatch(config, context));
+    await dispatch(config, context);
+    return recorded;
   } finally {
     globalThis.fetch = originalFetch;
   }

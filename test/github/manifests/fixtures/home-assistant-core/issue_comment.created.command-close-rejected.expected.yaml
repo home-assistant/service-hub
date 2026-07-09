@@ -1,0 +1,6 @@
+- call: reactions.createForIssueComment
+  params:
+    owner: contributor
+    repo: core
+    comment_id: 1111111111
+    content: "-1"
