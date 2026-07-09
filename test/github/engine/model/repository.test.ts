@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
 import type { Octokit } from "@octokit/rest";
+import { describe, expect, it } from "vitest";
 import { Org } from "../../../../src/github/engine/model/organization.js";
 import { Repo } from "../../../../src/github/engine/model/repository.js";
 import { createMockGitHub, type MockGitHub } from "../../helpers/mock-context.js";

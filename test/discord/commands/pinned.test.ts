@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { pinned } from "../../../src/discord/commands/pinned.js";
 import { CommandContext } from "../../../src/discord/engine/context.js";
 import { commandEvent, stubReader } from "../helpers/events.js";

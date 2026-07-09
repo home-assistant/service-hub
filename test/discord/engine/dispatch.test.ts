@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import type { GuildRegistry } from "../../../src/discord/engine/dispatch.js";
 import { dispatchDiscordEvent } from "../../../src/discord/engine/dispatch.js";
 import type { DiscordEffect, Listener, SlashCommand } from "../../../src/discord/engine/types.js";

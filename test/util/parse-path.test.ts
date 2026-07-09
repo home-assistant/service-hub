@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { ParsedPath } from "../../src/util/parse-path.js";
 
 function makeParsed(

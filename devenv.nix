@@ -9,6 +9,6 @@
 
   languages.javascript = {
     enable = true;
-    bun.enable = true;
+    npm.enable = true;
   };
 }

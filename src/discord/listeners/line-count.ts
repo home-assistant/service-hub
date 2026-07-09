@@ -1,3 +1,4 @@
+import { parse as parseYaml } from "yaml";
 import type { Listener } from "../engine/types.js";
 
 export const MAX_LINE_COUNT = 17;
@@ -32,7 +33,7 @@ function isValidJson(content: string): boolean {
 
 function isValidYaml(content: string): boolean {
   try {
-    Bun.YAML.parse(content);
+    parseYaml(content);
     return true;
   } catch {
     return false;

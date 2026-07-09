@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "vitest";
 import { message } from "../../../src/discord/commands/message.js";
 import { CommandContext, DiscordContext } from "../../../src/discord/engine/context.js";
 import { autocompleteEvent, commandEvent, stubReader } from "../helpers/events.js";

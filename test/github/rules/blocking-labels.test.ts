@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { EventType } from "../../../src/github/engine/event.js";
 import { blockingLabels } from "../../../src/github/rules/blocking-labels.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";

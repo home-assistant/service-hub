@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { message } from "../../../src/discord/commands/message.js";
 import { ping } from "../../../src/discord/commands/ping.js";
 import { buildCommandRegistrations } from "../../../src/discord/engine/register.js";

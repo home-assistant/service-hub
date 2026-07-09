@@ -1,6 +1,6 @@
-// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`discord fixture snapshots esphome command.component 1`] = `
+exports[`discord fixture snapshots > esphome > command.component 1`] = `
 [
   {
     "embeds": [
@@ -26,7 +26,7 @@ exports[`discord fixture snapshots esphome command.component 1`] = `
 ]
 `;
 
-exports[`discord fixture snapshots home-assistant autocomplete.integration 1`] = `
+exports[`discord fixture snapshots > home-assistant > autocomplete.integration 1`] = `
 [
   {
     "choices": [
@@ -44,7 +44,7 @@ exports[`discord fixture snapshots home-assistant autocomplete.integration 1`] =
 ]
 `;
 
-exports[`discord fixture snapshots home-assistant command.component.unknown-here 1`] = `
+exports[`discord fixture snapshots > home-assistant > command.component.unknown-here 1`] = `
 [
   {
     "content": "Unknown command",
@@ -54,7 +54,7 @@ exports[`discord fixture snapshots home-assistant command.component.unknown-here
 ]
 `;
 
-exports[`discord fixture snapshots home-assistant command.integration 1`] = `
+exports[`discord fixture snapshots > home-assistant > command.integration 1`] = `
 [
   {
     "embeds": [
@@ -101,7 +101,7 @@ exports[`discord fixture snapshots home-assistant command.integration 1`] = `
 ]
 `;
 
-exports[`discord fixture snapshots home-assistant command.message 1`] = `
+exports[`discord fixture snapshots > home-assistant > command.message 1`] = `
 [
   {
     "embeds": [
@@ -123,7 +123,7 @@ exports[`discord fixture snapshots home-assistant command.message 1`] = `
 ]
 `;
 
-exports[`discord fixture snapshots home-assistant command.topic 1`] = `
+exports[`discord fixture snapshots > home-assistant > command.topic 1`] = `
 [
   {
     "embeds": [
@@ -137,15 +137,14 @@ exports[`discord fixture snapshots home-assistant command.topic 1`] = `
 ]
 `;
 
-exports[`discord fixture snapshots home-assistant message_created.long-paste 1`] = `
+exports[`discord fixture snapshots > home-assistant > message_created.long-paste 1`] = `
 [
   {
     "channelId": "330944238910963717",
     "content": "<@662789330969723649> I converted your message into a file since it's above 15 lines :+1:",
     "files": [
       {
-        "content": 
-"automation:
+        "content": "automation:
   - alias: Turn on lights at sunset
     trigger:
       - platform: sun
@@ -161,8 +160,7 @@ exports[`discord fixture snapshots home-assistant message_created.long-paste 1`]
     action:
       - service: light.turn_off
         target:
-          entity_id: light.living_room"
-,
+          entity_id: light.living_room",
         "name": "configuration_contributor_1390000000000000001.yaml",
       },
     ],
@@ -176,7 +174,7 @@ exports[`discord fixture snapshots home-assistant message_created.long-paste 1`]
 ]
 `;
 
-exports[`discord fixture snapshots home-assistant modal_submit.my 1`] = `
+exports[`discord fixture snapshots > home-assistant > modal_submit.my 1`] = `
 [
   {
     "embeds": [

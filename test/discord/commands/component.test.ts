@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "vitest";
 import { component } from "../../../src/discord/commands/component.js";
 import { CommandContext } from "../../../src/discord/engine/context.js";
 import { commandEvent, ESPHOME_GUILD, stubReader } from "../helpers/events.js";

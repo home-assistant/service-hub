@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { renderDashboard } from "../../../src/github/engine/dashboard/renderer.js";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { dispatch } from "../../../src/github/engine/dispatch.js";

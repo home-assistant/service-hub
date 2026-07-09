@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { DiscordContext } from "../../../src/discord/engine/context.js";
 import { lineCountEnforcer } from "../../../src/discord/listeners/line-count.js";
 import { channel, messageEvent, stubReader, user } from "../helpers/events.js";

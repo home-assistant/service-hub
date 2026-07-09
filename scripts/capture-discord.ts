@@ -5,16 +5,22 @@
  * a guild the bot is in, then copy the interesting captures into
  * test/discord/fixtures/<guild>/ named `<type>[.variant].json`.
  *
- * Usage: DISCORD_TOKEN=... bun run capture-discord
+ * Usage: DISCORD_TOKEN=... npm run capture-discord
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { DiscordEvent } from "../src/discord/engine/event.js";
 import { startDiscordGateway } from "../src/discord/engine/gateway.js";
 import { discordRegistry } from "../src/discord/manifests/index.js";
 
-const CAPTURE_DIR = join(import.meta.dir, "..", "test", "discord", "fixtures", "_captured");
+const CAPTURE_DIR = fileURLToPath(new URL("../test/discord/fixtures/_captured", import.meta.url));
 
+try {
+  process.loadEnvFile();
+} catch {
+  // no .env file — the token can come from the real environment
+}
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
   console.error("DISCORD_TOKEN is required");

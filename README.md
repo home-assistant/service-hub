@@ -1,15 +1,15 @@
 # ha-github-bot
 
-A Bun server that automates the Home Assistant organization's GitHub repos and Discord guilds. Two engines share the process, cleanly separated under `src/github/` and `src/discord/`: the GitHub engine handles webhooks (PR labeling, documentation enforcement, code owner notifications, dashboard checks), the Discord engine handles gateway events (slash commands, message listeners). CLA checking is handled by the legacy bot in `service-hub/github-bot`.
+A Node.js service that automates the Home Assistant organization's GitHub repos and Discord guilds. Two engines share the process, cleanly separated under `src/github/` and `src/discord/`: the GitHub engine handles webhooks (PR labeling, documentation enforcement, code owner notifications, dashboard checks), the Discord engine handles gateway events (slash commands, message listeners). CLA checking is handled by the legacy bot in `service-hub/github-bot`.
 
 ## Development
 
 ```bash
-bun install
-bun run dev          # Start local dev server
-bun run test         # Run tests
-bun run check        # Run linter + type checker
-bun run format       # Auto-fix formatting
+npm install
+npm run dev          # Start local dev server
+npm test             # Run tests
+npm run check        # Run linter + type checker
+npm run format       # Auto-fix formatting
 ```
 
 ## Webhook subscriptions
@@ -34,13 +34,13 @@ Commenting `/<slug> <command> ["<arg>" …]` on a PR or issue invokes a command 
 
 ## Webhook fixture snapshots
 
-Because rules (and commands) interact through the label loop, a change to one rule can alter side-effects far away from it. `test/github/manifests/` pins this down: every fixture in `test/github/manifests/fixtures/<repo>/` is a **real captured GitHub webhook payload**, replayed through the real manifest registry — full pipeline, label loop included — with the resulting effect list snapshotted. If a rule change alters what the bot would do for any covered delivery, the snapshot diff shows it. Review such diffs deliberately and regenerate with `bun test --update-snapshots`.
+Because rules (and commands) interact through the label loop, a change to one rule can alter side-effects far away from it. `test/github/manifests/` pins this down: every fixture in `test/github/manifests/fixtures/<repo>/` is a **real captured GitHub webhook payload**, replayed through the real manifest registry — full pipeline, label loop included — with the resulting effect list pinned in a `<name>.expected.yaml` sidecar. If a rule change alters what the bot would do for any covered delivery, the diff shows it. Review such diffs deliberately and regenerate with `UPDATE_FIXTURES=1 npm test`.
 
-To capture new fixtures, run `bun run capture` (a server that writes every delivery to `test/github/manifests/fixtures/_captured/`), point a tunnel at it (`npx smee-client --url <smee channel> --target http://localhost:8787/github/webhook`), and perform the actions on a repo the bot app is installed on. Deliveries are scrubbed as they land: the capture repo (read from the payload's own `repository` block) maps onto the canonical repo, the capturing user becomes a generic `contributor`, and opaque identifiers are blanked while keeping their shape. Copy the interesting captures into `fixtures/<repo>/` named `<event>.<action>[.variant].json` — the harness derives the delivery's event type from the filename, since GitHub sends it in a header, not the payload. `bun run scrub` re-normalizes everything already under `fixtures/<repo>/`. An optional `<name>.state.json` sidecar stubs the world outside the payload: the PR's changed files, `mergeable_state`, CODEOWNERS content, and remote JSON endpoints (integration manifests, analytics).
+To capture new fixtures, run `npm run capture` (a server that writes every delivery to `test/github/manifests/fixtures/_captured/`), point a tunnel at it (`npx smee-client --url <smee channel> --target http://localhost:8787/github/webhook`), and perform the actions on a repo the bot app is installed on. Deliveries are scrubbed as they land: the capture repo (read from the payload's own `repository` block) maps onto the canonical repo, the capturing user becomes a generic `contributor`, and opaque identifiers are blanked while keeping their shape. Copy the interesting captures into `fixtures/<repo>/` named `<event>.<action>[.variant].json` — the harness derives the delivery's event type from the filename, since GitHub sends it in a header, not the payload. `npm run scrub` re-normalizes everything already under `fixtures/<repo>/`. An optional `<name>.state.json` sidecar stubs the world outside the payload: the PR's changed files, `mergeable_state`, CODEOWNERS content, and remote JSON endpoints (integration manifests, analytics).
 
 ### PR template coupling
 
-Several rules parse the PR body, so fixture bodies must track the repo's real PR template. `bun run sync-templates` vendors each fixture repo's live `.github/PULL_REQUEST_TEMPLATE.md` into `fixtures/<repo>/_templates/`, and `bun run update-fixture-bodies` re-renders every fixture that has a `<name>.body.json` fill file (which checkboxes the contributor ticked, what prose goes under which heading) from that template — failing loudly if a referenced checkbox or heading no longer exists. The synthetic `pull_request.opened.all-change-types` fixture ticks every type-of-change box, so a template rewording of *any* option drops a label from its snapshot even when no other fixture exercises that option. Intended flow: a scheduled workflow runs sync + update + tests and opens a PR when the upstream template changed — its diff shows the template change, the regenerated bodies, and any snapshot fallout in one place.
+Several rules parse the PR body, so fixture bodies must track the repo's real PR template. `npm run sync-templates` vendors each fixture repo's live `.github/PULL_REQUEST_TEMPLATE.md` into `fixtures/<repo>/_templates/`, and `npm run update-fixture-bodies` re-renders every fixture that has a `<name>.body.json` fill file (which checkboxes the contributor ticked, what prose goes under which heading) from that template — failing loudly if a referenced checkbox or heading no longer exists. The synthetic `pull_request.opened.all-change-types` fixture ticks every type-of-change box, so a template rewording of *any* option drops a label from its expected effects even when no other fixture exercises that option. Intended flow: a scheduled workflow runs sync + update + tests and opens a PR when the upstream template changed — its diff shows the template change, the regenerated bodies, and any effect fallout in one place.
 
 ## Discord engine
 
@@ -52,7 +52,7 @@ The gateway only starts when `DISCORD_TOKEN` is set; without it the bot is GitHu
 
 ### Discord fixture snapshots
 
-`test/discord/manifests/` mirrors the GitHub webhook fixture suite: every fixture in `fixtures/<guild>/` is a normalized Discord event replayed through the real guild registry — routing, error handling, and default acknowledgement included — with the resulting effect list snapshotted. A `<name>.state.json` sidecar stubs the world outside the event (remote JSON/YAML endpoints, pinned messages). To capture real events, run `bun run capture-discord` with a `DISCORD_TOKEN` for a test bot: it starts the full gateway (commands register and answer) and additionally writes every normalized event to `fixtures/_captured/`.
+`test/discord/manifests/` mirrors the GitHub webhook fixture suite: every fixture in `fixtures/<guild>/` is a normalized Discord event replayed through the real guild registry — routing, error handling, and default acknowledgement included — with the resulting effect list snapshotted. A `<name>.state.json` sidecar stubs the world outside the event (remote JSON/YAML endpoints, pinned messages). To capture real events, run `npm run capture-discord` with a `DISCORD_TOKEN` for a test bot: it starts the full gateway (commands register and answer) and additionally writes every normalized event to `fixtures/_captured/`.
 
 ## TODOs
 

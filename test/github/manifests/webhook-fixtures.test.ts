@@ -1,6 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it, setSystemTime } from "bun:test";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { stringify } from "yaml";
 import { loadFixtures, runFixture } from "./harness.js";
 
@@ -13,21 +14,21 @@ import { loadFixtures, runFixture } from "./harness.js";
  * produces, in call order; a change to any rule that alters what the bot
  * would do for a covered delivery shows up as a diff there.
  *
- * Regenerate intentionally with `UPDATE_FIXTURES=1 bun test manifests`.
+ * Regenerate intentionally with `UPDATE_FIXTURES=1 npm test -- manifests`.
  */
 
-const FIXTURES_ROOT = join(import.meta.dir, "fixtures");
+const FIXTURES_ROOT = fileURLToPath(new URL("fixtures", import.meta.url));
 const UPDATE = process.env.UPDATE_FIXTURES === "1";
 
 describe("webhook fixture snapshots", () => {
   beforeAll(() => {
     // Pin the clock: hacktoberfest (and anything else date-driven) must not
     // flip snapshots with the calendar.
-    setSystemTime(new Date("2026-06-15T12:00:00Z"));
+    vi.useFakeTimers({ now: new Date("2026-06-15T12:00:00Z"), toFake: ["Date"] });
   });
 
   afterAll(() => {
-    setSystemTime();
+    vi.useRealTimers();
   });
 
   const repoDirs = readdirSync(FIXTURES_ROOT).filter((dir) => !dir.startsWith("_"));
@@ -44,7 +45,7 @@ describe("webhook fixture snapshots", () => {
           }
           if (!existsSync(expectedPath)) {
             throw new Error(
-              `No expected calls for "${fixture.name}" — generate with UPDATE_FIXTURES=1 bun test manifests`,
+              `No expected calls for "${fixture.name}" — generate with UPDATE_FIXTURES=1 npm test -- manifests`,
             );
           }
           expect(calls).toBe(readFileSync(expectedPath, "utf8"));

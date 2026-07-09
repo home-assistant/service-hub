@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { EventType } from "../../../src/github/engine/event.js";
 import { reviewComments } from "../../../src/github/rules/review-comments.js";
 import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";

@@ -37,10 +37,15 @@ function required(name: keyof Env): string {
 }
 
 /**
- * Build the runtime config from `process.env`. Bun auto-loads `.env`, so a
- * local `.env` file is enough for development.
+ * Build the runtime config from `process.env`, folding in a local `.env`
+ * file when one exists (development); real environment variables win.
  */
 export function loadEnv(): Env {
+  try {
+    process.loadEnvFile();
+  } catch {
+    // no .env file — production supplies real environment variables
+  }
   return {
     GITHUB_APP_ID: required("GITHUB_APP_ID"),
     GITHUB_PRIVATE_KEY: required("GITHUB_PRIVATE_KEY"),

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { removeLabel } from "../../../src/github/commands/label-remove.js";
 import { unassign } from "../../../src/github/commands/unassign.js";
 import { isBotCommand, parseCommands } from "../../../src/github/engine/command-context.js";
@@ -16,7 +16,7 @@ const noopCommand = (overrides: Partial<Command> = {}): Command => ({
   name: "ping",
   description: "",
   permission: "none",
-  handle: mock().mockResolvedValue(undefined),
+  handle: vi.fn().mockResolvedValue(undefined),
   ...overrides,
 });
 
@@ -85,7 +85,7 @@ describe("isBotCommand", () => {
 describe("dispatchCommand", () => {
   it("applies the command's effects and reacts +1", async () => {
     const command = noopCommand({
-      handle: mock().mockResolvedValue([{ type: "setState", state: "closed" }]),
+      handle: vi.fn().mockResolvedValue([{ type: "setState", state: "closed" }]),
     });
     const { context, github } = makeContext("/ha-bot ping", {
       registry: registryWith(command),
@@ -157,7 +157,7 @@ describe("dispatchCommand", () => {
   });
 
   it("reacts -1 when the handler throws", async () => {
-    const command = noopCommand({ handle: mock().mockRejectedValue(new Error("boom")) });
+    const command = noopCommand({ handle: vi.fn().mockRejectedValue(new Error("boom")) });
     const { context, github } = makeContext("/ha-bot ping", {
       registry: registryWith(command),
     });
@@ -188,7 +188,7 @@ describe("dispatchCommand", () => {
       },
     };
     const command = noopCommand({
-      handle: mock().mockResolvedValue([{ type: "addLabels", labels: ["foo"] }]),
+      handle: vi.fn().mockResolvedValue([{ type: "addLabels", labels: ["foo"] }]),
     });
     const { context, github } = makeContext("/ha-bot ping", {
       registry: registryWith(command, [onLabeled]),
@@ -210,7 +210,7 @@ describe("code_owner permission and commands", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    globalThis.fetch = mock().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         domain: "awesome",

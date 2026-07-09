@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "bun:test";
+import { beforeEach, describe, expect, it } from "vitest";
 import { integration } from "../../../src/discord/commands/integration.js";
 import { CommandContext, DiscordContext } from "../../../src/discord/engine/context.js";
 import type { Embed } from "../../../src/discord/engine/types.js";

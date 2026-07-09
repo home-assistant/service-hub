@@ -1,6 +1,6 @@
-import { expect } from "bun:test";
 import type { Octokit } from "@octokit/rest";
 import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
+import { expect } from "vitest";
 import type { CommandContext } from "../../../src/github/engine/command-context.js";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { commandContextFromWebhook } from "../../../src/github/engine/model/from-webhook.js";

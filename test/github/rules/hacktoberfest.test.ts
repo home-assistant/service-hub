@@ -1,16 +1,16 @@
-import { afterEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../../src/github/engine/event.js";
 import { hacktoberfest } from "../../../src/github/rules/hacktoberfest.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
 
 describe("hacktoberfest", () => {
   afterEach(() => {
-    mock.restore();
+    vi.restoreAllMocks();
   });
 
   describe("PR opened", () => {
     it("adds Hacktoberfest label in October when repo has topic", async () => {
-      spyOn(Date.prototype, "getMonth").mockReturnValue(9); // October = 9
+      vi.spyOn(Date.prototype, "getMonth").mockReturnValue(9); // October = 9
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -29,7 +29,7 @@ describe("hacktoberfest", () => {
     });
 
     it("does nothing outside October", async () => {
-      spyOn(Date.prototype, "getMonth").mockReturnValue(5); // June
+      vi.spyOn(Date.prototype, "getMonth").mockReturnValue(5); // June
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -48,7 +48,7 @@ describe("hacktoberfest", () => {
     });
 
     it("does nothing when repo lacks hacktoberfest topic", async () => {
-      spyOn(Date.prototype, "getMonth").mockReturnValue(9);
+      vi.spyOn(Date.prototype, "getMonth").mockReturnValue(9);
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,
@@ -67,7 +67,7 @@ describe("hacktoberfest", () => {
     });
 
     it("does nothing for bot senders", async () => {
-      spyOn(Date.prototype, "getMonth").mockReturnValue(9);
+      vi.spyOn(Date.prototype, "getMonth").mockReturnValue(9);
 
       const context = createMockContext({
         eventType: EventType.PULL_REQUEST_OPENED,

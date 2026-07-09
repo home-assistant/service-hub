@@ -15,11 +15,12 @@
  * AAA…/aaa…/000… of the same length, numeric ids become 111…).
  *
  * Usage:
- *   bun scripts/capture-webhooks.ts [output-dir]   # capture server
- *   bun scripts/capture-webhooks.ts scrub          # re-scrub existing fixtures
+ *   npm run capture [-- output-dir]   # capture server
+ *   npm run scrub                     # re-scrub existing fixtures
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { serve } from "../src/util/serve.js";
 
 const FIXTURES_ROOT = "test/github/manifests/fixtures";
 const DEFAULT_REPO = "home-assistant/core";
@@ -98,11 +99,11 @@ function scrubFixtures() {
   }
 }
 
-function serve(outDir: string) {
+function startCaptureServer(outDir: string) {
   const port = Number(process.env.PORT ?? 8787);
   mkdirSync(outDir, { recursive: true });
 
-  Bun.serve({
+  serve({
     port,
     async fetch(request) {
       const url = new URL(request.url);
@@ -125,7 +126,7 @@ function serve(outDir: string) {
       }
 
       const file = join(outDir, `${event}.${action}-${delivery}.json`);
-      await Bun.write(file, content);
+      writeFileSync(file, content);
       console.log(`captured ${event}.${action} -> ${file}`);
       return new Response("OK");
     },
@@ -137,5 +138,5 @@ function serve(outDir: string) {
 if (process.argv[2] === "scrub") {
   scrubFixtures();
 } else {
-  serve(process.argv[2] ?? join(FIXTURES_ROOT, "_captured"));
+  startCaptureServer(process.argv[2] ?? join(FIXTURES_ROOT, "_captured"));
 }

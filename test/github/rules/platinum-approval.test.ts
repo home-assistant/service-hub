@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { dispatch } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
@@ -16,7 +16,7 @@ describe("platinum-approval", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    globalThis.fetch = mock();
+    globalThis.fetch = vi.fn();
   });
 
   afterEach(() => {

@@ -1,26 +1,20 @@
-import { afterAll, describe, expect, it, mock, spyOn } from "bun:test";
+import { describe, expect, it, vi } from "vitest";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
+import {
+  evaluateIssue,
+  evaluatePR,
+  evaluateRecentPRs,
+} from "../../../src/github/engine/evaluate.js";
 import { log } from "../../../src/log.js";
 import { createMockGitHub } from "../helpers/mock-context.js";
 
-// bun's mock.module is neither hoisted nor scoped to this file: register the
-// dispatch mock before importing evaluate, and restore the real module in
-// afterAll — other test files exercise the original dispatch.
-const actualDispatchModule = { ...(await import("../../../src/github/engine/dispatch.js")) };
-
-const dispatch = mock(async () => undefined);
-mock.module("../../../src/github/engine/dispatch.js", () => ({
-  ...actualDispatchModule,
+// vi.mock is hoisted above the imports and scoped to this file — other test
+// files keep the real dispatch.
+const dispatch = vi.hoisted(() => vi.fn(async () => undefined));
+vi.mock("../../../src/github/engine/dispatch.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../../src/github/engine/dispatch.js")>()),
   dispatch,
 }));
-
-afterAll(() => {
-  mock.module("../../../src/github/engine/dispatch.js", () => actualDispatchModule);
-});
-
-const { evaluateIssue, evaluatePR, evaluateRecentPRs } = await import(
-  "../../../src/github/engine/evaluate.js"
-);
 
 const config: RegistryConfig = {
   repositories: { "home-assistant/core": [] },
@@ -151,7 +145,7 @@ describe("evaluateRecentPRs", () => {
   it("continues when a single PR evaluation fails", async () => {
     const github = createMockGitHub();
     const now = new Date();
-    const logErrorSpy = spyOn(log, "error").mockImplementation(() => {});
+    const logErrorSpy = vi.spyOn(log, "error").mockImplementation(() => {});
 
     github.pulls.list.mockResolvedValue({
       data: [

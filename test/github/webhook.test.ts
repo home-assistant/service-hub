@@ -1,25 +1,25 @@
-import { afterAll, describe, expect, it, mock } from "bun:test";
 import type { Octokit } from "@octokit/rest";
+import { describe, expect, it, vi } from "vitest";
 import type { Env } from "../../src/env.js";
+import { createBotApp } from "../../src/github/webhook.js";
 
-// bun's mock.module is neither hoisted nor scoped to this file: register the
-// mocks before importing src/index.js, and restore the real modules in
-// afterAll — helpers/e2e.ts and engine/dispatch.test.ts need the originals.
-const actualWebhooks = { ...(await import("@octokit/webhooks-methods")) };
-const actualDispatchModule = { ...(await import("../../src/github/engine/dispatch.js")) };
+// vi.mock is hoisted above the imports and scoped to this file, so the mocked
+// verify/dispatch only exist here — helpers/e2e.ts and engine/dispatch.test.ts
+// keep the real modules.
+const { verify, dispatch } = vi.hoisted(() => ({
+  verify: vi.fn(async () => true),
+  dispatch: vi.fn(async () => undefined),
+}));
 
-const verify = mock(async () => true);
-mock.module("@octokit/webhooks-methods", () => ({ ...actualWebhooks, verify }));
+vi.mock("@octokit/webhooks-methods", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@octokit/webhooks-methods")>()),
+  verify,
+}));
 
-const dispatch = mock(async () => undefined);
-mock.module("../../src/github/engine/dispatch.js", () => ({ ...actualDispatchModule, dispatch }));
-
-afterAll(() => {
-  mock.module("@octokit/webhooks-methods", () => actualWebhooks);
-  mock.module("../../src/github/engine/dispatch.js", () => actualDispatchModule);
-});
-
-const { createBotApp } = await import("../../src/github/webhook.js");
+vi.mock("../../src/github/engine/dispatch.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../src/github/engine/dispatch.js")>()),
+  dispatch,
+}));
 
 const app = createBotApp({
   config: { repositories: {} },

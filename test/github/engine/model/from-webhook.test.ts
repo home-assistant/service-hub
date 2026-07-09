@@ -1,5 +1,5 @@
-import { describe, expect, it } from "bun:test";
 import type { Octokit } from "@octokit/rest";
+import { describe, expect, it } from "vitest";
 import { EventType } from "../../../../src/github/engine/event.js";
 import type { WebhookEventPayload } from "../../../../src/github/engine/model/from-webhook.js";
 import {

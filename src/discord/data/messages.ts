@@ -1,3 +1,4 @@
+import { parse as parseYaml } from "yaml";
 import { fetchWithTimeout } from "../../util/fetch.js";
 
 export interface PredefinedMessage {
@@ -25,7 +26,7 @@ const cache = new Map<string, MessageData>();
 async function fetchYaml(file: string): Promise<MessageData> {
   const response = await fetchWithTimeout(`${DATA_BASE}/${file}`);
   if (!response.ok) throw new Error(`Failed to fetch ${file}: ${response.status}`);
-  return (Bun.YAML.parse(await response.text()) ?? {}) as MessageData;
+  return (parseYaml(await response.text()) ?? {}) as MessageData;
 }
 
 export async function loadMessages(guildId: string, force = false): Promise<MessageData> {

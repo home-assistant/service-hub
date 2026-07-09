@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/bun";
+import * as Sentry from "@sentry/node";
 
 type Attributes = Record<string, unknown>;
 

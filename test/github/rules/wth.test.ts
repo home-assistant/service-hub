@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../../src/github/engine/event.js";
 import { wth } from "../../../src/github/rules/wth.js";
 import { createMockContext, runRule } from "../helpers/mock-context.js";
@@ -7,7 +7,7 @@ describe("wth", () => {
   const originalFetch = globalThis.fetch;
 
   beforeEach(() => {
-    globalThis.fetch = mock();
+    globalThis.fetch = vi.fn();
   });
 
   afterEach(() => {

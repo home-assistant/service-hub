@@ -4,7 +4,7 @@
  * regenerated from the real thing (scripts/update-fixture-bodies.ts) and
  * template changes upstream show up as a diff here.
  *
- * Usage: bun scripts/sync-templates.ts
+ * Usage: npm run sync-templates
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

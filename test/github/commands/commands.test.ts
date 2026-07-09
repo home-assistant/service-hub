@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { close } from "../../../src/github/commands/close.js";
 import { addLabel } from "../../../src/github/commands/label-add.js";
 import { removeLabel } from "../../../src/github/commands/label-remove.js";
@@ -18,7 +18,7 @@ const CODE_OWNER_ISSUE = { labels: [{ name: "integration: awesome" }] };
 const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
-  globalThis.fetch = mock().mockResolvedValue({
+  globalThis.fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => ({ domain: "awesome", name: "Awesome", codeowners: ["@testuser"] }),
   }) as unknown as typeof fetch;

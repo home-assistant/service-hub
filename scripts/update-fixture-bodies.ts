@@ -7,7 +7,7 @@
  * template no longer contains a referenced checkbox or heading: exactly the
  * coupling an upstream template change breaks.
  *
- * Usage: bun scripts/update-fixture-bodies.ts
+ * Usage: npm run update-fixture-bodies
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

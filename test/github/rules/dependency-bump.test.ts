@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import { EventType } from "../../../src/github/engine/event.js";
 import { dependencyBump } from "../../../src/github/rules/dependency-bump.js";
 import { createMockContext, mockPRFiles, runRule } from "../helpers/mock-context.js";
