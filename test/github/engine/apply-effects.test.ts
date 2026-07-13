@@ -8,9 +8,9 @@ import { createMockContext, createMockGitHub, type MockGitHub } from "../helpers
 
 /**
  * One test per Effect variant: the mapping from the effect a rule emits to
- * the GitHub API call the dispatcher makes. Batching/dedupe semantics and the
- * label loop live in dispatch.test.ts; this file is only about which call
- * each effect turns into. Context defaults (mock-context.ts): PR #1 on
+ * the GitHub API call the dispatcher makes. Batching/dedupe semantics live in
+ * dispatch.test.ts; this file is only about which call each effect turns
+ * into. Context defaults (mock-context.ts): PR #1 on
  * home-assistant/core, head sha abc123, node_id PR_1, not a draft.
  */
 

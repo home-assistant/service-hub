@@ -91,10 +91,9 @@ export interface Rule {
 
 /**
  * A comment command (`/<slug> <name> [args]`). Like rules, commands return
- * Effects instead of mutating GitHub directly — label effects go through the
- * label loop, so rules react to a command's changes exactly as they would to
- * a human's. The declared constraints (args, scope, permission) are enforced
- * by the dispatcher, which answers with a 👍/👎 reaction on the comment.
+ * Effects instead of mutating GitHub directly. The declared constraints
+ * (args, scope, permission) are enforced by the dispatcher, which answers
+ * with a 👍/👎 reaction on the comment.
  *
  * The presentational fields (name, description, permission, example, scope)
  * live on {@link CommandHelpEntry} so the status module can render command

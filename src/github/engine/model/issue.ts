@@ -44,13 +44,6 @@ export class Issue {
     this.seed = seed;
   }
 
-  /** Same issue and caches, label state overridden (label-loop simulation). */
-  withLabels(labels: string[]): Issue {
-    const derived = new Issue(this.github, this, { ...this.seed, labels });
-    derived.caches = this.caches;
-    return derived;
-  }
-
   private hydrate(): Promise<GetIssueResponse> {
     if (!this.caches.core) {
       const inflight = this.github.issues

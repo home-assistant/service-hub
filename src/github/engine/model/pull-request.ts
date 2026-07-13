@@ -72,13 +72,6 @@ export class PullRequest {
     this.seed = seed;
   }
 
-  /** Same PR and caches, label state overridden (label-loop simulation). */
-  withLabels(labels: string[]): PullRequest {
-    const derived = new PullRequest(this.github, this, { ...this.seed, labels });
-    derived.caches = this.caches;
-    return derived;
-  }
-
   private params<T extends Record<string, unknown>>(data?: T) {
     return { owner: this.owner, repo: this.repo, pull_number: this.number, ...data };
   }

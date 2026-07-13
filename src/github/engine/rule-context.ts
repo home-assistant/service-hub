@@ -135,22 +135,4 @@ export class RuleContext<E extends EventType = EventType> {
       repo: string;
     } & T;
   }
-
-  /**
-   * Same dispatch (github, sender, repo, org, options), different event —
-   * used by the label loop. Pass a `target` to override entity state (e.g.
-   * `pr.withLabels(...)`); defaults to the current target.
-   */
-  withEvent<F extends EventType>(event: RuleEventOf<F>, target?: TargetFor<F>): RuleContext<F> {
-    return new RuleContext<F>({
-      env: this.env,
-      registry: this.registry,
-      github: this.github,
-      event,
-      sender: this.sender,
-      repo: this.repo,
-      org: this.org,
-      target: target ?? (this.target as unknown as TargetFor<F>),
-    });
-  }
 }

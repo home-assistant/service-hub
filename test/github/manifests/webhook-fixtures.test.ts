@@ -9,7 +9,7 @@ import { loadFixtures, runFixture } from "./harness.js";
  * Full-pipeline snapshots from captured GitHub webhooks: every fixture in
  * fixtures/<repo>/ is a real delivery (see scripts/capture-webhooks.ts)
  * replayed through the real manifest registry and real effect application —
- * label loop, dashboard rendering, and command reactions included. The
+ * dashboard rendering and command reactions included. The
  * `<name>.expected.yaml` sidecar holds the GitHub API writes the delivery
  * produces, in call order; a change to any rule that alters what the bot
  * would do for a covered delivery shows up as a diff there.

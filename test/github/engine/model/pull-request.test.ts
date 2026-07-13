@@ -64,20 +64,6 @@ describe("PullRequest entity", () => {
     expect(github.pulls.get).toHaveBeenCalledTimes(1);
   });
 
-  it("withLabels overrides labels but shares all caches", async () => {
-    const github = createMockGitHub();
-    github.pulls.get.mockResolvedValue({ data: { body: "fetched" } });
-    const pr = new PullRequest(asOctokit(github), REF, { labels: ["a"] });
-
-    await pr.body(); // hydrate on the parent
-    const derived = pr.withLabels(["a", "b"]);
-
-    expect(await derived.labels()).toEqual(["a", "b"]);
-    expect(await pr.labels()).toEqual(["a"]); // parent unchanged
-    expect(await derived.body()).toBe("fetched"); // no second fetch
-    expect(github.pulls.get).toHaveBeenCalledTimes(1);
-  });
-
   it("fetches files once and derives integration domains from them", async () => {
     const github = createMockGitHub();
     github.paginate.mockResolvedValue([
