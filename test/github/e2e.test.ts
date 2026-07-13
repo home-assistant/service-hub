@@ -2,7 +2,33 @@ import { describe, expect, it, vi } from "vitest";
 import type { CommandContext } from "../../src/github/engine/command-context.js";
 import { EventType } from "../../src/github/engine/event.js";
 import type { Command, Rule } from "../../src/github/engine/types.js";
-import { commentPayload, createE2EHarness, prOpenedPayload } from "./helpers/e2e.js";
+import {
+  commentPayload,
+  createE2EHarness,
+  type E2EWiring,
+  prOpenedPayload,
+} from "./helpers/e2e.js";
+
+// webhook.ts imports its Octokit factory and registry itself; route both
+// through this mutable wiring so each harness can install a fresh mock
+// Octokit and its own test registry.
+const wiring: E2EWiring = vi.hoisted(() => ({
+  github: undefined as unknown,
+  config: { repositories: {} },
+}));
+
+vi.mock("../../src/github/app.js", () => ({
+  createOctokit: () => wiring.github,
+}));
+
+vi.mock("../../src/github/manifests/index.js", () => ({
+  get config() {
+    return wiring.config;
+  },
+}));
+
+const makeHarness = (options: Parameters<typeof createE2EHarness>[1] = {}) =>
+  createE2EHarness(wiring, options);
 
 describe("e2e: webhook delivery", () => {
   it("runs a matching PR rule and applies its effects through the dispatcher", async () => {
@@ -14,7 +40,7 @@ describe("e2e: webhook delivery", () => {
       },
     };
 
-    const harness = createE2EHarness({
+    const harness = makeHarness({
       config: {
         repositories: { "home-assistant/core": [labelOnOpen] },
       },
@@ -44,7 +70,7 @@ describe("e2e: webhook delivery", () => {
       },
     };
 
-    const harness = createE2EHarness({
+    const harness = makeHarness({
       config: {
         repositories: { "home-assistant/core": [labelOnOpen] },
       },
@@ -65,7 +91,7 @@ describe("e2e: webhook delivery", () => {
       },
     };
 
-    const harness = createE2EHarness({
+    const harness = makeHarness({
       config: {
         repositories: { "home-assistant/core": [labelIssue] },
       },
@@ -102,7 +128,7 @@ describe("e2e: webhook delivery", () => {
         [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["never"] }],
       },
     };
-    const harness = createE2EHarness({
+    const harness = makeHarness({
       config: {
         repositories: { "home-assistant/core": [labelRule] },
       },
@@ -130,7 +156,7 @@ describe("e2e: bot commands", () => {
   it("runs a matched /ha-bot command, applies its effects, and posts a +1 reaction", async () => {
     const handle = vi.fn().mockResolvedValue([{ type: "setTitle", title: "pinged" }]);
 
-    const harness = createE2EHarness({
+    const harness = makeHarness({
       config: {
         repositories: {},
         commands: { "home-assistant/core": [pingCommand(handle)] },
@@ -155,7 +181,7 @@ describe("e2e: bot commands", () => {
   it("runs commands on plain issue comments too", async () => {
     const handle = vi.fn().mockResolvedValue(undefined);
 
-    const harness = createE2EHarness({
+    const harness = makeHarness({
       config: {
         repositories: {},
         commands: { "home-assistant/core": [pingCommand(handle)] },
@@ -179,7 +205,7 @@ describe("e2e: bot commands", () => {
   });
 
   it("posts a -1 reaction when the command is unknown", async () => {
-    const harness = createE2EHarness({
+    const harness = makeHarness({
       config: {
         repositories: {},
         commands: { "home-assistant/core": [pingCommand(vi.fn())] },
@@ -196,7 +222,7 @@ describe("e2e: bot commands", () => {
   it("ignores comments without a bot mention and falls through to the issue path (no PR)", async () => {
     const handle = vi.fn();
 
-    const harness = createE2EHarness({
+    const harness = makeHarness({
       config: {
         repositories: {},
         commands: { "home-assistant/core": [pingCommand(handle)] },

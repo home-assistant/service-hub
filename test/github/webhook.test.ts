@@ -1,11 +1,10 @@
-import type { Octokit } from "@octokit/rest";
 import { describe, expect, it, vi } from "vitest";
 import type { Env } from "../../src/env.js";
-import { createBotApp } from "../../src/github/webhook.js";
+import { requestHandler } from "../../src/github/webhook.js";
 
 // vi.mock is hoisted above the imports and scoped to this file, so the mocked
-// verify/dispatch only exist here — helpers/e2e.ts and engine/dispatch.test.ts
-// keep the real modules.
+// verify/dispatch/createOctokit only exist here — helpers/e2e.ts and
+// engine/dispatch.test.ts keep the real modules.
 const { verify, dispatch } = vi.hoisted(() => ({
   verify: vi.fn(async () => true),
   dispatch: vi.fn(async () => undefined),
@@ -21,13 +20,13 @@ vi.mock("../../src/github/engine/dispatch.js", async (importOriginal) => ({
   dispatch,
 }));
 
-const app = createBotApp({
-  config: { repositories: {} },
-  createOctokit: () => ({}) as unknown as Octokit,
-});
+// The handler builds its Octokit itself now; keep it inert for routing tests.
+vi.mock("../../src/github/app.js", () => ({
+  createOctokit: () => ({}),
+}));
 
 async function fetchApp(req: Request): Promise<Response> {
-  return app(req, env);
+  return requestHandler(req, env);
 }
 
 function makeRequest(body: string, headers: Record<string, string> = {}): Request {

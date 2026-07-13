@@ -1,13 +1,23 @@
-import type { Octokit } from "@octokit/rest";
 import { sign } from "@octokit/webhooks-methods";
-import type { Env } from "../../../../src/env.js";
+import type { Env } from "../../../src/env.js";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
-import { createBotApp } from "../../../src/github/webhook.js";
+import { requestHandler } from "../../../src/github/webhook.js";
 import { createMockGitHub, type MockGitHub } from "./mock-context.js";
 
 const TEST_SECRET = "test-webhook-secret";
 
 const EMPTY_REGISTRY: RegistryConfig = { repositories: {} };
+
+/**
+ * webhook.ts imports its Octokit factory and registry itself, so the test
+ * file must install module mocks over app.js and manifests/index.js that
+ * read from a mutable wiring object (see e2e.test.ts); each harness points
+ * that wiring at a fresh mock Octokit and the test's registry.
+ */
+export interface E2EWiring {
+  github: unknown;
+  config: RegistryConfig;
+}
 
 export interface E2EHarnessOptions {
   config?: RegistryConfig;
@@ -22,20 +32,17 @@ export interface E2EHarness {
 }
 
 /**
- * Build the request handler wired with test registries and a mock Octokit,
- * then provide a `deliver(event, payload)` helper that POSTs a signed webhook
+ * Wire the module mocks with test registries and a mock Octokit, then
+ * provide a `deliver(event, payload)` helper that POSTs a signed webhook
  * through the real signature-verification + dispatch pipeline.
  *
  * Modeled on Probot's `probot.receive({ name, payload })` — but assertions
  * happen against the captured Octokit mock rather than nock interceptors.
  */
-export function createE2EHarness(options: E2EHarnessOptions = {}): E2EHarness {
+export function createE2EHarness(wiring: E2EWiring, options: E2EHarnessOptions = {}): E2EHarness {
   const github = createMockGitHub();
-
-  const app = createBotApp({
-    config: options.config ?? EMPTY_REGISTRY,
-    createOctokit: () => github as unknown as Octokit,
-  });
+  wiring.github = github;
+  wiring.config = options.config ?? EMPTY_REGISTRY;
 
   const env = {
     GITHUB_APP_ID: "1",
@@ -63,7 +70,7 @@ export function createE2EHarness(options: E2EHarnessOptions = {}): E2EHarness {
           "x-github-event": event,
         },
       });
-      return app(req, env);
+      return requestHandler(req, env);
     },
     deliverUnsigned: async (event, payload) => {
       const req = new Request("http://localhost/github/webhook", {
@@ -75,7 +82,7 @@ export function createE2EHarness(options: E2EHarnessOptions = {}): E2EHarness {
           "x-github-event": event,
         },
       });
-      return app(req, env);
+      return requestHandler(req, env);
     },
   };
 }

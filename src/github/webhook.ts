@@ -1,11 +1,8 @@
-import type { Octokit } from "@octokit/rest";
 import { verify } from "@octokit/webhooks-methods";
 import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
 import type { Env } from "../env.js";
-import { log } from "../log.js";
-import { createOctokit, type GitHubAppConfig } from "./app.js";
+import { createOctokit } from "./app.js";
 import { isBotCommand } from "./engine/command-context.js";
-import type { RegistryConfig } from "./engine/dispatch.js";
 import { dispatch, dispatchCommand } from "./engine/dispatch.js";
 import { evaluateRecentPRs } from "./engine/evaluate.js";
 import { EventType } from "./engine/event.js";
@@ -16,19 +13,11 @@ import {
 } from "./engine/model/from-webhook.js";
 import { config } from "./manifests/index.js";
 
-const CRON_LOOKBACK_MINUTES = 10;
+const CRON_LOOKBACK_OVERLAP_MIN = 2;
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
 
 function isDryRun(env: Env): boolean {
   return env.DRY_RUN === "1";
-}
-
-function githubConfig(env: Env): GitHubAppConfig {
-  return {
-    appId: env.GITHUB_APP_ID,
-    privateKey: env.GITHUB_PRIVATE_KEY,
-    installationId: env.GITHUB_INSTALLATION_ID,
-  };
 }
 
 function isPullRequestEvent(event: string): boolean {
@@ -44,15 +33,7 @@ function isIssueEvent(event: string): boolean {
   return event === "issues";
 }
 
-export interface BotDeps {
-  config: RegistryConfig;
-  createOctokit: (env: Env) => Octokit;
-}
-
-/** A standalone request handler: takes a Fetch `Request`, returns a `Response`. */
-export type RequestHandler = (request: Request, env: Env) => Promise<Response>;
-
-async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise<Response> {
+async function handleWebhook(request: Request, env: Env): Promise<Response> {
   const body = await request.text();
   const signature = request.headers.get("x-hub-signature-256") ?? "";
 
@@ -85,7 +66,11 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
   if (selfWebhook || !known) return new Response("OK");
 
   const eventType = rawEventType as EventType;
-  const octokit = deps.createOctokit(env);
+  const octokit = createOctokit({
+    appId: env.GITHUB_APP_ID,
+    privateKey: env.GITHUB_PRIVATE_KEY,
+    installationId: env.GITHUB_INSTALLATION_ID,
+  });
 
   // Handle bot commands on PR and issue comments
   if (event === "issue_comment" && action === "created") {
@@ -95,7 +80,7 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
         botSlug: env.BOT_SLUG,
         dryRun: isDryRun(env),
         commandSlug: env.COMMAND_SLUG,
-        registry: deps.config,
+        registry: config,
       });
       await dispatchCommand(context);
       return new Response("OK");
@@ -107,51 +92,46 @@ async function handleWebhook(deps: BotDeps, request: Request, env: Env): Promise
       botSlug: env.BOT_SLUG,
       dryRun: isDryRun(env),
       commandSlug: env.COMMAND_SLUG,
-      commands: deps.config.commands?.[payload.repository.full_name] ?? [],
+      commands: config.commands?.[payload.repository.full_name] ?? [],
     });
-    await dispatch(deps.config, context);
+    await dispatch(config, context);
   }
 
   return new Response("OK");
 }
 
-export function createBotApp(deps: BotDeps): RequestHandler {
-  return async (request, env) => {
-    const url = new URL(request.url);
+export async function requestHandler(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
 
-    if (request.method === "POST" && url.pathname === "/github/webhook") {
-      return handleWebhook(deps, request, env);
-    }
+  if (request.method === "POST" && url.pathname === "/github/webhook") {
+    return handleWebhook(request, env);
+  }
 
-    if (request.method === "GET" && url.pathname === "/health") {
-      return new Response("OK");
-    }
+  if (request.method === "GET" && url.pathname === "/health") {
+    return new Response("OK");
+  }
 
-    return new Response("Not Found", { status: 404 });
-  };
+  return new Response("Not Found", { status: 404 });
 }
 
-export function createScheduledHandler(deps: BotDeps): (env: Env) => Promise<void> {
-  return async (env) => {
-    const octokit = deps.createOctokit(env);
-    const since = new Date(Date.now() - CRON_LOOKBACK_MINUTES * 60 * 1000);
-    const dryRun = isDryRun(env);
+export async function scheduledHandler(env: Env, interval_min: number): Promise<void> {
+  const octokit = createOctokit({
+    appId: env.GITHUB_APP_ID,
+    privateKey: env.GITHUB_PRIVATE_KEY,
+    installationId: env.GITHUB_INSTALLATION_ID,
+  });
+  const since = new Date(Date.now() - (interval_min + CRON_LOOKBACK_OVERLAP_MIN) * 60 * 1000);
+  const dryRun = isDryRun(env);
 
-    const repos = Object.keys(deps.config.repositories);
+  const repos = Object.keys(config.repositories);
 
-    await Promise.allSettled(
-      repos.map((repo) =>
-        evaluateRecentPRs(deps.config, octokit, repo, since, {
-          dryRun,
-          botSlug: env.BOT_SLUG,
-          commandSlug: env.COMMAND_SLUG,
-        }),
-      ),
-    );
-  };
+  await Promise.allSettled(
+    repos.map((repo) =>
+      evaluateRecentPRs(config, octokit, repo, since, {
+        dryRun,
+        botSlug: env.BOT_SLUG,
+        commandSlug: env.COMMAND_SLUG,
+      }),
+    ),
+  );
 }
-
-export const defaultDeps: BotDeps = {
-  config,
-  createOctokit: (env) => createOctokit(githubConfig(env)),
-};
