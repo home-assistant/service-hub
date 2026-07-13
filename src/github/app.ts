@@ -79,6 +79,6 @@ export async function scheduledHandler(
   const repos = Object.keys(registryConfig.repositories);
 
   await Promise.allSettled(
-    repos.map((repo) => evaluateRecentPRs(octokit, repo, since, env, registryConfig)),
+    repos.map((repo) => evaluateRecentPRs(env, registryConfig, octokit, repo, since)),
   );
 }

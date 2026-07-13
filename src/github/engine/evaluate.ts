@@ -9,10 +9,10 @@ import type { PullRequestRef } from "./model/pull-request.js";
 import type { Effect } from "./types.js";
 
 export async function evaluatePR(
-  github: Octokit,
-  ref: PullRequestRef,
   env: Env,
   registry: RegistryConfig,
+  github: Octokit,
+  ref: PullRequestRef,
 ): Promise<Effect[]> {
   const { data: pr } = await github.pulls.get({
     owner: ref.owner,
@@ -24,10 +24,10 @@ export async function evaluatePR(
 }
 
 export async function evaluateIssue(
-  github: Octokit,
-  ref: IssueRef,
   env: Env,
   registry: RegistryConfig,
+  github: Octokit,
+  ref: IssueRef,
 ): Promise<Effect[]> {
   const { data: issue } = await github.issues.get({
     owner: ref.owner,
@@ -38,7 +38,7 @@ export async function evaluateIssue(
   // PRs and issues share a numbering space; issues.get happily returns the
   // issue view of a PR. Route those through the PR path so PR rules run.
   if (issue.pull_request) {
-    return evaluatePR(github, ref, env, registry);
+    return evaluatePR(env, registry, github, ref);
   }
 
   return dispatch(
@@ -47,11 +47,11 @@ export async function evaluateIssue(
 }
 
 export async function evaluateRecentPRs(
+  env: Env,
+  registry: RegistryConfig,
   github: Octokit,
   repoFullName: string,
   since: Date,
-  env: Env,
-  registry: RegistryConfig,
 ): Promise<void> {
   const [owner, repo] = repoFullName.split("/");
   const prs = await github.pulls.list({
@@ -67,7 +67,7 @@ export async function evaluateRecentPRs(
 
   for (const pr of recentPRs) {
     try {
-      await evaluatePR(github, { owner, repo, number: pr.number }, env, registry);
+      await evaluatePR(env, registry, github, { owner, repo, number: pr.number });
     } catch (err) {
       log.error("evaluateRecentPRs: PR evaluation failed", {
         repository: repoFullName,

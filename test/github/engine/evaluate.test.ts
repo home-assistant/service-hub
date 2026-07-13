@@ -33,16 +33,11 @@ describe("evaluatePR", () => {
       },
     });
 
-    await evaluatePR(
-      github as never,
-      {
-        owner: "home-assistant",
-        repo: "core",
-        number: 42,
-      },
-      testEnv,
-      config,
-    );
+    await evaluatePR(testEnv, config, github as never, {
+      owner: "home-assistant",
+      repo: "core",
+      number: 42,
+    });
 
     expect(github.pulls.get).toHaveBeenCalledWith(expect.objectContaining({ pull_number: 42 }));
     expect(dispatch).toHaveBeenCalled();
@@ -63,16 +58,11 @@ describe("evaluateIssue", () => {
       },
     });
 
-    await evaluateIssue(
-      github as never,
-      {
-        owner: "home-assistant",
-        repo: "core",
-        number: 7,
-      },
-      testEnv,
-      config,
-    );
+    await evaluateIssue(testEnv, config, github as never, {
+      owner: "home-assistant",
+      repo: "core",
+      number: 7,
+    });
 
     expect(github.issues.get).toHaveBeenCalledWith(expect.objectContaining({ issue_number: 7 }));
     expect(github.pulls.get).not.toHaveBeenCalled();
@@ -98,16 +88,11 @@ describe("evaluateIssue", () => {
       },
     });
 
-    await evaluateIssue(
-      github as never,
-      {
-        owner: "home-assistant",
-        repo: "core",
-        number: 42,
-      },
-      testEnv,
-      config,
-    );
+    await evaluateIssue(testEnv, config, github as never, {
+      owner: "home-assistant",
+      repo: "core",
+      number: 42,
+    });
 
     expect(github.pulls.get).toHaveBeenCalledWith(expect.objectContaining({ pull_number: 42 }));
     expect(dispatch).toHaveBeenCalled();
@@ -150,7 +135,7 @@ describe("evaluateRecentPRs", () => {
     );
 
     const since = new Date(now.getTime() - 10 * 60 * 1000); // 10 min ago
-    await evaluateRecentPRs(github as never, "home-assistant/core", since, testEnv, config);
+    await evaluateRecentPRs(testEnv, config, github as never, "home-assistant/core", since);
 
     // Only PR #1 was updated within the last 10 minutes
     expect(github.pulls.get).toHaveBeenCalledTimes(1);
@@ -185,7 +170,7 @@ describe("evaluateRecentPRs", () => {
     });
 
     const since = new Date(now.getTime() - 10 * 60 * 1000);
-    await evaluateRecentPRs(github as never, "home-assistant/core", since, testEnv, config);
+    await evaluateRecentPRs(testEnv, config, github as never, "home-assistant/core", since);
 
     expect(logErrorSpy).toHaveBeenCalledWith(
       "evaluateRecentPRs: PR evaluation failed",
