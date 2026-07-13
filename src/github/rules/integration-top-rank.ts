@@ -7,7 +7,7 @@ import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 import { addsNewIntegration } from "./file-shape.js";
-import { MAX_INTEGRATION_LABELS } from "./integration-domain.js";
+import { MAX_INTEGRATION_LABELS } from "./integrations.js";
 
 const ANALYTICS_URL = "https://analytics.home-assistant.io/current_data.json";
 const TOP_COUNTS = [50, 100, 200];

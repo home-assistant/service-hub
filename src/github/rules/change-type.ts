@@ -6,7 +6,7 @@ import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect } from "../engine/types.js";
 import { addsNewIntegration } from "./file-shape.js";
 
-const NEW_INTEGRATION_LABEL = "new-integration";
+export const NEW_INTEGRATION_LABEL = "new-integration";
 
 const BODY_MATCHES: { description: string; labels: string[] }[] = [
   { description: "Bugfix (non-breaking change which fixes an issue)", labels: ["bugfix"] },
@@ -32,7 +32,9 @@ const BODY_MATCHES: { description: string; labels: string[] }[] = [
 
 const TYPE_OF_CHANGE_LABELS = new Set(BODY_MATCHES.flatMap((m) => m.labels));
 
-function pickedTypeLabels(body: string | null): string[] {
+/** Type-of-change labels checked in the PR body — shared so consumers derive
+ * the change type from the body instead of waiting for this rule's labels. */
+export function pickedTypeLabels(body: string | null): string[] {
   const completedTasks = extractTasks(body)
     .filter((t) => t.checked)
     .map((t) => t.description);

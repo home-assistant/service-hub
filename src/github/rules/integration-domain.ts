@@ -2,14 +2,7 @@ import { EventType } from "../engine/event.js";
 import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
-
-/**
- * Cap on how many `integration: <domain>` labels a single PR gets. A PR
- * touching more than this many integrations is almost always a tree-wide
- * change, where per-integration labels are noise. Shared with
- * `integration-top-rank` so the two stay in lockstep.
- */
-export const MAX_INTEGRATION_LABELS = 5;
+import { MAX_INTEGRATION_LABELS } from "./integrations.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_OPENED

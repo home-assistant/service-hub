@@ -2,8 +2,12 @@ import { fetchIntegrationManifest, QualityScale } from "../../util/integration.j
 import { EventType } from "../engine/event.js";
 import { type CheckOutcome, check } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
+import { INTEGRATION_LABEL_PREFIX, itemIntegrationDomains } from "./integrations.js";
 
 type HandledEvent =
+  | EventType.PULL_REQUEST_OPENED
+  | EventType.PULL_REQUEST_REOPENED
+  | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.PULL_REQUEST_LABELED
   | EventType.PULL_REQUEST_UNLABELED
   | EventType.PULL_REQUEST_REVIEW_SUBMITTED
@@ -12,39 +16,41 @@ type HandledEvent =
 
 const APPROVED_LABEL = "code-owner-approved";
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome> {
-  const currentLabels = await ctx.target.labels();
-  const integrations = currentLabels.filter((l) => l.startsWith("integration: "));
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome | undefined> {
+  // Only integration labels change what this check concludes.
+  if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return;
 
-  const isPlatinum = currentLabels.includes(`Quality Scale: ${QualityScale.PLATINUM}`);
-
-  // Skip when this PR doesn't require code-owner approval at all.
-  if (!isPlatinum) {
-    return {
-      status: "skip",
-      message: "Not a platinum integration — no code-owner approval required.",
-    };
-  }
-  if (integrations.length !== 1) {
+  // Everything is derived from the PR itself (files, manifest, CODEOWNERS
+  // teams, reviews) — never from labels other rules maintain.
+  const domains = await itemIntegrationDomains(ctx);
+  if (domains.length !== 1) {
     return {
       status: "skip",
       message: "Touches zero or multiple integrations — code-owner approval not enforced.",
     };
   }
-  if (currentLabels.includes("by-code-owner")) {
-    return { status: "pass", message: "Authored by a code owner." };
+
+  const domain = domains[0];
+  const manifest = await fetchIntegrationManifest(domain);
+  if (manifest?.quality_scale !== QualityScale.PLATINUM) {
+    return {
+      status: "skip",
+      message: "Not a platinum integration — no code-owner approval required.",
+    };
+  }
+  if (!manifest.codeowners?.length) {
+    return { status: "skip", message: `Integration \`${domain}\` has no code owners listed.` };
   }
 
-  const domain = integrations[0].substring(13);
-  const manifest = await fetchIntegrationManifest(domain);
-  if (!manifest?.codeowners?.length) {
-    return { status: "skip", message: `Integration \`${domain}\` has no code owners listed.` };
+  const expandedOwners = await ctx.org.expandTeams(manifest.codeowners);
+  const authorLogin = (await ctx.target.authorLogin()).toLowerCase();
+  if (expandedOwners.includes(authorLogin)) {
+    return { status: "pass", message: "Authored by a code owner." };
   }
 
   // The approval label is never trusted on its own — an approval can be
   // dismissed, so the reviews are the source of truth and the label follows.
   const reviews = await ctx.target.reviews();
-  const expandedOwners = await ctx.org.expandTeams(manifest.codeowners);
   const approvedByOwner = reviews.some(
     (r) => r.state === "APPROVED" && expandedOwners.includes(r.user?.login?.toLowerCase() ?? ""),
   );
@@ -63,7 +69,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome> {
   return {
     status: "pending",
     message: "Platinum integration — needs approval from a code owner before merging.",
-    ...(currentLabels.includes(APPROVED_LABEL)
+    ...((await ctx.target.labels()).includes(APPROVED_LABEL)
       ? { effects: [{ type: "removeLabels", labels: [APPROVED_LABEL] }] }
       : {}),
   };
@@ -74,6 +80,9 @@ export const platinumApproval = check({
   title: "Code owner approval",
   description: "Requires code owner approval for platinum quality scale integrations",
   events: [
+    EventType.PULL_REQUEST_OPENED,
+    EventType.PULL_REQUEST_REOPENED,
+    EventType.PULL_REQUEST_SYNCHRONIZE,
     EventType.PULL_REQUEST_LABELED,
     EventType.PULL_REQUEST_UNLABELED,
     EventType.PULL_REQUEST_REVIEW_SUBMITTED,

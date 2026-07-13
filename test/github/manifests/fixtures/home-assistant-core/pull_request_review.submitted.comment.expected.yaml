@@ -50,13 +50,16 @@
 
       **✨ Everything's in order!**
 
+      | Status | Check | Details |
+      |--------|-------|---------|
+      | :hourglass: | Code owner approval | Platinum integration — needs approval from a code owner before merging. |
+
       <details>
-      <summary>2 checks skipped</summary>
+      <summary>1 check skipped</summary>
 
       | Status | Check | Details |
       |--------|-------|---------|
       | :heavy_minus_sign: | Review comments | No inline review comments yet. |
-      | :heavy_minus_sign: | Code owner approval | Not a platinum integration — no code-owner approval required. |
 
       </details>
 
@@ -64,13 +67,13 @@
       <sub>Last updated: 2026-06-15T12:00:00.000Z</sub>
 
       <!-- section:review-comments:{"id":"review-comments","title":"Review comments","status":"skip","message":"No inline review comments yet."} -->
-      <!-- section:code-owner-approval:{"id":"code-owner-approval","title":"Code owner approval","status":"skip","message":"Not a platinum integration — no code-owner approval required."} -->
+      <!-- section:code-owner-approval:{"id":"code-owner-approval","title":"Code owner approval","status":"pending","message":"Platinum integration — needs approval from a code owner before merging."} -->
 - call: repos.createCommitStatus
   params:
     owner: contributor
     repo: core
     sha: 8d8e8fa31782e096a8cc7762618c0d2edfb02649
     context: ha-bot
-    state: success
-    description: All checks passed (2 skipped)
+    state: failure
+    description: 1 check pending
     target_url: https://github.com/contributor/core/issues/21#issuecomment-1000

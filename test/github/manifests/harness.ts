@@ -11,6 +11,7 @@ import {
   type WebhookEventPayload,
 } from "../../../src/github/engine/model/from-webhook.js";
 import type { RuleContext } from "../../../src/github/engine/rule-context.js";
+import type { Effect } from "../../../src/github/engine/types.js";
 import { registryConfig } from "../../../src/github/manifests/index.js";
 import { createMockGitHub, type MockGitHub, testEnv } from "../helpers/mock-context.js";
 
@@ -113,7 +114,7 @@ function hydrationPullRequest(fixture: Fixture): Record<string, unknown> {
   };
 }
 
-function routeFetch(remote: Record<string, unknown>): typeof fetch {
+export function routeFetch(remote: Record<string, unknown>): typeof fetch {
   return (async (input: RequestInfo | URL) => {
     const url = String(input);
     for (const [pattern, body] of Object.entries(remote)) {
@@ -230,9 +231,16 @@ function createRecordingGitHub(): {
  * the webhook entrypoint does (command comments go through dispatchCommand,
  * everything else through rule dispatch), against the real manifest registry
  * resolved from payload.repository. Runs effect application for real against
- * the recording mock and returns the GitHub writes in call order.
+ * the recording mock and returns the GitHub writes in call order, plus the
+ * dispatched effects and context for tests that inspect the dispatch itself.
  */
-export async function runFixture(fixture: Fixture): Promise<RecordedCall[]> {
+export interface FixtureRun {
+  calls: RecordedCall[];
+  effects: Effect[];
+  context: RuleContext;
+}
+
+export async function runFixture(fixture: Fixture): Promise<FixtureRun> {
   const { github, octokit, recorded } = createRecordingGitHub();
   github.pulls.get.mockResolvedValue({ data: hydrationPullRequest(fixture) });
   const members = fixture.state.members ?? [];
@@ -260,8 +268,8 @@ export async function runFixture(fixture: Fixture): Promise<RecordedCall[]> {
           fixture.payload as unknown as IssueCommentCreatedEvent,
         );
         if (fixture.state.files) seedFiles(context, fixture.state.files);
-        await dispatchCommand(context);
-        return recorded;
+        const effects = (await dispatchCommand(context)) ?? [];
+        return { calls: recorded, effects, context };
       }
     }
 
@@ -273,8 +281,8 @@ export async function runFixture(fixture: Fixture): Promise<RecordedCall[]> {
       fixture.eventType,
     );
     if (fixture.state.files) seedFiles(context, fixture.state.files);
-    await dispatch(context);
-    return recorded;
+    const effects = await dispatch(context);
+    return { calls: recorded, effects, context };
   } finally {
     globalThis.fetch = originalFetch;
   }

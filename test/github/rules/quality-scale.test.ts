@@ -17,7 +17,7 @@ describe("quality-scale", () => {
 
   it("adds quality-scale label when quality_scale.yaml is modified", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "bugfix" },
         pull_request: { head: { sha: "abc123" }, labels: [] },
@@ -57,7 +57,7 @@ describe("quality-scale", () => {
     });
 
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "integration: hue" },
         pull_request: { head: { sha: "abc123" }, labels: [{ name: "integration: hue" }] },
@@ -84,7 +84,7 @@ describe("quality-scale", () => {
     });
 
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "integration: mydevice" },
         pull_request: {
@@ -101,7 +101,7 @@ describe("quality-scale", () => {
 
   it("returns undefined when no quality_scale.yaml and no integration label", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "bugfix" },
         pull_request: { head: { sha: "abc123" }, labels: [] },
@@ -141,7 +141,7 @@ describe("quality-scale", () => {
     });
 
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "integration: hue" },
         pull_request: { head: { sha: "abc123" }, labels: [{ name: "integration: hue" }] },
@@ -227,7 +227,7 @@ describe("quality-scale", () => {
     });
 
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "integration: hue" },
         pull_request: {
@@ -268,7 +268,7 @@ describe("quality-scale", () => {
     });
 
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "integration: hue" },
         pull_request: { head: { sha: "abc123" }, labels: [{ name: "integration: hue" }] },

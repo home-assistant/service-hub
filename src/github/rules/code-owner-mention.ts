@@ -4,10 +4,16 @@ import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import { commandHelpLines, commandsForTarget } from "../engine/status/help.js";
 import type { Effect, Rule } from "../engine/types.js";
+import { INTEGRATION_LABEL_PREFIX, itemIntegrationDomains } from "./integrations.js";
 
-type HandledEvent = EventType.ISSUES_LABELED | EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;
-
-const INTEGRATION_LABEL_PREFIX = "integration: ";
+type HandledEvent =
+  | EventType.PULL_REQUEST_OPENED
+  | EventType.PULL_REQUEST_EDITED
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.PULL_REQUEST_LABELED
+  | EventType.ISSUES_OPENED
+  | EventType.ISSUES_LABELED
+  | EventType.ON_DEMAND;
 
 // One ping per item: a comment carrying this marker means owners were already
 // mentioned, and no further mention comments are posted — even if new
@@ -80,9 +86,7 @@ function processIntegration(
 async function collectIntegrationNames(ctx: RuleContext<HandledEvent>): Promise<string[]> {
   if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return [];
 
-  return (await ctx.target.labels())
-    .filter((l) => l.startsWith(INTEGRATION_LABEL_PREFIX))
-    .map((l) => l.slice(INTEGRATION_LABEL_PREFIX.length));
+  return itemIntegrationDomains(ctx);
 }
 
 export function mentionCodeOwners(config: {
@@ -132,7 +136,15 @@ export function mentionCodeOwners(config: {
     name: "code-owner-mention",
     description: "Assigns and mentions code owners for integrations a PR/issue touches",
     events: on(
-      [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED, EventType.ON_DEMAND],
+      [
+        EventType.PULL_REQUEST_OPENED,
+        EventType.PULL_REQUEST_EDITED,
+        EventType.PULL_REQUEST_SYNCHRONIZE,
+        EventType.PULL_REQUEST_LABELED,
+        EventType.ISSUES_OPENED,
+        EventType.ISSUES_LABELED,
+        EventType.ON_DEMAND,
+      ],
       handle,
     ),
   };

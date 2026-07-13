@@ -28,5 +28,6 @@
       "quality_scale": "bronze",
       "codeowners": ["@newdev"]
     }
-  }
+  },
+  "codeowners": "homeassistant/components/hue/* @balloob\n"
 }

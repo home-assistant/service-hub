@@ -3,18 +3,22 @@ import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js"
 import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
+import { INTEGRATION_LABEL_PREFIX, itemIntegrationDomains } from "./integrations.js";
 
-type HandledEvent = EventType.ISSUES_LABELED | EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;
-
-const INTEGRATION_LABEL_PREFIX = "integration: ";
+type HandledEvent =
+  | EventType.PULL_REQUEST_OPENED
+  | EventType.PULL_REQUEST_EDITED
+  | EventType.PULL_REQUEST_SYNCHRONIZE
+  | EventType.ISSUES_OPENED
+  | EventType.ISSUES_LABELED
+  | EventType.PULL_REQUEST_LABELED
+  | EventType.ON_DEMAND;
 
 export function byCodeOwner(config: { pathPattern: (integration: string) => string }): Rule {
   async function handle(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
     if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return;
 
-    const integrationNames = (await ctx.target.labels())
-      .filter((l) => l.startsWith(INTEGRATION_LABEL_PREFIX))
-      .map((l) => l.slice(INTEGRATION_LABEL_PREFIX.length));
+    const integrationNames = await itemIntegrationDomains(ctx);
     if (integrationNames.length === 0) return;
 
     // The rule is only registered on repos that have a CODEOWNERS file, so a
@@ -39,9 +43,17 @@ export function byCodeOwner(config: { pathPattern: (integration: string) => stri
 
   return {
     name: "by-code-owner",
-    description: "Labels PRs/issues authored by a code owner of a labeled integration",
+    description: "Labels PRs/issues authored by a code owner of a touched integration",
     events: on(
-      [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED, EventType.ON_DEMAND],
+      [
+        EventType.PULL_REQUEST_OPENED,
+        EventType.PULL_REQUEST_EDITED,
+        EventType.PULL_REQUEST_SYNCHRONIZE,
+        EventType.ISSUES_OPENED,
+        EventType.ISSUES_LABELED,
+        EventType.PULL_REQUEST_LABELED,
+        EventType.ON_DEMAND,
+      ],
       handle,
     ),
   };

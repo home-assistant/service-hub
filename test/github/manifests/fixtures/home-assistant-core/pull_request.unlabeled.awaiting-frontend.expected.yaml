@@ -51,13 +51,10 @@
       **✨ Everything's in order!**
 
       <details>
-      <summary>4 checks skipped</summary>
+      <summary>1 check skipped</summary>
 
       | Status | Check | Details |
       |--------|-------|---------|
-      | :heavy_minus_sign: | New integration validation | Not a new-integration PR. |
-      | :heavy_minus_sign: | Documentation | Not a new integration or platform — no documentation PR required. |
-      | :heavy_minus_sign: | Code owner approval | Not a platinum integration — no code-owner approval required. |
       | :heavy_minus_sign: | Blocking: awaiting-frontend | `awaiting-frontend` label not set — nothing to block. |
 
       </details>
@@ -65,9 +62,6 @@
       ---
       <sub>Last updated: 2026-06-15T12:00:00.000Z</sub>
 
-      <!-- section:new-integration-validation:{"id":"new-integration-validation","title":"New integration validation","status":"skip","message":"Not a new-integration PR."} -->
-      <!-- section:docs-missing:{"id":"docs-missing","title":"Documentation","status":"skip","message":"Not a new integration or platform — no documentation PR required."} -->
-      <!-- section:code-owner-approval:{"id":"code-owner-approval","title":"Code owner approval","status":"skip","message":"Not a platinum integration — no code-owner approval required."} -->
       <!-- section:blocking-label-awaiting-frontend:{"id":"blocking-label-awaiting-frontend","title":"Blocking: awaiting-frontend","status":"skip","message":"`awaiting-frontend` label not set — nothing to block."} -->
 - call: repos.createCommitStatus
   params:
@@ -76,5 +70,5 @@
     sha: 6838efc094abef2b48010ee8ea5ec776ffbb1bfa
     context: ha-bot
     state: success
-    description: All checks passed (4 skipped)
+    description: All checks passed (1 skipped)
     target_url: https://github.com/contributor/core/issues/21#issuecomment-1000

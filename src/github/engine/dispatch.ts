@@ -51,7 +51,6 @@ async function applyEffects(
   const overrides: SectionOverride[] = [];
   const assignees = new Set<string>();
   const removeAssignees = new Set<string>();
-  // Set: the label loop can run a rule twice per dispatch; identical comments post once.
   const comments = new Set<string>();
   const ops: Promise<unknown>[] = [];
 
@@ -126,15 +125,27 @@ async function applyEffects(
     }
   }
 
-  if (labels.size > 0) {
-    ops.push(context.github.issues.addLabels(context.issueParams({ labels: [...labels] })));
-  }
+  // Collapse label effects to the net diff against the item's current labels,
+  // so re-emitted labels don't produce API calls (rules emit unconditionally).
+  if (labels.size > 0 || removeLabels.size > 0) {
+    const current = new Set(await context.target.labels());
+    const toAdd = [...labels].filter((label) => !current.has(label));
+    if (toAdd.length > 0) {
+      ops.push(context.github.issues.addLabels(context.issueParams({ labels: toAdd })));
+    }
 
-  for (const label of removeLabels) {
-    if (labels.has(label)) continue;
-    ops.push(
-      context.github.issues.removeLabel(context.issueParams({ name: label })).catch(() => {}),
-    );
+    for (const label of removeLabels) {
+      if (labels.has(label)) {
+        log.warn("applyEffects: label added and removed in the same dispatch; add wins", {
+          repository: context.repository,
+          number: context.number,
+          label,
+        });
+        continue;
+      }
+      if (!current.has(label)) continue;
+      ops.push(context.github.issues.removeLabel(context.issueParams({ name: label })));
+    }
   }
 
   // Emission wins over removal within a dispatch.
@@ -239,121 +250,12 @@ async function runMatchedRules(context: RuleContext): Promise<Effect[]> {
   return effects;
 }
 
-/** Synthetic rounds before the label loop declares the rule set non-converging. */
-const MAX_LABEL_ROUNDS = 10;
-
-/**
- * Label adds/removes against the simulated set. Add wins over remove within
- * a round (mirrors applyEffects); cross-repo label effects don't participate.
- */
-function labelChanges(
-  effects: Effect[],
-  current: ReadonlySet<string>,
-): { adds: string[]; removes: string[] } {
-  const added = new Set<string>();
-  const removed = new Set<string>();
-  for (const effect of effects) {
-    if (effect.type === "addLabels") for (const l of effect.labels) added.add(l);
-    else if (effect.type === "removeLabels") for (const l of effect.labels) removed.add(l);
-  }
-  return {
-    adds: [...added].filter((l) => !current.has(l)),
-    removes: [...removed].filter((l) => current.has(l) && !added.has(l)),
-  };
-}
-
-/**
- * Context for a synthetic labeled/unlabeled event: same dispatch, the target
- * entity's label state overridden to the simulated set. Undefined when no
- * matching EventType exists (issue unlabels).
- */
-function syntheticLabelContext(
-  context: RuleContext,
-  change: { name: string; action: "labeled" | "unlabeled" },
-  labels: string[],
-): RuleContext | undefined {
-  const target = context.target;
-  if (target.kind === "pull_request") {
-    const pr = target.withLabels(labels);
-    return change.action === "labeled"
-      ? context.withEvent({ type: EventType.PULL_REQUEST_LABELED, label: change.name }, pr)
-      : context.withEvent({ type: EventType.PULL_REQUEST_UNLABELED, label: change.name }, pr);
-  }
-  // Issues have no unlabeled EventType; removals only count toward the net diff.
-  if (change.action !== "labeled") return undefined;
-  return context.withEvent(
-    { type: EventType.ISSUES_LABELED, label: change.name },
-    target.withLabels(labels),
-  );
-}
-
-/**
- * The label loop: simulates label effects in memory and re-dispatches rules
- * with synthetic labeled/unlabeled events until the label set stabilizes.
- * Returns all effects to apply, with label effects collapsed to the net diff
- * so labels never flicker on GitHub. Non-converging rule sets are cut off
- * after MAX_LABEL_ROUNDS and reported to Sentry via log.exception.
- */
-async function runLabelLoop(context: RuleContext, initialEffects: Effect[]): Promise<Effect[]> {
-  const isLabelEffect = (e: Effect) => e.type === "addLabels" || e.type === "removeLabels";
-  if (!initialEffects.some(isLabelEffect)) return initialEffects;
-
-  const initialNames = new Set(await context.target.labels());
-  const current = new Set(initialNames);
-
-  const effects: Effect[] = initialEffects.filter((e) => !isLabelEffect(e));
-  let roundEffects = initialEffects;
-  let round = 0;
-
-  while (true) {
-    const { adds, removes } = labelChanges(roundEffects, current);
-    if (adds.length === 0 && removes.length === 0) break;
-
-    round++;
-    if (round > MAX_LABEL_ROUNDS) {
-      const err = new Error(
-        `Label loop did not stabilize after ${MAX_LABEL_ROUNDS} rounds for ` +
-          `${context.repository}#${context.number} (${context.eventType}); ` +
-          `still changing: +[${adds.join(", ")}] -[${removes.join(", ")}]`,
-      );
-      log.exception(err);
-      break;
-    }
-
-    for (const name of adds) current.add(name);
-    for (const name of removes) current.delete(name);
-
-    // One synthetic event per changed label (as GitHub sends them), all
-    // seeing the round's fully updated label set.
-    const labels = [...current];
-    const changes = [
-      ...adds.map((name) => ({ name, action: "labeled" as const })),
-      ...removes.map((name) => ({ name, action: "unlabeled" as const })),
-    ];
-
-    roundEffects = [];
-    for (const change of changes) {
-      const synthetic = syntheticLabelContext(context, change, labels);
-      if (!synthetic) continue;
-      roundEffects.push(...(await runMatchedRules(synthetic)));
-    }
-    effects.push(...roundEffects.filter((e) => !isLabelEffect(e)));
-  }
-
-  const netAdds = [...current].filter((name) => !initialNames.has(name));
-  const netRemoves = [...initialNames].filter((name) => !current.has(name));
-  if (netAdds.length > 0) effects.push({ type: "addLabels", labels: netAdds });
-  if (netRemoves.length > 0) effects.push({ type: "removeLabels", labels: netRemoves });
-  return effects;
-}
-
 export async function dispatch(context: RuleContext): Promise<Effect[]> {
   if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
     await maybeRedraftOnReady(context);
   }
 
-  const initialEffects = await runMatchedRules(context);
-  const effects = await runLabelLoop(context, initialEffects);
+  const effects = await runMatchedRules(context);
 
   await applyEffects(context, effects, {
     knownSectionIds: collectKnownStatusSectionIds(context),
@@ -418,13 +320,10 @@ async function react(context: CommandContext, content: "+1" | "-1"): Promise<voi
 /**
  * The command counterpart of dispatch(): validate each invocation in the
  * comment against its command's declared constraints, run the handlers in
- * order, and apply the collected effects through the same label loop rules
- * use — so a command's label changes re-trigger label-listening rules
- * exactly like a human's would (command mutations arrive as self-webhooks,
- * which the entrypoint drops). A comment can carry several commands (one
- * per `/<slug>` line) mixed with prose. The invoking comment gets a 👍 when
- * every invocation ran and a 👎 when any was rejected or failed. Returns the
- * applied effects (post label loop), undefined when nothing ran.
+ * order, and apply the collected effects. A comment can carry several
+ * commands (one per `/<slug>` line) mixed with prose. The invoking comment
+ * gets a 👍 when every invocation ran and a 👎 when any was rejected or
+ * failed. Returns the applied effects, undefined when nothing ran.
  */
 export async function dispatchCommand(context: CommandContext): Promise<Effect[] | undefined> {
   if (context.senderIsBot) return undefined;
@@ -483,13 +382,11 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
     }
   }
 
-  let finalEffects: Effect[] = [];
   if (collected.length) {
-    finalEffects = await runLabelLoop(context, collected);
-    await applyEffects(context, finalEffects, {
+    await applyEffects(context, collected, {
       knownSectionIds: collectKnownStatusSectionIds(context),
     });
   }
   await react(context, anyFailed ? "-1" : "+1");
-  return anyRan ? finalEffects : undefined;
+  return anyRan ? collected : undefined;
 }

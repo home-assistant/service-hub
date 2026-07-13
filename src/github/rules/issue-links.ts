@@ -1,19 +1,16 @@
 import { EventType } from "../engine/event.js";
 import { type CheckOutcome, check } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
+import { INTEGRATION_LABEL_PREFIX, itemIntegrationDomains } from "./integrations.js";
 
-const INTEGRATION_LABEL_PREFIX = "integration: ";
-
-type HandledEvent = EventType.ISSUES_LABELED | EventType.ISSUES_ON_DEMAND;
+type HandledEvent = EventType.ISSUES_OPENED | EventType.ISSUES_LABELED | EventType.ISSUES_ON_DEMAND;
 
 async function evaluate(
   ctx: RuleContext<HandledEvent>,
 ): Promise<CheckOutcome | "clear" | undefined> {
   if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return;
 
-  const domains = (await ctx.target.labels())
-    .filter((l) => l.startsWith(INTEGRATION_LABEL_PREFIX))
-    .map((l) => l.slice(INTEGRATION_LABEL_PREFIX.length));
+  const domains = await itemIntegrationDomains(ctx);
   if (domains.length === 0) return "clear";
 
   const lines = domains.map(
@@ -29,6 +26,6 @@ export const issueLinks = check({
   id: "integration-links",
   title: "Integration links",
   description: "Adds documentation, source, and issue-search links for labeled integrations",
-  events: [EventType.ISSUES_LABELED, EventType.ISSUES_ON_DEMAND],
+  events: [EventType.ISSUES_OPENED, EventType.ISSUES_LABELED, EventType.ISSUES_ON_DEMAND],
   evaluate,
 });

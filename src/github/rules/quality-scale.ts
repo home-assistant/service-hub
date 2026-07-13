@@ -3,6 +3,7 @@ import { EventType } from "../engine/event.js";
 import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
+import { INTEGRATION_LABEL_PREFIX } from "./integrations.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
@@ -30,6 +31,9 @@ function highestScale(scales: QualityScale[]): QualityScale {
 }
 
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  // Only integration labels feed the scale; other labels are not our input.
+  if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return;
+
   const effects: Effect[] = [];
 
   // Add `quality-scale` label when PR touches `quality_scale.yaml`.
@@ -47,8 +51,8 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   const fileDerived = await ctx.target.integrationDomains();
   const currentLabels = await ctx.target.labels();
   const labelDerived = currentLabels
-    .filter((n) => n.startsWith("integration: "))
-    .map((n) => n.slice("integration: ".length));
+    .filter((n) => n.startsWith(INTEGRATION_LABEL_PREFIX))
+    .map((n) => n.slice(INTEGRATION_LABEL_PREFIX.length));
   const domains = [...new Set([...fileDerived, ...labelDerived])];
 
   const scales: QualityScale[] = [];

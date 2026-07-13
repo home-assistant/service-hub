@@ -110,22 +110,22 @@
       | :white_check_mark: | Merge conflicts | No merge conflicts. |
       | :white_check_mark: | Merge target | This PR targets `dev`. |
       | :white_check_mark: | Type of change | Type of change: `bugfix` |
-      | :heavy_minus_sign: | Review comments | No inline review comments yet. |
       | :heavy_minus_sign: | New integration validation | Not a new-integration PR. |
       | :heavy_minus_sign: | Documentation | Not a new integration or platform — no documentation PR required. |
+      | :heavy_minus_sign: | Review comments | No inline review comments yet. |
 
       </details>
 
       ---
       <sub>Last updated: 2026-06-15T12:00:00.000Z</sub>
 
+      <!-- section:new-integration-validation:{"id":"new-integration-validation","title":"New integration validation","status":"skip","message":"Not a new-integration PR."} -->
+      <!-- section:docs-missing:{"id":"docs-missing","title":"Documentation","status":"skip","message":"Not a new integration or platform — no documentation PR required."} -->
       <!-- section:merge-conflict:{"id":"merge-conflict","title":"Merge conflicts","status":"pass","message":"No merge conflicts."} -->
       <!-- section:merge-target:{"id":"merge-target","title":"Merge target","status":"pass","message":"This PR targets `dev`."} -->
       <!-- section:review-comments:{"id":"review-comments","title":"Review comments","status":"skip","message":"No inline review comments yet."} -->
-      <!-- section:type-of-change:{"id":"type-of-change","title":"Type of change","status":"pass","message":"Type of change: `bugfix`"} -->
-      <!-- section:new-integration-validation:{"id":"new-integration-validation","title":"New integration validation","status":"skip","message":"Not a new-integration PR."} -->
-      <!-- section:docs-missing:{"id":"docs-missing","title":"Documentation","status":"skip","message":"Not a new integration or platform — no documentation PR required."} -->
       <!-- section:code-owner-approval:{"id":"code-owner-approval","title":"Code owner approval","status":"pending","message":"Platinum integration — needs approval from a code owner before merging."} -->
+      <!-- section:type-of-change:{"id":"type-of-change","title":"Type of change","status":"pass","message":"Type of change: `bugfix`"} -->
 - call: repos.createCommitStatus
   params:
     owner: contributor

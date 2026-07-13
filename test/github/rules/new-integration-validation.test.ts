@@ -28,7 +28,7 @@ function makeFile(filename: string, status = "added") {
 describe("new-integration-validation", () => {
   it("skips when PR has no new-integration label", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "bugfix" },
         pull_request: { head: { sha: "abc123" }, labels: [{ name: "bugfix" }] },
@@ -44,7 +44,7 @@ describe("new-integration-validation", () => {
 
   it("passes when new-integration PR has a single platform", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "new-integration" },
         pull_request: { head: { sha: "abc123" }, labels: [{ name: "new-integration" }] },
@@ -65,7 +65,7 @@ describe("new-integration-validation", () => {
 
   it("fails when multiple platforms added", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "new-integration" },
         pull_request: { head: { sha: "abc123" }, labels: [{ name: "new-integration" }] },
@@ -84,7 +84,7 @@ describe("new-integration-validation", () => {
 
   it("fails when brand folder is included", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "new-integration" },
         pull_request: { head: { sha: "abc123" }, labels: [{ name: "new-integration" }] },
@@ -102,7 +102,7 @@ describe("new-integration-validation", () => {
 
   it("reports both issues when multiple platforms AND brand folder", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         label: { name: "new-integration" },
         pull_request: { head: { sha: "abc123" }, labels: [{ name: "new-integration" }] },
@@ -121,9 +121,12 @@ describe("new-integration-validation", () => {
     expect(result?.section?.message).toContain("brand");
   });
 
-  it("listens to labeled/unlabeled/synchronize/on_demand", () => {
+  it("listens to PR state and label events plus on_demand", () => {
     expect(Object.keys(newIntegrationValidation.events).sort()).toEqual(
       [
+        EventType.PULL_REQUEST_OPENED,
+        EventType.PULL_REQUEST_REOPENED,
+        EventType.PULL_REQUEST_EDITED,
         EventType.PULL_REQUEST_LABELED,
         EventType.PULL_REQUEST_UNLABELED,
         EventType.PULL_REQUEST_SYNCHRONIZE,
@@ -132,7 +135,7 @@ describe("new-integration-validation", () => {
     );
   });
 
-  it("fires on PR creation via the label loop when file-shape sets new-integration", async () => {
+  it("fires on PR creation when the PR adds a new integration", async () => {
     const github = createMockGitHub();
 
     // Payload has no labels; file-shape derives `new-integration` from the

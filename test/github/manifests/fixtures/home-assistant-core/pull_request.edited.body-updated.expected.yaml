@@ -61,26 +61,24 @@
       **✨ Everything's in order!**
 
       <details>
-      <summary>2 checks passed (3 skipped)</summary>
+      <summary>2 checks passed (2 skipped)</summary>
 
       | Status | Check | Details |
       |--------|-------|---------|
       | :white_check_mark: | Merge target | This PR targets `dev`. |
       | :white_check_mark: | Type of change | Type of change: `bugfix`, `code-quality` |
-      | :heavy_minus_sign: | Documentation | Not a new integration or platform — no documentation PR required. |
       | :heavy_minus_sign: | New integration validation | Not a new-integration PR. |
-      | :heavy_minus_sign: | Code owner approval | Not a platinum integration — no code-owner approval required. |
+      | :heavy_minus_sign: | Documentation | Not a new integration or platform — no documentation PR required. |
 
       </details>
 
       ---
       <sub>Last updated: 2026-06-15T12:00:00.000Z</sub>
 
+      <!-- section:new-integration-validation:{"id":"new-integration-validation","title":"New integration validation","status":"skip","message":"Not a new-integration PR."} -->
       <!-- section:docs-missing:{"id":"docs-missing","title":"Documentation","status":"skip","message":"Not a new integration or platform — no documentation PR required."} -->
       <!-- section:merge-target:{"id":"merge-target","title":"Merge target","status":"pass","message":"This PR targets `dev`."} -->
       <!-- section:type-of-change:{"id":"type-of-change","title":"Type of change","status":"pass","message":"Type of change: `bugfix`, `code-quality`"} -->
-      <!-- section:new-integration-validation:{"id":"new-integration-validation","title":"New integration validation","status":"skip","message":"Not a new-integration PR."} -->
-      <!-- section:code-owner-approval:{"id":"code-owner-approval","title":"Code owner approval","status":"skip","message":"Not a platinum integration — no code-owner approval required."} -->
 - call: repos.createCommitStatus
   params:
     owner: contributor
@@ -88,5 +86,5 @@
     sha: 8d8e8fa31782e096a8cc7762618c0d2edfb02649
     context: ha-bot
     state: success
-    description: All checks passed (3 skipped)
+    description: All checks passed (2 skipped)
     target_url: https://github.com/contributor/core/issues/21#issuecomment-1000

@@ -95,21 +95,9 @@
       |--------|-------|---------|
       | :hourglass: | Code owner approval | Platinum integration — needs approval from a code owner before merging. |
 
-      <details>
-      <summary>2 checks skipped</summary>
-
-      | Status | Check | Details |
-      |--------|-------|---------|
-      | :heavy_minus_sign: | New integration validation | Not a new-integration PR. |
-      | :heavy_minus_sign: | Documentation | Not a new integration or platform — no documentation PR required. |
-
-      </details>
-
       ---
       <sub>Last updated: 2026-06-15T12:00:00.000Z</sub>
 
-      <!-- section:new-integration-validation:{"id":"new-integration-validation","title":"New integration validation","status":"skip","message":"Not a new-integration PR."} -->
-      <!-- section:docs-missing:{"id":"docs-missing","title":"Documentation","status":"skip","message":"Not a new integration or platform — no documentation PR required."} -->
       <!-- section:code-owner-approval:{"id":"code-owner-approval","title":"Code owner approval","status":"pending","message":"Platinum integration — needs approval from a code owner before merging."} -->
 - call: repos.createCommitStatus
   params:

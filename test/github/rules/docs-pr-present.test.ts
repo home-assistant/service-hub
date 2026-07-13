@@ -14,7 +14,7 @@ import {
 describe("docs-missing handler", () => {
   it("skips when no docs-requiring labels are present", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         pull_request: {
           labels: [{ name: "bugfix" }],
@@ -31,7 +31,7 @@ describe("docs-missing handler", () => {
 
   it("fails when new-integration has no docs link", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         pull_request: {
           labels: [{ name: "new-integration" }],
@@ -48,7 +48,7 @@ describe("docs-missing handler", () => {
 
   it("passes when new-integration has docs link", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         pull_request: {
           labels: [{ name: "new-integration" }],
@@ -65,7 +65,7 @@ describe("docs-missing handler", () => {
 
   it("passes when docs-missing label is absent even for new-platform with URL link", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         pull_request: {
           labels: [{ name: "new-platform" }],
@@ -82,7 +82,7 @@ describe("docs-missing handler", () => {
 
   it("auto-approves (skips) release PRs", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         pull_request: {
           labels: [{ name: "docs-missing" }],
@@ -99,7 +99,7 @@ describe("docs-missing handler", () => {
 
   it("emits only its status section — the dispatcher synthesizes the aggregate check", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         pull_request: {
           labels: [{ name: "bugfix" }],
@@ -113,7 +113,7 @@ describe("docs-missing handler", () => {
     expect(result?.effects.every((e) => e.type === "statusSection")).toBe(true);
   });
 
-  it("fires on PR creation via the label loop when file-shape sets new-integration", async () => {
+  it("fires on PR creation when the PR adds a new integration", async () => {
     const github = createMockGitHub();
 
     const config: RegistryConfig = {

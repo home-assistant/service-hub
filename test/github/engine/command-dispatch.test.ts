@@ -194,7 +194,7 @@ describe("dispatchCommand", () => {
     expect(github.reactions.createForIssueComment).not.toHaveBeenCalled();
   });
 
-  it("runs label-triggered rules on a command's label effects", async () => {
+  it("applies a command's label effects without re-dispatching label rules", async () => {
     const onLabeled: Rule = {
       name: "on-labeled",
       description: "",
@@ -215,9 +215,8 @@ describe("dispatchCommand", () => {
     expect(github.issues.addLabels).toHaveBeenCalledWith(
       expect.objectContaining({ issue_number: 1, labels: ["foo"] }),
     );
-    expect(github.issues.createComment).toHaveBeenCalledWith(
-      expect.objectContaining({ body: "saw foo" }),
-    );
+    // Rules never run on command-set labels — they derive their own inputs.
+    expect(github.issues.createComment).not.toHaveBeenCalled();
     expectReaction(github, "+1");
   });
 });

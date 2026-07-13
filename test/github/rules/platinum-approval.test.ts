@@ -25,7 +25,7 @@ describe("platinum-approval", () => {
 
   it("skips when PR has no platinum label", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         pull_request: {
           labels: [{ name: "integration: hue" }, { name: "Quality Scale: gold" }],
@@ -58,7 +58,7 @@ describe("platinum-approval", () => {
     });
 
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       github,
       payload: {
         pull_request: {
@@ -96,7 +96,7 @@ describe("platinum-approval", () => {
     });
 
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       github,
       payload: {
         pull_request: {
@@ -153,16 +153,32 @@ describe("platinum-approval", () => {
     expect(result?.removeLabels).toContain("code-owner-approved");
   });
 
-  it("succeeds when by-code-owner label is present", async () => {
+  it("succeeds when the author is a code owner", async () => {
+    const github = createMockGitHub();
+    github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
+
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        domain: "hue",
+        name: "Hue",
+        codeowners: ["@testuser"],
+        quality_scale: "platinum",
+        config_flow: true,
+        dependencies: [],
+        documentation: "",
+        requirements: [],
+        iot_class: "local_polling",
+      }),
+    });
+
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
+      github,
       payload: {
         pull_request: {
-          labels: [
-            { name: "integration: hue" },
-            { name: "Quality Scale: platinum" },
-            { name: "by-code-owner" },
-          ],
+          labels: [{ name: "integration: hue" }],
+          user: { login: "testuser" },
           head: { sha: "abc123" },
         },
       },
@@ -170,11 +186,12 @@ describe("platinum-approval", () => {
 
     const result = await runRule(platinumApproval, context);
     expect(result?.section?.status).toBe("pass");
+    expect(result?.section?.message).toContain("Authored by a code owner");
   });
 
   it("skips when multiple integration labels (not single integration)", async () => {
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       payload: {
         pull_request: {
           labels: [
@@ -211,7 +228,7 @@ describe("platinum-approval", () => {
     });
 
     const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_LABELED,
+      eventType: EventType.ON_DEMAND,
       github,
       payload: {
         pull_request: {
@@ -225,9 +242,12 @@ describe("platinum-approval", () => {
     expect(result?.section?.status).toBe("skip");
   });
 
-  it("listens to label events, review submission/dismissal, and on_demand", () => {
+  it("listens to PR state, label, and review events plus on_demand", () => {
     expect(Object.keys(platinumApproval.events).sort()).toEqual(
       [
+        EventType.PULL_REQUEST_OPENED,
+        EventType.PULL_REQUEST_REOPENED,
+        EventType.PULL_REQUEST_SYNCHRONIZE,
         EventType.PULL_REQUEST_LABELED,
         EventType.PULL_REQUEST_UNLABELED,
         EventType.PULL_REQUEST_REVIEW_SUBMITTED,
@@ -237,7 +257,7 @@ describe("platinum-approval", () => {
     );
   });
 
-  it("fires on PR creation via the label loop when other rules set its labels", async () => {
+  it("fires on PR creation, deriving everything from the PR itself", async () => {
     const github = createMockGitHub();
     github.pulls.listReviews.mockResolvedValue({ data: [] });
     github.teams.listMembersInOrg.mockResolvedValue({ data: [] });
@@ -257,9 +277,8 @@ describe("platinum-approval", () => {
       }),
     });
 
-    // No platinum-relevant labels on the payload; integration-domain and
-    // quality-scale add them during the opened dispatch, and the label loop
-    // re-dispatches platinum-approval with the simulated label state.
+    // No platinum-relevant labels on the payload — the rule derives the
+    // domain from the changed files and the scale from the manifest itself.
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [integrationDomain, qualityScale, platinumApproval] },
     };

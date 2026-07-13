@@ -202,8 +202,8 @@ describe("mention-code-owners", () => {
     expect(Object.keys(rule.events)).toContain(EventType.PULL_REQUEST_LABELED);
   });
 
-  describe("PR creation via the label loop", () => {
-    it("pings owners on pull_request.opened once integration-domain labels the PR", async () => {
+  describe("PR creation", () => {
+    it("pings owners on pull_request.opened from the PR's own files", async () => {
       const github = createMockGitHub();
       const codeowners = `homeassistant/components/hue/* @balloob @frenck`;
       github.repos.getContent.mockResolvedValue({ data: { content: btoa(codeowners) } });
@@ -264,9 +264,17 @@ describe("mention-code-owners", () => {
       expect(github.issues.createComment).not.toHaveBeenCalled();
     });
 
-    it("subscribes only to label events and on_demand", () => {
+    it("subscribes to creation, change, and label events plus on_demand", () => {
       expect(Object.keys(rule.events).sort()).toEqual(
-        [EventType.ISSUES_LABELED, EventType.PULL_REQUEST_LABELED, EventType.ON_DEMAND].sort(),
+        [
+          EventType.PULL_REQUEST_OPENED,
+          EventType.PULL_REQUEST_EDITED,
+          EventType.PULL_REQUEST_SYNCHRONIZE,
+          EventType.ISSUES_OPENED,
+          EventType.ISSUES_LABELED,
+          EventType.PULL_REQUEST_LABELED,
+          EventType.ON_DEMAND,
+        ].sort(),
       );
     });
   });

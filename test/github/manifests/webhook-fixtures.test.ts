@@ -36,7 +36,7 @@ describe("webhook fixture snapshots", () => {
     describe(repoDir, () => {
       for (const fixture of loadFixtures(join(FIXTURES_ROOT, repoDir))) {
         it(fixture.name, async () => {
-          const calls = stringify(await runFixture(fixture), { lineWidth: 0 });
+          const calls = stringify((await runFixture(fixture)).calls, { lineWidth: 0 });
           const expectedPath = join(FIXTURES_ROOT, repoDir, `${fixture.name}.expected.yaml`);
 
           if (UPDATE) {
