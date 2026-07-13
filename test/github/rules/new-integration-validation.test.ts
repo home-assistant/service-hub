@@ -36,7 +36,7 @@ describe("new-integration-validation", () => {
     });
 
     const result = await runRule(newIntegrationValidation, context);
-    expect(result?.dashboard).toMatchObject({
+    expect(result?.section).toMatchObject({
       id: "new-integration-validation",
       status: "skip",
     });
@@ -57,7 +57,7 @@ describe("new-integration-validation", () => {
     ]);
 
     const result = await runRule(newIntegrationValidation, context);
-    expect(result?.dashboard).toMatchObject({
+    expect(result?.section).toMatchObject({
       id: "new-integration-validation",
       status: "pass",
     });
@@ -78,8 +78,8 @@ describe("new-integration-validation", () => {
     ]);
 
     const result = await runRule(newIntegrationValidation, context);
-    expect(result?.dashboard?.status).toBe("fail");
-    expect(result?.dashboard?.message).toContain("single platform");
+    expect(result?.section?.status).toBe("fail");
+    expect(result?.section?.message).toContain("single platform");
   });
 
   it("fails when brand folder is included", async () => {
@@ -96,8 +96,8 @@ describe("new-integration-validation", () => {
     ]);
 
     const result = await runRule(newIntegrationValidation, context);
-    expect(result?.dashboard?.status).toBe("fail");
-    expect(result?.dashboard?.message).toContain("brand");
+    expect(result?.section?.status).toBe("fail");
+    expect(result?.section?.message).toContain("brand");
   });
 
   it("reports both issues when multiple platforms AND brand folder", async () => {
@@ -116,9 +116,9 @@ describe("new-integration-validation", () => {
     ]);
 
     const result = await runRule(newIntegrationValidation, context);
-    expect(result?.dashboard?.status).toBe("fail");
-    expect(result?.dashboard?.message).toContain("single platform");
-    expect(result?.dashboard?.message).toContain("brand");
+    expect(result?.section?.status).toBe("fail");
+    expect(result?.section?.message).toContain("single platform");
+    expect(result?.section?.message).toContain("brand");
   });
 
   it("listens to labeled/unlabeled/synchronize/on_demand", () => {
@@ -155,7 +155,7 @@ describe("new-integration-validation", () => {
 
     expect(effects).toContainEqual(
       expect.objectContaining({
-        type: "dashboardSection",
+        type: "statusSection",
         section: expect.objectContaining({
           id: "new-integration-validation",
           status: "fail",

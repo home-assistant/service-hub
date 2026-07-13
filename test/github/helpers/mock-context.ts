@@ -1,10 +1,10 @@
 import type { Octokit } from "@octokit/rest";
 import { type Mock, vi } from "vitest";
-import type { DashboardSection } from "../../../src/github/engine/dashboard/types.js";
 import { EventType } from "../../../src/github/engine/event.js";
 import type { WebhookEventPayload } from "../../../src/github/engine/model/from-webhook.js";
 import { contextFromWebhook } from "../../../src/github/engine/model/from-webhook.js";
 import type { RuleContext } from "../../../src/github/engine/rule-context.js";
+import type { StatusSection } from "../../../src/github/engine/status/types.js";
 import type { Effect, Rule } from "../../../src/github/engine/types.js";
 
 /** The octokit mocks are loosely typed. */
@@ -218,17 +218,10 @@ export function lastSegment(path: string): string {
   return path.split("/").pop() ?? path;
 }
 
-export interface StatusCheckLike {
-  context: string;
-  state: "success" | "failure" | "pending";
-  description: string;
-  sha?: string;
-}
-
 /**
- * Backward-compatible result summary surfaced to existing tests so they
- * can keep asserting against fields like `labels`, `statusCheck`, etc.
- * The `effects` field exposes the raw array for new-style assertions.
+ * Convenience views over a handler's effects so tests can assert against
+ * fields like `labels` or `section` directly. The `effects` field exposes
+ * the raw array for new-style assertions.
  */
 export interface RuleSummary {
   effects: Effect[];
@@ -236,12 +229,9 @@ export interface RuleSummary {
   removeLabels?: string[];
   comment?: string;
   comments: string[];
-  requestChanges?: string;
   assignees?: string[];
-  statusCheck?: StatusCheckLike;
-  statusChecks: StatusCheckLike[];
-  dashboard?: DashboardSection;
-  dashboards: DashboardSection[];
+  section?: StatusSection;
+  sections: StatusSection[];
 }
 
 export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | undefined {
@@ -250,10 +240,8 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
   const labels: string[] = [];
   const removeLabels: string[] = [];
   const comments: string[] = [];
-  const reviewBodies: string[] = [];
   const assignees: string[] = [];
-  const statusChecks: StatusCheckLike[] = [];
-  const dashboards: DashboardSection[] = [];
+  const sections: StatusSection[] = [];
 
   for (const e of effects) {
     switch (e.type) {
@@ -266,22 +254,11 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
       case "comment":
         comments.push(e.body);
         break;
-      case "requestChanges":
-        reviewBodies.push(e.body);
-        break;
       case "addAssignees":
         assignees.push(...e.assignees);
         break;
-      case "statusCheck":
-        statusChecks.push({
-          context: e.context,
-          state: e.state,
-          description: e.description,
-          sha: e.sha,
-        });
-        break;
-      case "dashboardSection":
-        dashboards.push(e.section);
+      case "statusSection":
+        sections.push(e.section);
         break;
     }
   }
@@ -292,12 +269,9 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
     removeLabels: removeLabels.length ? removeLabels : undefined,
     comment: comments[0],
     comments,
-    requestChanges: reviewBodies[0],
     assignees: assignees.length ? assignees : undefined,
-    statusCheck: statusChecks[0],
-    statusChecks,
-    dashboard: dashboards[0],
-    dashboards,
+    section: sections[0],
+    sections,
   };
 }
 

@@ -31,7 +31,7 @@
     body: |-
       <!-- ha-bot-dashboard -->
 
-      👋 Hi! Thanks for contributing to **contributor/core**.
+      👋 Hi! Thanks for contributing to **Home Assistant**.
 
       This is your PR dashboard which flags anything you need to address before your PR can be reviewed. Once everything is green, you can press the **'Ready for review'** button at the bottom of the page to notify reviewers to take a look.
 
@@ -41,7 +41,7 @@
 
       ### Skip a check that doesn't apply
 
-      If you think a check doesn't apply to your PR (or the rule is bugged), comment `/ha-bot ignore "<check name>" "<reason>"` — the check name as shown in the table above. This will mark the rule as exempt and let you put your PR in 'Ready for review'.
+      If you think a check doesn't apply to your PR (or the rule is bugged), comment `/ha-bot ignore "<check name>" "<reason>"` — the check name as shown in the table above. This will mark the check as ignored and let you put your PR in 'Ready for review'; `/ha-bot unignore "<check name>"` restores it.
 
       ### Bot commands
 

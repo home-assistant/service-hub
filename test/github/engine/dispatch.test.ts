@@ -346,11 +346,11 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "rule",
         description: "",
-        dashboardSections: [{ id: "x", title: "x" }],
+        statusSections: [{ id: "x", title: "x" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
-              type: "dashboardSection",
+              type: "statusSection",
               section: { id: "x", title: "x", status: sectionStatus, message: "msg" },
             },
           ],
@@ -458,165 +458,30 @@ describe("dispatch", () => {
     });
   });
 
-  describe("PR-body rule overrides", () => {
-    function setupOverrideHarness(
-      status: "fail" | "pending" | "pass",
-      body: string,
-      extraSections: { id: string; status: "fail" | "pending" | "pass" | "skip" }[] = [],
-    ) {
+  describe("section waivers persisted in the status comment", () => {
+    const waivedFailing = {
+      id: "merge-conflict",
+      title: "Merge conflicts",
+      status: "fail",
+      message: "Branch has merge conflicts.",
+      ignored: { reason: "Will rebase before merge" },
+    };
+
+    function setupWaivedHarness(reEmit: { status: "fail" | "pass"; message: string } | null) {
       const github = createMockGitHub();
-      github.paginate.mockImplementation(async () => []);
-      github.issues.createComment.mockResolvedValue({
-        data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
-      });
-
-      const rule: Rule = {
-        name: "rule-with-override",
-        description: "",
-        dashboardSections: [
-          { id: "merge-conflict", title: "merge-conflict" },
-          ...extraSections.map((s) => ({ id: s.id, title: s.id })),
-        ],
-        events: {
-          [EventType.PULL_REQUEST_OPENED]: async () => [
-            {
-              type: "dashboardSection",
-              section: {
-                id: "merge-conflict",
-                title: "Merge conflicts",
-                status,
-                message: "Branch has merge conflicts.",
-              },
-            },
-            ...extraSections.map((s) => ({
-              type: "dashboardSection" as const,
-              section: { id: s.id, title: s.id, status: s.status, message: s.id },
-            })),
-          ],
-        },
-      };
-      const config: RegistryConfig = {
-        repositories: { "home-assistant/core": [rule] },
-      };
-      const context = createMockContext({
-        eventType: EventType.PULL_REQUEST_OPENED,
-        github,
-        payload: { pull_request: { body } },
-      });
-      return { github, config, context };
-    }
-
-    it("downgrades a failing section to success and preserves the original message", async () => {
-      const { github, config, context } = setupOverrideHarness(
-        "fail",
-        'PR description.\n<!-- ha-bot:ignore id="merge-conflict" reason="Will rebase before merge" -->',
-      );
-
-      await dispatch(config, context);
-
-      // The placeholder is createComment.mock.calls[0]; the real dashboard
-      // is the last createComment call (since the mock returns [] from
-      // paginate so upsertDashboardComment doesn't find the placeholder).
-      const writtenBody = github.issues.createComment.mock.lastCall?.[0].body as string;
-      // Original failure message stays visible alongside the override reason.
-      expect(writtenBody).toContain("Branch has merge conflicts.");
-      expect(writtenBody).toContain("Override: Will rebase before merge");
-      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-        expect.objectContaining({ context: "ha-bot", state: "success" }),
-      );
-    });
-
-    it("downgrades a pending section to success (warn, not skipped)", async () => {
-      const { github, config, context } = setupOverrideHarness(
-        "pending",
-        '<!-- ha-bot:ignore id="merge-conflict" reason="Known transient state" -->',
-      );
-
-      await dispatch(config, context);
-
-      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-        expect.objectContaining({
-          context: "ha-bot",
-          state: "success",
-          description: "All checks passed (1 warning)",
-        }),
-      );
-    });
-
-    it("does not downgrade other failing sections", async () => {
-      const { github, config, context } = setupOverrideHarness(
-        "fail",
-        '<!-- ha-bot:ignore id="merge-conflict" reason="ok" -->',
-        [{ id: "other-rule", status: "fail" }],
-      );
-
-      await dispatch(config, context);
-
-      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-        expect.objectContaining({
-          context: "ha-bot",
-          state: "failure",
-          description: expect.stringContaining("1 check failing"),
-        }),
-      );
-    });
-
-    it("ignores overrides for unknown section ids", async () => {
-      const { github, config, context } = setupOverrideHarness(
-        "fail",
-        '<!-- ha-bot:ignore id="typo-id" reason="nope" -->',
-      );
-
-      await dispatch(config, context);
-
-      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-        expect.objectContaining({ context: "ha-bot", state: "failure" }),
-      );
-    });
-
-    it("does not modify a passing section even if the PR body names it", async () => {
-      const { github, config, context } = setupOverrideHarness(
-        "pass",
-        '<!-- ha-bot:ignore id="merge-conflict" reason="no-op" -->',
-      );
-
-      await dispatch(config, context);
-
-      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
-        expect.objectContaining({ context: "ha-bot", state: "success" }),
-      );
-      // The placeholder is createComment.mock.calls[0]; the real dashboard
-      // is the last createComment call (since the mock returns [] from
-      // paginate so upsertDashboardComment doesn't find the placeholder).
-      const writtenBody = github.issues.createComment.mock.lastCall?.[0].body as string;
-      expect(writtenBody).not.toContain("Override:");
-    });
-
-    it("applies overrides to sections preserved from a prior dashboard comment", async () => {
-      const github = createMockGitHub();
-      // Existing comment carries a failing section whose owning rule won't
-      // re-emit this dispatch — override should still downgrade it.
+      // Existing comment carries a waived failing section.
       github.paginate.mockImplementation(async () => [
         {
           id: 555,
           body: [
             "<!-- ha-bot-dashboard -->",
-            "<!-- section:merge-conflict:" +
-              JSON.stringify({
-                id: "merge-conflict",
-                title: "Merge conflicts",
-                status: "fail",
-                message: "Branch has merge conflicts.",
-              }) +
-              " -->",
-            "<!-- section:other:" +
-              JSON.stringify({
-                id: "other",
-                title: "Other",
-                status: "pass",
-                message: "ok",
-              }) +
-              " -->",
+            `<!-- section:merge-conflict:${JSON.stringify(waivedFailing)} -->`,
+            `<!-- section:other:${JSON.stringify({
+              id: "other",
+              title: "Other",
+              status: "pass",
+              message: "ok",
+            })} -->`,
           ].join("\n"),
         },
       ]);
@@ -625,16 +490,29 @@ describe("dispatch", () => {
       });
 
       const rule: Rule = {
-        name: "other-rule",
+        name: "rule",
         description: "",
-        dashboardSections: [
-          { id: "merge-conflict", title: "merge-conflict" },
-          { id: "other", title: "other" },
+        statusSections: [
+          { id: "merge-conflict", title: "Merge conflicts" },
+          { id: "other", title: "Other" },
         ],
         events: {
-          [EventType.PULL_REQUEST_OPENED]: async () => [
+          [EventType.PULL_REQUEST_SYNCHRONIZE]: async () => [
+            ...(reEmit
+              ? [
+                  {
+                    type: "statusSection" as const,
+                    section: {
+                      id: "merge-conflict",
+                      title: "Merge conflicts",
+                      status: reEmit.status,
+                      message: reEmit.message,
+                    },
+                  },
+                ]
+              : []),
             {
-              type: "dashboardSection",
+              type: "statusSection" as const,
               section: { id: "other", title: "Other", status: "pass", message: "ok" },
             },
           ],
@@ -644,20 +522,60 @@ describe("dispatch", () => {
         repositories: { "home-assistant/core": [rule] },
       };
       const context = createMockContext({
-        eventType: EventType.PULL_REQUEST_OPENED,
+        eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
         github,
-        payload: {
-          pull_request: {
-            body: '<!-- ha-bot:ignore id="merge-conflict" reason="Will rebase" -->',
-          },
-        },
+      });
+      return { github, config, context };
+    }
+
+    it("keeps the waiver when the owning rule re-emits its failing section", async () => {
+      const { github, config, context } = setupWaivedHarness({
+        status: "fail",
+        message: "Still conflicting.",
       });
 
       await dispatch(config, context);
 
       const writtenBody = github.issues.updateComment.mock.calls[0][0].body as string;
-      expect(writtenBody).toContain("Branch has merge conflicts.");
-      expect(writtenBody).toContain("Override: Will rebase");
+      // Fresh message and the waive reason are both visible; aggregate passes.
+      expect(writtenBody).toContain("Still conflicting.");
+      expect(writtenBody).toContain("Ignored: Will rebase before merge");
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: "ha-bot",
+          state: "success",
+          description: "All checks passed (1 warning)",
+        }),
+      );
+      // No draft: the waived failure doesn't count as failing.
+      expect(github.graphql).not.toHaveBeenCalled();
+    });
+
+    it("keeps the waiver on sections preserved from the prior comment", async () => {
+      const { github, config, context } = setupWaivedHarness(null);
+
+      await dispatch(config, context);
+
+      const writtenBody = github.issues.updateComment.mock.calls[0][0].body as string;
+      expect(writtenBody).toContain("Ignored: Will rebase before merge");
+      expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ context: "ha-bot", state: "success" }),
+      );
+    });
+
+    it("carries the waiver along when the section turns passing", async () => {
+      const { github, config, context } = setupWaivedHarness({
+        status: "pass",
+        message: "No conflicts.",
+      });
+
+      await dispatch(config, context);
+
+      const writtenBody = github.issues.updateComment.mock.calls[0][0].body as string;
+      // A passing section presents as passing — no waive note in the table
+      // (the raw waiver only survives in the serialized section state).
+      expect(writtenBody).toContain("No conflicts.");
+      expect(writtenBody).not.toContain("Ignored: ");
       expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
         expect.objectContaining({ context: "ha-bot", state: "success" }),
       );
@@ -699,11 +617,11 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "live-rule",
         description: "",
-        dashboardSections: [{ id: "still-live", title: "still-live" }],
+        statusSections: [{ id: "still-live", title: "still-live" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
-              type: "dashboardSection",
+              type: "statusSection",
               section: { id: "still-live", title: "Live", status: "pass", message: "ok" },
             },
           ],
@@ -748,11 +666,11 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "with-dashboard",
         description: "",
-        dashboardSections: [{ id: "live", title: "live" }],
+        statusSections: [{ id: "live", title: "live" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
-              type: "dashboardSection",
+              type: "statusSection",
               section: { id: "live", title: "Live", status: "pass", message: "ok" },
             },
           ],
@@ -816,11 +734,11 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "rule",
         description: "",
-        dashboardSections: [{ id: "live", title: "live" }],
+        statusSections: [{ id: "live", title: "live" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
-              type: "dashboardSection",
+              type: "statusSection",
               section: { id: "live", title: "Live", status: "pass", message: "ok" },
             },
           ],
@@ -860,11 +778,11 @@ describe("dispatch", () => {
       const rule: Rule = {
         name: "rule",
         description: "",
-        dashboardSections: [{ id: "live", title: "live" }],
+        statusSections: [{ id: "live", title: "live" }],
         events: {
           [EventType.PULL_REQUEST_OPENED]: async () => [
             {
-              type: "dashboardSection",
+              type: "statusSection",
               section: { id: "live", title: "Live", status: "pass", message: "ok" },
             },
           ],

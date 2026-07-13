@@ -35,7 +35,7 @@ describe("review-comments", () => {
     });
 
     const result = await runRule(reviewComments, context);
-    expect(result?.dashboard).toMatchObject({ id: "review-comments", status: "skip" });
+    expect(result?.section).toMatchObject({ id: "review-comments", status: "skip" });
   });
 
   it("passes when every reviewer comment has been replied to", async () => {
@@ -50,7 +50,7 @@ describe("review-comments", () => {
     });
 
     const result = await runRule(reviewComments, context);
-    expect(result?.dashboard?.status).toBe("pass");
+    expect(result?.section?.status).toBe("pass");
   });
 
   it("fails when reviewer comments are unaddressed and links to each one", async () => {
@@ -73,9 +73,9 @@ describe("review-comments", () => {
     });
 
     const result = await runRule(reviewComments, context);
-    expect(result?.dashboard?.status).toBe("fail");
-    expect(result?.dashboard?.message).toContain("discussion_r1");
-    expect(result?.dashboard?.message).toContain("discussion_r2");
+    expect(result?.section?.status).toBe("fail");
+    expect(result?.section?.message).toContain("discussion_r1");
+    expect(result?.section?.message).toContain("discussion_r2");
   });
 
   it("ignores comments authored by the PR author themselves", async () => {
@@ -87,7 +87,7 @@ describe("review-comments", () => {
     });
 
     const result = await runRule(reviewComments, context);
-    expect(result?.dashboard?.status).toBe("pass");
+    expect(result?.section?.status).toBe("pass");
   });
 
   it("listens to the right PR events", () => {

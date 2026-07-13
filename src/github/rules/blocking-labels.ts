@@ -30,7 +30,7 @@ export function blockingLabels(
       const description = config[label];
       const hasBlockingLabel = currentLabels.has(label);
       return {
-        type: "dashboardSection",
+        type: "statusSection",
         section: {
           id: `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
           title: `Blocking: ${label}`,
@@ -43,7 +43,7 @@ export function blockingLabels(
     });
   }
 
-  const dashboardSections = Object.keys(config).map((label) => ({
+  const statusSections = Object.keys(config).map((label) => ({
     id: `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
     title: `Blocking: ${label}`,
   }));
@@ -51,7 +51,7 @@ export function blockingLabels(
   return {
     name: "blocking-labels",
     description: `Blocks PRs with labels: ${Object.keys(config).join(", ")}`,
-    dashboardSections,
+    statusSections,
     events: on(
       [
         EventType.PULL_REQUEST_LABELED,

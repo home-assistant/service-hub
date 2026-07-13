@@ -1,7 +1,10 @@
 import type { CommandContext } from "./command-context.js";
-import type { DashboardSection } from "./dashboard/types.js";
 import type { EventType } from "./event.js";
 import type { RuleContext } from "./rule-context.js";
+import type { CommandHelpEntry } from "./status/help.js";
+import type { StatusSection } from "./status/types.js";
+
+export type { CommandHelpEntry, CommandPermission } from "./status/help.js";
 
 /**
  * Structured side-effects returned by a rule's event handler.
@@ -20,10 +23,13 @@ export type Effect =
   | { type: "removeLabels"; labels: string[] }
   | { type: "addAssignees"; assignees: string[] }
   | { type: "comment"; body: string }
-  | { type: "dashboardSection"; section: DashboardSection }
-  // Drop a section from the dashboard — for state-derived sections whose
+  | { type: "statusSection"; section: StatusSection }
+  // Drop a section from the status comment — for state-derived sections whose
   // subject disappeared (e.g. the last `integration:` label was removed).
-  | { type: "removeDashboardSection"; id: string }
+  | { type: "removeStatusSection"; id: string }
+  // Command-use only (`ignore`/`unignore`): set or clear the author waiver on
+  // one section. Rules re-emit sections instead; waivers stick across that.
+  | { type: "overrideSection"; id: string; ignore: { reason: string } | null }
   | {
       type: "updatePullRequest";
       owner: string;
@@ -39,7 +45,7 @@ export type Effect =
   | { type: "setState"; state: "open" | "closed" }
   | { type: "removeAssignees"; assignees: string[] }
   // Command-use only: rules must not emit this — the engine already converts
-  // the PR to draft when its checks fail (see syncDashboardAndStatus).
+  // the PR to draft when its checks fail (see syncStatus).
   | { type: "convertToDraft" }
   | { type: "markReadyForReview" }
   | { type: "updateBranch" };
@@ -59,11 +65,11 @@ export type EventHandlers = {
 };
 
 /**
- * A dashboard section a rule may write. The title doubles as the section's
+ * A status section a rule may write. The title doubles as the section's
  * user-facing name — commands like `ignore` resolve it back to the ID, so it
  * must match what the section renders.
  */
-export interface DashboardSectionClaim {
+export interface StatusSectionClaim {
   id: string;
   title: string;
 }
@@ -73,22 +79,15 @@ export interface Rule {
   description: string;
   allowBots?: boolean;
   /**
-   * Dashboard sections this rule may emit. The dispatcher takes the union
+   * Status sections this rule may emit. The dispatcher takes the union
    * across all rules registered for the repo/org and uses it to sweep stale
-   * sections out of the dashboard comment — any section in the existing
+   * sections out of the status comment — any section in the existing
    * comment whose ID isn't claimed by some live rule gets removed on the
-   * next dashboard write.
+   * next status write.
    */
-  dashboardSections?: readonly DashboardSectionClaim[];
+  statusSections?: readonly StatusSectionClaim[];
   events: EventHandlers;
 }
-
-/**
- * Who may invoke a command; enforced by the dispatcher before handle() runs.
- * Org members may invoke everything: `author` additionally allows the
- * target's author, `code_owner` the labeled integration's code owners.
- */
-export type CommandPermission = "none" | "author" | "code_owner";
 
 /**
  * A comment command (`/<slug> <name> [args]`). Like rules, commands return
@@ -96,18 +95,15 @@ export type CommandPermission = "none" | "author" | "code_owner";
  * label loop, so rules react to a command's changes exactly as they would to
  * a human's. The declared constraints (args, scope, permission) are enforced
  * by the dispatcher, which answers with a 👍/👎 reaction on the comment.
+ *
+ * The presentational fields (name, description, permission, example, scope)
+ * live on {@link CommandHelpEntry} so the status module can render command
+ * help without depending on the engine. Permission semantics: org members
+ * may invoke everything; `author` additionally allows the target's author,
+ * `code_owner` the labeled integration's code owners.
  */
-export interface Command {
-  name: string;
-  description: string;
+export interface Command extends CommandHelpEntry {
   /** Whether at least one `"quoted"` argument after the name is required. */
   args?: "none" | "required";
-  /**
-   * Sample invocation without the `/<slug> ` prefix (e.g. `rename "A better
-   * title"`), shown in rendered command help for arg-taking commands.
-   */
-  example?: string;
-  scope?: "pull_request" | "issue" | "both";
-  permission: CommandPermission;
   handle(context: CommandContext): Promise<Effect[] | undefined>;
 }

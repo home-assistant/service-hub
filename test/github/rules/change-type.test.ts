@@ -178,8 +178,8 @@ describe("change-type", () => {
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("fail");
-      expect(result?.dashboard?.message).toMatch(/check at least one/i);
+      expect(result?.section?.status).toBe("fail");
+      expect(result?.section?.message).toMatch(/check at least one/i);
     });
 
     it("passes with the picked label when exactly one box is checked", async () => {
@@ -197,8 +197,8 @@ describe("change-type", () => {
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("pass");
-      expect(result?.dashboard?.message).toContain("bugfix");
+      expect(result?.section?.status).toBe("pass");
+      expect(result?.section?.message).toContain("bugfix");
     });
 
     it("passes with all picked labels when multiple boxes are checked", async () => {
@@ -219,9 +219,9 @@ describe("change-type", () => {
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("pass");
-      expect(result?.dashboard?.message).toContain("bugfix");
-      expect(result?.dashboard?.message).toContain("breaking-change");
+      expect(result?.section?.status).toBe("pass");
+      expect(result?.section?.message).toContain("bugfix");
+      expect(result?.section?.message).toContain("breaking-change");
     });
   });
 
@@ -243,9 +243,9 @@ describe("change-type", () => {
       ]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("fail");
-      expect(result?.dashboard?.message).toMatch(/adds a new integration/i);
-      expect(result?.dashboard?.message).toContain("bugfix");
+      expect(result?.section?.status).toBe("fail");
+      expect(result?.section?.message).toMatch(/adds a new integration/i);
+      expect(result?.section?.message).toContain("bugfix");
       // The body label still gets applied — body remains the source of truth.
       expect(result?.labels).toContain("bugfix");
     });
@@ -265,8 +265,8 @@ describe("change-type", () => {
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("fail");
-      expect(result?.dashboard?.message).toMatch(/no new integration directory/i);
+      expect(result?.section?.status).toBe("fail");
+      expect(result?.section?.message).toMatch(/no new integration directory/i);
     });
 
     it("passes when New integration is checked and an integration is added", async () => {
@@ -286,7 +286,7 @@ describe("change-type", () => {
       ]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("pass");
+      expect(result?.section?.status).toBe("pass");
       expect(result?.labels).toContain("new-integration");
     });
 
@@ -308,8 +308,8 @@ describe("change-type", () => {
       mockPRFiles(context, [makeFile("homeassistant/components/hue/__init__.py")]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("fail");
-      expect(result?.dashboard?.message).toMatch(/no new integration directory/i);
+      expect(result?.section?.status).toBe("fail");
+      expect(result?.section?.message).toMatch(/no new integration directory/i);
       // Labels still reflect what the body says.
       expect(result?.labels).toEqual(expect.arrayContaining(["new-integration", "bugfix"]));
     });
@@ -334,10 +334,10 @@ describe("change-type", () => {
       ]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("fail");
-      expect(result?.dashboard?.message).toMatch(/adds a new integration/i);
-      expect(result?.dashboard?.message).toContain("bugfix");
-      expect(result?.dashboard?.message).toContain("breaking-change");
+      expect(result?.section?.status).toBe("fail");
+      expect(result?.section?.message).toMatch(/adds a new integration/i);
+      expect(result?.section?.message).toContain("bugfix");
+      expect(result?.section?.message).toContain("breaking-change");
     });
 
     it("passes when New integration plus another box are checked and an integration is added", async () => {
@@ -360,7 +360,7 @@ describe("change-type", () => {
       ]);
 
       const result = await runRule(changeType, context);
-      expect(result?.dashboard?.status).toBe("pass");
+      expect(result?.section?.status).toBe("pass");
       expect(result?.labels).toEqual(
         expect.arrayContaining(["new-integration", "breaking-change"]),
       );

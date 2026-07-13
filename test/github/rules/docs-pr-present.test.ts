@@ -26,7 +26,7 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(docsPrPresent, context);
-    expect(result?.dashboard).toMatchObject({ id: "docs-missing", status: "skip" });
+    expect(result?.section).toMatchObject({ id: "docs-missing", status: "skip" });
   });
 
   it("fails when new-integration has no docs link", async () => {
@@ -43,7 +43,7 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(docsPrPresent, context);
-    expect(result?.dashboard).toMatchObject({ id: "docs-missing", status: "fail" });
+    expect(result?.section).toMatchObject({ id: "docs-missing", status: "fail" });
   });
 
   it("passes when new-integration has docs link", async () => {
@@ -60,7 +60,7 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(docsPrPresent, context);
-    expect(result?.dashboard).toMatchObject({ id: "docs-missing", status: "pass" });
+    expect(result?.section).toMatchObject({ id: "docs-missing", status: "pass" });
   });
 
   it("passes when docs-missing label is absent even for new-platform with URL link", async () => {
@@ -77,7 +77,7 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(docsPrPresent, context);
-    expect(result?.dashboard?.status).toBe("pass");
+    expect(result?.section?.status).toBe("pass");
   });
 
   it("auto-approves (skips) release PRs", async () => {
@@ -94,10 +94,10 @@ describe("docs-missing handler", () => {
     });
 
     const result = await runRule(docsPrPresent, context);
-    expect(result?.dashboard?.status).toBe("skip");
+    expect(result?.section?.status).toBe("skip");
   });
 
-  it("does not emit a statusCheck — the dispatcher synthesizes the aggregate one", async () => {
+  it("emits only its status section — the dispatcher synthesizes the aggregate check", async () => {
     const context = createMockContext({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload: {
@@ -110,7 +110,7 @@ describe("docs-missing handler", () => {
       },
     });
     const result = await runRule(docsPrPresent, context);
-    expect(result?.statusChecks).toHaveLength(0);
+    expect(result?.effects.every((e) => e.type === "statusSection")).toBe(true);
   });
 
   it("fires on PR creation via the label loop when file-shape sets new-integration", async () => {
@@ -134,7 +134,7 @@ describe("docs-missing handler", () => {
 
     expect(effects).toContainEqual(
       expect.objectContaining({
-        type: "dashboardSection",
+        type: "statusSection",
         section: expect.objectContaining({ id: "docs-missing", status: "fail" }),
       }),
     );

@@ -1,8 +1,8 @@
-import { commandHelpLines, commandsForTarget } from "../engine/command-help.js";
 import { EventType } from "../engine/event.js";
 import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js";
 import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
+import { commandHelpLines, commandsForTarget } from "../engine/status/help.js";
 import type { Effect, Rule } from "../engine/types.js";
 
 type HandledEvent = EventType.ISSUES_LABELED | EventType.PULL_REQUEST_LABELED | EventType.ON_DEMAND;

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { close } from "../../../src/github/commands/close.js";
+import { ignore, unignore } from "../../../src/github/commands/ignore.js";
 import { addLabel } from "../../../src/github/commands/label-add.js";
 import { removeLabel } from "../../../src/github/commands/label-remove.js";
 import { markDraft } from "../../../src/github/commands/mark-draft.js";
@@ -9,6 +10,8 @@ import { reopen } from "../../../src/github/commands/reopen.js";
 import { update } from "../../../src/github/commands/update.js";
 import { updateBranch } from "../../../src/github/commands/update-branch.js";
 import { dispatchCommand } from "../../../src/github/engine/dispatch.js";
+import { renderStatus } from "../../../src/github/engine/status/render.js";
+import type { Rule } from "../../../src/github/engine/types.js";
 import { expectReaction, makeCommandContext, registryWith } from "../helpers/command.js";
 import { createMockGitHub, type MockGitHub } from "../helpers/mock-context.js";
 
@@ -181,6 +184,86 @@ describe("update-branch", () => {
         body: "Failed to update branch: merge conflict between base and head",
       }),
     );
+  });
+});
+
+describe("ignore / unignore", () => {
+  // The PR author (the mock's default sender is also the target author)
+  // waives and restores a check by its user-facing title.
+  const claimingRule: Rule = {
+    name: "merge-conflict",
+    description: "",
+    statusSections: [{ id: "merge-conflict", title: "Merge conflicts" }],
+    events: {},
+  };
+
+  function withStatusComment(section: Record<string, unknown>) {
+    const github = createMockGitHub();
+    github.issues.listComments.mockResolvedValue({
+      data: [
+        {
+          id: 7,
+          body: renderStatus(
+            [
+              {
+                id: "merge-conflict",
+                title: "Merge conflicts",
+                status: "fail",
+                message: "Branch has merge conflicts.",
+                ...section,
+              },
+            ],
+            "home-assistant/core",
+          ),
+        },
+      ],
+    });
+    github.issues.updateComment.mockResolvedValue({
+      data: { id: 7, html_url: "https://github.com/ha/c/pull/1#issuecomment-7" },
+    });
+    return github;
+  }
+
+  it("ignore waives the named check in the status comment", async () => {
+    const github = withStatusComment({});
+    const { context } = makeCommandContext(
+      '/ha-bot ignore "Merge conflicts" "Will rebase before merge"',
+      { github, registry: registryWith(ignore, [claimingRule]) },
+    );
+
+    await dispatchCommand(context);
+
+    const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
+    expect(body).toContain("Ignored: Will rebase before merge");
+    expectReaction(github, "+1");
+  });
+
+  it("unignore restores a waived check", async () => {
+    const github = withStatusComment({ ignored: { reason: "Will rebase before merge" } });
+    const { context } = makeCommandContext('/ha-bot unignore "Merge conflicts"', {
+      github,
+      registry: registryWith(unignore, [claimingRule]),
+    });
+
+    await dispatchCommand(context);
+
+    const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
+    expect(body).not.toContain("Ignored: ");
+    expect(body).toContain("Things to address:");
+    expectReaction(github, "+1");
+  });
+
+  it("rejects an unknown check name", async () => {
+    const github = withStatusComment({});
+    const { context } = makeCommandContext('/ha-bot ignore "No such check" "reason"', {
+      github,
+      registry: registryWith(ignore, [claimingRule]),
+    });
+
+    await dispatchCommand(context);
+
+    expect(github.issues.updateComment).not.toHaveBeenCalled();
+    expectReaction(github, "-1");
   });
 });
 

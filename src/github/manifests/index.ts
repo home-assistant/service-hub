@@ -9,7 +9,7 @@ const MANIFESTS: RepoManifest[] = [homeAssistantCore];
 /**
  * Boot-time guardrails. The dispatcher silently dedupes rules and commands
  * by name, so a duplicate name would hide a mis-wire; two rules claiming the
- * same dashboard section would fight over it. Fail loudly at module load
+ * same status section would fight over it. Fail loudly at module load
  * instead.
  */
 function validate(slug: string, rules: Rule[], commands: Command[]): void {
@@ -20,11 +20,11 @@ function validate(slug: string, rules: Rule[], commands: Command[]): void {
       throw new Error(`[${slug}] duplicate rule name "${rule.name}"`);
     }
     names.add(rule.name);
-    for (const { id } of rule.dashboardSections ?? []) {
+    for (const { id } of rule.statusSections ?? []) {
       const owner = sectionOwner.get(id);
       if (owner) {
         throw new Error(
-          `[${slug}] dashboard section "${id}" claimed by both "${owner}" and "${rule.name}"`,
+          `[${slug}] status section "${id}" claimed by both "${owner}" and "${rule.name}"`,
         );
       }
       sectionOwner.set(id, rule.name);

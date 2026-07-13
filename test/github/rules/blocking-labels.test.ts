@@ -25,7 +25,7 @@ describe("blocking-labels handler", () => {
 
     const result = await runRule(rule, context);
     expect(result).toBeDefined();
-    expect(result?.dashboards).toHaveLength(1);
+    expect(result?.sections).toHaveLength(1);
   });
 
   it("emits success status when a configured label is removed", async () => {
@@ -44,7 +44,7 @@ describe("blocking-labels handler", () => {
 
     const result = await runRule(rule, context);
     expect(result).toBeDefined();
-    expect(result?.dashboards).toHaveLength(1);
+    expect(result?.sections).toHaveLength(1);
   });
 
   it("emits no status when a non-blocking label is added/removed", async () => {
@@ -79,7 +79,7 @@ describe("blocking-labels handler", () => {
     });
 
     const result = await runRule(rule, context);
-    expect(result?.dashboards).toHaveLength(2);
+    expect(result?.sections).toHaveLength(2);
   });
 
   it("includes description", () => {

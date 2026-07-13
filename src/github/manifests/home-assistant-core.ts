@@ -1,5 +1,5 @@
 import { close } from "../commands/close.js";
-import { ignore } from "../commands/ignore.js";
+import { ignore, unignore } from "../commands/ignore.js";
 import { addLabel } from "../commands/label-add.js";
 import { removeLabel } from "../commands/label-remove.js";
 import { markDraft } from "../commands/mark-draft.js";
@@ -87,6 +87,7 @@ export const homeAssistantCore: RepoManifest = {
   commands: [
     update,
     ignore,
+    unignore,
     close,
     reopen,
     rename,

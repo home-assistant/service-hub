@@ -35,7 +35,7 @@ describe("platinum-approval", () => {
     });
 
     const result = await runRule(platinumApproval, context);
-    expect(result?.dashboard?.status).toBe("skip");
+    expect(result?.section?.status).toBe("skip");
   });
 
   it("is pending when platinum integration has no code owner approval", async () => {
@@ -69,8 +69,8 @@ describe("platinum-approval", () => {
     });
 
     const result = await runRule(platinumApproval, context);
-    expect(result?.dashboard?.status).toBe("pending");
-    expect(result?.dashboard?.message).toContain("needs approval from a code owner");
+    expect(result?.section?.status).toBe("pending");
+    expect(result?.section?.message).toContain("needs approval from a code owner");
   });
 
   it("succeeds when code owner has approved", async () => {
@@ -107,7 +107,7 @@ describe("platinum-approval", () => {
     });
 
     const result = await runRule(platinumApproval, context);
-    expect(result?.dashboard?.status).toBe("pass");
+    expect(result?.section?.status).toBe("pass");
     expect(result?.labels).toContain("code-owner-approved");
   });
 
@@ -149,7 +149,7 @@ describe("platinum-approval", () => {
     });
 
     const result = await runRule(platinumApproval, context);
-    expect(result?.dashboard?.status).toBe("pending");
+    expect(result?.section?.status).toBe("pending");
     expect(result?.removeLabels).toContain("code-owner-approved");
   });
 
@@ -169,7 +169,7 @@ describe("platinum-approval", () => {
     });
 
     const result = await runRule(platinumApproval, context);
-    expect(result?.dashboard?.status).toBe("pass");
+    expect(result?.section?.status).toBe("pass");
   });
 
   it("skips when multiple integration labels (not single integration)", async () => {
@@ -188,7 +188,7 @@ describe("platinum-approval", () => {
     });
 
     const result = await runRule(platinumApproval, context);
-    expect(result?.dashboard?.status).toBe("skip");
+    expect(result?.section?.status).toBe("skip");
   });
 
   it("skips when manifest has no codeowners", async () => {
@@ -222,7 +222,7 @@ describe("platinum-approval", () => {
     });
 
     const result = await runRule(platinumApproval, context);
-    expect(result?.dashboard?.status).toBe("skip");
+    expect(result?.section?.status).toBe("skip");
   });
 
   it("listens to label events, review submission/dismissal, and on_demand", () => {
@@ -276,7 +276,7 @@ describe("platinum-approval", () => {
 
     expect(effects).toContainEqual(
       expect.objectContaining({
-        type: "dashboardSection",
+        type: "statusSection",
         section: expect.objectContaining({ id: "code-owner-approval", status: "pending" }),
       }),
     );

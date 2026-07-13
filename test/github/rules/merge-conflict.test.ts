@@ -14,7 +14,7 @@ describe("merge-conflict", () => {
     });
 
     const result = await runRule(mergeConflict, context);
-    expect(result?.dashboard).toMatchObject({
+    expect(result?.section).toMatchObject({
       id: "merge-conflict",
       status: "fail",
     });
@@ -30,7 +30,7 @@ describe("merge-conflict", () => {
     });
 
     const result = await runRule(mergeConflict, context);
-    expect(result?.dashboard).toMatchObject({
+    expect(result?.section).toMatchObject({
       id: "merge-conflict",
       status: "pass",
     });

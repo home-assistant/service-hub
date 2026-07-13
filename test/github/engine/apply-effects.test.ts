@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { renderDashboard } from "../../../src/github/engine/dashboard/renderer.js";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { dispatch } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
+import { renderStatus } from "../../../src/github/engine/status/render.js";
 import type { Effect, Rule } from "../../../src/github/engine/types.js";
 import { createMockContext, createMockGitHub, type MockGitHub } from "../helpers/mock-context.js";
 
@@ -21,14 +21,14 @@ async function apply(
   opts: {
     github?: MockGitHub;
     payload?: Record<string, unknown>;
-    dashboardSections?: Rule["dashboardSections"];
+    statusSections?: Rule["statusSections"];
   } = {},
 ): Promise<MockGitHub> {
   const github = opts.github ?? createMockGitHub();
   const rule: Rule = {
     name: "emitter",
     description: "",
-    dashboardSections: opts.dashboardSections,
+    statusSections: opts.statusSections,
     events: { [EventType.PULL_REQUEST_OPENED]: async () => effects },
   };
   const config: RegistryConfig = { repositories: { "home-assistant/core": [rule] } };
@@ -206,7 +206,7 @@ describe("effect → GitHub API mapping", () => {
     expect(github.graphql).not.toHaveBeenCalled();
   });
 
-  it("dashboardSection → dashboard comment plus ha-bot commit status on the head sha", async () => {
+  it("statusSection → status comment plus ha-bot commit status on the head sha", async () => {
     const github = createMockGitHub();
     github.issues.createComment.mockResolvedValue({
       data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
@@ -214,15 +214,15 @@ describe("effect → GitHub API mapping", () => {
     await apply(
       [
         {
-          type: "dashboardSection",
+          type: "statusSection",
           section: { id: "a", title: "Alpha check", status: "pass", message: "ok" },
         },
       ],
       { github },
     );
 
-    const dashboardBody = github.issues.createComment.mock.lastCall?.[0].body as string;
-    expect(dashboardBody).toContain("Alpha check");
+    const statusBody = github.issues.createComment.mock.lastCall?.[0].body as string;
+    expect(statusBody).toContain("Alpha check");
     expect(github.repos.createCommitStatus).toHaveBeenCalledWith({
       ...REPO,
       sha: "abc123",
@@ -233,13 +233,13 @@ describe("effect → GitHub API mapping", () => {
     });
   });
 
-  it("removeDashboardSection → issues.updateComment without the removed section", async () => {
+  it("removeStatusSection → issues.updateComment without the removed section", async () => {
     const github = createMockGitHub();
     github.issues.listComments.mockResolvedValue({
       data: [
         {
           id: 7,
-          body: renderDashboard(
+          body: renderStatus(
             [
               { id: "a", title: "Alpha check", status: "pass", message: "ok" },
               { id: "b", title: "Beta check", status: "pass", message: "ok" },
@@ -249,9 +249,9 @@ describe("effect → GitHub API mapping", () => {
         },
       ],
     });
-    await apply([{ type: "removeDashboardSection", id: "a" }], {
+    await apply([{ type: "removeStatusSection", id: "a" }], {
       github,
-      dashboardSections: [
+      statusSections: [
         { id: "a", title: "Alpha check" },
         { id: "b", title: "Beta check" },
       ],
@@ -263,9 +263,51 @@ describe("effect → GitHub API mapping", () => {
     expect(body).not.toContain("Alpha check");
   });
 
-  it("removeDashboardSection alone never creates a dashboard", async () => {
-    const github = await apply([{ type: "removeDashboardSection", id: "a" }], {
-      dashboardSections: [{ id: "a", title: "Alpha check" }],
+  it("removeStatusSection alone never creates a status comment", async () => {
+    const github = await apply([{ type: "removeStatusSection", id: "a" }], {
+      statusSections: [{ id: "a", title: "Alpha check" }],
+    });
+
+    expect(github.issues.createComment).not.toHaveBeenCalled();
+    expect(github.issues.updateComment).not.toHaveBeenCalled();
+    expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
+  });
+
+  it("overrideSection → issues.updateComment waiving the section, status flips to success", async () => {
+    const github = createMockGitHub();
+    github.issues.listComments.mockResolvedValue({
+      data: [
+        {
+          id: 7,
+          body: renderStatus(
+            [{ id: "a", title: "Alpha check", status: "fail", message: "broken" }],
+            "home-assistant/core",
+          ),
+        },
+      ],
+    });
+    github.issues.updateComment.mockResolvedValue({
+      data: { id: 7, html_url: "https://github.com/ha/c/pull/1#issuecomment-7" },
+    });
+    await apply([{ type: "overrideSection", id: "a", ignore: { reason: "by-design" } }], {
+      github,
+      statusSections: [{ id: "a", title: "Alpha check" }],
+    });
+
+    const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
+    expect(body).toContain("Ignored: by-design");
+    expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: "ha-bot",
+        state: "success",
+        description: "All checks passed (1 warning)",
+      }),
+    );
+  });
+
+  it("overrideSection alone never creates a status comment", async () => {
+    const github = await apply([{ type: "overrideSection", id: "a", ignore: { reason: "r" } }], {
+      statusSections: [{ id: "a", title: "Alpha check" }],
     });
 
     expect(github.issues.createComment).not.toHaveBeenCalled();
@@ -274,14 +316,14 @@ describe("effect → GitHub API mapping", () => {
   });
 });
 
-describe("aggregate ha-bot status check from dashboard sections", () => {
+describe("aggregate ha-bot status check from status sections", () => {
   function setupHarness(sections: { id: string; status: "pass" | "fail" | "pending" | "skip" }[]) {
     const github = createMockGitHub();
     github.issues.createComment.mockResolvedValue({
       data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
     });
     const effects = sections.map((s) => ({
-      type: "dashboardSection" as const,
+      type: "statusSection" as const,
       section: { id: s.id, title: s.id, status: s.status, message: s.id },
     }));
     return { github, run: () => apply(effects, { github }) };
@@ -349,7 +391,7 @@ describe("aggregate ha-bot status check from dashboard sections", () => {
     );
   });
 
-  it("does not write a ha-bot status if no rule emitted a dashboard section", async () => {
+  it("does not write a ha-bot status if no rule emitted a status section", async () => {
     const github = await apply([{ type: "addLabels", labels: ["x"] }]);
 
     expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
