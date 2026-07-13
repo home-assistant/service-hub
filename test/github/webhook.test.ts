@@ -25,7 +25,7 @@ vi.mock("../../src/github/engine/dispatch.js", async (importOriginal) => ({
 const octokit = {} as unknown as Octokit;
 
 async function fetchApp(req: Request): Promise<Response> {
-  return requestHandler(octokit, req, env);
+  return requestHandler(env, octokit, req);
 }
 
 function makeRequest(body: string, headers: Record<string, string> = {}): Request {

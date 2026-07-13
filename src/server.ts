@@ -8,7 +8,6 @@ import { requestHandler, scheduledHandler } from "./github/app.js";
 import { log } from "./log.js";
 import { serve } from "./util/serve.js";
 
-// Cron lookback is 10 minutes; fire every 5 so consecutive runs overlap.
 const CRON_INTERVAL_MIN = 5;
 
 const env = loadEnv();
@@ -35,7 +34,7 @@ const port = Number(process.env.PORT ?? 8787);
 
 serve({
   port,
-  fetch: (request) => requestHandler(octokit, request, env),
+  fetch: (request) => requestHandler(env, octokit, request),
   error: (err) => {
     log.exception(err);
     return new Response("Internal Server Error", { status: 500 });
@@ -46,7 +45,7 @@ log.info(`ha-github-bot listening on http://localhost:${port}`);
 
 setInterval(
   () => {
-    scheduledHandler(octokit, env, CRON_INTERVAL_MIN).catch((err) => log.exception(err));
+    scheduledHandler(env, octokit, CRON_INTERVAL_MIN).catch((err) => log.exception(err));
   },
   CRON_INTERVAL_MIN * 60 * 1000,
 );

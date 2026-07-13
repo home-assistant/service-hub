@@ -70,7 +70,7 @@ export function createE2EHarness(wiring: E2EWiring, options: E2EHarnessOptions =
           "x-github-event": event,
         },
       });
-      return requestHandler(octokit, req, env);
+      return requestHandler(env, octokit, req);
     },
     deliverUnsigned: async (event, payload) => {
       const req = new Request("http://localhost/github/webhook", {
@@ -82,7 +82,7 @@ export function createE2EHarness(wiring: E2EWiring, options: E2EHarnessOptions =
           "x-github-event": event,
         },
       });
-      return requestHandler(octokit, req, env);
+      return requestHandler(env, octokit, req);
     },
   };
 }

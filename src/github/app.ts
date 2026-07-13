@@ -33,7 +33,7 @@ function isIssueEvent(event: string): boolean {
   return event === "issues";
 }
 
-async function handleWebhook(octokit: Octokit, request: Request, env: Env): Promise<Response> {
+async function handleWebhook(env: Env, octokit: Octokit, request: Request): Promise<Response> {
   const body = await request.text();
   const signature = request.headers.get("x-hub-signature-256") ?? "";
 
@@ -96,14 +96,14 @@ async function handleWebhook(octokit: Octokit, request: Request, env: Env): Prom
 }
 
 export async function requestHandler(
+  env: Env,
   octokit: Octokit,
   request: Request,
-  env: Env,
 ): Promise<Response> {
   const url = new URL(request.url);
 
   if (request.method === "POST" && url.pathname === "/github/webhook") {
-    return handleWebhook(octokit, request, env);
+    return handleWebhook(env, octokit, request);
   }
 
   if (request.method === "GET" && url.pathname === "/health") {
@@ -114,8 +114,8 @@ export async function requestHandler(
 }
 
 export async function scheduledHandler(
-  octokit: Octokit,
   env: Env,
+  octokit: Octokit,
   interval_min: number,
 ): Promise<void> {
   const since = new Date(Date.now() - (interval_min + CRON_LOOKBACK_OVERLAP_MIN) * 60 * 1000);
