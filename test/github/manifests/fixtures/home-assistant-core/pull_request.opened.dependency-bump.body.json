@@ -1,4 +1,0 @@
-{
-  "check": ["Dependency upgrade"],
-  "sections": { "Proposed change": "Routine dependency bump." }
-}

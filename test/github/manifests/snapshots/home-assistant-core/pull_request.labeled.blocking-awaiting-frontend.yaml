@@ -1,0 +1,6 @@
+- type: statusSection
+  section:
+    id: blocking-label-awaiting-frontend
+    title: "Blocking: awaiting-frontend"
+    status: fail
+    message: This PR is awaiting changes to the frontend

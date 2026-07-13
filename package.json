@@ -17,8 +17,7 @@
     "capture": "tsx scripts/capture-webhooks.ts",
     "scrub": "tsx scripts/capture-webhooks.ts scrub",
     "capture-discord": "tsx scripts/capture-discord.ts",
-    "sync-templates": "tsx scripts/sync-templates.ts",
-    "update-fixture-bodies": "tsx scripts/update-fixture-bodies.ts"
+    "sync-templates": "tsx scripts/sync-templates.ts"
   },
   "dependencies": {
     "@octokit/auth-app": "^8.2.0",

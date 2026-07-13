@@ -1,0 +1,4 @@
+- type: removeStatusSection
+  id: integration-links
+- type: removeStatusSection
+  id: issue-context

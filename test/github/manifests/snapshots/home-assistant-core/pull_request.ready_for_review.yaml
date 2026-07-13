@@ -1,0 +1,6 @@
+- type: statusSection
+  section:
+    id: review-comments
+    title: Review comments
+    status: skip
+    message: No inline review comments yet.
