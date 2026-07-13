@@ -11,6 +11,7 @@ import { serve } from "./util/serve.js";
 const CRON_INTERVAL_MIN = 5;
 
 const env = loadEnv();
+const port = Number(process.env.PORT ?? 8787);
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -19,8 +20,6 @@ Sentry.init({
   enableLogs: true,
 });
 
-// One shared instance: @octokit/auth-app caches the hourly installation
-// token inside it, so per-call instances would re-authenticate every time.
 const octokit = new Octokit({
   authStrategy: createAppAuth,
   auth: {
@@ -29,8 +28,6 @@ const octokit = new Octokit({
     privateKey: env.GITHUB_PRIVATE_KEY,
   },
 });
-
-const port = Number(process.env.PORT ?? 8787);
 
 serve({
   port,
@@ -41,14 +38,15 @@ serve({
   },
 });
 
-log.info(`ha-github-bot listening on http://localhost:${port}`);
-
 setInterval(
   () => {
     scheduledHandler(env, octokit, CRON_INTERVAL_MIN).catch((err) => log.exception(err));
   },
   CRON_INTERVAL_MIN * 60 * 1000,
 );
+
+log.info(`github bot finished setup`);
+
 
 if (env.DISCORD_TOKEN) {
   startDiscordGateway(discordRegistry, {
@@ -57,4 +55,6 @@ if (env.DISCORD_TOKEN) {
   }).catch((err) => {
     log.exception(err instanceof Error ? err : new Error(String(err)));
   });
+
+  log.info(`discord bot finished setup`);
 }

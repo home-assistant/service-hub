@@ -16,10 +16,6 @@ import { config } from "./manifests/index.js";
 const CRON_LOOKBACK_OVERLAP_MIN = 2;
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
 
-function isDryRun(env: Env): boolean {
-  return env.DRY_RUN === "1";
-}
-
 function isPullRequestEvent(event: string): boolean {
   return (
     event === "pull_request" ||
@@ -73,7 +69,7 @@ async function handleWebhook(env: Env, octokit: Octokit, request: Request): Prom
     if (isBotCommand(commentPayload.comment.body ?? "", env.COMMAND_SLUG)) {
       const context = commandContextFromWebhook(octokit, commentPayload, {
         botSlug: env.BOT_SLUG,
-        dryRun: isDryRun(env),
+        dryRun: env.DRY_RUN === "1",
         commandSlug: env.COMMAND_SLUG,
         registry: config,
       });
@@ -85,7 +81,7 @@ async function handleWebhook(env: Env, octokit: Octokit, request: Request): Prom
   if (isPullRequestEvent(event) || isIssueEvent(event)) {
     const context = contextFromWebhook(octokit, payload, eventType, {
       botSlug: env.BOT_SLUG,
-      dryRun: isDryRun(env),
+      dryRun: env.DRY_RUN === "1",
       commandSlug: env.COMMAND_SLUG,
       commands: config.commands?.[payload.repository.full_name] ?? [],
     });
@@ -119,14 +115,12 @@ export async function scheduledHandler(
   interval_min: number,
 ): Promise<void> {
   const since = new Date(Date.now() - (interval_min + CRON_LOOKBACK_OVERLAP_MIN) * 60 * 1000);
-  const dryRun = isDryRun(env);
-
   const repos = Object.keys(config.repositories);
 
   await Promise.allSettled(
     repos.map((repo) =>
       evaluateRecentPRs(config, octokit, repo, since, {
-        dryRun,
+        dryRun: env.DRY_RUN === "1",
         botSlug: env.BOT_SLUG,
         commandSlug: env.COMMAND_SLUG,
       }),
