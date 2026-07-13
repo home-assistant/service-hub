@@ -21,7 +21,6 @@ export interface E2EWiring {
 
 export interface E2EHarnessOptions {
   config?: RegistryConfig;
-  dryRun?: boolean;
 }
 
 export interface E2EHarness {
@@ -53,7 +52,6 @@ export function createE2EHarness(wiring: E2EWiring, options: E2EHarnessOptions =
     COMMAND_SLUG: "ha-bot",
     SENTRY_DSN: "",
     ENVIRONMENT: "test",
-    DRY_RUN: options.dryRun ? "1" : undefined,
   } as unknown as Env;
 
   return {

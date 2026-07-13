@@ -262,7 +262,6 @@ function channelReader(client: Client): ChannelReader {
 
 export interface GatewayConfig {
   token: string;
-  dryRun?: boolean;
   /** Tap on every normalized event, used by scripts/capture-discord.ts. */
   onEvent?: (event: DiscordEvent) => void;
 }
@@ -290,7 +289,7 @@ export async function startDiscordGateway(
     if (!event) return;
     config.onEvent?.(event);
     const effects = await dispatchDiscordEvent(registry, event, reader);
-    await applyDiscordEffects(effects, { ...ports, responder }, { dryRun: config.dryRun });
+    await applyDiscordEffects(effects, { ...ports, responder });
   };
 
   client.on(Events.InteractionCreate, (interaction) => {

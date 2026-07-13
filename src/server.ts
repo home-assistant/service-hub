@@ -47,11 +47,9 @@ setInterval(
 
 log.info(`github bot finished setup`);
 
-
 if (env.DISCORD_TOKEN) {
   startDiscordGateway(discordRegistry, {
     token: env.DISCORD_TOKEN,
-    dryRun: env.DRY_RUN === "1",
   }).catch((err) => {
     log.exception(err instanceof Error ? err : new Error(String(err)));
   });

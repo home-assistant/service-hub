@@ -45,7 +45,6 @@ export interface RuleContextParams<E extends EventType> {
   org: Org;
   target: TargetFor<E>;
   botSlug: string;
-  dryRun?: boolean;
   /** Comment-command prefix (`/<slug> <name>`), for rendering command help. */
   commandSlug?: string;
   /** The repo's registered comment commands, for rendering command help. */
@@ -66,7 +65,6 @@ export class RuleContext<E extends EventType = EventType> {
   readonly org: Org;
   readonly target: TargetFor<E>;
   readonly botSlug: string;
-  readonly dryRun: boolean;
   readonly commandSlug: string;
   readonly commands: readonly Command[];
 
@@ -78,7 +76,6 @@ export class RuleContext<E extends EventType = EventType> {
     this.org = params.org;
     this.target = params.target;
     this.botSlug = params.botSlug;
-    this.dryRun = params.dryRun ?? false;
     this.commandSlug = params.commandSlug ?? params.botSlug;
     this.commands = params.commands ?? [];
   }
@@ -151,7 +148,6 @@ export class RuleContext<E extends EventType = EventType> {
       org: this.org,
       target: target ?? (this.target as unknown as TargetFor<F>),
       botSlug: this.botSlug,
-      dryRun: this.dryRun,
       commandSlug: this.commandSlug,
       commands: this.commands,
     });

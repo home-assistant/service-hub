@@ -40,7 +40,6 @@ export type WebhookEventPayload =
 
 export interface AdapterOptions {
   botSlug: string;
-  dryRun?: boolean;
   commandSlug?: string;
   commands?: readonly Command[];
 }

@@ -22,10 +22,6 @@ export interface Env {
 
   // Environment
   ENVIRONMENT: string;
-
-  // When "1", applyEffects logs effects instead of executing them.
-  // Reads still happen so rules produce realistic effects.
-  DRY_RUN?: string;
 }
 
 function required(name: keyof Env): string {
@@ -56,6 +52,5 @@ export function loadEnv(): Env {
     DISCORD_TOKEN: process.env.DISCORD_TOKEN,
     SENTRY_DSN: process.env.SENTRY_DSN ?? "",
     ENVIRONMENT: process.env.ENVIRONMENT ?? "production",
-    DRY_RUN: process.env.DRY_RUN,
   };
 }

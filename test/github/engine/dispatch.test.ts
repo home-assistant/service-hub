@@ -252,41 +252,6 @@ describe("dispatch", () => {
     logExceptionSpy.mockRestore();
   });
 
-  it("in dry-run, returns effects but does not call GitHub", async () => {
-    const github = createMockGitHub();
-    const logInfoSpy = vi.spyOn(log, "info").mockImplementation(() => {});
-
-    const rule: Rule = {
-      name: "rule",
-      description: "",
-      events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "addLabels", labels: ["bugfix"] },
-          { type: "removeLabels", labels: ["stale"] },
-        ],
-      },
-    };
-
-    const config: RegistryConfig = {
-      repositories: { "home-assistant/core": [rule] },
-    };
-    const context = createMockContext({
-      eventType: EventType.PULL_REQUEST_OPENED,
-      github,
-      dryRun: true,
-      payload: { pull_request: { labels: [{ name: "stale" }] } },
-    });
-
-    const effects = await dispatch(config, context);
-
-    expect(effects).toHaveLength(2);
-    expect(github.issues.addLabels).not.toHaveBeenCalled();
-    expect(github.issues.removeLabel).not.toHaveBeenCalled();
-    expect(logInfoSpy).toHaveBeenCalled();
-
-    logInfoSpy.mockRestore();
-  });
-
   it("does nothing when no rules match", async () => {
     const github = createMockGitHub();
     const config: RegistryConfig = {

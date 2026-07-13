@@ -8,7 +8,6 @@ import type { PullRequestRef } from "./model/pull-request.js";
 import type { Effect } from "./types.js";
 
 export interface EvaluateOptions {
-  dryRun?: boolean;
   botSlug?: string;
   commandSlug?: string;
 }
@@ -31,7 +30,6 @@ export async function evaluatePR(
 
   const context = contextFromPullRequest(github, pr, {
     botSlug: options.botSlug ?? "",
-    dryRun: options.dryRun,
     commandSlug: options.commandSlug,
     commands: repoCommands(registryConfig, ref.owner, ref.repo),
   });
@@ -63,7 +61,6 @@ export async function evaluateIssue(
     { owner: ref.owner, repo: ref.repo },
     {
       botSlug: options.botSlug ?? "",
-      dryRun: options.dryRun,
       commandSlug: options.commandSlug,
       commands: repoCommands(registryConfig, ref.owner, ref.repo),
     },

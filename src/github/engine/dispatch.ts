@@ -47,16 +47,6 @@ async function applyEffects(
   effects: Effect[],
   config: ApplyEffectsConfig,
 ): Promise<void> {
-  if (context.dryRun) {
-    log.info("dry run", {
-      repository: context.repository,
-      eventType: context.eventType,
-      number: context.number,
-      effects: JSON.stringify(effects),
-    });
-    return;
-  }
-
   const labels = new Set<string>();
   const removeLabels = new Set<string>();
   const statusSections = new Map<string, StatusSection>();
@@ -371,7 +361,7 @@ export async function dispatch(
   registryConfig: RegistryConfig,
   context: RuleContext,
 ): Promise<Effect[]> {
-  if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW && !context.dryRun) {
+  if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
     await maybeRedraftOnReady(context);
   }
 
@@ -429,10 +419,6 @@ async function commandRejection(
 }
 
 async function react(context: CommandContext, content: "+1" | "-1"): Promise<void> {
-  if (context.dryRun) {
-    log.info("dry run", { repository: context.repository, reaction: content });
-    return;
-  }
   try {
     await context.github.reactions.createForIssueComment(
       context.repoParams({ comment_id: context.commentId, content }),

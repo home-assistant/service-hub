@@ -171,12 +171,7 @@ function asOctokit(mock: MockGitHub): Octokit {
 }
 
 export function createMockContext(
-  overrides: {
-    eventType?: EventType;
-    payload?: Record<string, unknown>;
-    github?: MockGitHub;
-    dryRun?: boolean;
-  } = {},
+  overrides: { eventType?: EventType; payload?: Record<string, unknown>; github?: MockGitHub } = {},
 ): RuleContext {
   const github = overrides.github ?? createMockGitHub();
   const eventType = overrides.eventType ?? EventType.PULL_REQUEST_OPENED;
@@ -186,10 +181,7 @@ export function createMockContext(
     asOctokit(github),
     payload as unknown as WebhookEventPayload,
     eventType,
-    {
-      botSlug: "ha-bot",
-      dryRun: overrides.dryRun,
-    },
+    { botSlug: "ha-bot" },
   );
 }
 

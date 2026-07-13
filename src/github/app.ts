@@ -69,7 +69,6 @@ async function handleWebhook(env: Env, octokit: Octokit, request: Request): Prom
     if (isBotCommand(commentPayload.comment.body ?? "", env.COMMAND_SLUG)) {
       const context = commandContextFromWebhook(octokit, commentPayload, {
         botSlug: env.BOT_SLUG,
-        dryRun: env.DRY_RUN === "1",
         commandSlug: env.COMMAND_SLUG,
         registry: config,
       });
@@ -81,7 +80,6 @@ async function handleWebhook(env: Env, octokit: Octokit, request: Request): Prom
   if (isPullRequestEvent(event) || isIssueEvent(event)) {
     const context = contextFromWebhook(octokit, payload, eventType, {
       botSlug: env.BOT_SLUG,
-      dryRun: env.DRY_RUN === "1",
       commandSlug: env.COMMAND_SLUG,
       commands: config.commands?.[payload.repository.full_name] ?? [],
     });
@@ -120,7 +118,6 @@ export async function scheduledHandler(
   await Promise.allSettled(
     repos.map((repo) =>
       evaluateRecentPRs(config, octokit, repo, since, {
-        dryRun: env.DRY_RUN === "1",
         botSlug: env.BOT_SLUG,
         commandSlug: env.COMMAND_SLUG,
       }),

@@ -11,7 +11,6 @@ export const update: Command = {
     const options = {
       botSlug: context.botSlug,
       commandSlug: context.commandSlug,
-      dryRun: context.dryRun,
     };
     if (context.target.kind === "pull_request") {
       await evaluatePR(context.registry, context.github, ref, options);

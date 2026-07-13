@@ -40,13 +40,7 @@ export interface EffectPorts {
 export async function applyDiscordEffects(
   effects: DiscordEffect[],
   ports: EffectPorts,
-  options: { dryRun?: boolean } = {},
 ): Promise<void> {
-  if (options.dryRun) {
-    log.info("discord: dry run", { effects: JSON.stringify(effects) });
-    return;
-  }
-
   for (const effect of effects) {
     try {
       switch (effect.type) {
