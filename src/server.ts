@@ -4,14 +4,13 @@ import * as Sentry from "@sentry/node";
 import { startDiscordGateway } from "./discord/engine/gateway.js";
 import { discordRegistry } from "./discord/manifests/index.js";
 import { loadEnv } from "./env.js";
-import { requestHandler, scheduledHandler } from "./github/app.js";
+import { scheduledHandler, webhookHandler } from "./github/app.js";
 import { log } from "./log.js";
 import { serve } from "./util/serve.js";
 
 const CRON_INTERVAL_MIN = 5;
 
 const env = loadEnv();
-const port = Number(process.env.PORT ?? 8787);
 
 Sentry.init({
   dsn: env.SENTRY_DSN,
@@ -29,23 +28,35 @@ const octokit = new Octokit({
   },
 });
 
-serve({
-  port,
-  fetch: (request) => requestHandler(env, octokit, request),
+/** Exported so tests can boot the real server on a random port. */
+export const server = serve({
+  port: Number(process.env.PORT ?? 8787),
+  fetch: (request) => {
+    const url = new URL(request.url);
+
+    if (request.method === "POST" && url.pathname === "/github/webhook") {
+      return webhookHandler(env, octokit, request);
+    }
+
+    if (request.method === "GET" && url.pathname === "/health") {
+      return new Response("OK");
+    }
+
+    return new Response("Not Found", { status: 404 });
+  },
   error: (err) => {
     log.exception(err);
     return new Response("Internal Server Error", { status: 500 });
   },
 });
 
+// unref: the HTTP server keeps the process alive; the cron alone should not.
 setInterval(
   () => {
     scheduledHandler(env, octokit, CRON_INTERVAL_MIN).catch((err) => log.exception(err));
   },
   CRON_INTERVAL_MIN * 60 * 1000,
-);
-
-log.info(`github bot finished setup`);
+).unref();
 
 if (env.DISCORD_TOKEN) {
   startDiscordGateway(discordRegistry, {
@@ -53,6 +64,6 @@ if (env.DISCORD_TOKEN) {
   }).catch((err) => {
     log.exception(err instanceof Error ? err : new Error(String(err)));
   });
-
-  log.info(`discord bot finished setup`);
 }
+
+log.info(`bot finished setup`);

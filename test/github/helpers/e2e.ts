@@ -1,7 +1,7 @@
 import type { Octokit } from "@octokit/rest";
 import { sign } from "@octokit/webhooks-methods";
 import type { Env } from "../../../src/env.js";
-import { requestHandler } from "../../../src/github/app.js";
+import { webhookHandler } from "../../../src/github/app.js";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { createMockGitHub, type MockGitHub } from "./mock-context.js";
 
@@ -68,7 +68,7 @@ export function createE2EHarness(wiring: E2EWiring, options: E2EHarnessOptions =
           "x-github-event": event,
         },
       });
-      return requestHandler(env, octokit, req);
+      return webhookHandler(env, octokit, req);
     },
     deliverUnsigned: async (event, payload) => {
       const req = new Request("http://localhost/github/webhook", {
@@ -80,7 +80,7 @@ export function createE2EHarness(wiring: E2EWiring, options: E2EHarnessOptions =
           "x-github-event": event,
         },
       });
-      return requestHandler(env, octokit, req);
+      return webhookHandler(env, octokit, req);
     },
   };
 }

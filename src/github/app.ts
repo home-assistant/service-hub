@@ -16,20 +16,11 @@ import { config } from "./manifests/index.js";
 const CRON_LOOKBACK_OVERLAP_MIN = 2;
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
 
-function isPullRequestEvent(event: string): boolean {
-  return (
-    event === "pull_request" ||
-    event === "pull_request_review" ||
-    event === "pull_request_review_comment" ||
-    event === "pull_request_review_thread"
-  );
-}
-
-function isIssueEvent(event: string): boolean {
-  return event === "issues";
-}
-
-async function handleWebhook(env: Env, octokit: Octokit, request: Request): Promise<Response> {
+export async function webhookHandler(
+  env: Env,
+  octokit: Octokit,
+  request: Request,
+): Promise<Response> {
   const body = await request.text();
   const signature = request.headers.get("x-hub-signature-256") ?? "";
 
@@ -63,8 +54,8 @@ async function handleWebhook(env: Env, octokit: Octokit, request: Request): Prom
 
   const eventType = rawEventType as EventType;
 
-  // Handle bot commands on PR and issue comments
-  if (event === "issue_comment" && action === "created") {
+  // Comment events are only relevant to commands
+  if (eventType === EventType.ISSUE_COMMENT_CREATED) {
     const commentPayload = payload as IssueCommentCreatedEvent;
     if (isBotCommand(commentPayload.comment.body ?? "", env.COMMAND_SLUG)) {
       const context = commandContextFromWebhook(octokit, commentPayload, {
@@ -73,38 +64,18 @@ async function handleWebhook(env: Env, octokit: Octokit, request: Request): Prom
         registry: config,
       });
       await dispatchCommand(context);
-      return new Response("OK");
     }
-  }
-
-  if (isPullRequestEvent(event) || isIssueEvent(event)) {
-    const context = contextFromWebhook(octokit, payload, eventType, {
-      botSlug: env.BOT_SLUG,
-      commandSlug: env.COMMAND_SLUG,
-      commands: config.commands?.[payload.repository.full_name] ?? [],
-    });
-    await dispatch(config, context);
-  }
-
-  return new Response("OK");
-}
-
-export async function requestHandler(
-  env: Env,
-  octokit: Octokit,
-  request: Request,
-): Promise<Response> {
-  const url = new URL(request.url);
-
-  if (request.method === "POST" && url.pathname === "/github/webhook") {
-    return handleWebhook(env, octokit, request);
-  }
-
-  if (request.method === "GET" && url.pathname === "/health") {
     return new Response("OK");
   }
 
-  return new Response("Not Found", { status: 404 });
+  const context = contextFromWebhook(octokit, payload, eventType, {
+    botSlug: env.BOT_SLUG,
+    commandSlug: env.COMMAND_SLUG,
+    commands: config.commands?.[payload.repository.full_name] ?? [],
+  });
+  await dispatch(config, context);
+
+  return new Response("OK");
 }
 
 export async function scheduledHandler(
