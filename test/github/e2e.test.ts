@@ -9,16 +9,10 @@ import {
   prOpenedPayload,
 } from "./helpers/e2e.js";
 
-// webhook.ts imports its Octokit factory and registry itself; route both
-// through this mutable wiring so each harness can install a fresh mock
-// Octokit and its own test registry.
+// app.ts imports its registry itself; route it through this mutable wiring
+// so each harness can install its own test registry.
 const wiring: E2EWiring = vi.hoisted(() => ({
-  github: undefined as unknown,
   config: { repositories: {} },
-}));
-
-vi.mock("../../src/github/app.js", () => ({
-  createOctokit: () => wiring.github,
 }));
 
 vi.mock("../../src/github/manifests/index.js", () => ({
