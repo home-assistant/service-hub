@@ -8,14 +8,10 @@ export const update: Command = {
 
   async handle(context) {
     const ref = { owner: context.repo.owner, repo: context.repo.name, number: context.number };
-    const options = {
-      botSlug: context.botSlug,
-      commandSlug: context.commandSlug,
-    };
     if (context.target.kind === "pull_request") {
-      await evaluatePR(context.registry, context.github, ref, options);
+      await evaluatePR(context.github, ref, context.env, context.registry);
     } else {
-      await evaluateIssue(context.registry, context.github, ref, options);
+      await evaluateIssue(context.github, ref, context.env, context.registry);
     }
     return undefined;
   },

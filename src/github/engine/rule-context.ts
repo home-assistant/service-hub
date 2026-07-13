@@ -1,5 +1,7 @@
 import type { Octokit } from "@octokit/rest";
+import type { Env } from "../../env.js";
 import type { Organization, Repository } from "../../util/repositories.js";
+import type { RegistryConfig } from "./dispatch.js";
 import type { RuleEventOf } from "./event.js";
 import { EventType } from "./event.js";
 import type { Issue } from "./model/issue.js";
@@ -38,17 +40,14 @@ interface TargetMap {
 export type TargetFor<E extends EventType> = TargetMap[E];
 
 export interface RuleContextParams<E extends EventType> {
+  env: Env;
+  registry: RegistryConfig;
   github: Octokit;
   event: RuleEventOf<E>;
   sender: Sender;
   repo: Repo;
   org: Org;
   target: TargetFor<E>;
-  botSlug: string;
-  /** Comment-command prefix (`/<slug> <name>`), for rendering command help. */
-  commandSlug?: string;
-  /** The repo's registered comment commands, for rendering command help. */
-  commands?: readonly Command[];
 }
 
 /**
@@ -58,26 +57,24 @@ export interface RuleContextParams<E extends EventType> {
  * payload shapes.
  */
 export class RuleContext<E extends EventType = EventType> {
+  readonly env: Env;
+  readonly registry: RegistryConfig;
   readonly github: Octokit;
   readonly event: RuleEventOf<E>;
   readonly sender: Sender;
   readonly repo: Repo;
   readonly org: Org;
   readonly target: TargetFor<E>;
-  readonly botSlug: string;
-  readonly commandSlug: string;
-  readonly commands: readonly Command[];
 
   constructor(params: RuleContextParams<E>) {
+    this.env = params.env;
+    this.registry = params.registry;
     this.github = params.github;
     this.event = params.event;
     this.sender = params.sender;
     this.repo = params.repo;
     this.org = params.org;
     this.target = params.target;
-    this.botSlug = params.botSlug;
-    this.commandSlug = params.commandSlug ?? params.botSlug;
-    this.commands = params.commands ?? [];
   }
 
   get eventType(): E {
@@ -102,7 +99,12 @@ export class RuleContext<E extends EventType = EventType> {
 
   /** Bot's commit-status creator login, e.g. "ha-bot[bot]". */
   get botLogin(): string {
-    return `${this.botSlug}[bot]`;
+    return `${this.env.BOT_SLUG}[bot]`;
+  }
+
+  /** The repo's registered comment commands, for rendering command help. */
+  get commands(): readonly Command[] {
+    return this.registry.commands?.[this.repository] ?? [];
   }
 
   repoParams<T extends Record<string, unknown> = Record<string, never>>(
@@ -141,15 +143,14 @@ export class RuleContext<E extends EventType = EventType> {
    */
   withEvent<F extends EventType>(event: RuleEventOf<F>, target?: TargetFor<F>): RuleContext<F> {
     return new RuleContext<F>({
+      env: this.env,
+      registry: this.registry,
       github: this.github,
       event,
       sender: this.sender,
       repo: this.repo,
       org: this.org,
       target: target ?? (this.target as unknown as TargetFor<F>),
-      botSlug: this.botSlug,
-      commandSlug: this.commandSlug,
-      commands: this.commands,
     });
   }
 }

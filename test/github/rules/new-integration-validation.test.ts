@@ -141,6 +141,7 @@ describe("new-integration-validation", () => {
       repositories: { "home-assistant/core": [fileShape, newIntegrationValidation] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
       payload: { pull_request: { labels: [] } },
@@ -151,7 +152,7 @@ describe("new-integration-validation", () => {
       makeFile("homeassistant/components/mydevice/light.py"),
     ]);
 
-    const effects = await dispatch(config, context);
+    const effects = await dispatch(context);
 
     expect(effects).toContainEqual(
       expect.objectContaining({

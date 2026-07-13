@@ -1,5 +1,4 @@
 import { log } from "../../log.js";
-import type { RegistryConfig } from "./dispatch.js";
 import type { EventType } from "./event.js";
 import { matchCodeOwners, parseCodeOwners } from "./model/codeowners.js";
 import { RuleContext, type RuleContextParams } from "./rule-context.js";
@@ -57,7 +56,6 @@ export interface CommandContextParams extends RuleContextParams<EventType.ISSUE_
   invocations?: CommandInvocation[];
   /** The invocation this context is scoped to (set via withInvocation). */
   command?: CommandInvocation;
-  registry: RegistryConfig;
   /** The comment's `author_association` from the webhook payload. */
   senderAssociation?: string;
 }
@@ -73,7 +71,6 @@ export interface CommandContextParams extends RuleContextParams<EventType.ISSUE_
 export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED> {
   readonly invocations: CommandInvocation[];
   readonly command?: CommandInvocation;
-  readonly registry: RegistryConfig;
   readonly senderAssociation?: string;
   private readonly params: CommandContextParams;
 
@@ -82,7 +79,6 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
     this.params = params;
     this.invocations = params.invocations ?? (params.command ? [params.command] : []);
     this.command = params.command ?? this.invocations[0];
-    this.registry = params.registry;
     this.senderAssociation = params.senderAssociation;
   }
 

@@ -27,9 +27,9 @@ function commandHelp(ctx: RuleContext<HandledEvent>): string {
     "",
     "<details><summary>Code owner commands</summary>",
     "",
-    `Reply with \`/${ctx.commandSlug} <command>\`:`,
+    `Reply with \`/${ctx.env.COMMAND_SLUG} <command>\`:`,
     "",
-    ...commandHelpLines(ctx.commandSlug, available),
+    ...commandHelpLines(ctx.env.COMMAND_SLUG, available),
     "",
     "</details>",
   ].join("\n");

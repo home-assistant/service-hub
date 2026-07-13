@@ -1,5 +1,7 @@
 import type { Octokit } from "@octokit/rest";
 import { type Mock, vi } from "vitest";
+import type { Env } from "../../../src/env.js";
+import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
 import type { WebhookEventPayload } from "../../../src/github/engine/model/from-webhook.js";
 import { contextFromWebhook } from "../../../src/github/engine/model/from-webhook.js";
@@ -9,6 +11,18 @@ import type { Effect, Rule } from "../../../src/github/engine/types.js";
 
 /** The octokit mocks are loosely typed. */
 type MockFn = Mock<(...args: never[]) => unknown>;
+
+/** Fake Env for contexts built outside the webhook handler. */
+export const testEnv: Env = {
+  GITHUB_APP_ID: "1",
+  GITHUB_PRIVATE_KEY: "test-key",
+  GITHUB_INSTALLATION_ID: "1",
+  GITHUB_WEBHOOK_SECRET: "test-secret",
+  BOT_SLUG: "ha-bot",
+  COMMAND_SLUG: "ha-bot",
+  SENTRY_DSN: "",
+  ENVIRONMENT: "test",
+};
 
 export interface MockGitHub {
   issues: {
@@ -170,33 +184,38 @@ function asOctokit(mock: MockGitHub): Octokit {
   return mock as unknown as Octokit;
 }
 
-export function createMockContext(
-  overrides: { eventType?: EventType; payload?: Record<string, unknown>; github?: MockGitHub } = {},
-): RuleContext {
+interface MockContextOverrides {
+  eventType?: EventType;
+  payload?: Record<string, unknown>;
+  github?: MockGitHub;
+  registry?: RegistryConfig;
+}
+
+export function createMockContext(overrides: MockContextOverrides = {}): RuleContext {
   const github = overrides.github ?? createMockGitHub();
   const eventType = overrides.eventType ?? EventType.PULL_REQUEST_OPENED;
   const payload = createMockPayload(overrides.payload);
 
   return contextFromWebhook(
+    testEnv,
+    overrides.registry ?? { repositories: {} },
     asOctokit(github),
     payload as unknown as WebhookEventPayload,
     eventType,
-    { botSlug: "ha-bot" },
   );
 }
 
-export function createMockIssueContext(
-  overrides: { eventType?: EventType; payload?: Record<string, unknown>; github?: MockGitHub } = {},
-): RuleContext {
+export function createMockIssueContext(overrides: MockContextOverrides = {}): RuleContext {
   const github = overrides.github ?? createMockGitHub();
   const eventType = overrides.eventType ?? EventType.ISSUES_OPENED;
   const payload = createMockIssuePayload(overrides.payload);
 
   return contextFromWebhook(
+    testEnv,
+    overrides.registry ?? { repositories: {} },
     asOctokit(github),
     payload as unknown as WebhookEventPayload,
     eventType,
-    { botSlug: "ha-bot" },
   );
 }
 

@@ -11,7 +11,7 @@ import {
   contextFromWebhook,
   type WebhookEventPayload,
 } from "./engine/model/from-webhook.js";
-import { config } from "./manifests/index.js";
+import { registryConfig } from "./manifests/index.js";
 
 const CRON_LOOKBACK_OVERLAP_MIN = 2;
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
@@ -58,22 +58,14 @@ export async function webhookHandler(
   if (eventType === EventType.ISSUE_COMMENT_CREATED) {
     const commentPayload = payload as IssueCommentCreatedEvent;
     if (isBotCommand(commentPayload.comment.body ?? "", env.COMMAND_SLUG)) {
-      const context = commandContextFromWebhook(octokit, commentPayload, {
-        botSlug: env.BOT_SLUG,
-        commandSlug: env.COMMAND_SLUG,
-        registry: config,
-      });
-      await dispatchCommand(context);
+      await dispatchCommand(
+        commandContextFromWebhook(env, registryConfig, octokit, commentPayload),
+      );
     }
     return new Response("OK");
   }
 
-  const context = contextFromWebhook(octokit, payload, eventType, {
-    botSlug: env.BOT_SLUG,
-    commandSlug: env.COMMAND_SLUG,
-    commands: config.commands?.[payload.repository.full_name] ?? [],
-  });
-  await dispatch(config, context);
+  await dispatch(contextFromWebhook(env, registryConfig, octokit, payload, eventType));
 
   return new Response("OK");
 }
@@ -84,14 +76,9 @@ export async function scheduledHandler(
   interval_min: number,
 ): Promise<void> {
   const since = new Date(Date.now() - (interval_min + CRON_LOOKBACK_OVERLAP_MIN) * 60 * 1000);
-  const repos = Object.keys(config.repositories);
+  const repos = Object.keys(registryConfig.repositories);
 
   await Promise.allSettled(
-    repos.map((repo) =>
-      evaluateRecentPRs(config, octokit, repo, since, {
-        botSlug: env.BOT_SLUG,
-        commandSlug: env.COMMAND_SLUG,
-      }),
-    ),
+    repos.map((repo) => evaluateRecentPRs(octokit, repo, since, env, registryConfig)),
   );
 }

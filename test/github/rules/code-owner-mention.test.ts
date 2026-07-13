@@ -214,6 +214,7 @@ describe("mention-code-owners", () => {
         repositories: { "home-assistant/core": [integrationDomain, rule] },
       };
       const context = createMockContext({
+        registry: config,
         eventType: EventType.PULL_REQUEST_OPENED,
         github,
         payload: {
@@ -229,7 +230,7 @@ describe("mention-code-owners", () => {
         { filename: "homeassistant/components/hue/light.py", status: "modified" },
       ]);
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       expect(github.issues.addLabels).toHaveBeenCalledWith(
         expect.objectContaining({ labels: ["integration: hue"] }),
@@ -250,13 +251,14 @@ describe("mention-code-owners", () => {
         repositories: { "home-assistant/core": [integrationDomain, rule] },
       };
       const context = createMockContext({
+        registry: config,
         eventType: EventType.PULL_REQUEST_OPENED,
         github,
         payload: { pull_request: { user: { login: "contributor" }, labels: [] } },
       });
       mockPRFiles(context, [{ filename: "docs/README.md", status: "modified" }]);
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       expect(github.issues.addAssignees).not.toHaveBeenCalled();
       expect(github.issues.createComment).not.toHaveBeenCalled();

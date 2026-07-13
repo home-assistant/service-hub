@@ -120,6 +120,7 @@ describe("docs-missing handler", () => {
       repositories: { "home-assistant/core": [fileShape, docsPrPresent] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
       payload: {
@@ -130,7 +131,7 @@ describe("docs-missing handler", () => {
       { filename: "homeassistant/components/mydevice/__init__.py", status: "added" },
     ]);
 
-    const effects = await dispatch(config, context);
+    const effects = await dispatch(context);
 
     expect(effects).toContainEqual(
       expect.objectContaining({

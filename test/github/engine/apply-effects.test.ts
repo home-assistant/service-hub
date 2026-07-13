@@ -32,7 +32,7 @@ async function apply(
     events: { [EventType.PULL_REQUEST_OPENED]: async () => effects },
   };
   const config: RegistryConfig = { repositories: { "home-assistant/core": [rule] } };
-  await dispatch(config, createMockContext({ github, payload: opts.payload }));
+  await dispatch(createMockContext({ registry: config, github, payload: opts.payload }));
   return github;
 }
 

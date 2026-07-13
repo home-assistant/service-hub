@@ -16,7 +16,7 @@ const wiring: E2EWiring = vi.hoisted(() => ({
 }));
 
 vi.mock("../../src/github/manifests/index.js", () => ({
-  get config() {
+  get registryConfig() {
     return wiring.config;
   },
 }));

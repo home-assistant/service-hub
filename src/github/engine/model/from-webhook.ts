@@ -13,11 +13,11 @@ import type {
   PullRequestSynchronizeEvent,
   PullRequestUnlabeledEvent,
 } from "@octokit/webhooks-types";
+import type { Env } from "../../../env.js";
 import { CommandContext, parseCommands } from "../command-context.js";
 import type { RegistryConfig } from "../dispatch.js";
 import { EventType, type RuleEvent } from "../event.js";
 import { RuleContext } from "../rule-context.js";
-import type { Command } from "../types.js";
 import { type GetIssueResponse, Issue, type IssueSeed } from "./issue.js";
 import { Org } from "./organization.js";
 import { type GetPullRequestResponse, PullRequest, type PullRequestSeed } from "./pull-request.js";
@@ -37,12 +37,6 @@ export type WebhookEventPayload =
   | PullRequestReviewSubmittedEvent
   | PullRequestSynchronizeEvent
   | PullRequestUnlabeledEvent;
-
-export interface AdapterOptions {
-  botSlug: string;
-  commandSlug?: string;
-  commands?: readonly Command[];
-}
 
 /**
  * Structural view over every PR-shaped object GitHub hands us — full webhook
@@ -191,10 +185,11 @@ function senderFromLogin(login: string, isBotType: boolean) {
 
 /** Build a RuleContext from a webhook delivery. */
 export function contextFromWebhook(
+  env: Env,
+  registry: RegistryConfig,
   github: Octokit,
   payload: WebhookEventPayload,
   eventType: EventType,
-  opts: AdapterOptions,
 ): RuleContext {
   const repo = new Repo(github, {
     owner: payload.repository.owner.login,
@@ -204,23 +199,24 @@ export function contextFromWebhook(
   });
 
   return new RuleContext({
+    env,
+    registry,
     github,
     event: eventFromPayload(payload, eventType),
     sender: senderFromLogin(payload.sender?.login ?? "", payload.sender?.type === "Bot"),
     repo,
     org: new Org(github, repo.owner),
     target: targetFromPayload(github, payload, repo),
-    ...opts,
   });
 }
 
 /** Build a CommandContext from an issue_comment.created delivery. */
 export function commandContextFromWebhook(
+  env: Env,
+  registry: RegistryConfig,
   github: Octokit,
   payload: IssueCommentCreatedEvent,
-  opts: AdapterOptions & { commandSlug: string; registry: RegistryConfig },
 ): CommandContext {
-  const { registry, ...adapterOpts } = opts;
   const repo = new Repo(github, {
     owner: payload.repository.owner.login,
     name: payload.repository.name,
@@ -229,6 +225,8 @@ export function commandContextFromWebhook(
   });
 
   return new CommandContext({
+    env,
+    registry,
     github,
     event: {
       type: EventType.ISSUE_COMMENT_CREATED,
@@ -240,9 +238,7 @@ export function commandContextFromWebhook(
     repo,
     org: new Org(github, repo.owner),
     target: targetFromPayload(github, payload, repo),
-    invocations: parseCommands(payload.comment?.body ?? "", opts.commandSlug),
-    registry,
-    ...adapterOpts,
+    invocations: parseCommands(payload.comment?.body ?? "", env.COMMAND_SLUG),
   });
 }
 
@@ -252,10 +248,11 @@ export function commandContextFromWebhook(
  * and repo; topics are unknown without an extra fetch and stay empty.
  */
 export function contextFromIssue(
+  env: Env,
+  registry: RegistryConfig,
   github: Octokit,
   issue: GetIssueResponse,
   repoRef: { owner: string; repo: string },
-  opts: AdapterOptions,
 ): RuleContext<EventType.ISSUES_ON_DEMAND> {
   const repo = new Repo(github, {
     owner: repoRef.owner,
@@ -264,6 +261,8 @@ export function contextFromIssue(
   });
 
   return new RuleContext<EventType.ISSUES_ON_DEMAND>({
+    env,
+    registry,
     github,
     event: { type: EventType.ISSUES_ON_DEMAND },
     sender: senderFromLogin(issue.user?.login ?? "", issue.user?.type === "Bot"),
@@ -274,15 +273,15 @@ export function contextFromIssue(
       { owner: repoRef.owner, repo: repoRef.repo, number: issue.number },
       seedFromIssueLike(issue),
     ),
-    ...opts,
   });
 }
 
 /** Build an ON_DEMAND RuleContext from a REST pulls.get response. */
 export function contextFromPullRequest(
+  env: Env,
+  registry: RegistryConfig,
   github: Octokit,
   pr: GetPullRequestResponse,
-  opts: AdapterOptions,
 ): RuleContext<EventType.ON_DEMAND> {
   const repoData = pr.base.repo;
   const repo = new Repo(github, {
@@ -293,6 +292,8 @@ export function contextFromPullRequest(
   });
 
   return new RuleContext<EventType.ON_DEMAND>({
+    env,
+    registry,
     github,
     event: { type: EventType.ON_DEMAND },
     sender: senderFromLogin(pr.user?.login ?? "", pr.user?.type === "Bot"),
@@ -303,6 +304,5 @@ export function contextFromPullRequest(
       { owner: repo.owner, repo: repo.name, number: pr.number },
       seedFromPullRequestLike(pr),
     ),
-    ...opts,
   });
 }

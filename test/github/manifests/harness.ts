@@ -11,11 +11,8 @@ import {
   type WebhookEventPayload,
 } from "../../../src/github/engine/model/from-webhook.js";
 import type { RuleContext } from "../../../src/github/engine/rule-context.js";
-import { config } from "../../../src/github/manifests/index.js";
-import { createMockGitHub, type MockGitHub } from "../helpers/mock-context.js";
-
-const BOT_SLUG = "ha-bot";
-const COMMAND_SLUG = "ha-bot";
+import { registryConfig } from "../../../src/github/manifests/index.js";
+import { createMockGitHub, type MockGitHub, testEnv } from "../helpers/mock-context.js";
 
 export interface FixtureFile {
   filename: string;
@@ -255,11 +252,12 @@ export async function runFixture(fixture: Fixture): Promise<RecordedCall[]> {
   try {
     if (fixture.eventType === EventType.ISSUE_COMMENT_CREATED) {
       const body = (fixture.payload as { comment?: { body?: string } }).comment?.body ?? "";
-      if (isBotCommand(body, COMMAND_SLUG)) {
+      if (isBotCommand(body, testEnv.COMMAND_SLUG)) {
         const context = commandContextFromWebhook(
+          testEnv,
+          registryConfig,
           octokit,
           fixture.payload as unknown as IssueCommentCreatedEvent,
-          { botSlug: BOT_SLUG, commandSlug: COMMAND_SLUG, registry: config },
         );
         if (fixture.state.files) seedFiles(context, fixture.state.files);
         await dispatchCommand(context);
@@ -268,13 +266,14 @@ export async function runFixture(fixture: Fixture): Promise<RecordedCall[]> {
     }
 
     const context = contextFromWebhook(
+      testEnv,
+      registryConfig,
       octokit,
       fixture.payload as unknown as WebhookEventPayload,
       fixture.eventType,
-      { botSlug: BOT_SLUG },
     );
     if (fixture.state.files) seedFiles(context, fixture.state.files);
-    await dispatch(config, context);
+    await dispatch(context);
     return recorded;
   } finally {
     globalThis.fetch = originalFetch;

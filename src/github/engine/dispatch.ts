@@ -15,8 +15,8 @@ export interface RegistryConfig {
   integrationPaths?: Record<string, (domain: string) => string>;
 }
 
-export function matchRules(registryConfig: RegistryConfig, context: RuleContext): Rule[] {
-  const repoRules = registryConfig.repositories[context.repository] ?? [];
+export function matchRules(context: RuleContext): Rule[] {
+  const repoRules = context.registry.repositories[context.repository] ?? [];
 
   return repoRules.filter(
     (rule) =>
@@ -26,12 +26,9 @@ export function matchRules(registryConfig: RegistryConfig, context: RuleContext)
 }
 
 /** Collect every statusSection ID claimed by some rule in this repo's registry. */
-function collectKnownStatusSectionIds(
-  registryConfig: RegistryConfig,
-  context: RuleContext,
-): Set<string> {
+function collectKnownStatusSectionIds(context: RuleContext): Set<string> {
   const ids = new Set<string>();
-  const rules = registryConfig.repositories[context.repository] ?? [];
+  const rules = context.registry.repositories[context.repository] ?? [];
   for (const rule of rules) {
     if (rule.statusSections) for (const { id } of rule.statusSections) ids.add(id);
   }
@@ -215,11 +212,8 @@ async function maybeRedraftOnReady(context: RuleContext): Promise<void> {
   }
 }
 
-async function runMatchedRules(
-  registryConfig: RegistryConfig,
-  context: RuleContext,
-): Promise<Effect[]> {
-  const matched = matchRules(registryConfig, context);
+async function runMatchedRules(context: RuleContext): Promise<Effect[]> {
+  const matched = matchRules(context);
 
   const settled = await Promise.allSettled(
     matched.map((rule) => {
@@ -300,11 +294,7 @@ function syntheticLabelContext(
  * so labels never flicker on GitHub. Non-converging rule sets are cut off
  * after MAX_LABEL_ROUNDS and reported to Sentry via log.exception.
  */
-async function runLabelLoop(
-  registryConfig: RegistryConfig,
-  context: RuleContext,
-  initialEffects: Effect[],
-): Promise<Effect[]> {
+async function runLabelLoop(context: RuleContext, initialEffects: Effect[]): Promise<Effect[]> {
   const isLabelEffect = (e: Effect) => e.type === "addLabels" || e.type === "removeLabels";
   if (!initialEffects.some(isLabelEffect)) return initialEffects;
 
@@ -345,7 +335,7 @@ async function runLabelLoop(
     for (const change of changes) {
       const synthetic = syntheticLabelContext(context, change, labels);
       if (!synthetic) continue;
-      roundEffects.push(...(await runMatchedRules(registryConfig, synthetic)));
+      roundEffects.push(...(await runMatchedRules(synthetic)));
     }
     effects.push(...roundEffects.filter((e) => !isLabelEffect(e)));
   }
@@ -357,19 +347,16 @@ async function runLabelLoop(
   return effects;
 }
 
-export async function dispatch(
-  registryConfig: RegistryConfig,
-  context: RuleContext,
-): Promise<Effect[]> {
+export async function dispatch(context: RuleContext): Promise<Effect[]> {
   if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
     await maybeRedraftOnReady(context);
   }
 
-  const initialEffects = await runMatchedRules(registryConfig, context);
-  const effects = await runLabelLoop(registryConfig, context, initialEffects);
+  const initialEffects = await runMatchedRules(context);
+  const effects = await runLabelLoop(context, initialEffects);
 
   await applyEffects(context, effects, {
-    knownSectionIds: collectKnownStatusSectionIds(registryConfig, context),
+    knownSectionIds: collectKnownStatusSectionIds(context),
   });
   return effects;
 }
@@ -498,9 +485,9 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
 
   let finalEffects: Effect[] = [];
   if (collected.length) {
-    finalEffects = await runLabelLoop(registryConfig, context, collected);
+    finalEffects = await runLabelLoop(context, collected);
     await applyEffects(context, finalEffects, {
-      knownSectionIds: collectKnownStatusSectionIds(registryConfig, context),
+      knownSectionIds: collectKnownStatusSectionIds(context),
     });
   }
   await react(context, anyFailed ? "-1" : "+1");

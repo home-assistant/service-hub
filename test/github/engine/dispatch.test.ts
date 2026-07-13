@@ -28,8 +28,11 @@ describe("matchRules", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [testRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
-    const matched = matchRules(config, context);
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+    });
+    const matched = matchRules(context);
     expect(matched).toHaveLength(1);
     expect(matched[0].name).toBe("test-rule");
   });
@@ -38,8 +41,11 @@ describe("matchRules", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [testRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_CLOSED });
-    const matched = matchRules(config, context);
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_CLOSED,
+    });
+    const matched = matchRules(context);
     expect(matched).toHaveLength(0);
   });
 
@@ -47,8 +53,11 @@ describe("matchRules", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/frontend": [testRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
-    const matched = matchRules(config, context);
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+    });
+    const matched = matchRules(context);
     expect(matched).toHaveLength(0);
   });
 
@@ -57,10 +66,11 @@ describe("matchRules", () => {
       repositories: { "home-assistant/core": [noBotRule] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       payload: { sender: { login: "dependabot[bot]", type: "Bot" } },
     });
-    const matched = matchRules(config, context);
+    const matched = matchRules(context);
     expect(matched).toHaveLength(0);
   });
 
@@ -69,10 +79,11 @@ describe("matchRules", () => {
       repositories: { "home-assistant/core": [testRule] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       payload: { sender: { login: "dependabot[bot]", type: "Bot" } },
     });
-    const matched = matchRules(config, context);
+    const matched = matchRules(context);
     expect(matched).toHaveLength(1);
   });
 
@@ -80,8 +91,11 @@ describe("matchRules", () => {
     const config: RegistryConfig = {
       repositories: {},
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
-    const matched = matchRules(config, context);
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+    });
+    const matched = matchRules(context);
     expect(matched).toHaveLength(0);
   });
 });
@@ -102,9 +116,13 @@ describe("dispatch", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [labelRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.addLabels).toHaveBeenCalledWith(
       expect.objectContaining({ labels: ["bugfix", "has-tests"] }),
@@ -127,12 +145,13 @@ describe("dispatch", () => {
       repositories: { "home-assistant/core": [removerRule] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
       payload: { pull_request: { labels: [{ name: "needs-rebase" }] } },
     });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.removeLabel).toHaveBeenCalledWith(
       expect.objectContaining({ name: "needs-rebase" }),
@@ -155,9 +174,13 @@ describe("dispatch", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [conflictRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.addLabels).toHaveBeenCalled();
     expect(github.issues.removeLabel).not.toHaveBeenCalled();
@@ -178,9 +201,13 @@ describe("dispatch", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [commentRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.createComment).toHaveBeenCalledWith(
       expect.objectContaining({ body: "Hello from the bot!" }),
@@ -202,9 +229,13 @@ describe("dispatch", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [assignRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.addAssignees).toHaveBeenCalledWith(
       expect.objectContaining({ assignees: ["balloob", "frenck"] }),
@@ -237,9 +268,13 @@ describe("dispatch", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [failingRule, succeedingRule] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(logExceptionSpy).toHaveBeenCalledWith(
       expect.objectContaining({ message: "Rule exploded" }),
@@ -257,9 +292,13 @@ describe("dispatch", () => {
     const config: RegistryConfig = {
       repositories: {},
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.addLabels).not.toHaveBeenCalled();
     expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
@@ -285,9 +324,13 @@ describe("dispatch", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [rule1, rule2] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.addLabels).toHaveBeenCalledWith(
       expect.objectContaining({ labels: expect.arrayContaining(["label-a", "label-b"]) }),
@@ -325,18 +368,19 @@ describe("dispatch", () => {
         repositories: { "home-assistant/core": [rule] },
       };
       const context = createMockContext({
+        registry: config,
         eventType: EventType.PULL_REQUEST_OPENED,
         github,
         payload: {
           pull_request: { draft: prData.draft ?? false, node_id: prData.node_id ?? "PR_NODE_1" },
         },
       });
-      return { github, config, context };
+      return { github, context };
     }
 
     it("converts the PR to draft when the aggregate is failing", async () => {
-      const { github, config, context } = setupDraftHarness("fail");
-      await dispatch(config, context);
+      const { github, context } = setupDraftHarness("fail");
+      await dispatch(context);
 
       expect(github.graphql).toHaveBeenCalledWith(
         expect.stringContaining("convertPullRequestToDraft"),
@@ -345,22 +389,22 @@ describe("dispatch", () => {
     });
 
     it("does not draft when the PR is already a draft", async () => {
-      const { github, config, context } = setupDraftHarness("fail", { draft: true });
-      await dispatch(config, context);
+      const { github, context } = setupDraftHarness("fail", { draft: true });
+      await dispatch(context);
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
 
     it("does not draft when the aggregate is passing", async () => {
-      const { github, config, context } = setupDraftHarness("pass");
-      await dispatch(config, context);
+      const { github, context } = setupDraftHarness("pass");
+      await dispatch(context);
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
 
     it("does not draft when the aggregate is pending", async () => {
-      const { github, config, context } = setupDraftHarness("pending");
-      await dispatch(config, context);
+      const { github, context } = setupDraftHarness("pending");
+      await dispatch(context);
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
@@ -379,12 +423,13 @@ describe("dispatch", () => {
 
       const config: RegistryConfig = { repositories: {} };
       const context = createMockContext({
+        registry: config,
         eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
         github,
         payload: { pull_request: { draft: false, node_id: "PR_NODE_READY" } },
       });
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       expect(github.graphql).toHaveBeenCalledWith(
         expect.stringContaining("convertPullRequestToDraft"),
@@ -398,11 +443,12 @@ describe("dispatch", () => {
 
       const config: RegistryConfig = { repositories: {} };
       const context = createMockContext({
+        registry: config,
         eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
         github,
       });
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
@@ -413,11 +459,12 @@ describe("dispatch", () => {
 
       const config: RegistryConfig = { repositories: {} };
       const context = createMockContext({
+        registry: config,
         eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
         github,
       });
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
@@ -487,19 +534,20 @@ describe("dispatch", () => {
         repositories: { "home-assistant/core": [rule] },
       };
       const context = createMockContext({
+        registry: config,
         eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
         github,
       });
-      return { github, config, context };
+      return { github, context };
     }
 
     it("keeps the waiver when the owning rule re-emits its failing section", async () => {
-      const { github, config, context } = setupWaivedHarness({
+      const { github, context } = setupWaivedHarness({
         status: "fail",
         message: "Still conflicting.",
       });
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       const writtenBody = github.issues.updateComment.mock.calls[0][0].body as string;
       // Fresh message and the waive reason are both visible; aggregate passes.
@@ -517,9 +565,9 @@ describe("dispatch", () => {
     });
 
     it("keeps the waiver on sections preserved from the prior comment", async () => {
-      const { github, config, context } = setupWaivedHarness(null);
+      const { github, context } = setupWaivedHarness(null);
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       const writtenBody = github.issues.updateComment.mock.calls[0][0].body as string;
       expect(writtenBody).toContain("Ignored: Will rebase before merge");
@@ -529,12 +577,12 @@ describe("dispatch", () => {
     });
 
     it("carries the waiver along when the section turns passing", async () => {
-      const { github, config, context } = setupWaivedHarness({
+      const { github, context } = setupWaivedHarness({
         status: "pass",
         message: "No conflicts.",
       });
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       const writtenBody = github.issues.updateComment.mock.calls[0][0].body as string;
       // A passing section presents as passing — no waive note in the table
@@ -595,9 +643,13 @@ describe("dispatch", () => {
       const config: RegistryConfig = {
         repositories: { "home-assistant/core": [rule] },
       };
-      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+      const context = createMockContext({
+        registry: config,
+        eventType: EventType.PULL_REQUEST_OPENED,
+        github,
+      });
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       // Comment was rewritten; new body must not contain the stale section.
       expect(github.issues.updateComment).toHaveBeenCalledTimes(1);
@@ -613,7 +665,7 @@ describe("dispatch", () => {
   });
 
   describe("stale-status sweep", () => {
-    // Must match the mock context's `botLogin` (derived from `botSlug: "ha-bot"`).
+    // Must match the mock context's `botLogin` (derived from testEnv's BOT_SLUG).
     const BOT_LOGIN = "ha-bot[bot]";
 
     function setupStaleStatusHarness(existingStatuses: { context: string; state: string }[]) {
@@ -644,17 +696,21 @@ describe("dispatch", () => {
       const config: RegistryConfig = {
         repositories: { "home-assistant/core": [rule] },
       };
-      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
-      return { github, config, context };
+      const context = createMockContext({
+        registry: config,
+        eventType: EventType.PULL_REQUEST_OPENED,
+        github,
+      });
+      return { github, context };
     }
 
     it("neutralizes stale non-ha-bot statuses we wrote", async () => {
-      const { github, config, context } = setupStaleStatusHarness([
+      const { github, context } = setupStaleStatusHarness([
         { context: "required-labels", state: "failure" },
         { context: "code-owner-approval", state: "failure" },
       ]);
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       // ha-bot itself gets re-written (success now) but is NOT neutralized.
       expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
@@ -712,9 +768,13 @@ describe("dispatch", () => {
       const config: RegistryConfig = {
         repositories: { "home-assistant/core": [rule] },
       };
-      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+      const context = createMockContext({
+        registry: config,
+        eventType: EventType.PULL_REQUEST_OPENED,
+        github,
+      });
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       const neutralizing = github.repos.createCommitStatus.mock.calls.filter(
         (call) => call[0].description === "No longer in use",
@@ -756,9 +816,13 @@ describe("dispatch", () => {
       const config: RegistryConfig = {
         repositories: { "home-assistant/core": [rule] },
       };
-      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+      const context = createMockContext({
+        registry: config,
+        eventType: EventType.PULL_REQUEST_OPENED,
+        github,
+      });
 
-      await dispatch(config, context);
+      await dispatch(context);
 
       expect(github.repos.createCommitStatus).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -770,10 +834,10 @@ describe("dispatch", () => {
     });
 
     it("skips statuses already in success state", async () => {
-      const { github, config, context } = setupStaleStatusHarness([
+      const { github, context } = setupStaleStatusHarness([
         { context: "required-labels", state: "success" },
       ]);
-      await dispatch(config, context);
+      await dispatch(context);
 
       const neutralizing = github.repos.createCommitStatus.mock.calls.filter(
         (call) => call[0].description === "No longer in use",
@@ -818,9 +882,13 @@ describe("label loop", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [ruleA, ruleB, ruleC] },
     };
-    const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
+    const context = createMockContext({
+      registry: config,
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     // X was added in round 1 and removed again in round 3, so only Y is applied.
     expect(github.issues.addLabels).toHaveBeenCalledTimes(1);
@@ -855,12 +923,13 @@ describe("label loop", () => {
       repositories: { "home-assistant/core": [remover, reactor] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
       payload: { pull_request: { labels: [{ name: "stale" }] } },
     });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.removeLabel).toHaveBeenCalledWith(
       expect.objectContaining({ name: "stale" }),
@@ -886,12 +955,13 @@ describe("label loop", () => {
       repositories: { "home-assistant/core": [rule] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
       payload: { pull_request: { labels: [{ name: "cla-signed" }] } },
     });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.addLabels).not.toHaveBeenCalled();
   });
@@ -917,9 +987,13 @@ describe("label loop", () => {
     const config: RegistryConfig = {
       repositories: { "home-assistant/core": [labeler, reactor] },
     };
-    const context = createMockIssueContext({ eventType: EventType.ISSUES_OPENED, github });
+    const context = createMockIssueContext({
+      registry: config,
+      eventType: EventType.ISSUES_OPENED,
+      github,
+    });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(github.issues.addLabels).toHaveBeenCalledWith(
       expect.objectContaining({ labels: ["bug"] }),
@@ -953,11 +1027,12 @@ describe("label loop", () => {
       repositories: { "home-assistant/core": [kickoff, flipper] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
     });
 
-    await dispatch(config, context);
+    await dispatch(context);
 
     expect(exceptionSpy).toHaveBeenCalledTimes(1);
     expect(String(exceptionSpy.mock.calls[0][0])).toContain("did not stabilize");

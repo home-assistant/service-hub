@@ -82,7 +82,7 @@ export async function syncStatus(
     overrides: changes.overrides,
     previousBody: existing?.body ?? null,
     knownSectionIds,
-    help: { commandSlug: context.commandSlug, commands: context.commands },
+    help: { commandSlug: context.env.COMMAND_SLUG, commands: context.commands },
   });
   if (result.body === null) return;
 

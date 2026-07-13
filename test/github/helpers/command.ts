@@ -5,7 +5,7 @@ import type { CommandContext } from "../../../src/github/engine/command-context.
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { commandContextFromWebhook } from "../../../src/github/engine/model/from-webhook.js";
 import type { Command, Rule } from "../../../src/github/engine/types.js";
-import { createMockGitHub, type MockGitHub } from "./mock-context.js";
+import { createMockGitHub, type MockGitHub, testEnv } from "./mock-context.js";
 
 export interface MakeCommandContextOptions {
   github?: MockGitHub;
@@ -46,13 +46,10 @@ export function makeCommandContext(
     },
   };
   const context = commandContextFromWebhook(
+    testEnv,
+    options.registry ?? { repositories: {} },
     github as unknown as Octokit,
     payload as unknown as IssueCommentCreatedEvent,
-    {
-      botSlug: "ha-bot",
-      commandSlug: "ha-bot",
-      registry: options.registry ?? { repositories: {} },
-    },
   );
   return { context, github };
 }

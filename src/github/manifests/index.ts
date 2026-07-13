@@ -63,4 +63,4 @@ function build(): RegistryConfig {
  * config serves both PR and issue webhooks — `matchRules` filters each rule
  * by the events it declares.
  */
-export const config: RegistryConfig = build();
+export const registryConfig: RegistryConfig = build();

@@ -1,4 +1,5 @@
 import type { Octokit } from "@octokit/rest";
+import type { Env } from "../../env.js";
 import { log } from "../../log.js";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
@@ -7,20 +8,11 @@ import type { IssueRef } from "./model/issue.js";
 import type { PullRequestRef } from "./model/pull-request.js";
 import type { Effect } from "./types.js";
 
-export interface EvaluateOptions {
-  botSlug?: string;
-  commandSlug?: string;
-}
-
-function repoCommands(registryConfig: RegistryConfig, owner: string, repo: string) {
-  return registryConfig.commands?.[`${owner}/${repo}`] ?? [];
-}
-
 export async function evaluatePR(
-  registryConfig: RegistryConfig,
   github: Octokit,
   ref: PullRequestRef,
-  options: EvaluateOptions = {},
+  env: Env,
+  registry: RegistryConfig,
 ): Promise<Effect[]> {
   const { data: pr } = await github.pulls.get({
     owner: ref.owner,
@@ -28,20 +20,14 @@ export async function evaluatePR(
     pull_number: ref.number,
   });
 
-  const context = contextFromPullRequest(github, pr, {
-    botSlug: options.botSlug ?? "",
-    commandSlug: options.commandSlug,
-    commands: repoCommands(registryConfig, ref.owner, ref.repo),
-  });
-
-  return dispatch(registryConfig, context);
+  return dispatch(contextFromPullRequest(env, registry, github, pr));
 }
 
 export async function evaluateIssue(
-  registryConfig: RegistryConfig,
   github: Octokit,
   ref: IssueRef,
-  options: EvaluateOptions = {},
+  env: Env,
+  registry: RegistryConfig,
 ): Promise<Effect[]> {
   const { data: issue } = await github.issues.get({
     owner: ref.owner,
@@ -52,29 +38,20 @@ export async function evaluateIssue(
   // PRs and issues share a numbering space; issues.get happily returns the
   // issue view of a PR. Route those through the PR path so PR rules run.
   if (issue.pull_request) {
-    return evaluatePR(registryConfig, github, ref, options);
+    return evaluatePR(github, ref, env, registry);
   }
 
-  const context = contextFromIssue(
-    github,
-    issue,
-    { owner: ref.owner, repo: ref.repo },
-    {
-      botSlug: options.botSlug ?? "",
-      commandSlug: options.commandSlug,
-      commands: repoCommands(registryConfig, ref.owner, ref.repo),
-    },
+  return dispatch(
+    contextFromIssue(env, registry, github, issue, { owner: ref.owner, repo: ref.repo }),
   );
-
-  return dispatch(registryConfig, context);
 }
 
 export async function evaluateRecentPRs(
-  registryConfig: RegistryConfig,
   github: Octokit,
   repoFullName: string,
   since: Date,
-  options: EvaluateOptions = {},
+  env: Env,
+  registry: RegistryConfig,
 ): Promise<void> {
   const [owner, repo] = repoFullName.split("/");
   const prs = await github.pulls.list({
@@ -90,7 +67,7 @@ export async function evaluateRecentPRs(
 
   for (const pr of recentPRs) {
     try {
-      await evaluatePR(registryConfig, github, { owner, repo, number: pr.number }, options);
+      await evaluatePR(github, { owner, repo, number: pr.number }, env, registry);
     } catch (err) {
       log.error("evaluateRecentPRs: PR evaluation failed", {
         repository: repoFullName,

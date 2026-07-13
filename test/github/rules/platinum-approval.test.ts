@@ -264,6 +264,7 @@ describe("platinum-approval", () => {
       repositories: { "home-assistant/core": [integrationDomain, qualityScale, platinumApproval] },
     };
     const context = createMockContext({
+      registry: config,
       eventType: EventType.PULL_REQUEST_OPENED,
       github,
       payload: { pull_request: { labels: [] } },
@@ -272,7 +273,7 @@ describe("platinum-approval", () => {
       { filename: "homeassistant/components/hue/light.py", status: "modified" },
     ]);
 
-    const effects = await dispatch(config, context);
+    const effects = await dispatch(context);
 
     expect(effects).toContainEqual(
       expect.objectContaining({
