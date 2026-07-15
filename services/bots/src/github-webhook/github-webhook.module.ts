@@ -18,7 +18,7 @@ import { SetIntentsLanguage } from './handlers/intents_language';
 import { IssueCommentCommands } from './handlers/issue_comment_commands/handler';
 import { IssueContext } from './handlers/issue_context';
 import { IssueLinks } from './handlers/issue_links';
-import { LabelActions } from './handlers/label_actions/handler';
+import { LabelActions } from './handlers/label_actions';
 import { LabelBot } from './handlers/label_bot/handler';
 import { IntegrationAnalyticsService } from './handlers/label_bot/integration-analytics.service';
 import { LabelCleaner } from './handlers/label_cleaner';

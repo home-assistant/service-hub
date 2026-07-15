@@ -1,7 +1,10 @@
 // @ts-nocheck
 import * as assert from 'assert';
 import { WebhookContext } from '../../../../../services/bots/src/github-webhook/github-webhook.model';
-import { LabelActions } from '../../../../../services/bots/src/github-webhook/handlers/label_actions/handler';
+import {
+  LabelActions,
+  labelActionsConfig,
+} from '../../../../../services/bots/src/github-webhook/handlers/label_actions';
 import { mockWebhookContext } from '../../../../utils/test_context';
 import { loadJsonFixture } from '../../../../utils/fixture';
 
@@ -121,6 +124,17 @@ describe('LabelActions', () => {
 
     assert.strictEqual(mockContext.scheduledComments.length, 0);
     expect(mockContext.github.issues.update).not.toHaveBeenCalled();
+  });
+
+  it('All labels enabled for a repository have a configured action', () => {
+    for (const [repository, labels] of Object.entries(labelActionsConfig.repositories)) {
+      for (const label of labels) {
+        assert.ok(
+          label in labelActionsConfig.actions,
+          `Label "${label}" enabled for ${repository} has no configured action`,
+        );
+      }
+    }
   });
 
   it('Do not close already closed issues', async () => {
