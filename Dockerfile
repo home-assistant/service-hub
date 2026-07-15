@@ -1,10 +1,11 @@
 # tsx runs the TypeScript entrypoint directly — no build step.
-FROM node:24-alpine
+FROM node:26-alpine
 
 WORKDIR /app
 
 # corepack installs the pnpm version pinned in package.json's packageManager.
-RUN corepack enable
+# Node >=25 no longer bundles corepack, so install it first.
+RUN npm install -g corepack && corepack enable
 
 # Install dependencies first for layer caching. --frozen-lockfile fails the
 # build if pnpm-lock.yaml is out of sync with package.json. The workspace
