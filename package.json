@@ -21,6 +21,7 @@
     "sync-templates": "tsx scripts/sync-templates.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.8",
     "@octokit/auth-app": "^8.2.0",
     "@octokit/rest": "^22.0.1",
     "@octokit/webhooks-methods": "^6.0.0",

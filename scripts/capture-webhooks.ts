@@ -20,7 +20,7 @@
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { serve } from "../src/util/serve.js";
+import { serve } from "@hono/node-server";
 
 const FIXTURES_ROOT = "test/github/manifests/fixtures";
 const DEFAULT_REPO = "home-assistant/core";

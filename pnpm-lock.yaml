@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@hono/node-server':
+        specifier: ^2.0.8
+        version: 2.0.8(hono@4.12.30)
       '@octokit/auth-app':
         specifier: ^8.2.0
         version: 8.2.0
@@ -335,6 +338,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@hono/node-server@2.0.8':
+    resolution: {integrity: sha512-GuCWzLxwg218fy1JaHculFsdcuY12hxit83V+algozTPnwhNjLrRL/Alg9OYjLZLoUZ1rw/S4CdTMsnkSKCmFA==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4
 
   '@jridgewell/resolve-uri@3.1.2':
     resolution: {integrity: sha512-bRISgCIjP20/tbWSPWMEi54QVPRZExkuD9lJL+UIxUKtwVJA8wW1Trb1jMs1RFXo1CBTNZ/5hpC9QvmKWdopKw==}
@@ -914,6 +923,10 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
+  hono@4.12.30:
+    resolution: {integrity: sha512-emn+JoJjrN9YTpRDS5it/UI2SO9BAE37T6I3d963RxcZ81G9A4pr2SZTEiiaiKbzx+NKRg5BZ89fCL7gCJCUog==}
+    engines: {node: '>=16.9.0'}
+
   html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
 
@@ -1479,6 +1492,10 @@ snapshots:
   '@esbuild/win32-x64@0.28.1':
     optional: true
 
+  '@hono/node-server@2.0.8(hono@4.12.30)':
+    dependencies:
+      hono: 4.12.30
+
   '@jridgewell/resolve-uri@3.1.2': {}
 
   '@jridgewell/sourcemap-codec@1.5.5': {}
@@ -2006,6 +2023,8 @@ snapshots:
     optional: true
 
   has-flag@4.0.0: {}
+
+  hono@4.12.30: {}
 
   html-escaper@2.0.2: {}
 

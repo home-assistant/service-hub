@@ -1,3 +1,4 @@
+import { serve } from "@hono/node-server";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import * as Sentry from "@sentry/node";
@@ -6,7 +7,6 @@ import { discordRegistry } from "./discord/manifests/index.js";
 import { loadEnv } from "./env.js";
 import { scheduledHandler, webhookHandler } from "./github/app.js";
 import { log } from "./log.js";
-import { serve } from "./util/serve.js";
 
 const CRON_INTERVAL_MIN = 5;
 
@@ -28,25 +28,30 @@ const octokit = new Octokit({
   },
 });
 
+function routes(request: Request): Response | Promise<Response> {
+  const url = new URL(request.url);
+
+  if (request.method === "POST" && url.pathname === "/github/webhook") {
+    return webhookHandler(env, octokit, request);
+  }
+
+  if (request.method === "GET" && url.pathname === "/health") {
+    return new Response("OK");
+  }
+
+  return new Response("Not Found", { status: 404 });
+}
+
 /** Exported so tests can boot the real server on a random port. */
 export const server = serve({
   port: Number(process.env.PORT ?? 8787),
-  fetch: (request) => {
-    const url = new URL(request.url);
-
-    if (request.method === "POST" && url.pathname === "/github/webhook") {
-      return webhookHandler(env, octokit, request);
+  fetch: async (request) => {
+    try {
+      return await routes(request);
+    } catch (err) {
+      log.exception(err);
+      return new Response("Internal Server Error", { status: 500 });
     }
-
-    if (request.method === "GET" && url.pathname === "/health") {
-      return new Response("OK");
-    }
-
-    return new Response("Not Found", { status: 404 });
-  },
-  error: (err) => {
-    log.exception(err);
-    return new Response("Internal Server Error", { status: 500 });
   },
 });
 
