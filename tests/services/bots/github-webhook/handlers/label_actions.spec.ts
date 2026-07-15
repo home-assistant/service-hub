@@ -1,7 +1,7 @@
 // @ts-nocheck
 import * as assert from 'assert';
 import { WebhookContext } from '../../../../../services/bots/src/github-webhook/github-webhook.model';
-import { LabelActions } from '../../../../../services/bots/src/github-webhook/handlers/label_actions';
+import { LabelActions } from '../../../../../services/bots/src/github-webhook/handlers/label_actions/handler';
 import { mockWebhookContext } from '../../../../utils/test_context';
 import { loadJsonFixture } from '../../../../utils/fixture';
 
@@ -51,6 +51,36 @@ describe('LabelActions', () => {
         state: 'closed',
         state_reason: 'not_planned',
       }),
+    );
+  });
+
+  it('Replace repository placeholder in comment', async () => {
+    mockContext = createContext('home-assistant/operating-system', {
+      label: { name: 'assume-fixed' },
+    });
+
+    await handler.handle(mockContext);
+
+    assert.strictEqual(mockContext.scheduledComments.length, 1);
+    assert.ok(
+      mockContext.scheduledComments[0].comment.includes(
+        'https://github.com/home-assistant/operating-system/releases/latest',
+      ),
+      'Should replace the repository placeholder',
+    );
+  });
+
+  it('Use shared action in another repository', async () => {
+    mockContext = createContext('home-assistant/supervisor', {
+      label: { name: 'core-issue' },
+    });
+
+    await handler.handle(mockContext);
+
+    assert.strictEqual(mockContext.scheduledComments.length, 1);
+    assert.ok(
+      mockContext.scheduledComments[0].comment.includes('related to Home Assistant Core'),
+      'Should include the shared comment',
     );
   });
 
