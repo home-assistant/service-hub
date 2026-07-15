@@ -1,10 +1,7 @@
 // @ts-nocheck
 import * as assert from 'assert';
 import { WebhookContext } from '../../../../../services/bots/src/github-webhook/github-webhook.model';
-import {
-  LabelActions,
-  labelActionsConfig,
-} from '../../../../../services/bots/src/github-webhook/handlers/label_actions';
+import { LabelActions } from '../../../../../services/bots/src/github-webhook/handlers/label_actions';
 import { mockWebhookContext } from '../../../../utils/test_context';
 import { loadJsonFixture } from '../../../../utils/fixture';
 
@@ -73,7 +70,7 @@ describe('LabelActions', () => {
     );
   });
 
-  it('Use shared action in another repository', async () => {
+  it('Use action in any repository of the organization', async () => {
     mockContext = createContext('home-assistant/supervisor', {
       label: { name: 'core-issue' },
     });
@@ -87,7 +84,7 @@ describe('LabelActions', () => {
     );
   });
 
-  it('Use repository specific label configuration', async () => {
+  it('Add comment and close issue for docker-corruption label', async () => {
     mockContext = createContext('home-assistant/supervisor', {
       label: { name: 'docker-corruption' },
     });
@@ -113,28 +110,6 @@ describe('LabelActions', () => {
 
     assert.strictEqual(mockContext.scheduledComments.length, 0);
     expect(mockContext.github.issues.update).not.toHaveBeenCalled();
-  });
-
-  it('Skip labels configured for another repository', async () => {
-    mockContext = createContext('home-assistant/operating-system', {
-      label: { name: 'docker-corruption' },
-    });
-
-    await handler.handle(mockContext);
-
-    assert.strictEqual(mockContext.scheduledComments.length, 0);
-    expect(mockContext.github.issues.update).not.toHaveBeenCalled();
-  });
-
-  it('All labels enabled for a repository have a configured action', () => {
-    for (const [repository, labels] of Object.entries(labelActionsConfig.repositories)) {
-      for (const label of labels) {
-        assert.ok(
-          label in labelActionsConfig.actions,
-          `Label "${label}" enabled for ${repository} has no configured action`,
-        );
-      }
-    }
   });
 
   it('Do not close already closed issues', async () => {
