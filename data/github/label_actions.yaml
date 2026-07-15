@@ -74,9 +74,9 @@ actions:
 
       We use this issue tracker to track issues of currently supported features.
       Your request appears to request a new feature. We track potential new
-      features in the [Feature Request section of our Community Forum](https://community.home-assistant.io/c/feature-requests/13).
+      features in [GitHub Discussions](https://github.com/orgs/home-assistant/discussions).
       Please check if someone already requested a similar feature, or create
-      a new feature request in that forum. Thank you!
+      a new feature request there. Thank you!
     close: true
     closeReason: not_planned
 
