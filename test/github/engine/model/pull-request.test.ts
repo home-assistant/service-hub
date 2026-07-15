@@ -64,7 +64,7 @@ describe("PullRequest entity", () => {
     expect(github.pulls.get).toHaveBeenCalledTimes(1);
   });
 
-  it("fetches files once and derives integration domains from them", async () => {
+  it("fetches files once no matter how many readers", async () => {
     const github = createMockGitHub();
     github.paginate.mockResolvedValue([
       { filename: "homeassistant/components/hue/light.py" },
@@ -74,7 +74,7 @@ describe("PullRequest entity", () => {
     const pr = new PullRequest(asOctokit(github), REF);
 
     expect(await pr.files()).toHaveLength(3);
-    expect(await pr.integrationDomains()).toEqual(["hue", "zwave_js"]);
+    expect(await pr.files()).toHaveLength(3);
     expect(github.paginate).toHaveBeenCalledTimes(1);
   });
 

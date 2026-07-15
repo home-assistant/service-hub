@@ -1,14 +1,9 @@
 import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
+import type { ItemRef } from "../../../util/item-ref.js";
 import type { IssueComments } from "./pull-request.js";
 
 export type GetIssueParams = RestEndpointMethodTypes["issues"]["get"]["parameters"];
 export type GetIssueResponse = RestEndpointMethodTypes["issues"]["get"]["response"]["data"];
-
-export interface IssueRef {
-  owner: string;
-  repo: string;
-  number: number;
-}
 
 /** Core fields a webhook payload MAY provide; undefined → hydrate. */
 export interface IssueSeed {
@@ -36,7 +31,7 @@ export class Issue {
     issueComments?: Promise<IssueComments>;
   } = {};
 
-  constructor(github: Octokit, ref: IssueRef, seed: IssueSeed = {}) {
+  constructor(github: Octokit, ref: ItemRef, seed: IssueSeed = {}) {
     this.github = github;
     this.owner = ref.owner;
     this.repo = ref.repo;

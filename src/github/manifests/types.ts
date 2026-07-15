@@ -1,4 +1,15 @@
 import type { Command, Rule } from "../engine/types.js";
+import type { ESPHomeRepository } from "./esphome-org.js";
+import type { HomeAssistantRepository } from "./home-assistant-org.js";
+
+/** Every repo the bot knows by name, for rules that reference one by slug. */
+export type Repository = HomeAssistantRepository | ESPHomeRepository;
+
+/** GitHub orgs the bot acts in. */
+export enum Organization {
+  ESPHOME = "esphome",
+  HOME_ASSISTANT = "home-assistant",
+}
 
 /**
  * The authored description of what the bot does for one repository: a single

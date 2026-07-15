@@ -3,7 +3,6 @@ import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js"
 import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
-import { INTEGRATION_LABEL_PREFIX, itemIntegrationDomains } from "./integrations.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
@@ -14,11 +13,17 @@ type HandledEvent =
   | EventType.PULL_REQUEST_LABELED
   | EventType.ON_DEMAND;
 
-export function byCodeOwner(config: { pathPattern: (integration: string) => string }): Rule {
+export function byCodeOwner(config: {
+  pathPattern: (integration: string) => string;
+  /**
+   * Integration domains the item is about — repo policy (file layout, doc
+   * links), injected by the manifest. Returning [] skips the rule, including
+   * for label events the implementation deems irrelevant.
+   */
+  domains: (ctx: RuleContext<EventType>) => Promise<string[]>;
+}): Rule {
   async function handle(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
-    if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return;
-
-    const integrationNames = await itemIntegrationDomains(ctx);
+    const integrationNames = await config.domains(ctx);
     if (integrationNames.length === 0) return;
 
     // The rule is only registered on repos that have a CODEOWNERS file, so a

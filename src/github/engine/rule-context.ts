@@ -1,6 +1,5 @@
 import type { Octokit } from "@octokit/rest";
 import type { Env } from "../../env.js";
-import type { Organization, Repository } from "../../util/repositories.js";
 import type { RegistryConfig } from "./dispatch.js";
 import type { RuleEventOf } from "./event.js";
 import { EventType } from "./event.js";
@@ -81,11 +80,13 @@ export class RuleContext<E extends EventType = EventType> {
     return this.event.type as E;
   }
 
-  get repository(): Repository {
+  /** Full `owner/repo` slug of the event's repository. */
+  get repository(): string {
     return this.repo.fullName;
   }
 
-  get organization(): Organization {
+  /** The repository's owner (GitHub org or user). */
+  get organization(): string {
     return this.repo.organization;
   }
 

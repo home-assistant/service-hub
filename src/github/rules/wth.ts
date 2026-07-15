@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { log } from "../../log.js";
 import { fetchWithTimeout } from "../../util/fetch.js";
-import { extractForumLinks } from "../../util/pr-body.js";
 import { EventType } from "../engine/event.js";
 import { on } from "../engine/rule.js";
 import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
+import { extractForumLinks } from "../helpers/ha-links.js";
 
 const WTH_CATEGORY_IDS = [56, 61];
 

@@ -1,5 +1,5 @@
 import type { Octokit, RestEndpointMethodTypes } from "@octokit/rest";
-import { ParsedPath } from "../../../util/parse-path.js";
+import type { ItemRef } from "../../../util/item-ref.js";
 
 export type GetPullRequestParams = RestEndpointMethodTypes["pulls"]["get"]["parameters"];
 export type GetPullRequestResponse = RestEndpointMethodTypes["pulls"]["get"]["response"]["data"];
@@ -10,12 +10,6 @@ export type PullRequestReviews =
 export type PullRequestReviewComments =
   RestEndpointMethodTypes["pulls"]["listReviewComments"]["response"]["data"];
 export type IssueComments = RestEndpointMethodTypes["issues"]["listComments"]["response"]["data"];
-
-export interface PullRequestRef {
-  owner: string;
-  repo: string;
-  number: number;
-}
 
 /**
  * Core fields a webhook payload MAY provide. `undefined` means the source
@@ -58,13 +52,12 @@ export class PullRequest {
   private caches: {
     core?: Promise<GetPullRequestResponse>;
     files?: Promise<ListPullRequestFiles>;
-    integrationDomains?: Promise<string[]>;
     reviews?: Promise<PullRequestReviews>;
     reviewComments?: Promise<PullRequestReviewComments>;
     issueComments?: Promise<IssueComments>;
   } = {};
 
-  constructor(github: Octokit, ref: PullRequestRef, seed: PullRequestSeed = {}) {
+  constructor(github: Octokit, ref: ItemRef, seed: PullRequestSeed = {}) {
     this.github = github;
     this.owner = ref.owner;
     this.repo = ref.repo;
@@ -176,27 +169,6 @@ export class PullRequest {
       this.caches.files = inflight;
     }
     return this.caches.files;
-  }
-
-  /** Unique integration domains derived from the changed file paths. */
-  integrationDomains(): Promise<string[]> {
-    if (!this.caches.integrationDomains) {
-      const inflight = this.files().then((files) => {
-        const domains = new Set<string>();
-        for (const file of files) {
-          const parsed = new ParsedPath(file);
-          if (parsed.component) domains.add(parsed.component);
-        }
-        return [...domains];
-      });
-      inflight.catch(() => {
-        if (this.caches.integrationDomains === inflight) {
-          this.caches.integrationDomains = undefined;
-        }
-      });
-      this.caches.integrationDomains = inflight;
-    }
-    return this.caches.integrationDomains;
   }
 
   reviews(): Promise<PullRequestReviews> {

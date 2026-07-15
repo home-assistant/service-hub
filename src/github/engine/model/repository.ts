@@ -1,5 +1,4 @@
 import type { Octokit } from "@octokit/rest";
-import type { Organization, Repository } from "../../../util/repositories.js";
 
 const CODEOWNERS_TTL_MS = 5 * 60 * 1000;
 
@@ -21,7 +20,7 @@ const codeownersByRepo = new Map<
 export class Repo {
   readonly owner: string;
   readonly name: string;
-  readonly fullName: Repository;
+  readonly fullName: string;
   readonly topics: string[];
 
   private readonly github: Octokit;
@@ -34,12 +33,12 @@ export class Repo {
     this.github = github;
     this.owner = info.owner;
     this.name = info.name;
-    this.fullName = info.fullName as Repository;
+    this.fullName = info.fullName;
     this.topics = info.topics ?? [];
   }
 
-  get organization(): Organization {
-    return this.owner as Organization;
+  get organization(): string {
+    return this.owner;
   }
 
   /**

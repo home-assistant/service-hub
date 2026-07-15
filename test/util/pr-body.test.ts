@@ -1,152 +1,52 @@
 import { describe, expect, it } from "vitest";
-import {
-  extractDocumentationSectionsLinks,
-  extractForumLinks,
-  extractIntegrationDocumentationLinks,
-  extractIssuesOrPullRequestMarkdownLinks,
-  extractPullRequestURLLinks,
-  extractTasks,
-} from "../../src/util/pr-body.js";
+import { extractAllLinks, extractTasks } from "../../src/util/pr-body.js";
 import { lastSegment } from "../github/helpers/mock-context.js";
 
-describe("extractIssuesOrPullRequestMarkdownLinks", () => {
-  it("extracts a single markdown-style reference", () => {
-    const links = extractIssuesOrPullRequestMarkdownLinks(
-      "Docs PR: home-assistant/home-assistant.io#12345",
-    );
+describe("extractAllLinks", () => {
+  it("extracts a single owner/repo#number shorthand reference", () => {
+    const links = extractAllLinks("Docs PR: home-assistant/home-assistant.io#12345");
     expect(links).toEqual([{ owner: "home-assistant", repo: "home-assistant.io", number: 12345 }]);
   });
 
-  it("extracts multiple references", () => {
-    const links = extractIssuesOrPullRequestMarkdownLinks(
-      "Fixes home-assistant/core#100 and home-assistant/frontend#200",
-    );
+  it("extracts multiple shorthand references", () => {
+    const links = extractAllLinks("Fixes home-assistant/core#100 and home-assistant/frontend#200");
     expect(links).toHaveLength(2);
     expect(links[0]).toEqual({ owner: "home-assistant", repo: "core", number: 100 });
     expect(links[1]).toEqual({ owner: "home-assistant", repo: "frontend", number: 200 });
   });
 
-  it("returns empty for null body", () => {
-    expect(extractIssuesOrPullRequestMarkdownLinks(null)).toEqual([]);
-  });
-
-  it("returns empty when no references found", () => {
-    expect(extractIssuesOrPullRequestMarkdownLinks("just some text")).toEqual([]);
-  });
-});
-
-describe("extractPullRequestURLLinks", () => {
   it("extracts a GitHub PR URL", () => {
-    const links = extractPullRequestURLLinks(
+    const links = extractAllLinks(
       "See https://github.com/home-assistant/home-assistant.io/pull/999",
     );
     expect(links).toEqual([{ owner: "home-assistant", repo: "home-assistant.io", number: 999 }]);
   });
 
   it("extracts multiple PR URLs", () => {
-    const links = extractPullRequestURLLinks(
+    const links = extractAllLinks(
       "https://github.com/home-assistant/core/pull/1 and https://github.com/esphome/esphome/pull/2",
     );
     expect(links).toHaveLength(2);
   });
 
-  it("returns empty for null body", () => {
-    expect(extractPullRequestURLLinks(null)).toEqual([]);
+  it("extracts a GitHub issue URL", () => {
+    const links = extractAllLinks("Fixes https://github.com/home-assistant/core/issues/123");
+    expect(links).toEqual([{ owner: "home-assistant", repo: "core", number: 123 }]);
   });
 
-  it("does not match issue URLs", () => {
-    expect(extractPullRequestURLLinks("https://github.com/home-assistant/core/issues/123")).toEqual(
-      [],
+  it("deduplicates the same item referenced in different forms", () => {
+    const links = extractAllLinks(
+      "home-assistant/core#77 https://github.com/home-assistant/core/pull/77",
     );
-  });
-});
-
-describe("extractIntegrationDocumentationLinks", () => {
-  it("extracts a www integration link", () => {
-    const links = extractIntegrationDocumentationLinks(
-      "https://www.home-assistant.io/integrations/hue",
-    );
-    expect(links).toEqual([
-      {
-        link: "https://www.home-assistant.io/integrations/hue",
-        integration: "hue",
-        platform: undefined,
-      },
-    ]);
-  });
-
-  it("extracts integration with platform", () => {
-    const links = extractIntegrationDocumentationLinks(
-      "https://www.home-assistant.io/integrations/hue.light",
-    );
-    expect(links).toHaveLength(1);
-    expect(links[0].integration).toBe("hue");
-    expect(links[0].platform).toBe("light");
-  });
-
-  it("extracts links from rc and next subdomains", () => {
-    const body = `
-      https://rc.home-assistant.io/integrations/mqtt
-      https://next.home-assistant.io/integrations/zwave
-    `;
-    const links = extractIntegrationDocumentationLinks(body);
-    expect(links).toHaveLength(2);
-    expect(links[0].integration).toBe("mqtt");
-    expect(links[1].integration).toBe("zwave");
+    expect(links).toEqual([{ owner: "home-assistant", repo: "core", number: 77 }]);
   });
 
   it("returns empty for null body", () => {
-    expect(extractIntegrationDocumentationLinks(null)).toEqual([]);
-  });
-});
-
-describe("extractForumLinks", () => {
-  it("extracts a community forum link", () => {
-    const links = extractForumLinks("See https://community.home-assistant.io/t/some-topic/12345");
-    expect(links).toEqual(["https://community.home-assistant.io/t/some-topic/12345"]);
+    expect(extractAllLinks(null)).toEqual([]);
   });
 
-  it("extracts multiple forum links on separate lines", () => {
-    const links = extractForumLinks(
-      "https://community.home-assistant.io/t/a/1\nhttps://community.home-assistant.io/t/b/2",
-    );
-    expect(links).toHaveLength(2);
-  });
-
-  it("returns empty for null body", () => {
-    expect(extractForumLinks(null)).toEqual([]);
-  });
-
-  it("returns empty when no forum links found", () => {
-    expect(extractForumLinks("not a forum link")).toEqual([]);
-  });
-});
-
-describe("extractDocumentationSectionsLinks", () => {
-  it("extracts section from documentation URL", () => {
-    const sections = extractDocumentationSectionsLinks(
-      "https://www.home-assistant.io/getting-started/",
-    );
-    expect(sections).toContain("getting-started");
-  });
-
-  it("extracts sections from multiple URLs", () => {
-    const sections = extractDocumentationSectionsLinks(
-      "https://home-assistant.io/docs/ and https://home-assistant.io/configuration/",
-    );
-    expect(sections).toContain("docs");
-    expect(sections).toContain("configuration");
-  });
-
-  it("deduplicates sections", () => {
-    const sections = extractDocumentationSectionsLinks(
-      "https://home-assistant.io/docs/ and https://home-assistant.io/docs/",
-    );
-    expect(sections.filter((s) => s === "docs")).toHaveLength(1);
-  });
-
-  it("returns empty for null body", () => {
-    expect(extractDocumentationSectionsLinks(null)).toEqual([]);
+  it("returns empty when no references found", () => {
+    expect(extractAllLinks("just some text")).toEqual([]);
   });
 });
 

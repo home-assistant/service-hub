@@ -1,6 +1,6 @@
 import type { RegistryConfig } from "../engine/dispatch.js";
 import type { Command, Rule } from "../engine/types.js";
-import { homeAssistantCore } from "./home-assistant-core.js";
+import { homeAssistantCore } from "./home-assistant-core/index.js";
 import type { RepoManifest } from "./types.js";
 
 /** Every repo the bot acts on. Add a repo by authoring a manifest and listing it here. */

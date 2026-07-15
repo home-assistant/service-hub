@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { dispatch } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
+import { integrationDomainsFromEvent } from "../../../src/github/manifests/home-assistant-core/helpers/integration-domains.js";
+import { integrationDomain } from "../../../src/github/manifests/home-assistant-core/rules/integration-domain.js";
 import { MENTION_MARKER, mentionCodeOwners } from "../../../src/github/rules/code-owner-mention.js";
-import { integrationDomain } from "../../../src/github/rules/integration-domain.js";
 import {
   createMockContext,
   createMockGitHub,
@@ -13,6 +14,7 @@ import {
 } from "../helpers/mock-context.js";
 
 const rule = mentionCodeOwners({
+  domains: integrationDomainsFromEvent,
   pathPattern: (name) => `homeassistant/components/${name}/*`,
 });
 
@@ -281,6 +283,7 @@ describe("mention-code-owners", () => {
 
   it("uses custom itemLabel in comment", async () => {
     const docsRule = mentionCodeOwners({
+      domains: integrationDomainsFromEvent,
       pathPattern: (name) => `source/_integrations/${name}.markdown`,
       itemLabel: "feedback",
     });

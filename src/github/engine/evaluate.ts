@@ -1,18 +1,17 @@
 import type { Octokit } from "@octokit/rest";
 import type { Env } from "../../env.js";
 import { log } from "../../log.js";
+import type { ItemRef } from "../../util/item-ref.js";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
 import { contextFromIssue, contextFromPullRequest } from "./model/from-webhook.js";
-import type { IssueRef } from "./model/issue.js";
-import type { PullRequestRef } from "./model/pull-request.js";
 import type { Effect } from "./types.js";
 
 export async function evaluatePR(
   env: Env,
   registry: RegistryConfig,
   github: Octokit,
-  ref: PullRequestRef,
+  ref: ItemRef,
 ): Promise<Effect[]> {
   const { data: pr } = await github.pulls.get({
     owner: ref.owner,
@@ -27,7 +26,7 @@ export async function evaluateIssue(
   env: Env,
   registry: RegistryConfig,
   github: Octokit,
-  ref: IssueRef,
+  ref: ItemRef,
 ): Promise<Effect[]> {
   const { data: issue } = await github.issues.get({
     owner: ref.owner,

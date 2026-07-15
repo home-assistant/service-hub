@@ -1,14 +1,4 @@
-interface IssuePullInfo {
-  owner: string;
-  repo: string;
-  number: number;
-}
-
-interface IntegrationDocLink {
-  link: string;
-  integration: string;
-  platform?: string;
-}
+import { type ItemRef, slugOf } from "./item-ref.js";
 
 interface Task {
   checked: boolean;
@@ -20,19 +10,21 @@ function groups(m: RegExpMatchArray): Record<string, string> {
 }
 
 /**
- * Returns every issue/PR reference in `body` from both `owner/repo#123`
- * and `https://github.com/owner/repo/pull/123` forms, in the order they
+ * Returns every issue/PR reference in `body` — the `owner/repo#123`
+ * shorthand plus `https://github.com/owner/repo/pull/123` and
+ * `https://github.com/owner/repo/issues/123` URLs — in the order they
  * appear. Deduplicated by (owner, repo, number).
  */
-export function extractAllLinks(body: string | null): IssuePullInfo[] {
+export function extractAllLinks(body: string | null): ItemRef[] {
   const all = [
     ...extractIssuesOrPullRequestMarkdownLinks(body),
     ...extractPullRequestURLLinks(body),
+    ...extractIssueURLLinks(body),
   ];
   const seen = new Set<string>();
-  const result: IssuePullInfo[] = [];
+  const result: ItemRef[] = [];
   for (const link of all) {
-    const key = `${link.owner}/${link.repo}#${link.number}`;
+    const key = `${slugOf(link)}#${link.number}`;
     if (seen.has(key)) continue;
     seen.add(key);
     result.push(link);
@@ -40,7 +32,7 @@ export function extractAllLinks(body: string | null): IssuePullInfo[] {
   return result;
 }
 
-export function extractIssuesOrPullRequestMarkdownLinks(body: string | null): IssuePullInfo[] {
+function extractIssuesOrPullRequestMarkdownLinks(body: string | null): ItemRef[] {
   if (!body) return [];
   const re = /([\w\-.]+)\/([\w\-.]+)#(\d+)/g;
   return [...body.matchAll(re)].map((m) => ({
@@ -50,7 +42,7 @@ export function extractIssuesOrPullRequestMarkdownLinks(body: string | null): Is
   }));
 }
 
-export function extractPullRequestURLLinks(body: string | null): IssuePullInfo[] {
+function extractPullRequestURLLinks(body: string | null): ItemRef[] {
   if (!body) return [];
   const re = /https:\/\/github\.com\/([\w\-.]+)\/([\w\-.]+)\/pull\/(\d+)/g;
   return [...body.matchAll(re)].map((m) => ({
@@ -60,34 +52,14 @@ export function extractPullRequestURLLinks(body: string | null): IssuePullInfo[]
   }));
 }
 
-export function extractIntegrationDocumentationLinks(body: string | null): IntegrationDocLink[] {
+function extractIssueURLLinks(body: string | null): ItemRef[] {
   if (!body) return [];
-  const re =
-    /(?<link>https:\/\/(?:www|rc|next)\.?home-assistant\.io\/integrations\/(?<integration>\w+)\.?(?<platform>\w+)?)/g;
-  return [...body.matchAll(re)]
-    .filter((m) => m.groups)
-    .map((m) => {
-      const g = groups(m);
-      return { link: g.link, integration: g.integration, platform: g.platform };
-    });
-}
-
-export function extractForumLinks(body: string | null): string[] {
-  if (!body) return [];
-  const re = /(?<link>https:\/\/community\.home-assistant\.io\/t\/.*\/\d+)/g;
-  return [...body.matchAll(re)].filter((m) => m.groups).map((m) => groups(m).link);
-}
-
-export function extractDocumentationSectionsLinks(body: string | null): string[] {
-  if (!body) return [];
-  const re = /https:\/\/(?:www\.|rc\.|next\.|)home-assistant\.io\/(.*?)\//g;
-  const results = new Set<string>();
-  for (const match of body.matchAll(re)) {
-    for (const section of match[1].split("/")) {
-      results.add(section);
-    }
-  }
-  return [...results];
+  const re = /https:\/\/github\.com\/([\w\-.]+)\/([\w\-.]+)\/issues\/(\d+)/g;
+  return [...body.matchAll(re)].map((m) => ({
+    owner: m[1],
+    repo: m[2],
+    number: Number(m[3]),
+  }));
 }
 
 export function extractTasks(body: string | null): Task[] {
