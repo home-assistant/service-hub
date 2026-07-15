@@ -18,7 +18,7 @@ import {
  * Every run also asserts label independence (see runScenario).
  *
  * Snapshots live in snapshots/home-assistant-core/; update them with
- * `npm test -- -u` after an intentional behavior change.
+ * `pnpm test -u` after an intentional behavior change.
  */
 
 const HUE_MANIFEST = {

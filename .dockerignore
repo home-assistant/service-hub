@@ -12,6 +12,7 @@ coverage
 result
 Dockerfile
 .dockerignore
+justfile
 *.md
 test
 vitest.config.ts

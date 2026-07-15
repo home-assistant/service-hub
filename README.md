@@ -4,13 +4,20 @@ A Node.js service that automates the Home Assistant organization's GitHub repos 
 
 ## Development
 
+Dependencies are managed with [pnpm](https://pnpm.io) (pinned via `packageManager`,
+so `corepack enable` gets you the right version). Common tasks are exposed as
+[`just`](https://just.systems) recipes ([architecture#1416](https://github.com/home-assistant/architecture/discussions/1416)):
+
 ```bash
-npm install
-npm run dev          # Start local dev server
-npm test             # Run tests
-npm run check        # Run linter + type checker
-npm run format       # Auto-fix formatting
+just setup           # Install dependencies
+just run             # Start local dev server
+just test            # Run tests
+just lint            # Run linter + type checker
+just format          # Auto-fix formatting
 ```
+
+`just --list` shows all recipes; they are thin wrappers around the pnpm
+scripts in `package.json`, which work directly too (`pnpm run dev`, …).
 
 
 ## TODOs

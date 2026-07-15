@@ -4,7 +4,7 @@
  * the real thing (test/github/manifests/pr-template.ts) and template changes
  * upstream show up as a diff here.
  *
- * Usage: npm run sync-templates
+ * Usage: pnpm run sync-templates
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

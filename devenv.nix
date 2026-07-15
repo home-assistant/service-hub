@@ -5,10 +5,11 @@
 
   packages = with pkgs; [
     git
+    just
   ];
 
   languages.javascript = {
     enable = true;
-    npm.enable = true;
+    pnpm.enable = true;
   };
 }

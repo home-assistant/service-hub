@@ -3,10 +3,14 @@ FROM node:24-alpine
 
 WORKDIR /app
 
-# Install dependencies first for layer caching. npm ci fails the build if
-# package-lock.json is out of sync with package.json.
-COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# corepack installs the pnpm version pinned in package.json's packageManager.
+RUN corepack enable
+
+# Install dependencies first for layer caching. --frozen-lockfile fails the
+# build if pnpm-lock.yaml is out of sync with package.json. The workspace
+# file carries the esbuild build-script approval.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --prod
 
 COPY . .
 

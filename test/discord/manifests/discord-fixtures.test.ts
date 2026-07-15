@@ -9,9 +9,9 @@ import { loadFixtures, runFixture } from "./harness.js";
  * fixtures/<guild>/ is replayed through the real guild registry (routing,
  * error handling, and default acknowledgement included), with the resulting
  * effect list snapshotted — the Discord counterpart of the GitHub webhook
- * fixture suite. Capture new fixtures with `npm run capture-discord`.
+ * fixture suite. Capture new fixtures with `pnpm run capture-discord`.
  *
- * Regenerate intentionally with `npm test -- -u`.
+ * Regenerate intentionally with `pnpm test -u`.
  */
 
 const FIXTURES_ROOT = fileURLToPath(new URL("fixtures", import.meta.url));

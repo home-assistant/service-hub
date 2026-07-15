@@ -15,8 +15,8 @@
  * AAA…/aaa…/000… of the same length, numeric ids become 111…).
  *
  * Usage:
- *   npm run capture [-- output-dir]   # capture server
- *   npm run scrub                     # re-scrub existing fixtures
+ *   pnpm run capture [output-dir]   # capture server
+ *   pnpm run scrub                  # re-scrub existing fixtures
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

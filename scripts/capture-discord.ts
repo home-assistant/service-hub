@@ -5,7 +5,7 @@
  * a guild the bot is in, then copy the interesting captures into
  * test/discord/fixtures/<guild>/ named `<type>[.variant].json`.
  *
- * Usage: DISCORD_TOKEN=... npm run capture-discord
+ * Usage: DISCORD_TOKEN=... pnpm run capture-discord
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";

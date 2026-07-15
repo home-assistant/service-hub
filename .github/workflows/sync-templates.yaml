@@ -22,14 +22,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Installs the pnpm version pinned in package.json's packageManager.
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
-      - run: npm run sync-templates
+      - run: pnpm run sync-templates
 
       # Stop early when the vendored template is unchanged — later steps
       # refresh expected effects, and running them anyway would fold unrelated
@@ -39,10 +42,10 @@ jobs:
         run: echo "changed=$(git diff --quiet && echo false || echo true)" >> "$GITHUB_OUTPUT"
 
       - if: steps.template.outputs.changed == 'true'
-        run: npm run update-fixture-bodies
+        run: pnpm run update-fixture-bodies
 
       - if: steps.template.outputs.changed == 'true'
-        run: UPDATE_FIXTURES=1 npm test
+        run: UPDATE_FIXTURES=1 pnpm test
 
       - if: steps.template.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v7

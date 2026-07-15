@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 /**
  * The real PR templates the scenarios render their bodies from, vendored into
- * templates/<name>.md by `npm run sync-templates`. Rendering matches template
+ * templates/<name>.md by `pnpm run sync-templates`. Rendering matches template
  * text verbatim and fails loudly when a referenced checkbox or heading no
  * longer exists — exactly the coupling an upstream template change breaks.
  */
