@@ -16,7 +16,7 @@ import { registryConfig } from "./manifests/index.js";
 const CRON_LOOKBACK_OVERLAP_MIN = 2;
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
 
-export async function webhookHandler(
+export async function ghWebhookHandler(
   env: Env,
   octokit: Octokit,
   request: Request,
@@ -70,7 +70,7 @@ export async function webhookHandler(
   return new Response("OK");
 }
 
-export async function scheduledHandler(
+export async function ghScheduledHandler(
   env: Env,
   octokit: Octokit,
   interval_min: number,

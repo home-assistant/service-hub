@@ -5,7 +5,7 @@ import * as Sentry from "@sentry/node";
 import { startDiscordGateway } from "./discord/engine/gateway.js";
 import { discordRegistry } from "./discord/manifests/index.js";
 import { loadEnv } from "./env.js";
-import { scheduledHandler, webhookHandler } from "./github/app.js";
+import { ghScheduledHandler, ghWebhookHandler } from "./github/app.js";
 import { log } from "./log.js";
 
 const CRON_INTERVAL_MIN = 5;
@@ -32,7 +32,7 @@ function routes(request: Request): Response | Promise<Response> {
   const url = new URL(request.url);
 
   if (request.method === "POST" && url.pathname === "/github/webhook") {
-    return webhookHandler(env, octokit, request);
+    return ghWebhookHandler(env, octokit, request);
   }
 
   if (request.method === "GET" && url.pathname === "/health") {
@@ -58,7 +58,7 @@ export const server = serve({
 // unref: the HTTP server keeps the process alive; the cron alone should not.
 setInterval(
   () => {
-    scheduledHandler(env, octokit, CRON_INTERVAL_MIN).catch((err) => log.exception(err));
+    ghScheduledHandler(env, octokit, CRON_INTERVAL_MIN).catch((err) => log.exception(err));
   },
   CRON_INTERVAL_MIN * 60 * 1000,
 ).unref();
