@@ -1,7 +1,7 @@
 import type { Octokit } from "@octokit/rest";
 import { describe, expect, it, vi } from "vitest";
 import type { Env } from "../../src/env.js";
-import { webhookHandler } from "../../src/github/app.js";
+import { ghWebhookHandler } from "../../src/github/app.js";
 
 // vi.mock is hoisted above the imports and scoped to this file, so the mocked
 // verify/dispatch only exist here — helpers/e2e.ts and engine/dispatch.test.ts
@@ -25,7 +25,7 @@ vi.mock("../../src/github/engine/dispatch.js", async (importOriginal) => ({
 const octokit = {} as unknown as Octokit;
 
 async function fetchApp(req: Request): Promise<Response> {
-  return webhookHandler(env, octokit, req);
+  return ghWebhookHandler(env, octokit, req);
 }
 
 function makeRequest(body: string, headers: Record<string, string> = {}): Request {
