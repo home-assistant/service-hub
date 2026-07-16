@@ -8,6 +8,7 @@ import type { SectionOverride, StatusSection } from "./status/types.js";
 import { ensureStatusCommentExists, findStatusComment, syncStatus } from "./status-sync.js";
 import type { Command, Effect, Rule } from "./types.js";
 
+// TODO: Should this be here and not in rule-context.ts or manifests/index.ts / manifests/types.ts?
 export interface RegistryConfig {
   repositories: Record<string, Rule[]>;
   commands?: Record<string, Command[]>;
@@ -52,7 +53,10 @@ async function applyEffects(
   const assignees = new Set<string>();
   const removeAssignees = new Set<string>();
   const comments = new Set<string>();
-  const ops: Promise<unknown>[] = [];
+  // Thunks, not started promises: awaits happen between collection and the
+  // allSettled below, and a rejection during that window would be an
+  // unhandled rejection (which kills the process) instead of a logged failure.
+  const ops: (() => Promise<unknown>)[] = [];
 
   for (const effect of effects) {
     switch (effect.type) {
@@ -78,7 +82,7 @@ async function applyEffects(
         overrides.push({ id: effect.id, ignore: effect.ignore });
         break;
       case "addLabelsCrossRepo":
-        ops.push(
+        ops.push(() =>
           context.github.issues.addLabels({
             owner: effect.owner,
             repo: effect.repo,
@@ -88,7 +92,7 @@ async function applyEffects(
         );
         break;
       case "updatePullRequest":
-        ops.push(
+        ops.push(() =>
           context.github.pulls.update({
             owner: effect.owner,
             repo: effect.repo,
@@ -98,29 +102,29 @@ async function applyEffects(
         );
         break;
       case "requestReviewers":
-        ops.push(
+        ops.push(() =>
           context.github.pulls.requestReviewers(
             context.pullParams({ reviewers: effect.reviewers }),
           ),
         );
         break;
       case "setTitle":
-        ops.push(context.github.issues.update(context.issueParams({ title: effect.title })));
+        ops.push(() => context.github.issues.update(context.issueParams({ title: effect.title })));
         break;
       case "setState":
-        ops.push(context.github.issues.update(context.issueParams({ state: effect.state })));
+        ops.push(() => context.github.issues.update(context.issueParams({ state: effect.state })));
         break;
       case "removeAssignees":
         for (const a of effect.assignees) removeAssignees.add(a);
         break;
       case "convertToDraft":
-        ops.push(draftPRIfNotDraft(context));
+        ops.push(() => draftPRIfNotDraft(context));
         break;
       case "markReadyForReview":
-        ops.push(readyPRIfDraft(context));
+        ops.push(() => readyPRIfDraft(context));
         break;
       case "updateBranch":
-        ops.push(updateBranchOrExplain(context));
+        ops.push(() => updateBranchOrExplain(context));
         break;
     }
   }
@@ -131,7 +135,7 @@ async function applyEffects(
     const current = new Set(await context.target.labels());
     const toAdd = [...labels].filter((label) => !current.has(label));
     if (toAdd.length > 0) {
-      ops.push(context.github.issues.addLabels(context.issueParams({ labels: toAdd })));
+      ops.push(() => context.github.issues.addLabels(context.issueParams({ labels: toAdd })));
     }
 
     for (const label of removeLabels) {
@@ -144,7 +148,7 @@ async function applyEffects(
         continue;
       }
       if (!current.has(label)) continue;
-      ops.push(context.github.issues.removeLabel(context.issueParams({ name: label })));
+      ops.push(() => context.github.issues.removeLabel(context.issueParams({ name: label })));
     }
   }
 
@@ -160,7 +164,7 @@ async function applyEffects(
     if (statusSections.size > 0) {
       await ensureStatusCommentExists(context.github, context.issueParams());
     }
-    ops.push(
+    ops.push(() =>
       syncStatus(
         context,
         { sections: [...statusSections.values()], removedSectionIds: removedSections, overrides },
@@ -170,24 +174,24 @@ async function applyEffects(
   }
 
   for (const body of comments) {
-    ops.push(context.github.issues.createComment(context.issueParams({ body })));
+    ops.push(() => context.github.issues.createComment(context.issueParams({ body })));
   }
 
   if (assignees.size > 0) {
-    ops.push(
+    ops.push(() =>
       context.github.issues.addAssignees(context.issueParams({ assignees: [...assignees] })),
     );
   }
 
   if (removeAssignees.size > 0) {
-    ops.push(
+    ops.push(() =>
       context.github.issues.removeAssignees(
         context.issueParams({ assignees: [...removeAssignees] }),
       ),
     );
   }
 
-  const settled = await Promise.allSettled(ops);
+  const settled = await Promise.allSettled(ops.map((op) => op()));
   for (const outcome of settled) {
     if (outcome.status === "rejected") {
       log.warn("applyEffects: operation failed", { error: String(outcome.reason) });
@@ -251,7 +255,6 @@ async function runMatchedRules(context: RuleContext): Promise<Effect[]> {
 }
 
 export async function dispatch(context: RuleContext): Promise<Effect[]> {
-
   // TODO: This should be moved somewhere else I think.
   if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
     await maybeRedraftOnReady(context);
