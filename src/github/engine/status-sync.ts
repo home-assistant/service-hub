@@ -15,10 +15,12 @@ import type { SectionOverride, StatusSection } from "./status/types.js";
 
 export const STATUS_CHECK_CONTEXT = "ha-bot";
 
+type CommitStatuses = Awaited<ReturnType<Octokit["repos"]["listCommitStatusesForRef"]>>["data"];
+
 export async function findStatusComment(
   github: Octokit,
   params: GetIssueParams,
-): Promise<{ id: number; body: string } | null> {
+): Promise<{ id: number; body: string; html_url: string } | null> {
   const comments = await github.paginate(github.issues.listComments, {
     ...params,
     per_page: 100,
@@ -26,7 +28,7 @@ export async function findStatusComment(
 
   for (const comment of comments) {
     if (comment.body && isStatusComment(comment.body)) {
-      return { id: comment.id, body: comment.body };
+      return { id: comment.id, body: comment.body, html_url: comment.html_url };
     }
   }
 
@@ -86,34 +88,66 @@ export async function syncStatus(
   });
   if (result.body === null) return;
 
-  const { data: comment } = existing
-    ? await context.github.issues.updateComment({
-        owner: params.owner,
-        repo: params.repo,
-        comment_id: existing.id,
-        body: result.body,
-      })
-    : await context.github.issues.createComment({ ...params, body: result.body });
+  // Re-evaluations (cron sweeps, `/… update`) usually rebuild the identical
+  // body; rewriting it anyway would bump the comment's updated_at on every
+  // pass. Same below for the commit status, which is append-only on GitHub's
+  // side — every unconditional write stacks another status object.
+  const { data: comment } =
+    existing && existing.body === result.body
+      ? { data: existing }
+      : existing
+        ? await context.github.issues.updateComment({
+            owner: params.owner,
+            repo: params.repo,
+            comment_id: existing.id,
+            body: result.body,
+          })
+        : await context.github.issues.createComment({ ...params, body: result.body });
 
   if (context.target.kind !== "pull_request") return;
   const headSha = await context.target.headSha();
   if (!headSha) return;
 
+  // One listing serves both the idempotence check and the stale sweep.
+  // Fail open: if it errors, write the status unconditionally and skip the
+  // sweep — a listing hiccup must not sink the primary write.
+  const statuses = await context.github.repos
+    .listCommitStatusesForRef(context.repoParams({ ref: headSha, per_page: 100 }))
+    .then((res): CommitStatuses | null => res.data)
+    .catch((err) => {
+      log.warn("syncStatus: listing commit statuses failed", { error: String(err) });
+      return null;
+    });
+
   // Sweep stale status checks (best-effort; failures here shouldn't sink the
   // primary write below). The bot writes only the `ha-bot` aggregate going
   // forward — anything else we created on this commit is from an older deploy.
-  const sweep = sweepStaleStatusChecks(context, headSha).catch((err) => {
-    log.warn("sweepStaleStatusChecks failed", { error: String(err) });
-  });
-  await context.github.repos.createCommitStatus(
-    context.repoParams({
-      sha: headSha,
-      context: STATUS_CHECK_CONTEXT,
-      state: result.aggregate.state,
-      description: result.aggregate.description,
-      target_url: comment.html_url,
-    }),
-  );
+  const sweep = statuses
+    ? sweepStaleStatusChecks(context, headSha, statuses).catch((err) => {
+        log.warn("sweepStaleStatusChecks failed", { error: String(err) });
+      })
+    : Promise.resolve();
+
+  // Statuses are append-only: same-context writes pile up as separate objects
+  // and GitHub displays the newest one. The listing is newest-first, so `find`
+  // yields the entry currently shown — the one worth comparing against.
+  const latest = statuses?.find((s) => s.context === STATUS_CHECK_CONTEXT);
+  const statusUnchanged =
+    latest !== undefined &&
+    latest.state === result.aggregate.state &&
+    latest.description === result.aggregate.description &&
+    latest.target_url === comment.html_url;
+  if (!statusUnchanged) {
+    await context.github.repos.createCommitStatus(
+      context.repoParams({
+        sha: headSha,
+        context: STATUS_CHECK_CONTEXT,
+        state: result.aggregate.state,
+        description: result.aggregate.description,
+        target_url: comment.html_url,
+      }),
+    );
+  }
   if (result.aggregate.shouldDraft) {
     await draftPRIfNotDraft(context);
   }
@@ -130,10 +164,11 @@ export async function syncStatus(
  * `ha-bot` status is the bot's sole commit-status output. Any other context
  * we own on this commit is therefore from an older deploy.
  */
-async function sweepStaleStatusChecks(context: RuleContext, headSha: string): Promise<void> {
-  const { data: statuses } = await context.github.repos.listCommitStatusesForRef(
-    context.repoParams({ ref: headSha, per_page: 100 }),
-  );
+async function sweepStaleStatusChecks(
+  context: RuleContext,
+  headSha: string,
+  statuses: CommitStatuses,
+): Promise<void> {
   // Collapse to the latest status per context (API returns newest first).
   const latestByContext = new Map<string, (typeof statuses)[number]>();
   for (const s of statuses) {
