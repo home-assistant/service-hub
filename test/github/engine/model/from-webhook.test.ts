@@ -4,9 +4,9 @@ import type { RegistryConfig } from "../../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../../src/github/engine/event.js";
 import type { WebhookEventPayload } from "../../../../src/github/engine/model/from-webhook.js";
 import {
-  contextFromIssue,
-  contextFromPullRequest,
-  contextFromWebhook,
+  ruleContextFromIssue,
+  ruleContextFromPullRequest,
+  ruleContextFromWebhook,
 } from "../../../../src/github/engine/model/from-webhook.js";
 import type { GetIssueResponse } from "../../../../src/github/engine/model/issue.js";
 import { Issue } from "../../../../src/github/engine/model/issue.js";
@@ -54,12 +54,11 @@ function prPayload(overrides: Record<string, unknown> = {}) {
 describe("contextFromWebhook", () => {
   it("seeds a PR target fully from a pull_request payload — no hydration on read", async () => {
     const github = createMockGitHub();
-    const ctx = contextFromWebhook(
-      testEnv,
-      EMPTY_REGISTRY,
+    const ctx = ruleContextFromWebhook(
       asOctokit(github),
       prPayload(),
       EventType.PULL_REQUEST_OPENED,
+      testEnv, EMPTY_REGISTRY,
     );
 
     expect(ctx.repository).toBe("home-assistant/core");
@@ -82,12 +81,11 @@ describe("contextFromWebhook", () => {
   it("extracts the changed label on labeled/unlabeled events", () => {
     const github = createMockGitHub();
     const payload = prPayload({ action: "labeled", label: { name: "needs-docs" } });
-    const ctx = contextFromWebhook(
-      testEnv,
-      EMPTY_REGISTRY,
+    const ctx = ruleContextFromWebhook(
       asOctokit(github),
       payload,
       EventType.PULL_REQUEST_LABELED,
+      testEnv, EMPTY_REGISTRY,
     );
     expect(ctx.event).toEqual({ type: EventType.PULL_REQUEST_LABELED, label: "needs-docs" });
   });
@@ -96,13 +94,7 @@ describe("contextFromWebhook", () => {
     const github = createMockGitHub();
     const payload = prPayload({ action: "closed" });
     (payload as { pull_request: { merged: boolean } }).pull_request.merged = true;
-    const ctx = contextFromWebhook(
-      testEnv,
-      EMPTY_REGISTRY,
-      asOctokit(github),
-      payload,
-      EventType.PULL_REQUEST_CLOSED,
-    );
+    const ctx = ruleContextFromWebhook(asOctokit(github), payload, EventType.PULL_REQUEST_CLOSED, testEnv, EMPTY_REGISTRY);
     expect(ctx.event).toEqual({ type: EventType.PULL_REQUEST_CLOSED, merged: true });
   });
 
@@ -116,12 +108,11 @@ describe("contextFromWebhook", () => {
     });
     delete (payload as { pull_request: { merged?: boolean } }).pull_request.merged;
 
-    const ctx = contextFromWebhook(
-      testEnv,
-      EMPTY_REGISTRY,
+    const ctx = ruleContextFromWebhook(
       asOctokit(github),
       payload,
       EventType.PULL_REQUEST_REVIEW_SUBMITTED,
+      testEnv, EMPTY_REGISTRY,
     );
     expect(ctx.event).toEqual({
       type: EventType.PULL_REQUEST_REVIEW_SUBMITTED,
@@ -153,12 +144,11 @@ describe("contextFromWebhook", () => {
       },
     } as unknown as WebhookEventPayload;
 
-    const ctx = contextFromWebhook(
-      testEnv,
-      EMPTY_REGISTRY,
+    const ctx = ruleContextFromWebhook(
       asOctokit(github),
       payload,
       EventType.ISSUE_COMMENT_CREATED,
+      testEnv, EMPTY_REGISTRY,
     );
 
     expect(ctx.event).toEqual({
@@ -190,13 +180,7 @@ describe("contextFromWebhook", () => {
       },
     } as unknown as WebhookEventPayload;
 
-    const ctx = contextFromWebhook(
-      testEnv,
-      EMPTY_REGISTRY,
-      asOctokit(github),
-      payload,
-      EventType.ISSUES_OPENED,
-    );
+    const ctx = ruleContextFromWebhook(asOctokit(github), payload, EventType.ISSUES_OPENED, testEnv, EMPTY_REGISTRY);
 
     expect(ctx.target).toBeInstanceOf(Issue);
     const issue = ctx.target as Issue;
@@ -207,21 +191,19 @@ describe("contextFromWebhook", () => {
 
   it("flags Bot senders and the homeassistant account", () => {
     const github = createMockGitHub();
-    const bot = contextFromWebhook(
-      testEnv,
-      EMPTY_REGISTRY,
+    const bot = ruleContextFromWebhook(
       asOctokit(github),
       prPayload({ sender: { login: "dependabot[bot]", type: "Bot" } }),
       EventType.PULL_REQUEST_OPENED,
+      testEnv, EMPTY_REGISTRY,
     );
     expect(bot.senderIsBot).toBe(true);
 
-    const ha = contextFromWebhook(
-      testEnv,
-      EMPTY_REGISTRY,
+    const ha = ruleContextFromWebhook(
       asOctokit(github),
       prPayload({ sender: { login: "homeassistant", type: "User" } }),
       EventType.PULL_REQUEST_OPENED,
+      testEnv, EMPTY_REGISTRY,
     );
     expect(ha.senderIsBot).toBe(true);
   });
@@ -246,7 +228,7 @@ describe("contextFromPullRequest", () => {
       state: "closed",
     } as unknown as GetPullRequestResponse;
 
-    const ctx = contextFromPullRequest(testEnv, EMPTY_REGISTRY, asOctokit(github), pr);
+    const ctx = ruleContextFromPullRequest(asOctokit(github), pr, testEnv, EMPTY_REGISTRY);
 
     expect(ctx.event).toEqual({ type: EventType.ON_DEMAND });
     expect(ctx.repository).toBe("home-assistant/core");
@@ -269,10 +251,12 @@ describe("contextFromIssue", () => {
       state: "open",
     } as unknown as GetIssueResponse;
 
-    const ctx = contextFromIssue(testEnv, EMPTY_REGISTRY, asOctokit(github), issue, {
-      owner: "home-assistant",
-      repo: "core",
-    });
+    const ctx = ruleContextFromIssue(
+      asOctokit(github),
+      issue,
+      { owner: "home-assistant", repo: "core" },
+      testEnv, EMPTY_REGISTRY,
+    );
 
     expect(ctx.event).toEqual({ type: EventType.ISSUES_ON_DEMAND });
     expect(ctx.repository).toBe("home-assistant/core");

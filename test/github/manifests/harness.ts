@@ -5,7 +5,7 @@ import { dispatch, dispatchCommand, matchRules } from "../../../src/github/engin
 import { EventType } from "../../../src/github/engine/event.js";
 import {
   commandContextFromWebhook,
-  contextFromWebhook,
+  ruleContextFromWebhook,
   type WebhookEventPayload,
 } from "../../../src/github/engine/model/from-webhook.js";
 import type { RuleContext } from "../../../src/github/engine/rule-context.js";
@@ -329,7 +329,7 @@ export async function runScenario(scenario: Scenario): Promise<Effect[]> {
       effects = (await dispatchCommand(context)) ?? [];
     } else {
       effects = await dispatch(
-        contextFromWebhook(
+        ruleContextFromWebhook(
           testEnv,
           registryConfig,
           octokit,
@@ -440,7 +440,7 @@ async function assertLabelIndependence(
     const synthetic = syntheticLabelPayload(scenario, change, [...simulated]);
     if (!synthetic) continue;
 
-    const context = contextFromWebhook(
+    const context = ruleContextFromWebhook(
       testEnv,
       registryConfig,
       octokit,

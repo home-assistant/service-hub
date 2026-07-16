@@ -184,7 +184,7 @@ function senderFromLogin(login: string, isBotType: boolean) {
 }
 
 /** Build a RuleContext from a webhook delivery. */
-export function contextFromWebhook(
+export function ruleContextFromWebhook(
   env: Env,
   registry: RegistryConfig,
   github: Octokit,
@@ -247,7 +247,7 @@ export function commandContextFromWebhook(
  * The response carries no repository object, so the caller supplies owner
  * and repo; topics are unknown without an extra fetch and stay empty.
  */
-export function contextFromIssue(
+export function ruleContextFromIssue(
   env: Env,
   registry: RegistryConfig,
   github: Octokit,
@@ -277,7 +277,7 @@ export function contextFromIssue(
 }
 
 /** Build an ON_DEMAND RuleContext from a REST pulls.get response. */
-export function contextFromPullRequest(
+export function ruleContextFromPullRequest(
   env: Env,
   registry: RegistryConfig,
   github: Octokit,

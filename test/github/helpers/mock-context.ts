@@ -4,7 +4,7 @@ import type { Env } from "../../../src/env.js";
 import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
 import type { WebhookEventPayload } from "../../../src/github/engine/model/from-webhook.js";
-import { contextFromWebhook } from "../../../src/github/engine/model/from-webhook.js";
+import { ruleContextFromWebhook } from "../../../src/github/engine/model/from-webhook.js";
 import type { RuleContext } from "../../../src/github/engine/rule-context.js";
 import type { StatusSection } from "../../../src/github/engine/status/types.js";
 import type { Effect, Rule } from "../../../src/github/engine/types.js";
@@ -196,7 +196,7 @@ export function createMockContext(overrides: MockContextOverrides = {}): RuleCon
   const eventType = overrides.eventType ?? EventType.PULL_REQUEST_OPENED;
   const payload = createMockPayload(overrides.payload);
 
-  return contextFromWebhook(
+  return ruleContextFromWebhook(
     testEnv,
     overrides.registry ?? { repositories: {} },
     asOctokit(github),
@@ -210,7 +210,7 @@ export function createMockIssueContext(overrides: MockContextOverrides = {}): Ru
   const eventType = overrides.eventType ?? EventType.ISSUES_OPENED;
   const payload = createMockIssuePayload(overrides.payload);
 
-  return contextFromWebhook(
+  return ruleContextFromWebhook(
     testEnv,
     overrides.registry ?? { repositories: {} },
     asOctokit(github),

@@ -4,7 +4,7 @@ import { log } from "../../log.js";
 import type { ItemRef } from "../../util/item-ref.js";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
-import { contextFromIssue, contextFromPullRequest } from "./model/from-webhook.js";
+import { ruleContextFromIssue, ruleContextFromPullRequest } from "./model/from-webhook.js";
 import type { Effect } from "./types.js";
 
 export async function evaluatePR(
@@ -19,7 +19,7 @@ export async function evaluatePR(
     pull_number: ref.number,
   });
 
-  return dispatch(contextFromPullRequest(env, registry, github, pr));
+  return dispatch(ruleContextFromPullRequest(env, registry, github, pr));
 }
 
 export async function evaluateIssue(
@@ -41,7 +41,7 @@ export async function evaluateIssue(
   }
 
   return dispatch(
-    contextFromIssue(env, registry, github, issue, { owner: ref.owner, repo: ref.repo }),
+    ruleContextFromIssue(env, registry, github, issue, { owner: ref.owner, repo: ref.repo }),
   );
 }
 

@@ -8,7 +8,7 @@ import { evaluateRecentPRs } from "./engine/evaluate.js";
 import { EventType } from "./engine/event.js";
 import {
   commandContextFromWebhook,
-  contextFromWebhook,
+  ruleContextFromWebhook,
   type WebhookEventPayload,
 } from "./engine/model/from-webhook.js";
 import { registryConfig } from "./manifests/index.js";
@@ -65,7 +65,7 @@ export async function ghWebhookHandler(
     return new Response("OK");
   }
 
-  await dispatch(contextFromWebhook(env, registryConfig, octokit, payload, eventType));
+  await dispatch(ruleContextFromWebhook(env, registryConfig, octokit, payload, eventType));
 
   return new Response("OK");
 }

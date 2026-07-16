@@ -251,6 +251,8 @@ async function runMatchedRules(context: RuleContext): Promise<Effect[]> {
 }
 
 export async function dispatch(context: RuleContext): Promise<Effect[]> {
+
+  // TODO: This should be moved somewhere else I think.
   if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
     await maybeRedraftOnReady(context);
   }
