@@ -4,7 +4,6 @@ import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
 import type { Env } from "../env.js";
 import { isBotCommand } from "./engine/command-context.js";
 import { dispatch, dispatchCommand } from "./engine/dispatch.js";
-import { evaluateRecentPRs } from "./engine/evaluate.js";
 import { EventType } from "./engine/event.js";
 import {
   commandContextFromWebhook,
@@ -13,7 +12,6 @@ import {
 } from "./engine/model/from-webhook.js";
 import { registryConfig } from "./manifests/index.js";
 
-const CRON_LOOKBACK_OVERLAP_MIN = 2;
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
 
 export async function ghWebhookHandler(
@@ -68,17 +66,4 @@ export async function ghWebhookHandler(
   await dispatch(ruleContextFromWebhook(env, registryConfig, octokit, payload, eventType));
 
   return new Response("OK");
-}
-
-export async function ghScheduledHandler(
-  env: Env,
-  octokit: Octokit,
-  interval_min: number,
-): Promise<void> {
-  const since = new Date(Date.now() - (interval_min + CRON_LOOKBACK_OVERLAP_MIN) * 60 * 1000);
-  const repos = Object.keys(registryConfig.repositories);
-
-  await Promise.allSettled(
-    repos.map((repo) => evaluateRecentPRs(env, registryConfig, octokit, repo, since)),
-  );
 }

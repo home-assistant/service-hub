@@ -5,10 +5,8 @@ import * as Sentry from "@sentry/node";
 import { startDiscordGateway } from "./discord/engine/gateway.js";
 import { discordRegistry } from "./discord/manifests/index.js";
 import { loadEnv } from "./env.js";
-import { ghScheduledHandler, ghWebhookHandler } from "./github/app.js";
+import { ghWebhookHandler } from "./github/app.js";
 import { log } from "./log.js";
-
-const CRON_INTERVAL_MIN = 5;
 
 const env = loadEnv();
 
@@ -54,14 +52,6 @@ export const server = serve({
     }
   },
 });
-
-// unref: the HTTP server keeps the process alive; the cron alone should not.
-setInterval(
-  () => {
-    ghScheduledHandler(env, octokit, CRON_INTERVAL_MIN).catch((err) => log.exception(err));
-  },
-  CRON_INTERVAL_MIN * 60 * 1000,
-).unref();
 
 if (env.DISCORD_TOKEN) {
   startDiscordGateway(discordRegistry, {
