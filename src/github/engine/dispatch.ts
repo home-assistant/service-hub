@@ -17,7 +17,7 @@ export interface RegistryConfig {
 }
 
 export function matchRules(context: RuleContext): Rule[] {
-  const repoRules = context.registry.repositories[context.repository] ?? [];
+  const repoRules = context.registry.repositories[context.repo.fullName] ?? [];
 
   return repoRules.filter(
     (rule) =>
@@ -29,7 +29,7 @@ export function matchRules(context: RuleContext): Rule[] {
 /** Collect every statusSection ID claimed by some rule in this repo's registry. */
 function collectKnownStatusSectionIds(context: RuleContext): Set<string> {
   const ids = new Set<string>();
-  const rules = context.registry.repositories[context.repository] ?? [];
+  const rules = context.registry.repositories[context.repo.fullName] ?? [];
   for (const rule of rules) {
     if (rule.statusSections) for (const { id } of rule.statusSections) ids.add(id);
   }
@@ -141,7 +141,7 @@ async function applyEffects(
     for (const label of removeLabels) {
       if (labels.has(label)) {
         log.warn("applyEffects: label added and removed in the same dispatch; add wins", {
-          repository: context.repository,
+          repository: context.repo.fullName,
           number: context.number,
           label,
         });
@@ -244,7 +244,7 @@ async function runMatchedRules(context: RuleContext): Promise<Effect[]> {
     if (outcome.status === "rejected") {
       log.exception(outcome.reason, {
         rule: matched[i].name,
-        repository: context.repository,
+        repository: context.repo.fullName,
         number: context.number,
       });
     } else if (outcome.value) {
@@ -336,7 +336,7 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
 
   if (context.invocations.length === 0) {
     log.info("command rejected", {
-      repository: context.repository,
+      repository: context.repo.fullName,
       number: context.number,
       sender: context.sender.login,
       reason: "unparseable invocation",
@@ -351,11 +351,11 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
 
   for (const invocation of context.invocations) {
     const invocationContext = context.withInvocation(invocation);
-    const command = findCommand(registryConfig, context.repository, invocation.name);
+    const command = findCommand(registryConfig, context.repo.fullName, invocation.name);
     const rejection = await commandRejection(command, invocationContext);
     if (rejection || !command) {
       log.info("command rejected", {
-        repository: context.repository,
+        repository: context.repo.fullName,
         number: context.number,
         command: invocation.name,
         sender: context.sender.login,
@@ -366,7 +366,7 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
     }
 
     log.info("command", {
-      repository: context.repository,
+      repository: context.repo.fullName,
       number: context.number,
       command: command.name,
       sender: context.sender.login,
@@ -378,7 +378,7 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
       anyRan = true;
     } catch (err) {
       log.error("command failed", {
-        repository: context.repository,
+        repository: context.repo.fullName,
         number: context.number,
         command: command.name,
         error: String(err),

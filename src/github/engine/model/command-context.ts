@@ -5,8 +5,6 @@ import { log } from "../../../log.js";
 import type { RegistryConfig } from "../dispatch.js";
 import { EventType } from "../event.js";
 import { matchCodeOwners, parseCodeOwners } from "./codeowners.js";
-import { Org } from "./organization.js";
-import { Repo } from "./repository.js";
 import {
   RuleContext,
   type RuleContextParams,
@@ -99,6 +97,7 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
       ...this.params,
       invocations: this.invocations,
       command: invocation,
+      reads: this.reads,
     });
     return derived;
   }
@@ -125,15 +124,15 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
           .map((label) => label.slice(INTEGRATION_LABEL_PREFIX.length));
     if (domains.length !== 1) return false;
 
-    const integrationPath = this.registry.integrationPaths?.[this.repository];
+    const integrationPath = this.registry.integrationPaths?.[this.repo.fullName];
     if (!integrationPath) return false;
 
     let content: string | null;
     try {
-      content = await this.repo.codeownersContent();
+      content = await this.codeownersContent();
     } catch (err) {
       log.warn("senderIsCodeOwner: CODEOWNERS fetch failed", {
-        repository: this.repository,
+        repository: this.repo.fullName,
         error: String(err),
       });
       return false;
@@ -142,7 +141,7 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
 
     const match = matchCodeOwners(integrationPath(domains[0]), parseCodeOwners(content));
     if (!match) return false;
-    const owners = await this.org.expandTeams(match.owners);
+    const owners = await this.expandTeams(match.owners);
     return owners.includes(this.sender.login.toLowerCase());
   }
 
@@ -153,7 +152,7 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
    */
   async senderIsMember(): Promise<boolean> {
     if (this.senderAssociation === "MEMBER") return true;
-    return this.org.hasMember(this.sender.login);
+    return this.hasMember(this.sender.login);
   }
 }
 
@@ -164,12 +163,12 @@ export function commandContextFromWebhook(
   github: Octokit,
   payload: IssueCommentCreatedEvent,
 ): CommandContext {
-  const repo = new Repo(github, {
+  const repo = {
     owner: payload.repository.owner.login,
     name: payload.repository.name,
     fullName: payload.repository.full_name,
-    topics: (payload.repository as { topics?: string[] }).topics,
-  });
+    topics: (payload.repository as { topics?: string[] }).topics ?? [],
+  };
 
   return new CommandContext({
     env,
@@ -183,7 +182,7 @@ export function commandContextFromWebhook(
     sender: senderFromLogin(payload.sender?.login ?? "", payload.sender?.type === "Bot"),
     senderAssociation: payload.comment?.author_association,
     repo,
-    org: new Org(github, repo.owner),
+    org: { name: repo.owner },
     target: targetFromPayload(github, payload, repo),
     invocations: parseCommands(payload.comment?.body ?? "", env.COMMAND_SLUG),
   });

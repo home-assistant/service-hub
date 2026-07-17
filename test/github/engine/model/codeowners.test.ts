@@ -1,8 +1,18 @@
+import type { Octokit } from "@octokit/rest";
 import { describe, expect, it } from "vitest";
 import {
+  createCodeownersReads,
   matchCodeOwners,
   parseCodeOwners,
+  readCodeowners,
 } from "../../../../src/github/engine/model/codeowners.js";
+import { createMockGitHub, type MockGitHub } from "../../helpers/mock-context.js";
+
+const REPO = { owner: "home-assistant", name: "core", fullName: "home-assistant/core" };
+
+function asOctokit(mock: MockGitHub): Octokit {
+  return mock as unknown as Octokit;
+}
 
 describe("parseCodeOwners", () => {
   it("parses a simple CODEOWNERS file", () => {
@@ -117,5 +127,37 @@ homeassistant/components/hue/* @specific
 
     // Does not match unrelated paths.
     expect(matchCodeOwners("homeassistant/components/hue/light.py", parsed)).toBeUndefined();
+  });
+});
+
+describe("readCodeowners", () => {
+  it("fetches, decodes, and caches CODEOWNERS content", async () => {
+    const github = createMockGitHub();
+    github.repos.getContent.mockResolvedValue({
+      data: { content: btoa("homeassistant/components/hue/* @balloob") },
+    });
+    const reads = createCodeownersReads();
+
+    expect(await readCodeowners(asOctokit(github), REPO, reads)).toContain("@balloob");
+    await readCodeowners(asOctokit(github), REPO, reads);
+    expect(github.repos.getContent).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns null when CODEOWNERS is missing", async () => {
+    const github = createMockGitHub();
+    github.repos.getContent.mockRejectedValue(
+      Object.assign(new Error("Not Found"), { status: 404 }),
+    );
+    expect(await readCodeowners(asOctokit(github), REPO, createCodeownersReads())).toBeNull();
+  });
+
+  it("propagates non-404 CODEOWNERS fetch failures", async () => {
+    const github = createMockGitHub();
+    github.repos.getContent.mockRejectedValue(
+      Object.assign(new Error("rate limited"), { status: 403 }),
+    );
+    await expect(readCodeowners(asOctokit(github), REPO, createCodeownersReads())).rejects.toThrow(
+      "rate limited",
+    );
   });
 });

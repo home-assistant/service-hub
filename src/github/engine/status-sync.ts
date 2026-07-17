@@ -76,7 +76,7 @@ export async function syncStatus(
   const result = buildStatus({
     target: {
       kind: context.target.kind,
-      repoFullName: context.repository,
+      repoFullName: context.repo.fullName,
       author: await context.target.authorLogin(),
     },
     newSections: changes.sections,

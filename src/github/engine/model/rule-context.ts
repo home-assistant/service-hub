@@ -17,10 +17,26 @@ import type { Env } from "../../../env.js";
 import type { RegistryConfig } from "../dispatch.js";
 import { EventType, type RuleEvent, type RuleEventOf } from "../event.js";
 import type { Command } from "../types.js";
+import { type CodeownersReads, createCodeownersReads, readCodeowners } from "./codeowners.js";
 import { type GetIssueResponse, Issue, type IssueSeed } from "./issue.js";
-import { Org } from "./organization.js";
+import {
+  createOrgReads,
+  expandTeamRefs,
+  isOrgMember,
+  type OrgReads,
+  readTeamMembers,
+} from "./org-membership.js";
 import { type GetPullRequestResponse, PullRequest, type PullRequestSeed } from "./pull-request.js";
-import { Repo } from "./repository.js";
+
+/**
+ * Per-dispatch read caches, one holder per read module. Kept on the context so
+ * a dispatch and its withInvocation derivatives share the same in-flight
+ * fetches across a comment. The long-lived content caches live in those modules.
+ */
+interface ContextReads {
+  codeowners: CodeownersReads;
+  org: OrgReads;
+}
 
 export interface Sender {
   login: string;
@@ -57,16 +73,20 @@ export interface RuleContextParams<E extends EventType> {
   github: Octokit;
   event: RuleEventOf<E>;
   sender: Sender;
-  repo: Repo;
-  org: Org;
+  /** Repository identity — plain data, no behavior. */
+  repo: { owner: string; name: string; fullName: string; topics: string[] };
+  /** Organization identity — plain data, no behavior. */
+  org: { name: string };
   target: TargetFor<E>;
+  /** Internal: shared read caches, threaded through withInvocation. */
+  reads?: ContextReads;
 }
 
 /**
  * What a rule handler receives: the event descriptor (what happened), the
- * target entity (lazily-hydrated state), and the repo/org read-models.
- * Replaces raw webhook payload access — only the adapters below know payload
- * shapes.
+ * target entity (lazily-hydrated state), and the repo/org identity. Reads that
+ * need the GitHub API (CODEOWNERS, org/team membership) are methods here; rules
+ * never touch the raw client, and only the adapters below know payload shapes.
  */
 export class RuleContext<E extends EventType = EventType> {
   readonly env: Env;
@@ -74,9 +94,10 @@ export class RuleContext<E extends EventType = EventType> {
   readonly github: Octokit;
   readonly event: RuleEventOf<E>;
   readonly sender: Sender;
-  readonly repo: Repo;
-  readonly org: Org;
+  readonly repo: RuleContextParams<E>["repo"];
+  readonly org: RuleContextParams<E>["org"];
   readonly target: TargetFor<E>;
+  protected readonly reads: ContextReads;
 
   constructor(params: RuleContextParams<E>) {
     this.env = params.env;
@@ -87,20 +108,11 @@ export class RuleContext<E extends EventType = EventType> {
     this.repo = params.repo;
     this.org = params.org;
     this.target = params.target;
+    this.reads = params.reads ?? { codeowners: createCodeownersReads(), org: createOrgReads() };
   }
 
   get eventType(): E {
     return this.event.type as E;
-  }
-
-  /** Full `owner/repo` slug of the event's repository. */
-  get repository(): string {
-    return this.repo.fullName;
-  }
-
-  /** The repository's owner (GitHub org or user). */
-  get organization(): string {
-    return this.repo.organization;
   }
 
   get senderIsBot(): boolean {
@@ -118,7 +130,7 @@ export class RuleContext<E extends EventType = EventType> {
 
   /** The repo's registered comment commands, for rendering command help. */
   get commands(): readonly Command[] {
-    return this.registry.commands?.[this.repository] ?? [];
+    return this.registry.commands?.[this.repo.fullName] ?? [];
   }
 
   repoParams<T extends Record<string, unknown> = Record<string, never>>(
@@ -148,6 +160,28 @@ export class RuleContext<E extends EventType = EventType> {
       owner: string;
       repo: string;
     } & T;
+  }
+
+  // --- Reads (glue over the codeowners / org-membership modules) ---
+
+  /** Raw CODEOWNERS content at HEAD, or null if the repo has none. */
+  codeownersContent(): Promise<string | null> {
+    return readCodeowners(this.github, this.repo, this.reads.codeowners);
+  }
+
+  /** Whether the login is an organization member; false on any failure. */
+  hasMember(login: string): Promise<boolean> {
+    return isOrgMember(this.github, this.org.name, login, this.reads.org);
+  }
+
+  /** Lowercased member logins of a team; empty on fetch failure. */
+  teamMembers(teamSlug: string): Promise<string[]> {
+    return readTeamMembers(this.github, this.org.name, teamSlug, this.reads.org);
+  }
+
+  /** Expand a CODEOWNERS owner list (users and `@org/team` refs) into logins. */
+  expandTeams(usersAndTeams: string[]): Promise<string[]> {
+    return expandTeamRefs(this.github, this.org.name, usersAndTeams, this.reads.org);
   }
 }
 
@@ -285,7 +319,7 @@ function eventFromPayload(payload: WebhookEventPayload, eventType: EventType): R
 export function targetFromPayload(
   github: Octokit,
   payload: WebhookEventPayload,
-  repo: Repo,
+  repo: { owner: string; name: string },
 ): PullRequest | Issue {
   const p = payload as { pull_request?: PullRequestLike; issue?: IssueLike };
 
@@ -313,6 +347,15 @@ export function senderFromLogin(login: string, isBotType: boolean): Sender {
   return { login, isBot: isBotType || login === "homeassistant" };
 }
 
+function repoFromPayload(payload: WebhookEventPayload): RuleContextParams<EventType>["repo"] {
+  return {
+    owner: payload.repository.owner.login,
+    name: payload.repository.name,
+    fullName: payload.repository.full_name,
+    topics: (payload.repository as { topics?: string[] }).topics ?? [],
+  };
+}
+
 /** Build a RuleContext from a webhook delivery. */
 export function ruleContextFromWebhook(
   env: Env,
@@ -321,12 +364,7 @@ export function ruleContextFromWebhook(
   payload: WebhookEventPayload,
   eventType: EventType,
 ): RuleContext {
-  const repo = new Repo(github, {
-    owner: payload.repository.owner.login,
-    name: payload.repository.name,
-    fullName: payload.repository.full_name,
-    topics: (payload.repository as { topics?: string[] }).topics,
-  });
+  const repo = repoFromPayload(payload);
 
   return new RuleContext({
     env,
@@ -335,7 +373,7 @@ export function ruleContextFromWebhook(
     event: eventFromPayload(payload, eventType),
     sender: senderFromLogin(payload.sender?.login ?? "", payload.sender?.type === "Bot"),
     repo,
-    org: new Org(github, repo.owner),
+    org: { name: repo.owner },
     target: targetFromPayload(github, payload, repo),
   });
 }
@@ -352,20 +390,19 @@ export function ruleContextFromIssue(
   issue: GetIssueResponse,
   repoRef: { owner: string; repo: string },
 ): RuleContext<EventType.ISSUES_ON_DEMAND> {
-  const repo = new Repo(github, {
-    owner: repoRef.owner,
-    name: repoRef.repo,
-    fullName: `${repoRef.owner}/${repoRef.repo}`,
-  });
-
   return new RuleContext<EventType.ISSUES_ON_DEMAND>({
     env,
     registry,
     github,
     event: { type: EventType.ISSUES_ON_DEMAND },
     sender: senderFromLogin(issue.user?.login ?? "", issue.user?.type === "Bot"),
-    repo,
-    org: new Org(github, repo.owner),
+    repo: {
+      owner: repoRef.owner,
+      name: repoRef.repo,
+      fullName: `${repoRef.owner}/${repoRef.repo}`,
+      topics: [],
+    },
+    org: { name: repoRef.owner },
     target: new Issue(
       github,
       { owner: repoRef.owner, repo: repoRef.repo, number: issue.number },
@@ -382,12 +419,12 @@ export function ruleContextFromPullRequest(
   pr: GetPullRequestResponse,
 ): RuleContext<EventType.ON_DEMAND> {
   const repoData = pr.base.repo;
-  const repo = new Repo(github, {
+  const repo = {
     owner: repoData.owner.login,
     name: repoData.name,
     fullName: repoData.full_name,
     topics: repoData.topics ?? [],
-  });
+  };
 
   return new RuleContext<EventType.ON_DEMAND>({
     env,
@@ -396,7 +433,7 @@ export function ruleContextFromPullRequest(
     event: { type: EventType.ON_DEMAND },
     sender: senderFromLogin(pr.user?.login ?? "", pr.user?.type === "Bot"),
     repo,
-    org: new Org(github, repo.owner),
+    org: { name: repo.owner },
     target: new PullRequest(
       github,
       { owner: repo.owner, repo: repo.name, number: pr.number },

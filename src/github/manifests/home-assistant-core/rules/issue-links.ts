@@ -19,8 +19,8 @@ async function evaluate(
   const lines = domains.map(
     (d) =>
       `- \`${d}\`: [documentation](https://www.home-assistant.io/integrations/${d}) · ` +
-      `[source](https://github.com/${ctx.repository}/tree/dev/homeassistant/components/${d}) · ` +
-      `[known issues](https://github.com/${ctx.repository}/issues?q=label%3A%22integration%3A%20${encodeURIComponent(d)}%22)`,
+      `[source](https://github.com/${ctx.repo.fullName}/tree/dev/homeassistant/components/${d}) · ` +
+      `[known issues](https://github.com/${ctx.repo.fullName}/issues?q=label%3A%22integration%3A%20${encodeURIComponent(d)}%22)`,
   );
   return { status: "info", message: lines.join("\n") };
 }

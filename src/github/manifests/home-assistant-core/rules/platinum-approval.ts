@@ -45,7 +45,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome | 
     return { status: "skip", message: `Integration \`${domain}\` has no code owners listed.` };
   }
 
-  const expandedOwners = await ctx.org.expandTeams(manifest.codeowners);
+  const expandedOwners = await ctx.expandTeams(manifest.codeowners);
   const authorLogin = (await ctx.target.authorLogin()).toLowerCase();
   if (expandedOwners.includes(authorLogin)) {
     return { status: "pass", message: "Authored by a code owner." };

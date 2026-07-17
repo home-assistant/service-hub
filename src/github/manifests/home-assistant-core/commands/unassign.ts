@@ -15,7 +15,7 @@ export const unassign: Command = {
     if (context.args.length !== 1) throw new Error('usage: unassign "<domain>"');
     const domain = context.args[0];
     const manifest = await fetchIntegrationManifest(domain);
-    const owners = await context.org.expandTeams(manifest?.codeowners ?? []);
+    const owners = await context.expandTeams(manifest?.codeowners ?? []);
     if (!owners.includes(context.sender.login.toLowerCase())) {
       throw new Error(`${context.sender.login} is not a code owner of "${domain}"`);
     }

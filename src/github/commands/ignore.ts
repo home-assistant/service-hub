@@ -6,7 +6,7 @@ import type { Command, Effect } from "../engine/types.js";
  * the title against the registry's section claims.
  */
 function resolveSectionId(context: CommandContext, title: string): string {
-  const claims = (context.registry.repositories[context.repository] ?? []).flatMap(
+  const claims = (context.registry.repositories[context.repo.fullName] ?? []).flatMap(
     (rule) => rule.statusSections ?? [],
   );
   const claim = claims.find((c) => c.title.toLowerCase() === title.trim().toLowerCase());

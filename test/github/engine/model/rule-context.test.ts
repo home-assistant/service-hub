@@ -62,8 +62,8 @@ describe("contextFromWebhook", () => {
       EventType.PULL_REQUEST_OPENED,
     );
 
-    expect(ctx.repository).toBe("home-assistant/core");
-    expect(ctx.organization).toBe("home-assistant");
+    expect(ctx.repo.fullName).toBe("home-assistant/core");
+    expect(ctx.org.name).toBe("home-assistant");
     expect(ctx.repo.topics).toEqual(["hacktoberfest"]);
     expect(ctx.sender).toEqual({ login: "testuser", isBot: false });
     expect(ctx.event).toEqual({ type: EventType.PULL_REQUEST_OPENED });
@@ -249,7 +249,7 @@ describe("contextFromPullRequest", () => {
     const ctx = ruleContextFromPullRequest(testEnv, EMPTY_REGISTRY, asOctokit(github), pr);
 
     expect(ctx.event).toEqual({ type: EventType.ON_DEMAND });
-    expect(ctx.repository).toBe("home-assistant/core");
+    expect(ctx.repo.fullName).toBe("home-assistant/core");
     const target = ctx.target as PullRequest;
     expect(await target.merged()).toBe(true);
     expect(await target.state()).toBe("closed");
@@ -275,7 +275,7 @@ describe("contextFromIssue", () => {
     });
 
     expect(ctx.event).toEqual({ type: EventType.ISSUES_ON_DEMAND });
-    expect(ctx.repository).toBe("home-assistant/core");
+    expect(ctx.repo.fullName).toBe("home-assistant/core");
     expect(ctx.sender).toEqual({ login: "reporter", isBot: false });
     expect(ctx.target).toBeInstanceOf(Issue);
 

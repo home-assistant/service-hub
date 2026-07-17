@@ -57,7 +57,7 @@ function processIntegration(
   if (!match) return [];
 
   const owners = match.owners.map((o) => o.substring(1).toLowerCase());
-  const codeownersLine = `https://github.com/${ctx.repository}/blob/HEAD/CODEOWNERS#L${match.line}`;
+  const codeownersLine = `https://github.com/${ctx.repo.fullName}/blob/HEAD/CODEOWNERS#L${match.line}`;
 
   const ownersMinusAuthor = owners.filter((usr) => usr !== authorLogin);
 
@@ -98,9 +98,9 @@ export function mentionCodeOwners(config: {
 
     // The rule is only registered on repos that have a CODEOWNERS file, so a
     // missing one is a misconfiguration — surface it instead of no-opping.
-    const codeownersContent = await ctx.repo.codeownersContent();
+    const codeownersContent = await ctx.codeownersContent();
     if (!codeownersContent) {
-      throw new Error(`No CODEOWNERS file in ${ctx.repository}`);
+      throw new Error(`No CODEOWNERS file in ${ctx.repo.fullName}`);
     }
 
     const comments = await ctx.target.issueComments();

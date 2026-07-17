@@ -28,9 +28,9 @@ export function byCodeOwner(config: {
 
     // The rule is only registered on repos that have a CODEOWNERS file, so a
     // missing one is a misconfiguration — surface it instead of no-opping.
-    const codeownersContent = await ctx.repo.codeownersContent();
+    const codeownersContent = await ctx.codeownersContent();
     if (!codeownersContent) {
-      throw new Error(`No CODEOWNERS file in ${ctx.repository}`);
+      throw new Error(`No CODEOWNERS file in ${ctx.repo.fullName}`);
     }
 
     const entries = parseCodeOwners(codeownersContent);
@@ -40,7 +40,7 @@ export function byCodeOwner(config: {
       const match = matchCodeOwners(config.pathPattern(integrationName), entries);
       if (!match) continue;
       const owners = match.owners.map((o) => o.substring(1).toLowerCase());
-      if ((await ctx.org.expandTeams(owners)).includes(authorLogin)) {
+      if ((await ctx.expandTeams(owners)).includes(authorLogin)) {
         return [{ type: "addLabels", labels: ["by-code-owner"] }];
       }
     }

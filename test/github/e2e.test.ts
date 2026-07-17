@@ -161,7 +161,7 @@ describe("e2e: bot commands", () => {
 
     expect(res.status).toBe(200);
     const context = handle.mock.calls[0][0] as CommandContext;
-    expect(context.repository).toBe("home-assistant/core");
+    expect(context.repo.fullName).toBe("home-assistant/core");
     expect(context.number).toBe(1);
     expect(context.target.kind).toBe("pull_request");
     expect(harness.github.issues.update).toHaveBeenCalledWith(
