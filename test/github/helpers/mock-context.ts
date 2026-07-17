@@ -119,6 +119,7 @@ export function createMockIssuePayload(overrides: Record<string, unknown> = {}) 
       user: { login: "testuser" },
       assignees: [] as { login: string }[],
       labels: [] as { name: string }[],
+      state: "open",
       ...(issueOverride as Record<string, unknown>),
     },
     ...restOverrides,

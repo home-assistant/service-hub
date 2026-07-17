@@ -93,6 +93,9 @@ export function mentionCodeOwners(config: {
   itemLabel?: string;
 }): Rule {
   async function handle(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+    // Never mention or assign on closed items — label events and ON_DEMAND fire on them too.
+    if ((await ctx.target.state()) !== "open") return;
+
     const integrationNames = await config.domains(ctx);
     if (integrationNames.length === 0) return;
 

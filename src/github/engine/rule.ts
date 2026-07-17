@@ -27,14 +27,21 @@ export interface CheckOutcome {
 }
 
 export interface CheckConfig<E extends EventType> {
-  /** Status section ID; also the rule name unless `name` overrides it. */
+  /** Status section ID; doubles as the rule name. */
   id: string;
   title: string;
   description: string;
   events: readonly E[];
   evaluate: (ctx: RuleContext<E>) => Promise<CheckOutcome | "clear" | undefined>;
-  name?: string;
   allowBots?: boolean;
+  /**
+   * Target state this check runs in. Outside it, `evaluate` isn't called and
+   * nothing is emitted and the dashboard keeps its last rows. Defaults to
+   * "open": label/edit events and ON_DEMAND also fire on closed/merged
+   * targets, and a check must not fail, draft, or re-status those. "always"
+   * hands state handling to `evaluate` itself.
+   */
+  runOn?: "open" | "closed" | "always";
 }
 
 /**
@@ -46,7 +53,10 @@ export interface CheckConfig<E extends EventType> {
  * section described no longer exists).
  */
 export function check<E extends EventType>(config: CheckConfig<E>): Rule {
+  const runOn = config.runOn ?? "open";
   const handler: EventHandler<E> = async (ctx) => {
+    if (runOn !== "always" && (await ctx.target.state()) !== runOn) return undefined;
+
     const outcome = await config.evaluate(ctx);
     if (!outcome) return undefined;
     if (outcome === "clear") return [{ type: "removeStatusSection", id: config.id }];
@@ -60,7 +70,7 @@ export function check<E extends EventType>(config: CheckConfig<E>): Rule {
   };
 
   return {
-    name: config.name ?? config.id,
+    name: config.id,
     description: config.description,
     allowBots: config.allowBots,
     statusSections: [{ id: config.id, title: config.title }],

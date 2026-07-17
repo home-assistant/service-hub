@@ -13,6 +13,9 @@ export function blockingLabels(
   config: Record<string, { message: string; success?: string }>,
 ): Rule {
   async function buildEffects(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+    // Leave closed/merged PRs untouched — label events and ON_DEMAND fire on them too.
+    if ((await ctx.target.state()) !== "open") return;
+
     const currentLabels = new Set(await ctx.target.labels());
 
     // On labeled/unlabeled, only the affected label's status can change.
