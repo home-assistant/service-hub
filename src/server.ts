@@ -6,6 +6,7 @@ import { startDiscordGateway } from "./discord/engine/gateway.js";
 import { discordRegistry } from "./discord/manifests/index.js";
 import { loadEnv } from "./env.js";
 import { ghWebhookHandler } from "./github/app.js";
+import { trackGithubQuota } from "./github/quota-metrics.js";
 import { log } from "./log.js";
 
 const env = loadEnv();
@@ -13,7 +14,7 @@ const env = loadEnv();
 Sentry.init({
   dsn: env.SENTRY_DSN,
   environment: env.ENVIRONMENT,
-  tracesSampleRate: 1.0,
+  // tracesSampleRate: 1.0,
   enableLogs: true,
 });
 
@@ -25,6 +26,8 @@ const octokit = new Octokit({
     privateKey: env.GITHUB_PRIVATE_KEY,
   },
 });
+
+trackGithubQuota(octokit);
 
 function routes(request: Request): Response | Promise<Response> {
   const url = new URL(request.url);
