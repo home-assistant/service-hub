@@ -4,7 +4,7 @@ import { log } from "../../log.js";
 import type { ItemRef } from "../../util/item-ref.js";
 import type { RegistryConfig } from "./dispatch.js";
 import { dispatch } from "./dispatch.js";
-import { ruleContextFromIssue, ruleContextFromPullRequest } from "./model/from-webhook.js";
+import { ruleContextFromIssue, ruleContextFromPullRequest } from "./model/rule-context.js";
 import type { Effect } from "./types.js";
 
 export async function evaluatePR(

@@ -1,7 +1,18 @@
+import type { Octokit } from "@octokit/rest";
+import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
+import type { Env } from "../../../env.js";
 import { log } from "../../../log.js";
-import type { EventType } from "../event.js";
+import type { RegistryConfig } from "../dispatch.js";
+import { EventType } from "../event.js";
 import { matchCodeOwners, parseCodeOwners } from "./codeowners.js";
-import { RuleContext, type RuleContextParams } from "./rule-context.js";
+import { Org } from "./organization.js";
+import { Repo } from "./repository.js";
+import {
+  RuleContext,
+  type RuleContextParams,
+  senderFromLogin,
+  targetFromPayload,
+} from "./rule-context.js";
 
 const INTEGRATION_LABEL_PREFIX = "integration: ";
 
@@ -144,4 +155,36 @@ export class CommandContext extends RuleContext<EventType.ISSUE_COMMENT_CREATED>
     if (this.senderAssociation === "MEMBER") return true;
     return this.org.hasMember(this.sender.login);
   }
+}
+
+/** Build a CommandContext from an issue_comment.created delivery. */
+export function commandContextFromWebhook(
+  env: Env,
+  registry: RegistryConfig,
+  github: Octokit,
+  payload: IssueCommentCreatedEvent,
+): CommandContext {
+  const repo = new Repo(github, {
+    owner: payload.repository.owner.login,
+    name: payload.repository.name,
+    fullName: payload.repository.full_name,
+    topics: (payload.repository as { topics?: string[] }).topics,
+  });
+
+  return new CommandContext({
+    env,
+    registry,
+    github,
+    event: {
+      type: EventType.ISSUE_COMMENT_CREATED,
+      commentId: payload.comment?.id ?? 0,
+      commentBody: payload.comment?.body ?? "",
+    },
+    sender: senderFromLogin(payload.sender?.login ?? "", payload.sender?.type === "Bot"),
+    senderAssociation: payload.comment?.author_association,
+    repo,
+    org: new Org(github, repo.owner),
+    target: targetFromPayload(github, payload, repo),
+    invocations: parseCommands(payload.comment?.body ?? "", env.COMMAND_SLUG),
+  });
 }

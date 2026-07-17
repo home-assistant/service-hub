@@ -4,12 +4,8 @@ import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
 import type { Env } from "../env.js";
 import { dispatch, dispatchCommand } from "./engine/dispatch.js";
 import { EventType } from "./engine/event.js";
-import { isBotCommand } from "./engine/model/command-context.js";
-import {
-  commandContextFromWebhook,
-  ruleContextFromWebhook,
-  type WebhookEventPayload,
-} from "./engine/model/from-webhook.js";
+import { commandContextFromWebhook, isBotCommand } from "./engine/model/command-context.js";
+import { ruleContextFromWebhook, type WebhookEventPayload } from "./engine/model/rule-context.js";
 import { registryConfig } from "./manifests/index.js";
 
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));

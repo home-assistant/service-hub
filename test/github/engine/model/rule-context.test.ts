@@ -2,16 +2,16 @@ import type { Octokit } from "@octokit/rest";
 import { describe, expect, it } from "vitest";
 import type { RegistryConfig } from "../../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../../src/github/engine/event.js";
-import type { WebhookEventPayload } from "../../../../src/github/engine/model/from-webhook.js";
-import {
-  ruleContextFromIssue,
-  ruleContextFromPullRequest,
-  ruleContextFromWebhook,
-} from "../../../../src/github/engine/model/from-webhook.js";
 import type { GetIssueResponse } from "../../../../src/github/engine/model/issue.js";
 import { Issue } from "../../../../src/github/engine/model/issue.js";
 import type { GetPullRequestResponse } from "../../../../src/github/engine/model/pull-request.js";
 import { PullRequest } from "../../../../src/github/engine/model/pull-request.js";
+import type { WebhookEventPayload } from "../../../../src/github/engine/model/rule-context.js";
+import {
+  ruleContextFromIssue,
+  ruleContextFromPullRequest,
+  ruleContextFromWebhook,
+} from "../../../../src/github/engine/model/rule-context.js";
 import { createMockGitHub, type MockGitHub, testEnv } from "../../helpers/mock-context.js";
 
 const EMPTY_REGISTRY: RegistryConfig = { repositories: {} };
