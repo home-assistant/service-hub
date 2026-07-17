@@ -2,9 +2,9 @@ import type { Octokit } from "@octokit/rest";
 import { verify } from "@octokit/webhooks-methods";
 import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
 import type { Env } from "../env.js";
-import { isBotCommand } from "./engine/command-context.js";
 import { dispatch, dispatchCommand } from "./engine/dispatch.js";
 import { EventType } from "./engine/event.js";
+import { isBotCommand } from "./engine/model/command-context.js";
 import {
   commandContextFromWebhook,
   ruleContextFromWebhook,

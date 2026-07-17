@@ -1,6 +1,6 @@
-import { log } from "../../log.js";
-import type { EventType } from "./event.js";
-import { matchCodeOwners, parseCodeOwners } from "./model/codeowners.js";
+import { log } from "../../../log.js";
+import type { EventType } from "../event.js";
+import { matchCodeOwners, parseCodeOwners } from "./codeowners.js";
 import { RuleContext, type RuleContextParams } from "./rule-context.js";
 
 const INTEGRATION_LABEL_PREFIX = "integration: ";

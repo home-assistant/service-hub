@@ -1,6 +1,6 @@
 import type { Octokit } from "@octokit/rest";
 import { log } from "../../log.js";
-import type { RuleContext } from "./rule-context.js";
+import type { RuleContext } from "./model/rule-context.js";
 
 async function convertPullRequestToDraft(github: Octokit, nodeId: string): Promise<void> {
   await github.graphql(

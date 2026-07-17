@@ -1,8 +1,8 @@
 import { log } from "../../log.js";
-import type { CommandContext } from "./command-context.js";
 import { EventType } from "./event.js";
+import type { CommandContext } from "./model/command-context.js";
+import type { RuleContext } from "./model/rule-context.js";
 import { draftPRIfNotDraft, readyPRIfDraft } from "./pr-state.js";
-import type { RuleContext } from "./rule-context.js";
 import { hasFailingSections } from "./status/build.js";
 import type { SectionOverride, StatusSection } from "./status/types.js";
 import { ensureStatusCommentExists, findStatusComment, syncStatus } from "./status-sync.js";

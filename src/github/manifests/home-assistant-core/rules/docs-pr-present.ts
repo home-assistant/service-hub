@@ -1,8 +1,8 @@
 import { type ItemRef, slugOf } from "../../../../util/item-ref.js";
 import { extractAllLinks } from "../../../../util/pr-body.js";
 import { EventType } from "../../../engine/event.js";
+import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { type CheckOutcome, check } from "../../../engine/rule.js";
-import type { RuleContext } from "../../../engine/rule-context.js";
 import { HomeAssistantRepository } from "../../home-assistant-org.js";
 import { ParsedPath } from "../helpers/parse-path.js";
 import { NEW_INTEGRATION_LABEL, pickedTypeLabels } from "./change-type.js";

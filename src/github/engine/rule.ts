@@ -1,5 +1,5 @@
 import type { EventType } from "./event.js";
-import type { RuleContext } from "./rule-context.js";
+import type { RuleContext } from "./model/rule-context.js";
 import type { SectionStatus, StatusSection } from "./status/types.js";
 import type { Effect, EventHandler, EventHandlers, Rule } from "./types.js";
 

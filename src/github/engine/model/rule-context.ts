@@ -1,13 +1,13 @@
 import type { Octokit } from "@octokit/rest";
-import type { Env } from "../../env.js";
-import type { RegistryConfig } from "./dispatch.js";
-import type { RuleEventOf } from "./event.js";
-import { EventType } from "./event.js";
-import type { Issue } from "./model/issue.js";
-import type { Org } from "./model/organization.js";
-import type { PullRequest } from "./model/pull-request.js";
-import type { Repo } from "./model/repository.js";
-import type { Command } from "./types.js";
+import type { Env } from "../../../env.js";
+import type { RegistryConfig } from "../dispatch.js";
+import type { RuleEventOf } from "../event.js";
+import { EventType } from "../event.js";
+import type { Command } from "../types.js";
+import type { Issue } from "./issue.js";
+import type { Org } from "./organization.js";
+import type { PullRequest } from "./pull-request.js";
+import type { Repo } from "./repository.js";
 
 export interface Sender {
   login: string;

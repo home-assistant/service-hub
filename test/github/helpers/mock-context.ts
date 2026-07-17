@@ -5,7 +5,7 @@ import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
 import type { WebhookEventPayload } from "../../../src/github/engine/model/from-webhook.js";
 import { ruleContextFromWebhook } from "../../../src/github/engine/model/from-webhook.js";
-import type { RuleContext } from "../../../src/github/engine/rule-context.js";
+import type { RuleContext } from "../../../src/github/engine/model/rule-context.js";
 import type { StatusSection } from "../../../src/github/engine/status/types.js";
 import type { Effect, Rule } from "../../../src/github/engine/types.js";
 

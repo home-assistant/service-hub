@@ -1,4 +1,4 @@
-import type { CommandContext } from "../engine/command-context.js";
+import type { CommandContext } from "../engine/model/command-context.js";
 import type { Command, Effect } from "../engine/types.js";
 
 /**

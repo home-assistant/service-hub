@@ -1,8 +1,8 @@
 import type { Octokit } from "@octokit/rest";
 import { log } from "../../log.js";
 import type { GetIssueParams } from "./model/issue.js";
+import type { RuleContext } from "./model/rule-context.js";
 import { draftPRIfNotDraft } from "./pr-state.js";
-import type { RuleContext } from "./rule-context.js";
 import { buildStatus } from "./status/build.js";
 import { isStatusComment, placeholderBody } from "./status/render.js";
 import type { SectionOverride, StatusSection } from "./status/types.js";

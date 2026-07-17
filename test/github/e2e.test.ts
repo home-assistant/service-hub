@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { CommandContext } from "../../src/github/engine/command-context.js";
 import { EventType } from "../../src/github/engine/event.js";
+import type { CommandContext } from "../../src/github/engine/model/command-context.js";
 import type { Command, Rule } from "../../src/github/engine/types.js";
 import {
   commentPayload,

@@ -1,7 +1,7 @@
 import { extractTasks } from "../../../../util/pr-body.js";
 import { EventType } from "../../../engine/event.js";
+import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { type CheckOutcome, check } from "../../../engine/rule.js";
-import type { RuleContext } from "../../../engine/rule-context.js";
 import type { Effect } from "../../../engine/types.js";
 import { ParsedPath } from "../helpers/parse-path.js";
 import { addsNewIntegration } from "./file-shape.js";

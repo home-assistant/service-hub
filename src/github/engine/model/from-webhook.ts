@@ -14,14 +14,14 @@ import type {
   PullRequestUnlabeledEvent,
 } from "@octokit/webhooks-types";
 import type { Env } from "../../../env.js";
-import { CommandContext, parseCommands } from "../command-context.js";
 import type { RegistryConfig } from "../dispatch.js";
 import { EventType, type RuleEvent } from "../event.js";
-import { RuleContext } from "../rule-context.js";
+import { CommandContext, parseCommands } from "./command-context.js";
 import { type GetIssueResponse, Issue, type IssueSeed } from "./issue.js";
 import { Org } from "./organization.js";
 import { type GetPullRequestResponse, PullRequest, type PullRequestSeed } from "./pull-request.js";
 import { Repo } from "./repository.js";
+import { RuleContext } from "./rule-context.js";
 
 /** Every webhook payload the bot consumes; the adapter's input type. */
 export type WebhookEventPayload =

@@ -1,6 +1,6 @@
-import type { CommandContext } from "./command-context.js";
 import type { EventType } from "./event.js";
-import type { RuleContext } from "./rule-context.js";
+import type { CommandContext } from "./model/command-context.js";
+import type { RuleContext } from "./model/rule-context.js";
 import type { CommandHelpEntry } from "./status/help.js";
 import type { StatusSection } from "./status/types.js";
 

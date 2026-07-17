@@ -1,6 +1,6 @@
 import { EventType } from "../../../engine/event.js";
+import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { type CheckOutcome, check } from "../../../engine/rule.js";
-import type { RuleContext } from "../../../engine/rule-context.js";
 import {
   INTEGRATION_LABEL_PREFIX,
   itemIntegrationDomains,

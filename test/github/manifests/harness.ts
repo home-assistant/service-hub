@@ -1,14 +1,14 @@
 import type { Octokit } from "@octokit/rest";
 import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
-import { isBotCommand } from "../../../src/github/engine/command-context.js";
 import { dispatch, dispatchCommand, matchRules } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
+import { isBotCommand } from "../../../src/github/engine/model/command-context.js";
 import {
   commandContextFromWebhook,
   ruleContextFromWebhook,
   type WebhookEventPayload,
 } from "../../../src/github/engine/model/from-webhook.js";
-import type { RuleContext } from "../../../src/github/engine/rule-context.js";
+import type { RuleContext } from "../../../src/github/engine/model/rule-context.js";
 import type { Effect } from "../../../src/github/engine/types.js";
 import { registryConfig } from "../../../src/github/manifests/index.js";
 import { createMockGitHub, testEnv } from "../helpers/mock-context.js";

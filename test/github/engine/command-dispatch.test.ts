@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { removeLabel } from "../../../src/github/commands/label-remove.js";
-import { isBotCommand, parseCommands } from "../../../src/github/engine/command-context.js";
 import { dispatchCommand } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
+import { isBotCommand, parseCommands } from "../../../src/github/engine/model/command-context.js";
 import type { Command, Rule } from "../../../src/github/engine/types.js";
 import { unassign } from "../../../src/github/manifests/home-assistant-core/commands/unassign.js";
 import {

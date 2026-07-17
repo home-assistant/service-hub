@@ -2,8 +2,8 @@ import { z } from "zod";
 import { log } from "../../log.js";
 import { fetchWithTimeout } from "../../util/fetch.js";
 import { EventType } from "../engine/event.js";
+import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import type { RuleContext } from "../engine/rule-context.js";
 import type { Effect, Rule } from "../engine/types.js";
 import { extractForumLinks } from "../helpers/ha-links.js";
 

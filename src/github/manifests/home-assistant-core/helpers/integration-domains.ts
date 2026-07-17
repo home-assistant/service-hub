@@ -1,6 +1,6 @@
 import type { EventType } from "../../../engine/event.js";
 import type { ListPullRequestFiles } from "../../../engine/model/pull-request.js";
-import type { RuleContext } from "../../../engine/rule-context.js";
+import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { extractIntegrationDocumentationLinks } from "../../../helpers/ha-links.js";
 import { fetchIntegrationManifest } from "./integration-manifest.js";
 import { ParsedPath } from "./parse-path.js";
