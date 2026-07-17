@@ -14,7 +14,7 @@ import { mentionCodeOwners } from "../../rules/code-owner-mention.js";
 import { mergeConflict } from "../../rules/merge-conflict.js";
 import { mergeTarget } from "../../rules/merge-target.js";
 import { reviewComments } from "../../rules/review-comments.js";
-import { homeAssistantOrgRules } from "../home-assistant-org.js";
+import { HomeAssistantRepository, homeAssistantOrgRules } from "../home-assistant-org.js";
 import type { RepoManifest } from "../types.js";
 import { unassign } from "./commands/unassign.js";
 import { integrationDomainsFromEvent } from "./helpers/integration-domains.js";
@@ -45,7 +45,7 @@ const MANAGEABLE_LABELS = [
 ];
 
 export const homeAssistantCore: RepoManifest = {
-  slug: "home-assistant/core",
+  slug: HomeAssistantRepository.CORE,
   aliases: ["justanotherariel/hass_core"],
   integrationPath: componentCodeowners,
   rules: [
