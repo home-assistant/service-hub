@@ -14,9 +14,8 @@ import type {
   PullRequestUnlabeledEvent,
 } from "@octokit/webhooks-types";
 import type { Env } from "../../../env.js";
-import type { RegistryConfig } from "../dispatch.js";
 import { EventType, type RuleEvent, type RuleEventOf } from "../event.js";
-import type { Command } from "../types.js";
+import type { Command, RegistryConfig } from "../types.js";
 import { type CodeownersReads, createCodeownersReads, readCodeowners } from "./codeowners.js";
 import { type GetIssueResponse, Issue, type IssueSeed } from "./issue.js";
 import {

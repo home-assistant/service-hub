@@ -1,5 +1,4 @@
-import type { RegistryConfig } from "../engine/dispatch.js";
-import type { Command, Rule } from "../engine/types.js";
+import type { Command, RegistryConfig, Rule } from "../engine/types.js";
 import { homeAssistantCore } from "./home-assistant-core/index.js";
 import type { RepoManifest } from "./types.js";
 

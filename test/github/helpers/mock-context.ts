@@ -1,7 +1,6 @@
 import type { Octokit } from "@octokit/rest";
 import { type Mock, vi } from "vitest";
 import type { Env } from "../../../src/env.js";
-import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
 import type {
   RuleContext,
@@ -9,7 +8,7 @@ import type {
 } from "../../../src/github/engine/model/rule-context.js";
 import { ruleContextFromWebhook } from "../../../src/github/engine/model/rule-context.js";
 import type { StatusSection } from "../../../src/github/engine/status/types.js";
-import type { Effect, Rule } from "../../../src/github/engine/types.js";
+import type { Effect, RegistryConfig, Rule } from "../../../src/github/engine/types.js";
 
 /** The octokit mocks are loosely typed. */
 type MockFn = Mock<(...args: never[]) => unknown>;

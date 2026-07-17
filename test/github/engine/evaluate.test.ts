@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import {
   evaluateIssue,
   evaluatePR,
   evaluateRecentPRs,
 } from "../../../src/github/engine/evaluate.js";
+import type { RegistryConfig } from "../../../src/github/engine/types.js";
 import { log } from "../../../src/log.js";
 import { createMockGitHub, testEnv } from "../helpers/mock-context.js";
 

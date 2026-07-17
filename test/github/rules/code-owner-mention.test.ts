@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { dispatch } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
+import type { RegistryConfig } from "../../../src/github/engine/types.js";
 import { integrationDomainsFromEvent } from "../../../src/github/manifests/home-assistant-core/helpers/integration-domains.js";
 import { integrationDomain } from "../../../src/github/manifests/home-assistant-core/rules/integration-domain.js";
 import { MENTION_MARKER, mentionCodeOwners } from "../../../src/github/rules/code-owner-mention.js";

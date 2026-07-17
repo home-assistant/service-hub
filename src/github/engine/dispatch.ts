@@ -6,15 +6,7 @@ import { draftPRIfNotDraft, readyPRIfDraft } from "./pr-state.js";
 import { hasFailingSections } from "./status/build.js";
 import type { SectionOverride, StatusSection } from "./status/types.js";
 import { ensureStatusCommentExists, findStatusComment, syncStatus } from "./status-sync.js";
-import type { Command, Effect, Rule } from "./types.js";
-
-// TODO: Should this be here and not in rule-context.ts or manifests/index.ts / manifests/types.ts?
-export interface RegistryConfig {
-  repositories: Record<string, Rule[]>;
-  commands?: Record<string, Command[]>;
-  /** Per-repo CODEOWNERS path for an integration domain (code-owner checks). */
-  integrationPaths?: Record<string, (domain: string) => string>;
-}
+import type { Command, Effect, RegistryConfig, Rule } from "./types.js";
 
 export function matchRules(context: RuleContext): Rule[] {
   const repoRules = context.registry.repositories[context.repo.fullName] ?? [];

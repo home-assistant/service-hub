@@ -106,3 +106,15 @@ export interface Command extends CommandHelpEntry {
   args?: "none" | "required";
   handle(context: CommandContext): Promise<Effect[] | undefined>;
 }
+
+/**
+ * The compiled runtime registry the engine consumes, keyed by full repo slug
+ * (aliases included). Manifests are the authoring format; manifests/index.ts
+ * compiles them into this shape.
+ */
+export interface RegistryConfig {
+  repositories: Record<string, Rule[]>;
+  commands?: Record<string, Command[]>;
+  /** Per-repo CODEOWNERS path for an integration domain (code-owner checks). */
+  integrationPaths?: Record<string, (domain: string) => string>;
+}

@@ -2,7 +2,7 @@ import type { Octokit } from "@octokit/rest";
 import { sign } from "@octokit/webhooks-methods";
 import type { Env } from "../../../src/env.js";
 import { ghWebhookHandler } from "../../../src/github/app.js";
-import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
+import type { RegistryConfig } from "../../../src/github/engine/types.js";
 import { createMockGitHub, type MockGitHub } from "./mock-context.js";
 
 const TEST_SECRET = "test-webhook-secret";

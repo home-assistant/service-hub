@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import type { RegistryConfig } from "../../../src/github/engine/dispatch.js";
 import { dispatch } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
 import { renderStatus } from "../../../src/github/engine/status/render.js";
-import type { Effect, Rule } from "../../../src/github/engine/types.js";
+import type { Effect, RegistryConfig, Rule } from "../../../src/github/engine/types.js";
 import { createMockContext, createMockGitHub, type MockGitHub } from "../helpers/mock-context.js";
 
 /**

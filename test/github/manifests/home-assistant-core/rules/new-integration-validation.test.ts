@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { RegistryConfig } from "../../../../../src/github/engine/dispatch.js";
 import { dispatch } from "../../../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../../../src/github/engine/event.js";
+import type { RegistryConfig } from "../../../../../src/github/engine/types.js";
 import { fileShape } from "../../../../../src/github/manifests/home-assistant-core/rules/file-shape.js";
 import { newIntegrationValidation } from "../../../../../src/github/manifests/home-assistant-core/rules/new-integration-validation.js";
 import {
