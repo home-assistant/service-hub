@@ -20,9 +20,9 @@ const FRIENDLY_NAMES: Record<string, string> = {
 
 const STATUS_ICONS: Record<SectionStatus, string> = {
   pass: ":white_check_mark:",
-  fail: ":x:",
   pending: ":hourglass:",
   warn: ":warning:",
+  fail: ":x:",
   skip: ":heavy_minus_sign:",
 };
 
@@ -101,12 +101,12 @@ export function renderStatus(
   const slug = extras.commandSlug ?? "ha-bot";
   const blocks = extras.blocks ?? {};
   const display = sections.map(displaySection);
-  const failing = display.filter((s) => s.status === "fail");
+  const passing = display.filter((s) => s.status === "pass");
   const pending = display.filter((s) => s.status === "pending");
   const warning = display.filter((s) => s.status === "warn");
-  const passing = display.filter((s) => s.status === "pass");
+  const failing = display.filter((s) => s.status === "fail");
   const skipped = display.filter((s) => s.status === "skip");
-  const visible = [...failing, ...pending, ...warning];
+  const visible = [...failing, ...warning, ...pending];
   const collapsed = [...passing, ...skipped];
 
   // Raw sections (waivers included) and block args are what round-trips; the
