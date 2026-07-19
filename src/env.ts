@@ -17,6 +17,16 @@ export interface Env {
   // absence means "no Discord", not a misconfiguration.
   DISCORD_TOKEN?: string;
 
+  // CLA storage and sign flow. The CLA check and the /cla-sign endpoints
+  // only activate when the DynamoDB settings are set — absence means
+  // "no CLA", not a misconfiguration.
+  CLA_DDB_REGION?: string;
+  CLA_SIGNERS_TABLE?: string;
+  CLA_PENDING_SIGNERS_TABLE?: string;
+  // OAuth app backing the sign form's GitHub login.
+  CLA_SIGN_CLIENT_ID?: string;
+  CLA_SIGN_CLIENT_SECRET?: string;
+
   // Sentry
   SENTRY_DSN: string;
 
@@ -50,6 +60,11 @@ export function loadEnv(): Env {
     BOT_SLUG: process.env.BOT_SLUG ?? "home-assistant",
     COMMAND_SLUG: process.env.COMMAND_SLUG ?? "ha-bot",
     DISCORD_TOKEN: process.env.DISCORD_TOKEN,
+    CLA_DDB_REGION: process.env.CLA_DDB_REGION,
+    CLA_SIGNERS_TABLE: process.env.CLA_SIGNERS_TABLE,
+    CLA_PENDING_SIGNERS_TABLE: process.env.CLA_PENDING_SIGNERS_TABLE,
+    CLA_SIGN_CLIENT_ID: process.env.CLA_SIGN_CLIENT_ID,
+    CLA_SIGN_CLIENT_SECRET: process.env.CLA_SIGN_CLIENT_SECRET,
     SENTRY_DSN: process.env.SENTRY_DSN ?? "",
     ENVIRONMENT: process.env.ENVIRONMENT ?? "production",
   };

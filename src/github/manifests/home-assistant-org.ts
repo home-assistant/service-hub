@@ -1,3 +1,4 @@
+import { cla } from "../../cla/rule.js";
 import type { Rule } from "../engine/types.js";
 import { draftOnChangesRequested } from "../rules/draft-on-changes-requested.js";
 import { hacktoberfest } from "../rules/hacktoberfest.js";
@@ -33,6 +34,7 @@ export const homeAssistantOrgRules: Rule[] = [
   wth,
   draftOnChangesRequested,
   readyForReview,
+  cla,
 ];
 
 /** Repos with a dedicated manifest of their own; excluded from the bare list below. */

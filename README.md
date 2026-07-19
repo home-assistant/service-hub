@@ -19,9 +19,8 @@ just format          # Auto-fix formatting
 
 ## TODOs
 
-- On every webhook, save which PR is looked at. At the cron check, only run on-demand for PRs that haven't been looked at (if any)
 - Update the Discord message path inside `src/discord/commands/info.ts`
-- Generic 'engine' effects, such that effects can rerun/run rules inside a specific engine with parameters. This could be used to update a related PR in a seperate repo, the same repo, or send messages to discord/slack (generic or specific).
+- Remove all mentions of the legacy bot from the codebase
 
 ### CLA Check
 - Add CLA Check

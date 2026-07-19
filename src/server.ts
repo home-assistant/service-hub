@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import * as Sentry from "@sentry/node";
+import { claAuthorizeHandler, claSignatureHandler } from "./cla/sign.js";
 import { startDiscordGateway } from "./discord/engine/gateway.js";
 import { discordRegistry } from "./discord/manifests/index.js";
 import { loadEnv } from "./env.js";
@@ -34,6 +35,14 @@ function routes(request: Request): Response | Promise<Response> {
 
   if (request.method === "POST" && url.pathname === "/github/webhook") {
     return ghWebhookHandler(env, octokit, request);
+  }
+
+  if (request.method === "POST" && url.pathname === "/cla-sign") {
+    return claSignatureHandler(env, octokit, request);
+  }
+
+  if (request.method === "POST" && url.pathname === "/cla-sign/authorize") {
+    return claAuthorizeHandler(env, request);
   }
 
   if (request.method === "GET" && url.pathname === "/health") {
