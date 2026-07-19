@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { dispatch, matchRules } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
+import { placeholderBody } from "../../../src/github/engine/status/render.js";
 import type { RegistryConfig, Rule } from "../../../src/github/engine/types.js";
 import { log } from "../../../src/log.js";
 import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
@@ -880,7 +881,8 @@ describe("label independence", () => {
       expect.objectContaining({ labels: ["X"] }),
     );
     expect(labelRuleRan).not.toHaveBeenCalled();
-    expect(github.issues.createComment).not.toHaveBeenCalled();
+    const bodies = github.issues.createComment.mock.calls.map((c) => c[0].body as string);
+    expect(bodies).not.toContain("should never post");
   });
 
   it("does not call GitHub for labels already present", async () => {
@@ -967,6 +969,56 @@ describe("label independence", () => {
     expect(github.issues.removeLabel).toHaveBeenCalledWith(
       expect.objectContaining({ name: "stale" }),
     );
-    expect(github.issues.createComment).not.toHaveBeenCalled();
+    const bodies = github.issues.createComment.mock.calls.map((c) => c[0].body as string);
+    expect(bodies).not.toContain("bye");
+  });
+});
+
+describe("dashboard placeholder on opened", () => {
+  it("posts the placeholder before any rule runs", async () => {
+    const github = createMockGitHub();
+    const commentsWhenRuleRan = vi.fn();
+
+    const observer: Rule = {
+      name: "observer",
+      description: "",
+      events: {
+        [EventType.PULL_REQUEST_OPENED]: async () => {
+          commentsWhenRuleRan(github.issues.createComment.mock.calls.length);
+          return undefined;
+        },
+      },
+    };
+    const context = createMockContext({
+      registry: { repositories: { "home-assistant/core": [observer] } },
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
+
+    await dispatch(context);
+
+    expect(commentsWhenRuleRan).toHaveBeenCalledWith(1);
+    const body = github.issues.createComment.mock.calls[0][0].body as string;
+    expect(body).toContain("<!-- ha-bot-dashboard -->");
+  });
+
+  it("an empty opened dispatch upgrades the placeholder to the greeting dashboard", async () => {
+    const github = createMockGitHub();
+    github.issues.listComments.mockResolvedValue({
+      data: [{ id: 7, body: placeholderBody() }],
+    });
+
+    const context = createMockContext({
+      registry: { repositories: { "home-assistant/core": [] } },
+      eventType: EventType.PULL_REQUEST_OPENED,
+      github,
+    });
+
+    await dispatch(context);
+
+    expect(github.issues.updateComment).toHaveBeenCalledTimes(1);
+    const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
+    expect(body).toContain("Thanks for contributing");
+    expect(body).not.toContain("Evaluating rules");
   });
 });

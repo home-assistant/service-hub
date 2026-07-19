@@ -28,10 +28,19 @@ async function apply(
     name: "emitter",
     description: "",
     statusSections: opts.statusSections,
-    events: { [EventType.PULL_REQUEST_OPENED]: async () => effects },
+    // synchronize, not opened: opened dispatches post the dashboard
+    // placeholder up front, which would show up in every mapping test here.
+    events: { [EventType.PULL_REQUEST_SYNCHRONIZE]: async () => effects },
   };
   const config: RegistryConfig = { repositories: { "home-assistant/core": [rule] } };
-  await dispatch(createMockContext({ registry: config, github, payload: opts.payload }));
+  await dispatch(
+    createMockContext({
+      registry: config,
+      github,
+      payload: opts.payload,
+      eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
+    }),
+  );
   return github;
 }
 

@@ -148,7 +148,12 @@ async function applyEffects(
   const showsAnything =
     statusSections.size > 0 || [...blockUpdates.values()].some((args) => args !== null);
 
-  if (statusSections.size > 0 || overrides.length > 0 || blockUpdates.size > 0) {
+  // `opened` dispatches sync unconditionally: dispatch() posted the
+  // placeholder before rule evaluation, and an empty sync turns it into the
+  // greeting dashboard instead of leaving the "Evaluating rules…" stub.
+  const openedDispatch = context.eventType === EventType.PULL_REQUEST_OPENED;
+
+  if (statusSections.size > 0 || overrides.length > 0 || blockUpdates.size > 0 || openedDispatch) {
     // Post a placeholder status comment *before* the other effects race, so
     // it is always the earliest comment on the PR. The real content gets
     // rendered by syncStatus below (which updates this placeholder via
@@ -255,6 +260,10 @@ export async function dispatch(context: RuleContext): Promise<Effect[]> {
   // TODO: This should be moved somewhere else I think.
   if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
     await maybeRedraftOnReady(context);
+  }
+
+  if (context.eventType === EventType.PULL_REQUEST_OPENED) {
+    await ensureStatusCommentExists(context.github, context.issueParams());
   }
 
   const effects = await runMatchedRules(context);

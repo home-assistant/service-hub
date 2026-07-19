@@ -263,7 +263,9 @@ describe("mention-code-owners", () => {
       await dispatch(context);
 
       expect(github.issues.addAssignees).not.toHaveBeenCalled();
-      expect(github.issues.createComment).not.toHaveBeenCalled();
+      // Only the dashboard placeholder may be posted on opened — no mention.
+      const bodies = github.issues.createComment.mock.calls.map((c) => c[0].body as string);
+      expect(bodies.some((b) => b.includes(MENTION_MARKER))).toBe(false);
     });
 
     it("subscribes to creation, change, and label events plus on_demand", () => {
