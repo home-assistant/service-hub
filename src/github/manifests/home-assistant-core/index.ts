@@ -46,7 +46,7 @@ const MANAGEABLE_LABELS = [
 
 export const homeAssistantCore: RepoManifest = {
   slug: HomeAssistantRepository.CORE,
-  aliases: ["justanotherariel/hass_core"],
+  aliases: ["justanotherariel/hass_core"], // TODO: remove alias and alias functionality
   integrationPath: componentCodeowners,
   rules: [
     // Integrations
