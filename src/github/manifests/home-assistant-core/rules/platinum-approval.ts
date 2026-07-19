@@ -1,11 +1,9 @@
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { type CheckOutcome, check } from "../../../engine/rule.js";
-import {
-  INTEGRATION_LABEL_PREFIX,
-  itemIntegrationDomains,
-} from "../helpers/integration-domains.js";
-import { fetchIntegrationManifest, QualityScale } from "../helpers/integration-manifest.js";
+import { INTEGRATION_LABEL_PREFIX } from "../../../helpers/integration-domains.js";
+import { fetchIntegrationManifest, QualityScale } from "../../../helpers/integration-manifest.js";
+import { itemIntegrationDomains } from "../helpers/integration-domains.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_OPENED

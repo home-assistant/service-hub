@@ -1,9 +1,23 @@
 import type { Command, RegistryConfig, Rule } from "../engine/types.js";
+import { esphome } from "./esphome.js";
 import { homeAssistantCore } from "./home-assistant-core/index.js";
+import { homeAssistantFrontend } from "./home-assistant-frontend.js";
+import { homeAssistantIntents } from "./home-assistant-intents.js";
+import { homeAssistantIo } from "./home-assistant-io/index.js";
+import { homeAssistantOrgManifests } from "./home-assistant-org.js";
+import { homeAssistantSupervisor } from "./home-assistant-supervisor/index.js";
 import type { RepoManifest } from "./types.js";
 
 /** Every repo the bot acts on. Add a repo by authoring a manifest and listing it here. */
-const MANIFESTS: RepoManifest[] = [homeAssistantCore];
+const MANIFESTS: RepoManifest[] = [
+  homeAssistantCore,
+  homeAssistantFrontend,
+  homeAssistantIntents,
+  homeAssistantIo,
+  homeAssistantSupervisor,
+  ...homeAssistantOrgManifests,
+  esphome,
+];
 
 /**
  * Boot-time guardrails. The dispatcher silently dedupes rules and commands

@@ -34,11 +34,13 @@ export function extractForumLinks(body: string | null): string[] {
 
 export function extractDocumentationSectionsLinks(body: string | null): string[] {
   if (!body) return [];
-  const re = /https:\/\/(?:www\.|rc\.|next\.|)home-assistant\.io\/(.*?)\//g;
+  // Capture the full path (`/docs/automation/` → docs, automation), one
+  // section per segment.
+  const re = /https:\/\/(?:www\.|rc\.|next\.|)home-assistant\.io\/((?:[\w-]+\/)+)/g;
   const results = new Set<string>();
   for (const match of body.matchAll(re)) {
     for (const section of match[1].split("/")) {
-      results.add(section);
+      if (section) results.add(section);
     }
   }
   return [...results];

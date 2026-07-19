@@ -1,10 +1,10 @@
-import { type ItemRef, slugOf } from "../../../../util/item-ref.js";
-import { extractAllLinks } from "../../../../util/pr-body.js";
-import { EventType } from "../../../engine/event.js";
-import { PullRequest } from "../../../engine/model/pull-request.js";
-import type { RuleContext } from "../../../engine/model/rule-context.js";
-import type { Effect, Rule } from "../../../engine/types.js";
-import { HomeAssistantRepository } from "../../home-assistant-org.js";
+import { type ItemRef, slugOf } from "../../util/item-ref.js";
+import { extractAllLinks } from "../../util/pr-body.js";
+import { EventType } from "../engine/event.js";
+import { PullRequest } from "../engine/model/pull-request.js";
+import type { RuleContext } from "../engine/model/rule-context.js";
+import type { Effect, Rule } from "../engine/types.js";
+import { HomeAssistantRepository } from "../manifests/home-assistant-org.js";
 
 function findDocsLinks(body: string | null) {
   return extractAllLinks(body).filter(

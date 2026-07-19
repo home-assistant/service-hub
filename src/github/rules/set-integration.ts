@@ -1,7 +1,7 @@
-import { EventType } from "../../../engine/event.js";
-import type { RuleContext } from "../../../engine/model/rule-context.js";
-import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import { EventType } from "../engine/event.js";
+import type { RuleContext } from "../engine/model/rule-context.js";
+import { on } from "../engine/rule.js";
+import type { Effect, Rule } from "../engine/types.js";
 import { domainsFromIssueBody } from "../helpers/integration-domains.js";
 
 type HandledEvent = EventType.ISSUES_OPENED | EventType.ISSUES_ON_DEMAND;

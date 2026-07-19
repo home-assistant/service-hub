@@ -2,10 +2,8 @@ import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
 import type { Effect, Rule } from "../../../engine/types.js";
-import {
-  INTEGRATION_LABEL_PREFIX,
-  itemIntegrationDomains,
-} from "../helpers/integration-domains.js";
+import { INTEGRATION_LABEL_PREFIX } from "../../../helpers/integration-domains.js";
+import { itemIntegrationDomains } from "../helpers/integration-domains.js";
 
 type HandledEvent = EventType.ISSUES_OPENED | EventType.ISSUES_LABELED | EventType.ISSUES_ON_DEMAND;
 

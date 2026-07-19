@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { log } from "../../../../log.js";
-import { fetchWithTimeout } from "../../../../util/fetch.js";
+import { log } from "../../log.js";
+import { fetchWithTimeout } from "../../util/fetch.js";
 
 export enum QualityScale {
   NO_SCORE = "no score",

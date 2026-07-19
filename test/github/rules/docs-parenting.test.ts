@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { EventType } from "../../../../../src/github/engine/event.js";
-import { docsParenting } from "../../../../../src/github/manifests/home-assistant-core/rules/docs-parenting.js";
-import { createMockContext, createMockGitHub, runRule } from "../../../helpers/mock-context.js";
+import { EventType } from "../../../src/github/engine/event.js";
+import { docsParenting } from "../../../src/github/rules/docs-parenting.js";
+import { createMockContext, createMockGitHub, runRule } from "../helpers/mock-context.js";
 
 describe("docs-parenting-code-side", () => {
   describe("code repo opened/edited", () => {

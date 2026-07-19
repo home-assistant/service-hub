@@ -101,6 +101,13 @@ async function applyEffects(
           ),
         );
         break;
+      case "dismissReview":
+        ops.push(() =>
+          context.github.pulls.dismissReview(
+            context.pullParams({ review_id: effect.reviewId, message: effect.message }),
+          ),
+        );
+        break;
       case "setTitle":
         ops.push(() => context.github.issues.update(context.issueParams({ title: effect.title })));
         break;

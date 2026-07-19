@@ -42,11 +42,12 @@ export type Effect =
       type: "requestReviewers";
       reviewers: string[];
     }
+  | { type: "dismissReview"; reviewId: number; message: string }
   | { type: "setTitle"; title: string }
   | { type: "setState"; state: "open" | "closed" }
   | { type: "removeAssignees"; assignees: string[] }
-  // Command-use only: rules must not emit this — the engine already converts
-  // the PR to draft when its checks fail (see syncStatus).
+  // Most rules should not require this: The engine already converts
+  // the PR to draft when its checks fail
   | { type: "convertToDraft" }
   | { type: "markReadyForReview" }
   | { type: "updateBranch" };

@@ -1,4 +1,4 @@
-import type { Command, Effect } from "../../../engine/types.js";
+import type { Command, Effect } from "../engine/types.js";
 import { fetchIntegrationManifest } from "../helpers/integration-manifest.js";
 
 export const unassign: Command = {

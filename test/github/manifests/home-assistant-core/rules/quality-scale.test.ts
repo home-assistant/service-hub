@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventType } from "../../../../../src/github/engine/event.js";
-import { QualityScale } from "../../../../../src/github/manifests/home-assistant-core/helpers/integration-manifest.js";
+import { QualityScale } from "../../../../../src/github/helpers/integration-manifest.js";
 import { qualityScale } from "../../../../../src/github/manifests/home-assistant-core/rules/quality-scale.js";
 import { createMockContext, mockPRFiles, runRule } from "../../../helpers/mock-context.js";
 
