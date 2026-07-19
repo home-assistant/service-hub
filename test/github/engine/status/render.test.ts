@@ -21,10 +21,10 @@ describe("status renderer", () => {
     },
   ];
 
-  /** The `## Checks` block — scoped away from the intro and the `## Context` block. */
+  /** The `## Checks` block — scoped away from the intro, blocks, and footer. */
   function checksSection(body: string): string {
     const afterHeading = body.split("## Checks")[1] ?? "";
-    return afterHeading.split("## Context")[0];
+    return afterHeading.split("\n---\n")[0];
   }
 
   describe("renderStatus", () => {
@@ -209,25 +209,42 @@ describe("status renderer", () => {
       expect(checks).not.toContain("<summary>");
     });
 
-    it("renders info sections under ## Context instead of the checks table", () => {
-      const sections: StatusSection[] = [
-        { id: "a", title: "A", status: "pass", message: "ok" },
-        { id: "links", title: "Integration links", status: "info", message: "some links" },
-      ];
-      const result = renderStatus(sections, REPO);
-      expect(result).toContain("## Context");
+    it("renders template blocks at their fixed spot, outside the checks table", () => {
+      const sections: StatusSection[] = [{ id: "a", title: "A", status: "pass", message: "ok" }];
+      const result = renderStatus(sections, REPO, "issue", {
+        blocks: {
+          "integration-links": {
+            domains: [
+              { domain: "hue", docs: "https://d", source: "https://s", issues: "https://i" },
+            ],
+          },
+        },
+      });
       expect(result).toContain("**Integration links**");
-      const checks = checksSection(result);
-      expect(checks).not.toContain("Integration links");
+      expect(result).toContain(
+        "- `hue`: [documentation](https://d) · [source](https://s) · [known issues](https://i)",
+      );
+      // A block is not a check: it never renders as a table row.
+      expect(result).not.toMatch(/\|.*Integration links/);
+      // Block state round-trips through its own marker kind.
+      expect(result).toContain('<!-- block:integration-links:{"domains"');
     });
 
-    it("omits the ## Checks block entirely for info-only sections", () => {
-      const infoOnly: StatusSection[] = [
-        { id: "links", title: "Integration links", status: "info", message: "some links" },
-      ];
-      const result = renderStatus(infoOnly, REPO);
+    it("omits the ## Checks block entirely when only blocks are visible", () => {
+      const result = renderStatus([], REPO, "issue", {
+        blocks: { "reporting-guidance": { paragraphs: ["First advice.", "Second advice."] } },
+      });
       expect(result).not.toContain("## Checks");
-      expect(result).toContain("## Context");
+      expect(result).toContain("**Reporting guidance**");
+      // Paragraphs render on consecutive lines (single newlines — GitHub
+      // comments treat those as line breaks).
+      expect(result).toContain("First advice.\nSecond advice.");
+    });
+
+    it("hidden blocks leave no trace in body or markers", () => {
+      const result = renderStatus([], REPO, "issue", { blocks: {} });
+      expect(result).not.toContain("Reporting guidance");
+      expect(result).not.toContain("<!-- block:");
     });
 
     it("renders skipped checks with a minus icon inside the combined block", () => {

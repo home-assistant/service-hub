@@ -1,6 +1,7 @@
 import type { EventType } from "./event.js";
 import type { CommandContext } from "./model/command-context.js";
 import type { RuleContext } from "./model/rule-context.js";
+import type { BlockArgsMap, BlockId } from "./status/blocks.js";
 import type { CommandHelpEntry } from "./status/help.js";
 import type { StatusSection } from "./status/types.js";
 
@@ -24,12 +25,12 @@ export type Effect =
   | { type: "addAssignees"; assignees: string[] }
   | { type: "comment"; body: string }
   | { type: "statusSection"; section: StatusSection }
-  // Drop a section from the status comment — for state-derived sections whose
-  // subject disappeared (e.g. the last `integration:` label was removed).
-  | { type: "removeStatusSection"; id: string }
   // Command-use only (`ignore`/`unignore`): set or clear the author waiver on
   // one section. Rules re-emit sections instead; waivers stick across that.
   | { type: "overrideSection"; id: string; ignore: { reason: string } | null }
+  // Template blocks: set a fixed dashboard block's typed args, or clear it
+  // with `args: null`. Separate from the checks table — see status/blocks.ts.
+  | { [B in BlockId]: { type: "updateBlock"; block: B; args: BlockArgsMap[B] | null } }[BlockId]
   | {
       type: "updatePullRequest";
       owner: string;

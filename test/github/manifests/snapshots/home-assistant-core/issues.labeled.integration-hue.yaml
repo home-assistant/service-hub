@@ -3,7 +3,7 @@
     - balloob
 - type: comment
   body: |-
-    <!-- ha-bot:code-owner-mention -->
+    <!-- ha-bot-mention -->
 
     Hey there @balloob, mind taking a look at this issue as it has been labeled with an integration (`hue`) you are listed as a [code owner](https://github.com/home-assistant/core/blob/HEAD/CODEOWNERS#L1) for? Thanks!
     <details><summary>Code owner commands</summary>
@@ -19,9 +19,11 @@
     - `remove-label` — Removes a label (needs-more-information, problem in dependency, problem in custom component, problem in config, problem in device, feature-request) from the issue or pull request. *(code owners)* — e.g. `/ha-bot remove-label "needs-more-information"`
 
     </details>
-- type: statusSection
-  section:
-    id: integration-links
-    title: Integration links
-    status: info
-    message: "- `hue`: [documentation](https://www.home-assistant.io/integrations/hue) · [source](https://github.com/home-assistant/core/tree/dev/homeassistant/components/hue) · [known issues](https://github.com/home-assistant/core/issues?q=label%3A%22integration%3A%20hue%22)"
+- type: updateBlock
+  block: integration-links
+  args:
+    domains:
+      - domain: hue
+        docs: https://www.home-assistant.io/integrations/hue
+        source: https://github.com/home-assistant/core/tree/dev/homeassistant/components/hue
+        issues: https://github.com/home-assistant/core/issues?q=label%3A%22integration%3A%20hue%22

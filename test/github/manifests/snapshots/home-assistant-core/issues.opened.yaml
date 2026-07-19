@@ -1,4 +1,6 @@
-- type: removeStatusSection
-  id: integration-links
-- type: removeStatusSection
-  id: issue-context
+- type: updateBlock
+  block: integration-links
+  args: null
+- type: updateBlock
+  block: reporting-guidance
+  args: null

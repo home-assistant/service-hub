@@ -28,12 +28,14 @@
     "@octokit/webhooks-types": "^7.6.1",
     "@sentry/node": "^10.65.0",
     "discord.js": "^14.26.5",
+    "mustache": "^4.2.0",
     "tsx": "^4.23.1",
     "yaml": "^2.9.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.3",
+    "@types/mustache": "^4.2.6",
     "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "^4.1.10",
     "typescript": "^7.0.2",

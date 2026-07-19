@@ -40,8 +40,9 @@ async function applyEffects(
   const labels = new Set<string>();
   const removeLabels = new Set<string>();
   const statusSections = new Map<string, StatusSection>();
-  const removedSections = new Set<string>();
   const overrides: SectionOverride[] = [];
+  // null args = clear the block; later updates win within a dispatch.
+  const blockUpdates = new Map<string, unknown>();
   const assignees = new Set<string>();
   const removeAssignees = new Set<string>();
   const comments = new Set<string>();
@@ -67,11 +68,11 @@ async function applyEffects(
       case "statusSection":
         statusSections.set(effect.section.id, effect.section);
         break;
-      case "removeStatusSection":
-        removedSections.add(effect.id);
-        break;
       case "overrideSection":
         overrides.push({ id: effect.id, ignore: effect.ignore });
+        break;
+      case "updateBlock":
+        blockUpdates.set(effect.block, effect.args);
         break;
       case "addLabelsCrossRepo":
         ops.push(() =>
@@ -144,22 +145,26 @@ async function applyEffects(
     }
   }
 
-  // Emission wins over removal within a dispatch.
-  for (const id of statusSections.keys()) removedSections.delete(id);
+  const showsAnything =
+    statusSections.size > 0 || [...blockUpdates.values()].some((args) => args !== null);
 
-  if (statusSections.size > 0 || removedSections.size > 0 || overrides.length > 0) {
+  if (statusSections.size > 0 || overrides.length > 0 || blockUpdates.size > 0) {
     // Post a placeholder status comment *before* the other effects race, so
     // it is always the earliest comment on the PR. The real content gets
     // rendered by syncStatus below (which updates this placeholder via
-    // findStatusComment). Removals or waiver changes alone never create a
+    // findStatusComment). Clears or waiver changes alone never create a
     // status comment — there'd be nothing to act on.
-    if (statusSections.size > 0) {
+    if (showsAnything) {
       await ensureStatusCommentExists(context.github, context.issueParams());
     }
     ops.push(() =>
       syncStatus(
         context,
-        { sections: [...statusSections.values()], removedSectionIds: removedSections, overrides },
+        {
+          sections: [...statusSections.values()],
+          overrides,
+          blocks: blockUpdates,
+        },
         config.knownSectionIds,
       ),
     );

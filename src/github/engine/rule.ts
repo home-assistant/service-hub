@@ -32,7 +32,7 @@ export interface CheckConfig<E extends EventType> {
   title: string;
   description: string;
   events: readonly E[];
-  evaluate: (ctx: RuleContext<E>) => Promise<CheckOutcome | "clear" | undefined>;
+  evaluate: (ctx: RuleContext<E>) => Promise<CheckOutcome | undefined>;
   allowBots?: boolean;
   /**
    * Target state this check runs in. Outside it, `evaluate` isn't called and
@@ -48,9 +48,8 @@ export interface CheckConfig<E extends EventType> {
  * A rule whose job is one status row. The factory owns the envelope —
  * section ID, `statusSections` claim, event registration — so the rule
  * body only computes an outcome. Returning undefined emits nothing (e.g.
- * while GitHub is still computing the state the check reads); returning
- * "clear" removes the rule's section from the status comment (the state the
- * section described no longer exists).
+ * while GitHub is still computing the state the check reads); a check whose
+ * subject doesn't apply reports `skip`.
  */
 export function check<E extends EventType>(config: CheckConfig<E>): Rule {
   const runOn = config.runOn ?? "open";
@@ -59,7 +58,6 @@ export function check<E extends EventType>(config: CheckConfig<E>): Rule {
 
     const outcome = await config.evaluate(ctx);
     if (!outcome) return undefined;
-    if (outcome === "clear") return [{ type: "removeStatusSection", id: config.id }];
     const section: StatusSection = {
       id: config.id,
       title: config.title,

@@ -2,7 +2,8 @@ import { EventType } from "../engine/event.js";
 import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import { commandHelpLines, commandsForTarget } from "../engine/status/help.js";
+import { commandsForTarget, commandViews } from "../engine/status/help.js";
+import { loadTemplate, renderTemplate } from "../engine/status/template.js";
 import type { Effect, Rule } from "../engine/types.js";
 
 type HandledEvent =
@@ -18,26 +19,14 @@ type HandledEvent =
 // mentioned, and no further mention comments are posted — even if new
 // integrations or code owners show up later. Assignment can fail silently
 // (owners without repo access), so comment presence is the only reliable state.
-export const MENTION_MARKER = "<!-- ha-bot:code-owner-mention -->";
+export const MENTION_MARKER = "<!-- ha-bot-mention -->";
 
-/**
- * Compact help block listing the commands a code owner may use on this item,
- * from the repo's registered command list on the context.
- */
-function commandHelp(ctx: RuleContext<HandledEvent>): string {
-  const available = commandsForTarget(ctx.commands, ctx.target.kind);
-  if (available.length === 0) return "";
-
-  return [
-    "",
-    "<details><summary>Code owner commands</summary>",
-    "",
-    `Reply with \`/${ctx.env.COMMAND_SLUG} <command>\`:`,
-    "",
-    ...commandHelpLines(ctx.env.COMMAND_SLUG, available),
-    "",
-    "</details>",
-  ].join("\n");
+// Layout and prose live in the template; this rule only builds the view.
+// The marker is written literally there but grepped for here — fail at load
+// if a template edit breaks the pair (one-ping detection depends on it).
+const MENTION_TEMPLATE = loadTemplate("code-owner-mention");
+if (!MENTION_TEMPLATE.includes(MENTION_MARKER)) {
+  throw new Error("code-owner-mention template lost its marker comment");
 }
 
 function processIntegration(
@@ -71,11 +60,18 @@ function processIntegration(
     .map((usr) => `@${usr}`);
 
   if (mentions.length > 0) {
+    const applicable = commandsForTarget(ctx.commands, ctx.target.kind);
     effects.push({
       type: "comment",
-      body:
-        `${MENTION_MARKER}\n\nHey there ${mentions.join(", ")}, mind taking a look at this ${itemLabel} as it has been labeled with an integration (\`${integrationName}\`) you are listed as a [code owner](${codeownersLine}) for? Thanks!` +
-        commandHelp(ctx),
+      body: renderTemplate(MENTION_TEMPLATE, {
+        mentions: mentions.join(", "),
+        itemLabel,
+        integrationName,
+        codeownersLine,
+        commandSlug: ctx.env.COMMAND_SLUG,
+        hasCommands: applicable.length > 0,
+        commands: commandViews(ctx.env.COMMAND_SLUG, applicable),
+      }),
     });
   }
 

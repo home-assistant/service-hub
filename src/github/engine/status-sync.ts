@@ -52,8 +52,9 @@ export async function ensureStatusCommentExists(
 /** The status-relevant effects of one dispatch, bucketed by the dispatcher. */
 export interface StatusChanges {
   sections: StatusSection[];
-  removedSectionIds: ReadonlySet<string>;
   overrides: SectionOverride[];
+  /** Block updates: args replace the persisted state, `null` clears. */
+  blocks: ReadonlyMap<string, unknown>;
 }
 
 /**
@@ -80,8 +81,8 @@ export async function syncStatus(
       author: await context.target.authorLogin(),
     },
     newSections: changes.sections,
-    removedSectionIds: changes.removedSectionIds,
     overrides: changes.overrides,
+    blocks: changes.blocks,
     previousBody: existing?.body ?? null,
     knownSectionIds,
     help: { commandSlug: context.env.COMMAND_SLUG, commands: context.commands },

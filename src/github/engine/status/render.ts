@@ -1,5 +1,7 @@
 import { log } from "../../../log.js";
-import { type CommandHelpEntry, commandHelpLines, commandsForTarget } from "./help.js";
+import type { BlockStates } from "./blocks.js";
+import { type CommandHelpEntry, commandsForTarget, commandViews } from "./help.js";
+import { loadTemplate, renderTemplate } from "./template.js";
 import type { SectionStatus, StatusSection } from "./types.js";
 
 // The sentinel identifies the bot's status comment among all issue comments;
@@ -8,11 +10,12 @@ import type { SectionStatus, StatusSection } from "./types.js";
 // deployed comments carry them.
 const SENTINEL = "<!-- ha-bot-dashboard -->";
 const SECTION_PREFIX = "<!-- section:";
-const SECTION_SUFFIX = " -->";
+const BLOCK_PREFIX = "<!-- block:";
+const MARKER_SUFFIX = " -->";
 
 const FRIENDLY_NAMES: Record<string, string> = {
   "home-assistant/core": "Home Assistant",
-  "justanotherariel/hass_core": "Home Assistant",
+  "justanotherariel/hass_core": "Home Assistant", // TODO: Remove this
 };
 
 const STATUS_ICONS: Record<SectionStatus, string> = {
@@ -20,9 +23,19 @@ const STATUS_ICONS: Record<SectionStatus, string> = {
   fail: ":x:",
   pending: ":hourglass:",
   warn: ":warning:",
-  info: ":information_source:",
   skip: ":heavy_minus_sign:",
 };
+
+// Layout and prose live in the templates; this module only builds views.
+// The sentinel is written literally there but grepped for here — fail at
+// load if a template edit breaks the pair (comment detection depends on it).
+const PR_TEMPLATE = loadTemplate("pr-dashboard");
+const ISSUE_TEMPLATE = loadTemplate("issue-dashboard");
+for (const template of [PR_TEMPLATE, ISSUE_TEMPLATE]) {
+  if (!template.includes(SENTINEL)) {
+    throw new Error("dashboard template lost its sentinel comment");
+  }
+}
 
 export type StatusTarget = "pull_request" | "issue";
 
@@ -34,6 +47,8 @@ export interface StatusExtras {
   commandSlug?: string;
   /** The repo's registered commands, listed in the collapsed help. */
   commands?: readonly CommandHelpEntry[];
+  /** Visible template blocks with their args (see blocks.ts). */
+  blocks?: BlockStates;
   /** "Last updated" timestamp; injectable for deterministic rendering. */
   now?: Date;
 }
@@ -62,30 +77,13 @@ function escapeTableCell(s: string): string {
   return s.replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
 }
 
-function renderRow(s: StatusSection): string {
-  const icon = STATUS_ICONS[s.status];
-  const title = escapeTableCell(s.title);
-  return `| ${icon} | ${title} | ${escapeTableCell(s.message)} |`;
-}
-
-function renderContextItem(s: StatusSection): string {
-  return `**${s.title}**\n\n${s.message}`;
-}
-
-const TABLE_HEADER = ["| Status | Check | Details |", "|--------|-------|---------|"];
-
-function commandList(
-  slug: string,
-  commands: readonly CommandHelpEntry[],
-  target: StatusTarget,
-): string[] {
-  const applicable = commandsForTarget(commands, target);
-  if (applicable.length === 0) return [];
-  return [
-    `Reply with \`/${slug} <command>\` — several commands can be stacked, one per line:`,
-    "",
-    ...commandHelpLines(slug, applicable),
-  ];
+/** A check row, cells pre-escaped — the table markup lives in the templates. */
+function rowView(s: StatusSection): { icon: string; title: string; message: string } {
+  return {
+    icon: STATUS_ICONS[s.status],
+    title: escapeTableCell(s.title),
+    message: escapeTableCell(s.message),
+  };
 }
 
 function summarizePassedSkipped(passedCount: number, skippedCount: number): string {
@@ -94,125 +92,62 @@ function summarizePassedSkipped(passedCount: number, skippedCount: number): stri
   return skippedCount === 0 ? passed : `${passed} (${skippedCount} skipped)`;
 }
 
-function prIntro(friendlyName: string, slug: string, extras: StatusExtras): string[] {
-  return [
-    `👋 Hi! Thanks for contributing to **${friendlyName}**.`,
-    "",
-    "This is your PR dashboard which flags anything you need to address before your PR can be reviewed. Once everything is green, you can press the **'Ready for review'** button at the bottom of the page to notify reviewers to take a look.",
-    "",
-    "<details><summary>More information about this dashboard</summary>",
-    "",
-    "This dashboard automatically updates on every change to this PR and reevaluates the rules as you go. Until everything has been addressed, the PR stays in draft and you won't be able to put it into review.",
-    "",
-    "### Skip a check that doesn't apply",
-    "",
-    `If you think a check doesn't apply to your PR (or the rule is bugged), comment \`/${slug} ignore "<check name>" "<reason>"\` — the check name as shown in the table above. This will mark the check as ignored and let you put your PR in 'Ready for review'; \`/${slug} unignore "<check name>"\` restores it.`,
-    "",
-    "### Bot commands",
-    "",
-    ...commandList(slug, extras.commands ?? [], "pull_request"),
-    "",
-    "</details>",
-  ];
-}
-
-function issueIntro(friendlyName: string, extras: StatusExtras): string[] {
-  const greeting = extras.author ? `👋 Hi @${extras.author}!` : "👋 Hi!";
-  return [
-    `${greeting} Thanks for reporting an issue to **${friendlyName}**.`,
-    "",
-    "Before we dive in, please make sure this isn't a duplicate by searching through existing issues. Also check recently closed issues, as your problem might already be fixed but not yet released.",
-  ];
-}
-
-function issueCommandHelp(slug: string, extras: StatusExtras): string[] {
-  const list = commandList(slug, extras.commands ?? [], "issue");
-  if (list.length === 0) return [];
-  return ["<details><summary>Bot commands</summary>", "", ...list, "", "</details>", ""];
-}
-
 export function renderStatus(
   sections: StatusSection[],
   repo: string,
   target: StatusTarget = "pull_request",
   extras: StatusExtras = {},
 ): string {
-  const friendlyName = FRIENDLY_NAMES[repo] ?? repo;
   const slug = extras.commandSlug ?? "ha-bot";
+  const blocks = extras.blocks ?? {};
   const display = sections.map(displaySection);
   const failing = display.filter((s) => s.status === "fail");
   const pending = display.filter((s) => s.status === "pending");
   const warning = display.filter((s) => s.status === "warn");
-  const info = display.filter((s) => s.status === "info");
   const passing = display.filter((s) => s.status === "pass");
   const skipped = display.filter((s) => s.status === "skip");
   const visible = [...failing, ...pending, ...warning];
-  const hasChecks = visible.length > 0 || passing.length > 0 || skipped.length > 0;
+  const collapsed = [...passing, ...skipped];
 
-  // Raw sections (waivers included) are what round-trips; the projected view
-  // above is only presentation.
-  const sectionData = sections.map(
-    (s) => `${SECTION_PREFIX}${s.id}:${JSON.stringify(s)}${SECTION_SUFFIX}`,
-  );
+  // Raw sections (waivers included) and block args are what round-trips; the
+  // projected view above is only presentation.
+  const persistenceTail = [
+    ...sections.map((s) => `${SECTION_PREFIX}${s.id}:${JSON.stringify(s)}${MARKER_SUFFIX}`),
+    ...Object.entries(blocks).map(
+      ([id, args]) => `${BLOCK_PREFIX}${id}:${JSON.stringify(args)}${MARKER_SUFFIX}`,
+    ),
+  ].join("\n");
 
-  const lines: string[] = [
-    SENTINEL,
-    "",
-    ...(target === "issue"
-      ? issueIntro(friendlyName, extras)
-      : prIntro(friendlyName, slug, extras)),
-    "",
-  ];
-
-  if (hasChecks) {
-    lines.push(
-      "## Checks",
-      "",
-      failing.length > 0 ? "Things to address:" : "**✨ Everything's in order!**",
-      "",
-    );
-
-    if (visible.length > 0) {
-      lines.push(...TABLE_HEADER, ...visible.map(renderRow), "");
-    }
-
-    if (passing.length > 0 || skipped.length > 0) {
-      lines.push(
-        "<details>",
-        `<summary>${summarizePassedSkipped(passing.length, skipped.length)}</summary>`,
-        "",
-        ...TABLE_HEADER,
-        ...passing.map(renderRow),
-        ...skipped.map(renderRow),
-        "",
-        "</details>",
-        "",
-      );
-    }
-  }
-
-  if (info.length > 0) {
-    lines.push("## Context", "", info.map(renderContextItem).join("\n\n"), "");
-  }
-
-  if (target === "issue") {
-    lines.push(...issueCommandHelp(slug, extras));
-  }
-
+  const applicable = commandsForTarget(extras.commands ?? [], target);
   const now = extras.now ?? new Date();
-  lines.push("---", `<sub>Last updated: ${now.toISOString()}</sub>`, "", ...sectionData);
 
-  return lines.join("\n");
+  const view = {
+    friendlyName: FRIENDLY_NAMES[repo] ?? repo,
+    commandSlug: slug,
+    author: extras.author ?? "",
+    hasCommands: applicable.length > 0,
+    commands: commandViews(slug, applicable),
+    hasChecks: visible.length > 0 || collapsed.length > 0,
+    hasFailures: failing.length > 0,
+    hasVisibleRows: visible.length > 0,
+    visibleRows: visible.map(rowView),
+    hasCollapsedRows: collapsed.length > 0,
+    collapsedRows: collapsed.map(rowView),
+    collapsedSummary: summarizePassedSkipped(passing.length, skipped.length),
+    blocks,
+    lastUpdated: now.toISOString(),
+    persistenceTail,
+  };
+
+  return renderTemplate(target === "issue" ? ISSUE_TEMPLATE : PR_TEMPLATE, view);
 }
 
 export function parseSections(body: string): StatusSection[] {
   const sections: StatusSection[] = [];
-  const lines = body.split("\n");
-
-  for (const line of lines) {
+  for (const line of body.split("\n")) {
     const trimmed = line.trim();
-    if (trimmed.startsWith(SECTION_PREFIX) && trimmed.endsWith(SECTION_SUFFIX)) {
-      const content = trimmed.slice(SECTION_PREFIX.length, -SECTION_SUFFIX.length);
+    if (trimmed.startsWith(SECTION_PREFIX) && trimmed.endsWith(MARKER_SUFFIX)) {
+      const content = trimmed.slice(SECTION_PREFIX.length, -MARKER_SUFFIX.length);
       const colonIndex = content.indexOf(":");
       if (colonIndex !== -1) {
         try {
@@ -225,4 +160,25 @@ export function parseSections(body: string): StatusSection[] {
   }
 
   return sections;
+}
+
+/** The persisted block states embedded in a status comment body. */
+export function parseBlocks(body: string): Record<string, unknown> {
+  const blocks: Record<string, unknown> = {};
+  for (const line of body.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith(BLOCK_PREFIX) && trimmed.endsWith(MARKER_SUFFIX)) {
+      const content = trimmed.slice(BLOCK_PREFIX.length, -MARKER_SUFFIX.length);
+      const colonIndex = content.indexOf(":");
+      if (colonIndex !== -1) {
+        try {
+          blocks[content.slice(0, colonIndex)] = JSON.parse(content.slice(colonIndex + 1));
+        } catch (err) {
+          log.warn("parseBlocks: malformed block data", { error: String(err) });
+        }
+      }
+    }
+  }
+
+  return blocks;
 }

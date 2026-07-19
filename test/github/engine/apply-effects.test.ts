@@ -232,39 +232,36 @@ describe("effect → GitHub API mapping", () => {
     });
   });
 
-  it("removeStatusSection → issues.updateComment without the removed section", async () => {
+  it("updateBlock with null args → issues.updateComment without the block", async () => {
     const github = createMockGitHub();
     github.issues.listComments.mockResolvedValue({
       data: [
         {
           id: 7,
           body: renderStatus(
-            [
-              { id: "a", title: "Alpha check", status: "pass", message: "ok" },
-              { id: "b", title: "Beta check", status: "pass", message: "ok" },
-            ],
+            [{ id: "a", title: "Alpha check", status: "pass", message: "ok" }],
             "home-assistant/core",
+            "issue",
+            { blocks: { "reporting-guidance": { paragraphs: ["Some advice."] } } },
           ),
         },
       ],
     });
-    await apply([{ type: "removeStatusSection", id: "a" }], {
+    await apply([{ type: "updateBlock", block: "reporting-guidance", args: null }], {
       github,
-      statusSections: [
-        { id: "a", title: "Alpha check" },
-        { id: "b", title: "Beta check" },
-      ],
+      statusSections: [{ id: "a", title: "Alpha check" }],
     });
 
     expect(github.issues.updateComment).toHaveBeenCalledTimes(1);
     const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
-    expect(body).toContain("Beta check");
-    expect(body).not.toContain("Alpha check");
+    expect(body).toContain("Alpha check");
+    expect(body).not.toContain("Some advice.");
+    expect(body).not.toContain("<!-- block:reporting-guidance");
   });
 
-  it("removeStatusSection alone never creates a status comment", async () => {
-    const github = await apply([{ type: "removeStatusSection", id: "a" }], {
-      statusSections: [{ id: "a", title: "Alpha check" }],
+  it("a null-args updateBlock alone never creates a status comment", async () => {
+    const github = await apply([{ type: "updateBlock", block: "reporting-guidance", args: null }], {
+      statusSections: [],
     });
 
     expect(github.issues.createComment).not.toHaveBeenCalled();

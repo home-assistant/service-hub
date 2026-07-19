@@ -13,7 +13,6 @@ function input(overrides: Partial<StatusInput> = {}): StatusInput {
   return {
     target: { kind: "pull_request", repoFullName: REPO },
     newSections: [],
-    removedSectionIds: new Set(),
     overrides: [],
     previousBody: null,
     knownSectionIds: new Set(["a", "b", "merge-conflict"]),
@@ -35,11 +34,6 @@ describe("buildStatus", () => {
     const result = buildStatus(input());
     expect(result.body).toBeNull();
     expect(result.sections).toEqual([]);
-  });
-
-  it("returns a null body for removals without an existing comment", () => {
-    const result = buildStatus(input({ removedSectionIds: new Set(["a"]) }));
-    expect(result.body).toBeNull();
   });
 
   it("returns a null body for overrides without an existing comment", () => {
@@ -75,14 +69,6 @@ describe("buildStatus", () => {
     const result = buildStatus(input({ previousBody: previous }));
     expect(result.sections).toEqual([section({ id: "b" })]);
     expect(result.body).not.toContain("gone-rule");
-  });
-
-  it("drops removed sections after the merge", () => {
-    const previous = previousBodyWith([section({ id: "a" }), section({ id: "b" })]);
-    const result = buildStatus(
-      input({ previousBody: previous, removedSectionIds: new Set(["a"]) }),
-    );
-    expect(result.sections).toEqual([section({ id: "b" })]);
   });
 
   describe("waivers", () => {

@@ -1,5 +1,12 @@
+import { BLOCK_IDS, type BlockStates } from "./blocks.js";
 import type { CommandHelpEntry } from "./help.js";
-import { displaySection, parseSections, renderStatus, type StatusTarget } from "./render.js";
+import {
+  displaySection,
+  parseBlocks,
+  parseSections,
+  renderStatus,
+  type StatusTarget,
+} from "./render.js";
 import type { SectionOverride, StatusSection } from "./types.js";
 
 /**
@@ -17,10 +24,10 @@ export interface StatusInput {
   };
   /** Sections emitted this dispatch; merged over the persisted ones by id. */
   newSections: StatusSection[];
-  /** Sections whose subject disappeared; dropped after the merge. */
-  removedSectionIds: ReadonlySet<string>;
   /** Waiver changes from `ignore`/`unignore` commands, applied last. */
   overrides: readonly SectionOverride[];
+  /** Block updates this dispatch: args replace the persisted state, `null` clears. */
+  blocks?: ReadonlyMap<string, unknown>;
   /** Body of the existing status comment, or null when none exists yet. */
   previousBody: string | null;
   /** Section IDs some live rule claims; anything else is swept as stale. */
@@ -47,6 +54,8 @@ export interface StatusOutput {
   body: string | null;
   /** Post-merge, post-override section state (what `body` embeds). */
   sections: StatusSection[];
+  /** Post-merge block state (what `body` embeds). */
+  blocks: BlockStates;
   aggregate: StatusAggregate;
 }
 
@@ -72,8 +81,6 @@ export function buildStatus(input: StatusInput): StatusOutput {
     byId.set(s.id, prior?.ignored && !s.ignored ? { ...s, ignored: prior.ignored } : s);
   }
 
-  for (const id of input.removedSectionIds) byId.delete(id);
-
   for (const o of input.overrides) {
     const section = byId.get(o.id);
     if (!section) continue;
@@ -85,21 +92,38 @@ export function buildStatus(input: StatusInput): StatusOutput {
     }
   }
 
+  // Blocks merge like sections, minus waivers: persisted state in, ids no
+  // block in blocks.ts claims swept out, this dispatch's updates applied
+  // (args replace the state; null clears the block).
+  const blocks: Record<string, unknown> = {};
+  if (input.previousBody) {
+    const knownBlockIds = new Set<string>(BLOCK_IDS);
+    for (const [id, args] of Object.entries(parseBlocks(input.previousBody))) {
+      if (knownBlockIds.has(id)) blocks[id] = args;
+    }
+  }
+  for (const [id, args] of input.blocks ?? []) {
+    if (args === null) delete blocks[id];
+    else blocks[id] = args;
+  }
+
   const sections = [...byId.values()];
+  const blockStates = blocks as BlockStates;
   const aggregate = aggregateStatus(sections);
 
   // No comment exists and nothing survived to show: don't create one.
-  if (!input.previousBody && sections.length === 0) {
-    return { body: null, sections, aggregate };
+  if (!input.previousBody && sections.length === 0 && Object.keys(blocks).length === 0) {
+    return { body: null, sections, blocks: blockStates, aggregate };
   }
 
   const body = renderStatus(sections, input.target.repoFullName, input.target.kind, {
     author: input.target.author,
     commandSlug: input.help.commandSlug,
     commands: input.help.commands,
+    blocks: blockStates,
     now: input.now,
   });
-  return { body, sections, aggregate };
+  return { body, sections, blocks: blockStates, aggregate };
 }
 
 /** Aggregate over the presented statuses, so waived checks count as warnings. */
