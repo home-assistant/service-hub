@@ -1,12 +1,10 @@
-# ha-github-bot
+# Home Assistant Bots
 
-A Node.js service that automates the Home Assistant organization's GitHub repos and Discord guilds. Two engines share the process, cleanly separated under `src/github/` and `src/discord/`: the GitHub engine handles webhooks (PR labeling, documentation enforcement, code owner notifications, dashboard checks), the Discord engine handles gateway events (slash commands, message listeners). CLA checking is handled by the legacy bot in `service-hub/github-bot`.
+A Node.js service which includes the Home Assistant Github, as well as the discord bot. Two engines share the process, separated under `src/github/` and `src/discord/`: the GitHub engine handles webhooks (rules and slash commands), the Discord engine handles gateway events (slash commands, message listeners). CLA checking is handled by the legacy bot in `service-hub/github-bot`.
 
 ## Development
 
-Dependencies are managed with [pnpm](https://pnpm.io) (pinned via `packageManager`,
-so `corepack enable` gets you the right version). Common tasks are exposed as
-[`just`](https://just.systems) recipes ([architecture#1416](https://github.com/home-assistant/architecture/discussions/1416)):
+Common tasks are exposed as [`just`](https://just.systems) recipes:
 
 ```bash
 just setup           # Install dependencies
@@ -16,8 +14,7 @@ just lint            # Run linter + type checker
 just format          # Auto-fix formatting
 ```
 
-`just --list` shows all recipes; they are thin wrappers around the pnpm
-scripts in `package.json`, which work directly too (`pnpm run dev`, …).
+`just --list` shows all recipes; they are thin wrappers around the pnpm scripts in `package.json`, which work directly too (`pnpm run dev`, …). Under the hood, `pnpm` is used as the package manager.
 
 
 ## TODOs
@@ -68,3 +65,4 @@ fail/info/pending: dashboard status.
 - If an arch discussion is linked, check if it has been aproved. Put the PR in draft until it is approved.
 - Create a comment if person force pushes to PR 'Please do not force push'.
 - A generic 'saved replies' rule/command. For things like 'custom_component' (point out that they should report the bug in that repository), 'question' (better ask on discord or the forum), etc.
+- Once a PR has been merged, update the dashboard to indicate in which release this will be included. Look for labels for patch releases
