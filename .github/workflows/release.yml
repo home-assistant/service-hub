@@ -17,8 +17,6 @@ jobs:
   deploy-container:
     name: Deploy container
     runs-on: ubuntu-latest
-    # Terraform Cloud secrets only exist on the deploy repo; skip that step
-    # cleanly on forks so a test release doesn't fail there.
     env:
       TFC_TOKEN: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
       TFC_VARSET_ID: ${{ secrets.TERRAFORM_CLOUD_VARSET_ID }}
@@ -27,8 +25,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Populate version.json
-        # Bake the released version and commit hash into the image so the
-        # running bot can report exactly what it is.
         run: |
           hash=$(git rev-parse HEAD)
           echo "{\"version\": {\"hash\": \"$hash\", \"version\": \"${{ github.ref_name }}\"}}" > ./version.json
