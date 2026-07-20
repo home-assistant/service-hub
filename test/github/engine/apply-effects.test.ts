@@ -265,7 +265,8 @@ describe("effect → GitHub API mapping", () => {
     const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
     expect(body).toContain("Alpha check");
     expect(body).not.toContain("Some advice.");
-    expect(body).not.toContain("<!-- block:reporting-guidance");
+    // The cleared block is gone from the persisted state too.
+    expect(body).not.toContain("reporting-guidance");
   });
 
   it("a null-args updateBlock alone never creates a status comment", async () => {

@@ -1,12 +1,6 @@
 import { BLOCK_IDS, type BlockStates } from "./blocks.js";
 import type { CommandHelpEntry } from "./help.js";
-import {
-  displaySection,
-  parseBlocks,
-  parseSections,
-  renderStatus,
-  type StatusTarget,
-} from "./render.js";
+import { displaySection, parseState, renderStatus, type StatusTarget } from "./render.js";
 import type { SectionOverride, StatusSection } from "./types.js";
 
 /**
@@ -33,8 +27,6 @@ export interface StatusInput {
   /** Section IDs some live rule claims; anything else is swept as stale. */
   knownSectionIds: ReadonlySet<string>;
   help: { commandSlug: string; commands: readonly CommandHelpEntry[] };
-  /** Render timestamp; injectable for deterministic output. */
-  now?: Date;
 }
 
 /**
@@ -67,9 +59,11 @@ export interface StatusOutput {
  * resulting body and commit status back.
  */
 export function buildStatus(input: StatusInput): StatusOutput {
+  const prev = input.previousBody ? parseState(input.previousBody) : null;
+
   const byId = new Map<string, StatusSection>();
-  if (input.previousBody) {
-    for (const s of parseSections(input.previousBody)) {
+  if (prev) {
+    for (const s of prev.sections) {
       if (input.knownSectionIds.has(s.id)) byId.set(s.id, s);
     }
   }
@@ -96,9 +90,9 @@ export function buildStatus(input: StatusInput): StatusOutput {
   // block in blocks.ts claims swept out, this dispatch's updates applied
   // (args replace the state; null clears the block).
   const blocks: Record<string, unknown> = {};
-  if (input.previousBody) {
+  if (prev) {
     const knownBlockIds = new Set<string>(BLOCK_IDS);
-    for (const [id, args] of Object.entries(parseBlocks(input.previousBody))) {
+    for (const [id, args] of Object.entries(prev.blocks)) {
       if (knownBlockIds.has(id)) blocks[id] = args;
     }
   }
@@ -106,6 +100,9 @@ export function buildStatus(input: StatusInput): StatusOutput {
     if (args === null) delete blocks[id];
     else blocks[id] = args;
   }
+
+  // Reserved rule state: nothing writes it yet, so carry it through untouched.
+  const data = prev?.data ?? {};
 
   const sections = [...byId.values()];
   const blockStates = blocks as BlockStates;
@@ -121,7 +118,7 @@ export function buildStatus(input: StatusInput): StatusOutput {
     commandSlug: input.help.commandSlug,
     commands: input.help.commands,
     blocks: blockStates,
-    now: input.now,
+    data,
   });
   return { body, sections, blocks: blockStates, aggregate };
 }
@@ -166,8 +163,8 @@ function aggregateStatus(sections: StatusSection[]): StatusAggregate {
  * engine's re-draft-on-ready guard.
  */
 export function hasFailingSections(body: string, knownSectionIds: ReadonlySet<string>): boolean {
-  return parseSections(body)
-    .filter((s) => knownSectionIds.has(s.id))
+  return parseState(body)
+    .sections.filter((s) => knownSectionIds.has(s.id))
     .map(displaySection)
     .some((s) => s.status === "fail");
 }

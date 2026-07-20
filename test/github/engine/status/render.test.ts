@@ -3,6 +3,7 @@ import {
   displaySection,
   isStatusComment,
   parseSections,
+  parseState,
   placeholderBody,
   renderStatus,
 } from "../../../../src/github/engine/status/render.js";
@@ -121,8 +122,7 @@ describe("status renderer", () => {
       );
       expect(result).not.toContain("Things to address");
       // The persisted section state keeps the raw status and the waiver.
-      const parsed = parseSections(result);
-      expect(parsed).toEqual(waived);
+      expect(parseState(result).sections).toEqual(waived);
     });
 
     it("renders passing checks inside a collapsed details block", () => {
@@ -226,8 +226,8 @@ describe("status renderer", () => {
       );
       // A block is not a check: it never renders as a table row.
       expect(result).not.toMatch(/\|.*Integration links/);
-      // Block state round-trips through its own marker kind.
-      expect(result).toContain('<!-- block:integration-links:{"domains"');
+      // Block state round-trips through the persisted blob.
+      expect(parseState(result).blocks["integration-links"]).toBeDefined();
     });
 
     it("omits the ## Checks block entirely when only blocks are visible", () => {
@@ -241,10 +241,10 @@ describe("status renderer", () => {
       expect(result).toContain("First advice.\nSecond advice.");
     });
 
-    it("hidden blocks leave no trace in body or markers", () => {
+    it("hidden blocks leave no trace in body or state", () => {
       const result = renderStatus([], REPO, "issue", { blocks: {} });
       expect(result).not.toContain("Reporting guidance");
-      expect(result).not.toContain("<!-- block:");
+      expect(parseState(result).blocks).toEqual({});
     });
 
     it("renders skipped checks with a minus icon inside the combined block", () => {
@@ -259,18 +259,26 @@ describe("status renderer", () => {
       expect(result).toContain(":heavy_minus_sign:");
     });
 
-    it("embeds section data as HTML comments", () => {
+    it("embeds all state as a single JSON blob", () => {
       const result = renderStatus(sections, REPO);
 
-      expect(result).toContain('<!-- section:cla:{"id":"cla"');
-      expect(result).toContain('<!-- section:required-labels:{"id":"required-labels"');
+      expect(result).toContain("<!-- ha-bot-state:");
+      // Exactly one persistence marker, no per-section markers.
+      expect(result.match(/<!-- ha-bot-state:/g)).toHaveLength(1);
+      expect(result).not.toContain("<!-- section:");
+      const parsed = parseState(result);
+      expect(parsed.sections.map((s) => s.id)).toEqual(["cla", "required-labels"]);
     });
 
-    it("stamps the injected timestamp", () => {
-      const result = renderStatus(sections, REPO, "pull_request", {
-        now: new Date("2026-01-02T03:04:05Z"),
-      });
-      expect(result).toContain("Last updated: 2026-01-02T03:04:05.000Z");
+    it("escapes `>` so a section message can't close the comment early", () => {
+      const result = renderStatus(
+        [{ id: "x", title: "X", status: "fail", message: "value --> broken" }],
+        REPO,
+      );
+      // The raw blob must not contain a literal `-->` from the message.
+      const tail = result.slice(result.indexOf("<!-- ha-bot-state:"));
+      expect(tail.match(/-->/g)).toHaveLength(1); // only the marker's own suffix
+      expect(parseState(result).sections[0].message).toBe("value --> broken");
     });
   });
 
@@ -302,19 +310,33 @@ describe("status renderer", () => {
     });
   });
 
-  describe("parseSections", () => {
-    it("round-trips through render and parse", () => {
-      const rendered = renderStatus(sections, REPO);
-      const parsed = parseSections(rendered);
+  describe("parseState", () => {
+    it("round-trips sections through render and parse", () => {
+      const parsed = parseState(renderStatus(sections, REPO));
 
-      expect(parsed).toHaveLength(2);
-      expect(parsed[0].id).toBe("cla");
-      expect(parsed[0].status).toBe("pass");
-      expect(parsed[1].id).toBe("required-labels");
-      expect(parsed[1].status).toBe("fail");
+      expect(parsed.sections).toHaveLength(2);
+      expect(parsed.sections[0].id).toBe("cla");
+      expect(parsed.sections[0].status).toBe("pass");
+      expect(parsed.sections[1].id).toBe("required-labels");
+      expect(parsed.sections[1].status).toBe("fail");
     });
 
-    it("returns empty array for non-dashboard content", () => {
+    it("returns an empty state for non-dashboard content", () => {
+      expect(parseState("just a regular comment")).toEqual({
+        version: 1,
+        sections: [],
+        blocks: {},
+        data: {},
+      });
+    });
+
+    it("falls back to legacy per-marker comments", () => {
+      const legacy =
+        '<!-- ha-bot-dashboard -->\n<!-- section:cla:{"id":"cla","title":"CLA","status":"pass","message":"ok"} -->';
+      expect(parseState(legacy).sections).toEqual([
+        { id: "cla", title: "CLA", status: "pass", message: "ok" },
+      ]);
+      // parseSections is still the legacy reader behind the fallback.
       expect(parseSections("just a regular comment")).toEqual([]);
     });
   });
@@ -322,7 +344,7 @@ describe("status renderer", () => {
   describe("placeholder", () => {
     it("is recognized as a status comment and carries no sections", () => {
       expect(isStatusComment(placeholderBody())).toBe(true);
-      expect(parseSections(placeholderBody())).toEqual([]);
+      expect(parseState(placeholderBody()).sections).toEqual([]);
     });
   });
 });

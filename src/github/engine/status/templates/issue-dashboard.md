@@ -62,7 +62,4 @@ Reply with `/{{commandSlug}} <command>`. Several commands can be stacked, one pe
 </details>
 
 {{/hasCommands}}
----
-<sub>Last updated: {{lastUpdated}}</sub>
-
 {{persistenceTail}}

@@ -26,3 +26,23 @@ export interface SectionOverride {
   id: string;
   ignore: { reason: string } | null;
 }
+
+export const RULE_STATE_VERSION = 1;
+
+/**
+ * The complete persisted state of the status comment, stored as a single JSON
+ * blob at the comment's tail (the comment is the database). Consumed by the
+ * rendered dashboard, the aggregate commit status, and the draft decision.
+ *
+ * `sections` carry their own inline `ignored` waiver, so a waiver round-trips
+ * with its rule. `blocks` are the typed template blocks (see blocks.ts).
+ * `data` is a reserved bag for arbitrary rule-persisted state — unused today,
+ * but a rule that needs to remember something across dispatches writes it here
+ * rather than inventing a new marker.
+ */
+export interface RuleState {
+  version: number;
+  sections: StatusSection[];
+  blocks: Record<string, unknown>;
+  data: Record<string, unknown>;
+}

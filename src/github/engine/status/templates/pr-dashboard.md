@@ -56,7 +56,4 @@ Things to address:
 
 {{/hasCollapsedRows}}
 {{/hasChecks}}
----
-<sub>Last updated: {{lastUpdated}}</sub>
-
 {{persistenceTail}}

@@ -2,16 +2,24 @@ import { log } from "../../../log.js";
 import type { BlockStates } from "./blocks.js";
 import { type CommandHelpEntry, commandsForTarget, commandViews } from "./help.js";
 import { loadTemplate, renderTemplate } from "./template.js";
-import type { SectionStatus, StatusSection } from "./types.js";
+import {
+  RULE_STATE_VERSION,
+  type RuleState,
+  type SectionStatus,
+  type StatusSection,
+} from "./types.js";
 
-// The sentinel identifies the bot's status comment among all issue comments;
-// section state round-trips through the HTML comments at the comment's tail.
-// Marker strings predate the dashboard → status rename and must stay stable:
-// deployed comments carry them.
+// The sentinel identifies the bot's status comment among all issue comments.
+// The whole persisted state round-trips through a single JSON blob in the
+// `ha-bot-state` HTML comment at the comment's tail.
 const SENTINEL = "<!-- ha-bot-dashboard -->";
+const STATE_PREFIX = "<!-- ha-bot-state:";
+const MARKER_SUFFIX = " -->";
+
+// Legacy per-entry markers (pre-blob deploys). Still parsed so waivers on
+// already-open PRs survive the switch; never written anymore.
 const SECTION_PREFIX = "<!-- section:";
 const BLOCK_PREFIX = "<!-- block:";
-const MARKER_SUFFIX = " -->";
 
 const FRIENDLY_NAMES: Record<string, string> = {
   "home-assistant/core": "Home Assistant",
@@ -49,8 +57,8 @@ export interface StatusExtras {
   commands?: readonly CommandHelpEntry[];
   /** Visible template blocks with their args (see blocks.ts). */
   blocks?: BlockStates;
-  /** "Last updated" timestamp; injectable for deterministic rendering. */
-  now?: Date;
+  /** Reserved rule-persisted state, round-tripped verbatim into the blob. */
+  data?: Record<string, unknown>;
 }
 
 /** Whether a comment body is the bot's status comment. */
@@ -109,17 +117,19 @@ export function renderStatus(
   const visible = [...failing, ...warning, ...pending];
   const collapsed = [...passing, ...skipped];
 
-  // Raw sections (waivers included) and block args are what round-trips; the
-  // projected view above is only presentation.
-  const persistenceTail = [
-    ...sections.map((s) => `${SECTION_PREFIX}${s.id}:${JSON.stringify(s)}${MARKER_SUFFIX}`),
-    ...Object.entries(blocks).map(
-      ([id, args]) => `${BLOCK_PREFIX}${id}:${JSON.stringify(args)}${MARKER_SUFFIX}`,
-    ),
-  ].join("\n");
+  // The whole persisted state (raw sections with waivers, block args, and the
+  // reserved data bag) round-trips as one JSON blob; the projected view above
+  // is only presentation. `>` is escaped so the JSON can never contain `-->`
+  // and close the HTML comment early — JSON.parse decodes `>` on read.
+  const state: RuleState = {
+    version: RULE_STATE_VERSION,
+    sections,
+    blocks,
+    data: extras.data ?? {},
+  };
+  const persistenceTail = `${STATE_PREFIX}${JSON.stringify(state).replaceAll(">", "\\u003e")}${MARKER_SUFFIX}`;
 
   const applicable = commandsForTarget(extras.commands ?? [], target);
-  const now = extras.now ?? new Date();
 
   const view = {
     friendlyName: FRIENDLY_NAMES[repo] ?? repo,
@@ -135,11 +145,50 @@ export function renderStatus(
     collapsedRows: collapsed.map(rowView),
     collapsedSummary: summarizePassedSkipped(passing.length, skipped.length),
     blocks,
-    lastUpdated: now.toISOString(),
     persistenceTail,
   };
 
   return renderTemplate(target === "issue" ? ISSUE_TEMPLATE : PR_TEMPLATE, view);
+}
+
+function emptyState(): RuleState {
+  return { version: RULE_STATE_VERSION, sections: [], blocks: {}, data: {} };
+}
+
+/** Coerce a parsed blob into a well-formed state; garbage fields default out. */
+function normalizeState(parsed: unknown): RuleState {
+  const obj = (parsed && typeof parsed === "object" ? parsed : {}) as Record<string, unknown>;
+  return {
+    version: typeof obj.version === "number" ? obj.version : RULE_STATE_VERSION,
+    sections: Array.isArray(obj.sections) ? (obj.sections as StatusSection[]) : [],
+    blocks:
+      obj.blocks && typeof obj.blocks === "object" ? (obj.blocks as Record<string, unknown>) : {},
+    data: obj.data && typeof obj.data === "object" ? (obj.data as Record<string, unknown>) : {},
+  };
+}
+
+/**
+ * The persisted state embedded in a status comment. Reads the single
+ * `ha-bot-state` blob; falls back to the legacy per-marker format so waivers
+ * on PRs opened before the switch survive their first re-render. Any parse
+ * failure yields an empty state — the bot repopulates on the next evaluation
+ * rather than throwing.
+ */
+export function parseState(body: string): RuleState {
+  for (const raw of body.split("\n")) {
+    const line = raw.trim();
+    if (line.startsWith(STATE_PREFIX) && line.endsWith(MARKER_SUFFIX)) {
+      try {
+        return normalizeState(JSON.parse(line.slice(STATE_PREFIX.length, -MARKER_SUFFIX.length)));
+      } catch (err) {
+        log.warn("parseState: malformed state blob", { error: String(err) });
+        return emptyState();
+      }
+    }
+  }
+  const sections = parseSections(body);
+  const blocks = parseBlocks(body);
+  return { version: RULE_STATE_VERSION, sections, blocks, data: {} };
 }
 
 export function parseSections(body: string): StatusSection[] {
