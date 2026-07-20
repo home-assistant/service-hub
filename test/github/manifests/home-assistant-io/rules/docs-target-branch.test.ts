@@ -16,9 +16,9 @@ describe("docs-target-branch", () => {
     expect(result?.section?.status).toBe("pass");
   });
 
-  it("fails a standalone docs PR targeting next", async () => {
+  it("warns a standalone docs PR targeting next", async () => {
     const result = await runRule(docsTargetBranch, docsContext("next"));
-    expect(result?.section?.status).toBe("fail");
+    expect(result?.section?.status).toBe("warn");
     expect(result?.section?.message).toContain("`current`");
   });
 
@@ -30,12 +30,12 @@ describe("docs-target-branch", () => {
     expect(result?.section?.status).toBe("pass");
   });
 
-  it("fails a docs PR with a parent code PR targeting current", async () => {
+  it("warns a docs PR with a parent code PR targeting current", async () => {
     const result = await runRule(
       docsTargetBranch,
       docsContext("current", "Parent: https://github.com/home-assistant/frontend/pull/999"),
     );
-    expect(result?.section?.status).toBe("fail");
+    expect(result?.section?.status).toBe("warn");
     expect(result?.section?.message).toContain("`next`");
   });
 

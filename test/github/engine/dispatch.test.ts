@@ -413,11 +413,20 @@ describe("dispatch", () => {
       };
     }
 
-    it("on ready_for_review with a failing dashboard section, drafts immediately", async () => {
+    // A rule that claims section "x" but handles no events: it never runs, so
+    // the persisted section state stands — but its id counts as known.
+    const claimsX: Rule = {
+      name: "claims-x",
+      description: "",
+      statusSections: [{ id: "x", title: "x" }],
+      events: {},
+    };
+
+    it("on ready_for_review with a still-failing claimed section, re-drafts", async () => {
       const github = createMockGitHub();
       github.paginate.mockImplementation(async () => [dashboardComment("fail")]);
 
-      const config: RegistryConfig = { repositories: {} };
+      const config: RegistryConfig = { repositories: { "home-assistant/core": [claimsX] } };
       const context = createMockContext({
         registry: config,
         eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
@@ -431,6 +440,25 @@ describe("dispatch", () => {
         expect.stringContaining("convertPullRequestToDraft"),
         expect.objectContaining({ id: "PR_NODE_READY" }),
       );
+    });
+
+    it("on ready_for_review, a failing section no live rule claims does not re-draft", async () => {
+      const github = createMockGitHub();
+      github.paginate.mockImplementation(async () => [dashboardComment("fail")]);
+
+      // No rule claims section "x" (e.g. a removed/renamed rule), so its stale
+      // fail must not strand the PR in draft.
+      const config: RegistryConfig = { repositories: {} };
+      const context = createMockContext({
+        registry: config,
+        eventType: EventType.PULL_REQUEST_READY_FOR_REVIEW,
+        github,
+        payload: { pull_request: { draft: false, node_id: "PR_NODE_READY" } },
+      });
+
+      await dispatch(context);
+
+      expect(github.graphql).not.toHaveBeenCalled();
     });
 
     it("on ready_for_review with only a pending dashboard section, does not draft", async () => {

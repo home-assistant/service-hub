@@ -70,10 +70,10 @@ export function readTeamMembers(
 
   let inflight = reads.teams.get(teamSlug);
   if (!inflight) {
-    inflight = github.teams
-      .listMembersInOrg({ org, team_slug: teamSlug })
-      .then((r) => {
-        const members = r.data.map((m) => m.login.toLowerCase());
+    inflight = github
+      .paginate(github.teams.listMembersInOrg, { org, team_slug: teamSlug, per_page: 100 })
+      .then((data) => {
+        const members = data.map((m) => m.login.toLowerCase());
         shared.set(key, { members, fetchedAt: Date.now() });
         return members;
       })

@@ -69,7 +69,7 @@ describe("quality-scale", () => {
     expect(result?.labels).toContain("Quality Scale: platinum");
   });
 
-  it("uses 'no score' when manifest has no quality_scale", async () => {
+  it("uses 'No score' when manifest has no quality_scale", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -96,7 +96,7 @@ describe("quality-scale", () => {
     mockPRFiles(context, []);
 
     const result = await runRule(qualityScale, context);
-    expect(result?.labels).toContain("Quality Scale: no score");
+    expect(result?.labels).toContain("Quality Scale: No score");
   });
 
   it("returns undefined when no quality_scale.yaml and no integration label", async () => {
@@ -179,7 +179,7 @@ describe("quality-scale", () => {
         json: async () => ({
           domain,
           name: domain,
-          quality_scale: scales[domain] ?? "no score",
+          quality_scale: scales[domain] ?? "No score",
           config_flow: true,
           dependencies: [],
           documentation: "",

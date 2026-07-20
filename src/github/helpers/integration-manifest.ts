@@ -3,7 +3,7 @@ import { log } from "../../log.js";
 import { fetchWithTimeout } from "../../util/fetch.js";
 
 export enum QualityScale {
-  NO_SCORE = "no score",
+  NO_SCORE = "No score",
   LEGACY = "legacy",
   BRONZE = "bronze",
   SILVER = "silver",

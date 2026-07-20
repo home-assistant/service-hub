@@ -224,12 +224,15 @@ async function updateBranchOrExplain(context: RuleContext): Promise<void> {
 }
 
 /** Re-draft if the PR's status comment still shows failing (not pending) checks. */
-async function maybeRedraftOnReady(context: RuleContext): Promise<void> {
+async function maybeRedraftOnReady(
+  context: RuleContext,
+  knownSectionIds: ReadonlySet<string>,
+): Promise<void> {
   if (context.target.kind !== "pull_request") return;
   try {
     const existing = await findStatusComment(context.github, context.issueParams());
     if (!existing) return;
-    if (!hasFailingSections(existing.body)) return;
+    if (!hasFailingSections(existing.body, knownSectionIds)) return;
     await draftPRIfNotDraft(context);
   } catch (err) {
     log.warn("maybeRedraftOnReady failed", { error: String(err) });
@@ -264,10 +267,7 @@ async function runMatchedRules(context: RuleContext): Promise<Effect[]> {
 }
 
 export async function dispatch(context: RuleContext): Promise<Effect[]> {
-  // TODO: This should be moved somewhere else I think.
-  if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
-    await maybeRedraftOnReady(context);
-  }
+  const knownSectionIds = collectKnownStatusSectionIds(context);
 
   if (context.eventType === EventType.PULL_REQUEST_OPENED) {
     await ensureStatusCommentExists(context.github, context.issueParams());
@@ -275,9 +275,12 @@ export async function dispatch(context: RuleContext): Promise<Effect[]> {
 
   const effects = await runMatchedRules(context);
 
-  await applyEffects(context, effects, {
-    knownSectionIds: collectKnownStatusSectionIds(context),
-  });
+  await applyEffects(context, effects, { knownSectionIds });
+
+  if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
+    await maybeRedraftOnReady(context, knownSectionIds);
+  }
+
   return effects;
 }
 
@@ -321,6 +324,14 @@ async function commandRejection(
         context.sender.login.toLowerCase() === (await context.target.authorLogin()).toLowerCase();
       if (isAuthor || (await context.senderIsMember())) return undefined;
       return "sender is neither the author nor an org member";
+    }
+    case "author_or_code_owner": {
+      const isAuthor =
+        context.sender.login.toLowerCase() === (await context.target.authorLogin()).toLowerCase();
+      if (isAuthor || (await context.senderIsMember()) || (await context.senderIsCodeOwner())) {
+        return undefined;
+      }
+      return "sender is neither the author, a code owner, nor an org member";
     }
   }
 }

@@ -3,7 +3,7 @@
  * (not in engine/types.ts) so the status module renders help without
  * depending on the engine.
  */
-export type CommandPermission = "none" | "author" | "code_owner";
+export type CommandPermission = "none" | "author" | "code_owner" | "author_or_code_owner";
 
 /**
  * The command facts the status comment renders — the engine's `Command`
@@ -25,6 +25,7 @@ export interface CommandHelpEntry {
 const PERMISSION_RANK: Record<CommandPermission, number> = {
   none: 0,
   author: 1,
+  author_or_code_owner: 1,
   code_owner: 2,
 };
 
@@ -33,6 +34,7 @@ const PERMISSION_RANK: Record<CommandPermission, number> = {
 const PERMISSION_NOTES: Record<CommandPermission, string> = {
   none: "",
   author: " *(author)*",
+  author_or_code_owner: " *(author or code owners)*",
   code_owner: " *(code owners)*",
 };
 

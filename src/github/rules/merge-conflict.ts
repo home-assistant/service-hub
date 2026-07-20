@@ -11,10 +11,16 @@ type HandledEvent =
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome | undefined> {
   const mergeableState = await ctx.target.mergeableState();
 
-  // GitHub computes mergeable_state asynchronously; "unknown" means we should
-  // wait for a later event. Don't emit anything yet — the row will appear on
-  // the next dispatch when the state is settled.
-  if (mergeableState === "unknown") return;
+  // GitHub computes mergeable_state asynchronously and resets it to "unknown"
+  // on every push, so the synchronize dispatch that follows a push usually
+  // reads "unknown". Returning undefined here would carry a previously
+  // persisted "fail" row forward — re-drafting the PR (and re-blocking merge)
+  // on the very push that fixed the conflict, with no event to correct it.
+  // Report "pass" so the stale fail is cleared; a genuine conflict re-fails on
+  // the next event once GitHub has settled the state.
+  if (mergeableState === "unknown") {
+    return { status: "pass", message: "Merge status is being recalculated by GitHub." };
+  }
 
   const isDirty = mergeableState === "dirty";
   return {

@@ -7,7 +7,7 @@ import type { Effect } from "../../../engine/types.js";
 // Matches the Supervisor PR template checkboxes:
 // https://github.com/home-assistant/supervisor/blob/main/.github/PULL_REQUEST_TEMPLATE.md
 const BODY_MATCHES: { description: string; label: string }[] = [
-  { description: "Dependency upgrade", label: "dependency" },
+  { description: "Dependency upgrade", label: "dependencies" },
   { description: "Bugfix (non-breaking change which fixes an issue)", label: "bugfix" },
   {
     description: "New feature (which adds functionality to the supervisor)",

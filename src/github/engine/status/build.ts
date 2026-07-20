@@ -161,10 +161,13 @@ function aggregateStatus(sections: StatusSection[]): StatusAggregate {
 
 /**
  * Whether a status comment body carries a check that presents as failing —
- * waived failures don't count. Backs the engine's re-draft-on-ready guard.
+ * waived failures don't count, and sections no live rule claims are ignored
+ * (a removed/renamed rule's stale row must not re-draft a PR). Backs the
+ * engine's re-draft-on-ready guard.
  */
-export function hasFailingSections(body: string): boolean {
+export function hasFailingSections(body: string, knownSectionIds: ReadonlySet<string>): boolean {
   return parseSections(body)
+    .filter((s) => knownSectionIds.has(s.id))
     .map(displaySection)
     .some((s) => s.status === "fail");
 }

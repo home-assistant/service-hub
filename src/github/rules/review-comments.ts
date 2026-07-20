@@ -14,7 +14,7 @@ type HandledEvent =
 
 // Acknowledgement means an in-thread reply. Reactions can't count: GitHub
 // emits no webhook for them and they don't bump the PR's updated_at, so
-// an event would ever notice one.
+// an event would never notice one.
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome> {
   const authorLogin = (await ctx.target.authorLogin()).toLowerCase();
   const reviewComments = await ctx.target.reviewComments();

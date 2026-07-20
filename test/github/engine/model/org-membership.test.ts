@@ -29,6 +29,7 @@ describe("expandTeamRefs", () => {
     expect(github.teams.listMembersInOrg).toHaveBeenCalledWith({
       org: "home-assistant",
       team_slug: "core-team",
+      per_page: 100,
     });
   });
 

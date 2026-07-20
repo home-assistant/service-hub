@@ -11,7 +11,7 @@
     Reply with `/ha-bot <command>`:
 
     - `update` — Re-runs the bot's checks on the issue or pull request.
-    - `unassign` — Removes the given integration domain's label and its code owners from the assignees. — e.g. `/ha-bot unassign "opensky"`
+    - `unassign` — Removes the given integration domain's label and its code owners from the assignees. *(author or code owners)* — e.g. `/ha-bot unassign "opensky"`
     - `close` — Closes the issue or pull request. *(code owners)*
     - `reopen` — Reopens the issue or pull request. *(code owners)*
     - `rename` — Renames the issue or pull request: `rename "<new title>"`. *(code owners)* — e.g. `/ha-bot rename "A more descriptive title"`

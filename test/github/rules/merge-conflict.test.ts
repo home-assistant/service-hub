@@ -36,7 +36,7 @@ describe("merge-conflict", () => {
     });
   });
 
-  it("returns nothing while mergeable_state is unknown", async () => {
+  it("passes while mergeable_state is unknown so a stale fail can't persist", async () => {
     const github = createMockGitHub();
     github.pulls.get.mockResolvedValue({ data: { mergeable_state: "unknown" } });
 
@@ -46,7 +46,7 @@ describe("merge-conflict", () => {
     });
 
     const result = await runRule(mergeConflict, context);
-    expect(result).toBeUndefined();
+    expect(result?.section?.status).toBe("pass");
   });
 
   it("listens to opened/reopened/synchronize", () => {

@@ -50,11 +50,21 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome | 
   }
 
   // The approval label is never trusted on its own — an approval can be
-  // dismissed, so the reviews are the source of truth and the label follows.
+  // dismissed or superseded, so the reviews are the source of truth and the
+  // label follows. Only an owner's *latest* decisive review counts: an old
+  // APPROVED is void once the same owner later requests changes or has the
+  // approval dismissed. Reviews come back oldest-first, so the last write per
+  // owner wins; COMMENTED/PENDING reviews don't change a standing decision.
   const reviews = await ctx.target.reviews();
-  const approvedByOwner = reviews.some(
-    (r) => r.state === "APPROVED" && expandedOwners.includes(r.user?.login?.toLowerCase() ?? ""),
-  );
+  const latestByOwner = new Map<string, string>();
+  for (const r of reviews) {
+    const login = r.user?.login?.toLowerCase() ?? "";
+    if (!expandedOwners.includes(login)) continue;
+    if (r.state === "APPROVED" || r.state === "CHANGES_REQUESTED" || r.state === "DISMISSED") {
+      latestByOwner.set(login, r.state);
+    }
+  }
+  const approvedByOwner = [...latestByOwner.values()].some((state) => state === "APPROVED");
 
   if (approvedByOwner) {
     return {

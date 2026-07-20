@@ -211,20 +211,27 @@ describe("buildStatus", () => {
 });
 
 describe("hasFailingSections", () => {
+  const known = new Set(["a"]);
+
   it("is true for a body carrying a failing section", () => {
     const body = previousBodyWith([section({ id: "a", status: "fail" })]);
-    expect(hasFailingSections(body)).toBe(true);
+    expect(hasFailingSections(body, known)).toBe(true);
   });
 
   it("is false for pending-only and passing bodies", () => {
-    expect(hasFailingSections(previousBodyWith([section({ id: "a", status: "pending" })]))).toBe(
-      false,
-    );
-    expect(hasFailingSections(previousBodyWith([section({ id: "a" })]))).toBe(false);
+    expect(
+      hasFailingSections(previousBodyWith([section({ id: "a", status: "pending" })]), known),
+    ).toBe(false);
+    expect(hasFailingSections(previousBodyWith([section({ id: "a" })]), known)).toBe(false);
   });
 
   it("is false when the only failing section is waived", () => {
     const body = previousBodyWith([section({ id: "a", status: "fail", ignored: { reason: "r" } })]);
-    expect(hasFailingSections(body)).toBe(false);
+    expect(hasFailingSections(body, known)).toBe(false);
+  });
+
+  it("ignores failing sections no live rule claims", () => {
+    const body = previousBodyWith([section({ id: "removed-rule", status: "fail" })]);
+    expect(hasFailingSections(body, known)).toBe(false);
   });
 });

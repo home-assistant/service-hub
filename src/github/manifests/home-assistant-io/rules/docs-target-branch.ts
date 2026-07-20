@@ -38,7 +38,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome | 
   }
 
   return {
-    status: "fail",
+    status: "warn",
     message:
       expected === "next"
         ? `This PR has a parent PR on one of our codebases, so its documentation is for an ` +
