@@ -7,6 +7,7 @@ import type { GuildManifest } from "./types.js";
 export const homeAssistantGuild: GuildManifest = {
   id: "330944238910963714",
   name: "home-assistant",
+  messageFile: "homeassistant.yaml",
   commands: [...commonCommands, integration, my, versions],
   listeners: [...commonListeners],
 };

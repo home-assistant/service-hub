@@ -11,6 +11,8 @@ export interface GuildManifest {
   id: string;
   /** Human-readable name, for docs and logs only. */
   name: string;
+  /** Message file backing /message, under src/discord/messages/. */
+  messageFile: string;
   commands: SlashCommand[];
   listeners: Listener[];
 }

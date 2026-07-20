@@ -28,12 +28,6 @@ const readFromDisk: MessageFileReader = (file) =>
 
 let readFile: MessageFileReader = readFromDisk;
 
-/** Guild snowflake → guild-specific message file merged over common.yaml. */
-export const GUILD_MESSAGE_FILES: Record<string, string> = {
-  "330944238910963714": "homeassistant.yaml",
-  "429907082951524364": "esphome.yaml",
-};
-
 const cache = new Map<string, MessageData>();
 
 /** Parse and schema-validate one message YAML document. */
@@ -45,20 +39,24 @@ function parseFile(file: string): MessageData {
   return parseMessageFile(readFile(file));
 }
 
-export function loadMessages(guildId: string, force = false): MessageData {
-  const cached = cache.get(guildId);
+/** Load common.yaml merged with the guild's message file (if any), cached per file. */
+export function loadMessages(guildFile: string | undefined, force = false): MessageData {
+  const cacheKey = guildFile ?? "";
+  const cached = cache.get(cacheKey);
   if (cached && !force) return cached;
-  const guildFile = GUILD_MESSAGE_FILES[guildId];
   const data: MessageData = {
     ...parseFile("common.yaml"),
     ...(guildFile ? parseFile(guildFile) : {}),
   };
-  cache.set(guildId, data);
+  cache.set(cacheKey, data);
   return data;
 }
 
-export function getMessage(guildId: string, key: string): PredefinedMessage | undefined {
-  return loadMessages(guildId)[key];
+export function getMessage(
+  guildFile: string | undefined,
+  key: string,
+): PredefinedMessage | undefined {
+  return loadMessages(guildFile)[key];
 }
 
 export function resetMessageCache(): void {

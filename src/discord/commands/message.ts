@@ -23,11 +23,11 @@ export const message: SlashCommand = {
     const key = context.option("message") ?? "";
 
     if (key === "reload") {
-      await loadMessages(context.guildId, true);
+      await loadMessages(context.guildMessageFile, true);
       return [{ type: "reply" as const, content: "Message list reloaded", ephemeral: true }];
     }
 
-    const entry = await getMessage(context.guildId, key);
+    const entry = await getMessage(context.guildMessageFile, key);
     if (!entry) {
       return [{ type: "reply" as const, content: "Could not find information", ephemeral: true }];
     }
@@ -50,7 +50,7 @@ export const message: SlashCommand = {
   },
 
   async autocomplete(context) {
-    const data = await loadMessages(context.guildId);
+    const data = await loadMessages(context.guildMessageFile);
     const choices = Object.entries(data)
       .filter(([, entry]) => entry.description || entry.title)
       .map(([key, entry]) => ({ name: entry.description || entry.title || key, value: key }));

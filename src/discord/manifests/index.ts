@@ -35,7 +35,11 @@ function build(): GuildRegistry {
     if (guilds[manifest.id]) {
       throw new Error(`Guild "${manifest.id}" is declared by more than one manifest`);
     }
-    guilds[manifest.id] = { commands: manifest.commands, listeners: manifest.listeners };
+    guilds[manifest.id] = {
+      messageFile: manifest.messageFile,
+      commands: manifest.commands,
+      listeners: manifest.listeners,
+    };
   }
   return { guilds };
 }

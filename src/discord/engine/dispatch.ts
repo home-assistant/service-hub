@@ -11,6 +11,7 @@ import { DiscordEventType } from "./event.js";
 import type { DiscordEffect, Listener, SlashCommand } from "./types.js";
 
 export interface GuildConfig {
+  messageFile: string;
   commands: SlashCommand[];
   listeners: Listener[];
 }
@@ -149,14 +150,15 @@ export async function dispatchDiscordEvent(
   // The bot's own sends echo back as message_created — never react to them.
   if (event.user.isBot) return [];
 
+  const messageFile = registry.guilds[event.guildId]?.messageFile;
   switch (event.type) {
     case DiscordEventType.COMMAND:
-      return dispatchCommand(registry, new CommandContext(event, reader));
+      return dispatchCommand(registry, new CommandContext(event, reader, messageFile));
     case DiscordEventType.AUTOCOMPLETE:
-      return dispatchAutocomplete(registry, new DiscordContext(event, reader));
+      return dispatchAutocomplete(registry, new DiscordContext(event, reader, messageFile));
     case DiscordEventType.MODAL_SUBMIT:
-      return dispatchModal(registry, new DiscordContext(event, reader));
+      return dispatchModal(registry, new DiscordContext(event, reader, messageFile));
     case DiscordEventType.MESSAGE_CREATED:
-      return dispatchMessage(registry, new DiscordContext(event, reader));
+      return dispatchMessage(registry, new DiscordContext(event, reader, messageFile));
   }
 }

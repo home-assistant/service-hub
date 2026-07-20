@@ -39,6 +39,7 @@ describe("/message", () => {
     const context = new CommandContext(
       commandEvent("message", { message: "logs", user: "42" }),
       stubReader(),
+      "homeassistant.yaml",
     );
     expect(await message.handle(context)).toEqual([
       {
@@ -56,7 +57,11 @@ describe("/message", () => {
   });
 
   it("answers ephemerally for unknown keys", async () => {
-    const context = new CommandContext(commandEvent("message", { message: "nope" }), stubReader());
+    const context = new CommandContext(
+      commandEvent("message", { message: "nope" }),
+      stubReader(),
+      "homeassistant.yaml",
+    );
     expect(await message.handle(context)).toEqual([
       { type: "reply", content: "Could not find information", ephemeral: true },
     ]);
@@ -66,6 +71,7 @@ describe("/message", () => {
     const context = new CommandContext(
       commandEvent("message", { message: "reload" }),
       stubReader(),
+      "homeassistant.yaml",
     );
     expect(await message.handle(context)).toEqual([
       { type: "reply", content: "Message list reloaded", ephemeral: true },
@@ -76,6 +82,7 @@ describe("/message", () => {
     const context = new DiscordContext(
       autocompleteEvent("message", { option: "message", value: "temp" }),
       stubReader(),
+      "homeassistant.yaml",
     );
     expect((await message.autocomplete?.(context)) ?? []).toEqual([
       { name: "Templating documentation", value: "templates" },
@@ -86,6 +93,7 @@ describe("/message", () => {
     const context = new DiscordContext(
       autocompleteEvent("message", { option: "message", value: "" }),
       stubReader(),
+      "homeassistant.yaml",
     );
     expect((await message.autocomplete?.(context)) ?? []).toEqual([]);
   });

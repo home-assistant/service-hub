@@ -29,10 +29,13 @@ export interface ChannelReader {
 export class DiscordContext<E extends DiscordEvent = DiscordEvent> {
   readonly event: E;
   readonly reader: ChannelReader;
+  /** The guild's /message data file, resolved from its manifest by dispatch. */
+  readonly guildMessageFile: string | undefined;
 
-  constructor(event: E, reader: ChannelReader) {
+  constructor(event: E, reader: ChannelReader, guildMessageFile?: string) {
     this.event = event;
     this.reader = reader;
+    this.guildMessageFile = guildMessageFile;
   }
 
   get guildId(): string {
