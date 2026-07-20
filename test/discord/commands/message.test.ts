@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { message } from "../../../src/discord/commands/message.js";
+import { setMessageFileReader } from "../../../src/discord/data/messages.js";
 import { CommandContext, DiscordContext } from "../../../src/discord/engine/context.js";
 import { autocompleteEvent, commandEvent, stubReader } from "../helpers/events.js";
-import { resetDataCaches, withRemote } from "../helpers/remote.js";
+import { resetDataCaches } from "../helpers/remote.js";
 
 const COMMON_YAML = `
 templates:
@@ -21,12 +22,17 @@ logs:
       value: https://example.com/logs
 `;
 
-const REMOTE = {
-  "messages/common.yaml": COMMON_YAML,
-  "messages/homeassistant.yaml": HA_YAML,
+const FILES: Record<string, string> = {
+  "common.yaml": COMMON_YAML,
+  "homeassistant.yaml": HA_YAML,
 };
 
-beforeEach(resetDataCaches);
+beforeEach(() => {
+  resetDataCaches();
+  setMessageFileReader((file) => FILES[file] ?? "");
+});
+
+afterEach(() => setMessageFileReader(null));
 
 describe("/message", () => {
   it("posts the guild-merged message with mention, image, and inline fields", async () => {
@@ -34,7 +40,7 @@ describe("/message", () => {
       commandEvent("message", { message: "logs", user: "42" }),
       stubReader(),
     );
-    expect(await withRemote(REMOTE, () => message.handle(context))).toEqual([
+    expect(await message.handle(context)).toEqual([
       {
         type: "reply",
         embeds: [
@@ -51,7 +57,7 @@ describe("/message", () => {
 
   it("answers ephemerally for unknown keys", async () => {
     const context = new CommandContext(commandEvent("message", { message: "nope" }), stubReader());
-    expect(await withRemote(REMOTE, () => message.handle(context))).toEqual([
+    expect(await message.handle(context)).toEqual([
       { type: "reply", content: "Could not find information", ephemeral: true },
     ]);
   });
@@ -61,7 +67,7 @@ describe("/message", () => {
       commandEvent("message", { message: "reload" }),
       stubReader(),
     );
-    expect(await withRemote(REMOTE, () => message.handle(context))).toEqual([
+    expect(await message.handle(context)).toEqual([
       { type: "reply", content: "Message list reloaded", ephemeral: true },
     ]);
   });
@@ -71,7 +77,7 @@ describe("/message", () => {
       autocompleteEvent("message", { option: "message", value: "temp" }),
       stubReader(),
     );
-    expect(await withRemote(REMOTE, () => message.autocomplete?.(context) ?? [])).toEqual([
+    expect((await message.autocomplete?.(context)) ?? []).toEqual([
       { name: "Templating documentation", value: "templates" },
     ]);
   });
@@ -81,6 +87,6 @@ describe("/message", () => {
       autocompleteEvent("message", { option: "message", value: "" }),
       stubReader(),
     );
-    expect(await withRemote(REMOTE, () => message.autocomplete?.(context) ?? [])).toEqual([]);
+    expect((await message.autocomplete?.(context)) ?? []).toEqual([]);
   });
 });

@@ -1,5 +1,5 @@
+import { readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
-import { fetchWithTimeout } from "../../util/fetch.js";
 
 export interface PredefinedMessage {
   content: string;
@@ -11,9 +11,13 @@ export interface PredefinedMessage {
 
 type MessageData = Record<string, PredefinedMessage>;
 
-// The YAML data files stay in the legacy repo until it's fully retired.
-const DATA_BASE =
-  "https://raw.githubusercontent.com/home-assistant/service-hub/main/data/discord/messages";
+/** Reads a message YAML file's raw text. Overridable in tests. */
+type MessageFileReader = (file: string) => string;
+
+const readFromDisk: MessageFileReader = (file) =>
+  readFileSync(new URL(`../messages/${file}`, import.meta.url), "utf-8");
+
+let readFile: MessageFileReader = readFromDisk;
 
 /** Guild snowflake → guild-specific message file merged over common.yaml. */
 export const GUILD_MESSAGE_FILES: Record<string, string> = {
@@ -23,31 +27,32 @@ export const GUILD_MESSAGE_FILES: Record<string, string> = {
 
 const cache = new Map<string, MessageData>();
 
-async function fetchYaml(file: string): Promise<MessageData> {
-  const response = await fetchWithTimeout(`${DATA_BASE}/${file}`);
-  if (!response.ok) throw new Error(`Failed to fetch ${file}: ${response.status}`);
-  return (parseYaml(await response.text()) ?? {}) as MessageData;
+function parseFile(file: string): MessageData {
+  return (parseYaml(readFile(file)) ?? {}) as MessageData;
 }
 
-export async function loadMessages(guildId: string, force = false): Promise<MessageData> {
+export function loadMessages(guildId: string, force = false): MessageData {
   const cached = cache.get(guildId);
   if (cached && !force) return cached;
   const guildFile = GUILD_MESSAGE_FILES[guildId];
   const data: MessageData = {
-    ...(await fetchYaml("common.yaml")),
-    ...(guildFile ? await fetchYaml(guildFile) : {}),
+    ...parseFile("common.yaml"),
+    ...(guildFile ? parseFile(guildFile) : {}),
   };
   cache.set(guildId, data);
   return data;
 }
 
-export async function getMessage(
-  guildId: string,
-  key: string,
-): Promise<PredefinedMessage | undefined> {
-  return (await loadMessages(guildId))[key];
+export function getMessage(guildId: string, key: string): PredefinedMessage | undefined {
+  return loadMessages(guildId)[key];
 }
 
 export function resetMessageCache(): void {
+  cache.clear();
+}
+
+/** Test seam: override how message files are read. Pass null to restore disk reads. */
+export function setMessageFileReader(reader: MessageFileReader | null): void {
+  readFile = reader ?? readFromDisk;
   cache.clear();
 }

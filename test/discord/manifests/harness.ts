@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { setMessageFileReader } from "../../../src/discord/data/messages.js";
 import type { PinnedMessage } from "../../../src/discord/engine/context.js";
 import { dispatchDiscordEvent } from "../../../src/discord/engine/dispatch.js";
 import type { DiscordEvent } from "../../../src/discord/engine/event.js";
@@ -48,11 +49,18 @@ export async function runFixture(fixture: DiscordFixture): Promise<DiscordEffect
   resetDataCaches();
   const originalFetch = globalThis.fetch;
   globalThis.fetch = routeFetch(fixture.state.remote ?? {});
+  // Message YAML is bundled and read from disk; serve the fixture's
+  // `messages/<file>` stubs through the loader's reader seam instead.
+  setMessageFileReader((file) => {
+    const body = fixture.state.remote?.[`messages/${file}`];
+    return typeof body === "string" ? body : "";
+  });
   try {
     return await dispatchDiscordEvent(discordRegistry, fixture.event, {
       pinnedMessages: async () => fixture.state.pinned ?? [],
     });
   } finally {
     globalThis.fetch = originalFetch;
+    setMessageFileReader(null);
   }
 }
