@@ -1,15 +1,24 @@
 import { readFileSync } from "node:fs";
 import { parse as parseYaml } from "yaml";
+import { z } from "zod";
 
-export interface PredefinedMessage {
-  content: string;
-  description?: string;
-  title?: string;
-  image?: string;
-  fields?: { name: string; value: string }[];
-}
+const MessageSchema = z
+  .object({
+    content: z.string(),
+    description: z.string().optional(),
+    title: z.string().optional(),
+    image: z.url().optional(),
+    fields: z.array(z.object({ name: z.string(), value: z.string() })).optional(),
+  })
+  .strict();
 
-type MessageData = Record<string, PredefinedMessage>;
+/** A predefined message the bot can post via the /message command. */
+export type PredefinedMessage = z.infer<typeof MessageSchema>;
+
+/** A message file is a map of key → message. */
+const MessageFileSchema = z.record(z.string(), MessageSchema);
+
+type MessageData = z.infer<typeof MessageFileSchema>;
 
 /** Reads a message YAML file's raw text. Overridable in tests. */
 type MessageFileReader = (file: string) => string;
@@ -27,8 +36,13 @@ export const GUILD_MESSAGE_FILES: Record<string, string> = {
 
 const cache = new Map<string, MessageData>();
 
+/** Parse and schema-validate one message YAML document. */
+export function parseMessageFile(raw: string): MessageData {
+  return MessageFileSchema.parse(parseYaml(raw) ?? {});
+}
+
 function parseFile(file: string): MessageData {
-  return (parseYaml(readFile(file)) ?? {}) as MessageData;
+  return parseMessageFile(readFile(file));
 }
 
 export function loadMessages(guildId: string, force = false): MessageData {
