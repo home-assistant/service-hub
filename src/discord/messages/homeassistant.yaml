@@ -114,42 +114,6 @@ show_sensors:
     {%- endfor %}
 
     ```
-show_zwave:
-  description: "List all Z-Wave devices"
-  content: >-
-    Paste the following code into the [Template Builder in Developer Tools](https://my.home-assistant.io/redirect/developer_template/) to
-    list all Z-Wave devices and their status:
-
-
-    ```jinja
-
-    {{ \"_\".ljust(90, \"_\") }}
-
-    {%- set domains = [states.zwave] %}
-
-    {{ \"Entity ID\".ljust(50) }}{{ \"Entity Name\" }}
-
-    {%- for domain in domains -%}
-
-    {% for item in domain %}
-
-    {{ \"_\".ljust(90, \"_\") }}
-
-    {{ item.entity_id.ljust(50) }}{{ item.name }}
-
-    {% for attrib in item.attributes %}
-
-    {%- if attrib is defined %}
-      {{attrib.ljust(50)}}: {{ item.attributes[attrib] }}
-    {%- endif %}
-
-    {%- endfor %}
-
-    {%- endfor %}
-
-    {%- endfor %}
-
-    ```
 mosquitto:
   description: "Test with mosquitto_sub"
   content: >-
@@ -162,19 +126,8 @@ mosquitto:
     $ mosquitto_sub -h IP_ADDRESS -u 'pi' -P 'raspberry' -t '#' -v
 
     ```
-checkconfigui:
-  content: 'Check your config: <https://my.home-assistant.io/redirect/server_controls>'
 rest_api:
-  content: <https://developers.home-assistant.io/docs/external_api_rest>
-config:
-  content: >-
-    Enable the "Configuration" section of the UI by adding `config:` to your
-    configuration.yaml file, visit [the docs
-    page](https://home-assistant.io/integrations/config/) for more info.
-interference:
-  description: "Wifi Zigbee interference"
-  content: >-
-    https://cdn.discordapp.com/attachments/330944238910963714/353573816464834560/wifi-zigbee-channels.png
+  content: <https://developers.home-assistant.io/docs/api/rest/>
 mosquitto_passwd:
   content: >-
     ```shell
@@ -230,28 +183,6 @@ markdown:
     [Discord Markdown Text
     101](https://support.discordapp.com/hc/en-us/articles/210298617)
 
-espeasy:
-  description: "ESPEasy"
-  content: >-
-    **Ready to use firmware for ESP8266 based wireless devices**
-
-    --------------------------------------------------------------------
-
-    Wiki:
-
-    <https://www.letscontrolit.com/wiki/index.php/ESPEasy>
-
-
-    Stable Release:
-
-    http://www.letscontrolit.com/downloads/ESPEasy_R120.zip
-
-
-    New release candidates are on github:
-
-    ESPEasy version 2.0 and higher
-    <https://github.com/letscontrolit/ESPEasy/releases>
-
 rsnapshot:
   description: "Rsnapshot for local backups"
   content: >-
@@ -275,10 +206,6 @@ regex:
   content: >-
     If you are not familiar with regex, you can play and learn
     online at <https://regex101.com/>
-sftp:
-  content: >-
-    Visit [this page](http://willheid.com/2017/06/21/sftp-user-for-ha-editing)
-    for a guide.
 pola:
   description: "Principle of Least Astonishment"
   content: >-
@@ -313,7 +240,7 @@ tasmota:
     <https://tasmota.github.io/docs/>
 
 
-    They have their own [Discord server](https://discord.gg/Ks2Kzd4>) or you can
+    They have their own [Discord server](https://discord.gg/Ks2Kzd4) or you can
     ask in <#444529271806099486>
 getting_started:
   description: "Getting Started"
@@ -360,8 +287,8 @@ rule5:
 rule6:
   title: "Rule 6"
   content: >-
-    Do not @ mention or DM Moderators, Nabu Casa employees, Members,
-    Integration owners, or any other community members who aren't
+    Do not @ mention or DM Moderators, OHF employees, Nabu Casa employees, 
+    Members, Integration owners, or any other community members who aren't
     part of the current conversation for any matter, unless you
     share a mutual relationship. The exception to this rule is if
     you are reporting something that violates these rules;
@@ -524,7 +451,7 @@ device_class:
   description: "Device class"
   content: >-
     [Binary
-    sensors](https://www.home-assistant.io/components/binary_sensor/#device-class)
+    sensors](https://www.home-assistant.io/integrations/binary_sensor/#device-class)
     and
     [sensors](https://www.home-assistant.io/integrations/sensor#device-class)
     have device classes that change how things look in the frontend and are
@@ -562,7 +489,7 @@ json:
   description: "JSON validation"
   content: >-
     Use these tools to [check validity of JSON](http://www.jsonlint.com) or
-    [parse JSON](https://jqplay.org/)
+    [parse JSON](https://play.jqlang.org/)
 rules:
   description: "5 rules"
   content: >-
@@ -579,8 +506,7 @@ rules:
     is an open source product, you are allowed to contribute, but not whine
 
     4. Every setup is unique in its own way. Share your config, code, logs and
-    other relevant info via https://hasteb.in/ or https://paste.ubuntu.com/ -
-    don't post walls of text in the channels
+    other relevant info by uploading the file to discord
 
     5. Keep the channel live by being friendly, offer help where you can, learn
     when you can't!
@@ -712,7 +638,7 @@ question:
     **Before You Ask**
 
     [How To Ask Questions The Smart
-    Way](<http://www.catb.org/esr/faqs/smart-questions.html)
+    Way](http://www.catb.org/esr/faqs/smart-questions.html)
 
 
     Before asking a technical question in our channels, please do the following:
@@ -734,7 +660,7 @@ question:
     6. Try to find an answer by asking a skilled friend.
 
     7. If you're a programmer, try to find an answer by reading [the source
-    code](https://github.com/home-assistant/home-assistant)
+    code](https://github.com/home-assistant/core)
 
 
     When you ask your question, display the fact that you have done these things
@@ -798,7 +724,7 @@ llat:
     can be found in your [user
     profile](https://my.home-assistant.io/redirect/profile/). For examples of
     using it for the API see the [API
-    docs](https://developers.home-assistant.io/docs/en/external_api_rest.html)
+    docs](https://developers.home-assistant.io/docs/api/rest/)
 
 websocket:
   content: >-
@@ -863,7 +789,7 @@ devices:
   content: >-
     Not every entity in your system is associated with a Device. If you want to
     see everything, look under _Developer Tools_ then _States_ or in the
-    _Entities_ menu under _Configuration_.
+    _Entities_ menu under _Settings_.
 flippy_boi:
   description: "Input boolean"
   content: https://www.home-assistant.io/integrations/input_boolean/
@@ -952,7 +878,7 @@ windows:
     Running Home Assistant in a venv on Windows isn't recommended. Not all
     integrations may work, because some Python packages aren't available. You
     should consider [using
-    Docker](https://www.home-assistant.io/docs/installation/docker/#windows)
+    a virtual machine](https://www.home-assistant.io/installation/#install-home-assistant-on-windows)
     instead, or running on a Linux host.
 deconz:
   description: "deCONZ"
@@ -1015,8 +941,8 @@ advanced:
   content: >-
     Various settings are hidden unless your [user
     profile](https://my.home-assistant.io/redirect/profile/) has _Advanced mode_
-    enabled. These include some add-ons, the Lovelace _Resources_ menu, server
-    control options, and more.
+    enabled. These include some add-ons, the dashboard _Resources_ menu, and
+    more.
 
 test:
   description: "Testing automations"
@@ -1025,14 +951,14 @@ test:
     action, the condition and action, and the whole automation:
 
 
-    1) Use _Configuration_ ->
+    1) Use _Settings_ ->
     [_Automations_](https://my.home-assistant.io/redirect/automations/) to find
     the automation and then select _Run_ in the three dots menu. If this fails
     your problem is in the `action:` section, and details should be found in
     your log file
 
     2) Use _Developer tools_ ->
-    [_Services_](https://my.home-assistant.io/redirect/developer_services/) and
+    [_Actions_](https://my.home-assistant.io/redirect/developer_services/) and
     call `automation.trigger` on the automation with `skip_condition: false`. If
     the first passes but this fails then the problem is in your `condition:`
     block
@@ -1054,7 +980,7 @@ pickyourstick:
   description: "Pick your Zigbee stick"
   content: >-
     Buy something CC2652 based. [This
-    list](https://www.zigbee2mqtt.io/information/supported_adapters.html) is a
+    list](https://www.zigbee2mqtt.io/guide/adapters/) is a
     good one, both [Tube](https://www.tubeszb.com/) and
     [Electrolama](https://shop.electrolama.com/) have been proven to have
     excellent customer service. The current generation of EZSP sticks ([see here
@@ -1183,7 +1109,7 @@ cc253x:
 
 
     What something better? Anything CC2652 based ([see here for
-    some](https://www.zigbee2mqtt.io/information/supported_adapters.html)) or
+    some](https://www.zigbee2mqtt.io/guide/adapters/)) or
     the current generation EZSP ([see here for
     some](https://github.com/Koenkk/zigbee-herdsman/issues/319#issuecomment-789757269)).
 
@@ -1373,8 +1299,8 @@ bp:
 python:
   description: "Python"
   content: >-
-    Python 3.9 is the minimum version of Python supported by Home Assistant,
-    with 3.9 being recommended. If you're using a Python virtual environment
+    Python 3.13 is the minimum version of Python supported by Home Assistant,
+    with 3.13 being recommended. If you're using a Python virtual environment
     install you can install an updated version of Python, then manually upgrade
     your venv as described in
     <https://blog.ceard.tech/2017/12/upgrading-python-virtual-environment.html>
@@ -1390,7 +1316,7 @@ check:
         [`docker` commands](https://www.home-assistant.io/common-tasks/container/#configuration-check)
     - name: Core
       value: >-
-        Requires you to [activate the venv first](https://www.home-assistant.io/common-tasks/core/#configuration-check)
+        Requires you to [activate the venv first](https://www.home-assistant.io/docs/tools/check_config/)
 
 chatgpt:
   description: "Don't use ChatGPT"
