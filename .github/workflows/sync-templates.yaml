@@ -20,35 +20,43 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # Installs the pnpm version pinned in package.json's packageManager.
-      - uses: pnpm/action-setup@v4
+      - name: Set up pnpm
+        # Installs the pnpm version pinned in package.json's packageManager.
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 26
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - run: pnpm run sync-templates
+      - name: Vendor the upstream PR templates
+        run: pnpm run sync-templates
 
-      # Stop early when the vendored template is unchanged — later steps
-      # refresh expected effects, and running them anyway would fold unrelated
-      # drift into a "template sync" PR.
       - name: Detect template changes
         id: template
+        # Stop early when the vendored template is unchanged — later steps
+        # refresh expected effects, and running them anyway would fold unrelated
+        # drift into a "template sync" PR.
         run: echo "changed=$(git diff --quiet && echo false || echo true)" >> "$GITHUB_OUTPUT"
 
-      - if: steps.template.outputs.changed == 'true'
+      - name: Re-render fixture bodies
+        if: steps.template.outputs.changed == 'true'
         run: pnpm run update-fixture-bodies
 
-      - if: steps.template.outputs.changed == 'true'
+      - name: Refresh expected effects
+        if: steps.template.outputs.changed == 'true'
         run: UPDATE_FIXTURES=1 pnpm test
 
-      - if: steps.template.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@v7
+      - name: Open a pull request
+        if: steps.template.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           branch: bot/sync-pr-templates
           delete-branch: true
