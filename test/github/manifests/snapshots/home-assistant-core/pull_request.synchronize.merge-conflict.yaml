@@ -37,7 +37,6 @@
     - `add-label` — Adds a label (needs-more-information, problem in dependency, problem in custom component, problem in config, problem in device, feature-request) to the issue or pull request. *(code owners)* — e.g. `/ha-bot add-label "needs-more-information"`
     - `remove-label` — Removes a label (needs-more-information, problem in dependency, problem in custom component, problem in config, problem in device, feature-request) from the issue or pull request. *(code owners)* — e.g. `/ha-bot remove-label "needs-more-information"`
     - `mark-draft` — Marks the pull request as draft. *(code owners)*
-    - `ready-for-review` — Removes the draft status from the pull request. *(code owners)*
     - `update-branch` — Updates the pull request branch with the base branch. *(code owners)*
 
     </details>

@@ -49,7 +49,6 @@ export type Effect =
   // Most rules should not require this: The engine already converts
   // the PR to draft when its checks fail
   | { type: "convertToDraft" }
-  | { type: "markReadyForReview" }
   | { type: "updateBranch" };
 // Cross-engine notification, disabled until the Discord engine goes live:
 // a GitHub rule states a fact ({ type: "notify", topic, data }) and the

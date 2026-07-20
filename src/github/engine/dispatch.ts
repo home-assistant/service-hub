@@ -2,7 +2,7 @@ import { log } from "../../log.js";
 import { EventType } from "./event.js";
 import type { CommandContext } from "./model/command-context.js";
 import type { RuleContext } from "./model/rule-context.js";
-import { draftPRIfNotDraft, readyPRIfDraft } from "./pr-state.js";
+import { draftPRIfNotDraft } from "./pr-state.js";
 import { hasFailingSections } from "./status/build.js";
 import type { SectionOverride, StatusSection } from "./status/types.js";
 import { ensureStatusCommentExists, findStatusComment, syncStatus } from "./status-sync.js";
@@ -119,9 +119,6 @@ async function applyEffects(
         break;
       case "convertToDraft":
         ops.push(() => draftPRIfNotDraft(context));
-        break;
-      case "markReadyForReview":
-        ops.push(() => readyPRIfDraft(context));
         break;
       case "updateBranch":
         ops.push(() => updateBranchOrExplain(context));

@@ -197,23 +197,6 @@ describe("effect → GitHub API mapping", () => {
     expect(github.graphql).not.toHaveBeenCalled();
   });
 
-  it("markReadyForReview → markPullRequestReadyForReview mutation with the PR's node id", async () => {
-    const github = await apply([{ type: "markReadyForReview" }], {
-      payload: { pull_request: { draft: true } },
-    });
-
-    expect(github.graphql).toHaveBeenCalledWith(
-      expect.stringContaining("markPullRequestReadyForReview"),
-      { id: "PR_1" },
-    );
-  });
-
-  it("markReadyForReview is a no-op when the PR is not a draft", async () => {
-    const github = await apply([{ type: "markReadyForReview" }]);
-
-    expect(github.graphql).not.toHaveBeenCalled();
-  });
-
   it("statusSection → status comment plus ha-bot commit status on the head sha", async () => {
     const github = createMockGitHub();
     github.issues.createComment.mockResolvedValue({

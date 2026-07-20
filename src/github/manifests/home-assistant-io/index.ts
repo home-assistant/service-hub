@@ -3,7 +3,6 @@ import { ignore, unignore } from "../../commands/ignore.js";
 import { addLabel } from "../../commands/label-add.js";
 import { removeLabel } from "../../commands/label-remove.js";
 import { markDraft } from "../../commands/mark-draft.js";
-import { readyForReview } from "../../commands/ready-for-review.js";
 import { rename } from "../../commands/rename.js";
 import { reopen } from "../../commands/reopen.js";
 import { unassign } from "../../commands/unassign.js";
@@ -72,7 +71,6 @@ export const homeAssistantIo: RepoManifest = {
     removeLabel(MANAGEABLE_LABELS),
     unassign,
     markDraft,
-    readyForReview,
     updateBranch,
   ],
 };

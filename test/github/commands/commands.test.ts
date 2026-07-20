@@ -4,7 +4,6 @@ import { ignore, unignore } from "../../../src/github/commands/ignore.js";
 import { addLabel } from "../../../src/github/commands/label-add.js";
 import { removeLabel } from "../../../src/github/commands/label-remove.js";
 import { markDraft } from "../../../src/github/commands/mark-draft.js";
-import { readyForReview } from "../../../src/github/commands/ready-for-review.js";
 import { rename } from "../../../src/github/commands/rename.js";
 import { reopen } from "../../../src/github/commands/reopen.js";
 import { update } from "../../../src/github/commands/update.js";
@@ -40,7 +39,6 @@ function asCodeOwner(body: string, github?: MockGitHub) {
     "add-label": addLabel(["needs-more-information"]),
     "remove-label": removeLabel(["needs-more-information"]),
     "mark-draft": markDraft,
-    "ready-for-review": readyForReview,
     "update-branch": updateBranch,
   }[body.split(/\s+/)[1]];
   if (!command) throw new Error(`no command for "${body}"`);
@@ -123,7 +121,7 @@ describe("add-label / remove-label", () => {
   });
 });
 
-describe("mark-draft / ready-for-review", () => {
+describe("mark-draft", () => {
   it("converts a non-draft PR to draft via GraphQL", async () => {
     const github = createMockGitHub();
     github.pulls.get.mockResolvedValue({ data: { draft: false, node_id: "PR_NODE" } });
@@ -137,20 +135,7 @@ describe("mark-draft / ready-for-review", () => {
     expectReaction(github, "+1");
   });
 
-  it("marks a draft PR ready for review via GraphQL", async () => {
-    const github = createMockGitHub();
-    github.pulls.get.mockResolvedValue({ data: { draft: true, node_id: "PR_NODE" } });
-    const { context } = asCodeOwner("/ha-bot ready-for-review", github);
-
-    await dispatchCommand(context);
-    expect(github.graphql).toHaveBeenCalledWith(
-      expect.stringContaining("markPullRequestReadyForReview"),
-      { id: "PR_NODE" },
-    );
-    expectReaction(github, "+1");
-  });
-
-  it("does not touch a PR already in the requested state", async () => {
+  it("does not touch a PR already in draft", async () => {
     const github = createMockGitHub();
     github.pulls.get.mockResolvedValue({ data: { draft: true, node_id: "PR_NODE" } });
     const { context } = asCodeOwner("/ha-bot mark-draft", github);

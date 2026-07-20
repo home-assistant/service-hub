@@ -19,17 +19,3 @@ export async function draftPRIfNotDraft(context: RuleContext): Promise<void> {
     log.warn("draftPRIfNotDraft failed", { error: String(err) });
   }
 }
-
-async function markPullRequestReadyForReview(github: Octokit, nodeId: string): Promise<void> {
-  await github.graphql(
-    "mutation($id: ID!) { markPullRequestReadyForReview(input: {pullRequestId: $id}) { clientMutationId } }",
-    { id: nodeId },
-  );
-}
-
-/** Remove the draft status unless the PR already has none. */
-export async function readyPRIfDraft(context: RuleContext): Promise<void> {
-  if (context.target.kind !== "pull_request") return;
-  if (!(await context.target.isDraft())) return;
-  await markPullRequestReadyForReview(context.github, await context.target.nodeId());
-}
