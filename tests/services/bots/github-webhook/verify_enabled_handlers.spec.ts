@@ -59,9 +59,29 @@ describe('GithubWebhookModule', () => {
     },
     {
       eventType: EventType.ISSUES_LABELED,
-      handlers: ['CodeOwnersMention', 'IssueContext', 'IssueLinks'],
+      handlers: ['CodeOwnersMention', 'IssueContext', 'IssueLinks', 'LabelActions'],
       payload: {
         repository: { full_name: 'home-assistant/core', owner: { login: 'home-assistant' } },
+      },
+    },
+    {
+      eventType: EventType.ISSUES_LABELED,
+      handlers: ['LabelActions'],
+      payload: {
+        repository: {
+          full_name: 'home-assistant/operating-system',
+          owner: { login: 'home-assistant' },
+        },
+      },
+    },
+    {
+      eventType: EventType.ISSUES_LABELED,
+      handlers: ['LabelActions'],
+      payload: {
+        repository: {
+          full_name: 'home-assistant/supervisor',
+          owner: { login: 'home-assistant' },
+        },
       },
     },
     {
