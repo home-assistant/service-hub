@@ -1,13 +1,15 @@
+# Dependencies
 node_modules/
+
+# Build & test output
 dist/
 coverage/
-*local-command-caveatcaveat-*.txt
+
+# Environment
 .env
 .env.*
 !.env.example
-.devenv/
-.direnv/
-result
 
-# raw webhook captures from scripts/capture-webhooks.ts (curated ones live in fixtures/<repo>/)
-tests/manifests/fixtures/_captured/
+# Raw captured fixtures (curated ones live in fixtures/<repo>/)
+tests/github/manifests/fixtures/_captured/
+tests/discord/fixtures/_captured/
