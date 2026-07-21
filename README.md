@@ -1,6 +1,6 @@
-# Home Assistant Bots
+# OHF Bots
 
-A Node.js service which includes the Home Assistant Github, as well as the discord bot. Two engines share the process, separated under `src/github/` and `src/discord/`: the GitHub engine handles webhooks (rules and slash commands), the Discord engine handles gateway events (slash commands, message listeners). CLA checking is handled by the legacy bot in `service-hub/github-bot`.
+A Node.js service running the GitHub and Discord bots for Open Home Foundation projects like the Home Assistant and ESPHome. Two engines share the process, separated under `src/github/` and `src/discord/`: the GitHub engine handles webhooks (rules and slash commands), the Discord engine handles gateway events (slash commands, message listeners).
 
 ## Development
 
@@ -16,52 +16,79 @@ just format          # Auto-fix formatting
 
 `just --list` shows all recipes; they are thin wrappers around the pnpm scripts in `package.json`, which work directly too (`pnpm run dev`, …). Under the hood, `pnpm` is used as the package manager.
 
+## Running locally against a fork
 
-## TODOs
+The bot only acts on the repositories listed in `src/github/manifests/`, so to exercise it end-to-end without touching a production repo you point it at a **fork you own**. The loop is: a GitHub App on your fork sends webhooks → [smee.io](https://smee.io) tunnels them to your laptop → the local server evaluates its rules and calls back into the fork.
 
-- Update the Discord message path inside `src/discord/commands/info.ts`
-- Remove all mentions of the legacy bot from the codebase
+### 1. Create a GitHub App
 
-### CLA Check
-- Add CLA Check
-- CLA Check: add github ID in addtion to github handle (can change)
-- CLA Check: confirm user ID in `/cla-sign` via a short-lived token provided by `/cla-sign/authorize` (right now anyone can sign for a different user with a custom POST, as long as the user has a pending CLA sign)
-- CLA Check: revoke and discard github token already in `/cla-sign/authorize` and only send back the form fields to the frontend.
+Create a personal GitHub App under **Settings → Developer settings → GitHub Apps → New GitHub App** (this can be a user-owned app; org ownership is only needed for the team-expansion permission below).
 
-### Discord
-- Discord: addReaction effect (not needed by the ported legacy features)
-- Discord: Update the dashboard with discord links or the thread or message if the issue/pr has been mentioned there.
-- Discord: Send a discord message when nightly build or dev CI fails.
-- Discord: Send a discrod message when a flaky test is detected with a threshold (failed more than x times last month) - this will need extra work to discover flaky tests first.
+- **Webhook URL** — the smee channel from step 2 (you can fill this in after creating the channel; the path the server listens on is `/github/webhook`).
+- **Webhook secret** — generate a random string; it goes into `GITHUB_WEBHOOK_SECRET`.
+- **Private key** — after creating the app, generate a private key and download the `.pem`; it goes into `GITHUB_PRIVATE_KEY`.
 
-### More HA rules
-fail/info/pending: dashboard status. 
-    Fail = unmergable + dashboard error
-    Pending = unmergable, dashboard info (e.g. platinum approval)
-    Info: dashboard info
+**Repository permissions:**
 
-- fail: pr-description template is not followed
-- fail/info: if there are CI job failures. Depends on the job (prek should fail, tests should fail if single integretion and integration test fails - otherwise info)
-- fail: if they have more than 5 open PRs. New contributors are limited to 1 unless given permissions for another one (add label to new PR). Members are exempted
-- fail: if architecture proposal is included but it hasn't been approved yet
-- fail: if new-feature but no new tests
-- info: if they touch more than one integration. Members are exempted
-- info: if maintainer_can_modify is not enabled
-- fail: if prior comments are still unresolved/haven't been acknowledged (comment or 'resolved')
-    - reaction doesn't send a webhook and thus can't be triggered on
-- fail: keep markdown frontmatter between user docs and integration code in sync (e.g. code owners - require a docs PR if code owners change)
-    - maybe this can be automated? Frenck does it currently before each release
-- info: if they add more than one platform for a new-integration
-- linked PRs should be cross-linked. If the other PR doesn't link to this one (like for docs) flag it
-- convert other github/ci jobs into messages like `detect-non-english-issues`. These jobs should set flags which our bot can read instead.
-- info: they touched 'meta files': a pr should only touch a single meta file or no meta file. e.g. Agents.md, lock files, github actions, etc
-- fail: if propsed change is empty
-- fail: if depedency bump without changelog and diff comparison links
+| Permission | Level | Why |
+|---|---|---|
+| Metadata | Read | Mandatory baseline for all repo access |
+| Issues | Read & Write | Labels, assignees, comments, reactions, title/state |
+| Pull requests | Read & Write | Files/reviews/commits, request reviewers, dismiss review, update branch |
+| Contents | Read | Fetch `CODEOWNERS` |
+| Commit statuses | Read & Write | The dashboard status the bot posts on each PR |
 
-- Have a list of 'legacy' integrations which should not be worked on until something has been fixed. E.g. https://github.com/home-assistant/core/pull/163497 (According to ADR 7 this is required before new features can be accepted for an integration.)
-- Some kind of notification system to core developers to look at PRs which haven't gotten a response for more than x days (e.g. 1 or 2 months). Maybe auto assign on a rotation basis to core developers which are then responsible for that PR? Could be an issue dashboard or epic? 
-- Check if awaiting-frontend / awaiting-backend could be automated?
-- If an arch discussion is linked, check if it has been aproved. Put the PR in draft until it is approved.
-- Create a comment if person force pushes to PR 'Please do not force push'.
-- A generic 'saved replies' rule/command. For things like 'custom_component' (point out that they should report the bug in that repository), 'question' (better ask on discord or the forum), etc.
-- Once a PR has been merged, update the dashboard to indicate in which release this will be included. Look for labels for patch releases
+**Subscribe to events:** `Issues`, `Issue comment`, `Pull request`, `Pull request review`.
+
+> **Team-expansion rules can't be tested on a personal fork.** The code-owner rules resolve `@org/team` refs and org membership against the *fork owner's* org (the bot passes `repo.owner` as the org — see `rule-context.ts`), not `home-assistant`. A `CODEOWNERS` entry like `@home-assistant/foo` won't match a `yourname/` fork and is left unexpanded; membership checks against your personal account just return false. These lookups fail closed, so nothing crashes — the rules simply no-op. Exercising them for real needs the fork inside an org whose own teams its `CODEOWNERS` references, with the app installed there and granted org **Members: Read**.
+
+After creating the app, **install it on your fork** (GitHub App page → Install App → select the fork). The install page URL ends in `/installations/<id>` — that number is your `GITHUB_INSTALLATION_ID`. The app's numeric ID (App settings → "App ID") is `GITHUB_APP_ID`.
+
+### 2. Set up smee
+
+GitHub can't reach `localhost`, so tunnel deliveries through smee:
+
+```bash
+# Get a channel URL from https://smee.io/new, then:
+npx smee-client --url https://smee.io/<your-channel> --target http://localhost:8787/github/webhook
+```
+
+Use that same `https://smee.io/<your-channel>` URL as the GitHub App's **Webhook URL**. Leave the tunnel running alongside `just run`; every delivery GitHub sends will be forwarded to the local server.
+
+> The webhook secret and installation must match, or deliveries are rejected with `401 Invalid signature` — check the smee output and the app's "Advanced → Recent Deliveries" tab if events don't arrive.
+
+### 3. Point the bot at your fork
+
+Rules are keyed by the repository's canonical `owner/repo` slug. To run an existing repo's rule set against your fork instead, add your fork's slug to that manifest's `aliases`. The core manifest already carries a placeholder for exactly this:
+
+```ts
+// src/github/manifests/home-assistant-core/index.ts
+export const homeAssistantCore: RepoManifest = {
+  slug: HomeAssistantRepository.CORE,
+  aliases: ["yourname/core"], // ← change to your fork's owner/repo
+  ...
+};
+```
+
+The fork then shares the exact same rule instances as the real repo — no duplication. Aliases are validated at boot: a slug claimed by two manifests fails loudly on startup.
+
+### 4. Configure `.env` and run
+
+Copy `.env.example` to `.env` and fill in the values gathered above:
+
+```bash
+cp .env.example .env
+# GITHUB_APP_ID, GITHUB_INSTALLATION_ID, GITHUB_WEBHOOK_SECRET, GITHUB_PRIVATE_KEY
+```
+
+The `GITHUB_PRIVATE_KEY` must be on one line with `\n` for newlines (see the comment in `.env.example`). Then:
+
+```bash
+just run   # dev server on http://localhost:8787, watch mode
+```
+
+Open or label a PR/issue on your fork and the delivery should flow smee → server → back to the fork. `GET /health` returns `OK` for a quick liveness check.
+
+### Capturing fixtures
+
+`just capture` runs a standalone server that records real GitHub deliveries into scrubbed test fixtures — point the same smee tunnel at it instead of the dev server. See `scripts/capture-webhooks.ts` for the workflow.
