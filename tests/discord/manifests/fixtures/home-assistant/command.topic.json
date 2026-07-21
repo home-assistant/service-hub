@@ -1,0 +1,18 @@
+{
+  "type": "command",
+  "guildId": "330944238910963714",
+  "channel": {
+    "id": "330944238910963717",
+    "name": "configuration",
+    "kind": "guild_text",
+    "topic": "Get help with your configuration.yaml"
+  },
+  "user": {
+    "id": "662789330969723649",
+    "username": "contributor",
+    "isBot": false,
+    "roleNames": []
+  },
+  "command": "topic",
+  "options": { "user": "706570390239433720" }
+}

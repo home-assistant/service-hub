@@ -1,0 +1,6 @@
+{
+  "remote": {
+    "messages/common.yaml": "templates:\n  description: Templating documentation\n  title: Templates\n  content: See the templating documentation\n",
+    "messages/homeassistant.yaml": "logs:\n  description: How to get your logs\n  content: \"You can find your logs under Settings -> System -> Logs\"\n  fields:\n    - name: Documentation\n      value: https://www.home-assistant.io/docs/troubleshooting/\n"
+  }
+}

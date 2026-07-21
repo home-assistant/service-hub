@@ -1,0 +1,26 @@
+{
+  "remote": {
+    "www.home-assistant.io/integrations.json": {
+      "hue": {
+        "title": "Philips Hue",
+        "description": "Instructions on how to integrate Philips Hue bridge and paired lights within Home Assistant.",
+        "quality_scale": "platinum",
+        "iot_class": "local_push",
+        "integration_type": "hub"
+      },
+      "huum": {
+        "title": "Huum",
+        "description": "Instructions on how to integrate Huum saunas within Home Assistant.",
+        "iot_class": "cloud_polling",
+        "integration_type": "device"
+      },
+      "zwave_js": {
+        "title": "Z-Wave",
+        "description": "Instructions on how to integrate Z-Wave with Home Assistant via Z-Wave JS.",
+        "quality_scale": "platinum",
+        "iot_class": "local_push",
+        "integration_type": "hub"
+      }
+    }
+  }
+}

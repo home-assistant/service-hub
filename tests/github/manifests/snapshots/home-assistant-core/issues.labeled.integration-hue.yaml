@@ -1,0 +1,29 @@
+- type: addAssignees
+  assignees:
+    - balloob
+- type: comment
+  body: |-
+    <!-- ha-bot-mention -->
+
+    Hey there @balloob, mind taking a look at this issue as it has been labeled with an integration (`hue`) you are listed as a [code owner](https://github.com/home-assistant/core/blob/HEAD/CODEOWNERS#L1) for? Thanks!
+    <details><summary>Code owner commands</summary>
+
+    Reply with `/ha-bot <command>`:
+
+    - `update` — Re-runs the bot's checks on the issue or pull request.
+    - `unassign` — Removes the given integration domain's label and its code owners from the assignees. *(author or code owners)* — e.g. `/ha-bot unassign "opensky"`
+    - `close` — Closes the issue or pull request. *(code owners)*
+    - `reopen` — Reopens the issue or pull request. *(code owners)*
+    - `rename` — Renames the issue or pull request: `rename "<new title>"`. *(code owners)* — e.g. `/ha-bot rename "A more descriptive title"`
+    - `add-label` — Adds a label (needs-more-information, problem in dependency, problem in custom component, problem in config, problem in device, feature-request) to the issue or pull request. *(code owners)* — e.g. `/ha-bot add-label "needs-more-information"`
+    - `remove-label` — Removes a label (needs-more-information, problem in dependency, problem in custom component, problem in config, problem in device, feature-request) from the issue or pull request. *(code owners)* — e.g. `/ha-bot remove-label "needs-more-information"`
+
+    </details>
+- type: updateBlock
+  block: integration-links
+  args:
+    domains:
+      - domain: hue
+        docs: https://www.home-assistant.io/integrations/hue
+        source: https://github.com/home-assistant/core/tree/dev/homeassistant/components/hue
+        issues: https://github.com/home-assistant/core/issues?q=label%3A%22integration%3A%20hue%22

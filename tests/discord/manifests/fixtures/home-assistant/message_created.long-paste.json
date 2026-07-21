@@ -1,0 +1,18 @@
+{
+  "type": "message_created",
+  "guildId": "330944238910963714",
+  "channel": {
+    "id": "330944238910963717",
+    "name": "configuration",
+    "kind": "guild_text",
+    "topic": "Get help with your configuration.yaml"
+  },
+  "user": {
+    "id": "662789330969723649",
+    "username": "contributor",
+    "isBot": false,
+    "roleNames": []
+  },
+  "messageId": "1390000000000000001",
+  "content": "```yaml\nautomation:\n  - alias: Turn on lights at sunset\n    trigger:\n      - platform: sun\n        event: sunset\n    action:\n      - service: light.turn_on\n        target:\n          entity_id: light.living_room\n  - alias: Turn off lights at sunrise\n    trigger:\n      - platform: sun\n        event: sunrise\n    action:\n      - service: light.turn_off\n        target:\n          entity_id: light.living_room\n```"
+}

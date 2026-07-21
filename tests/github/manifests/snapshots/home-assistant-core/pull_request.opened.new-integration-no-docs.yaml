@@ -1,0 +1,55 @@
+- type: addLabels
+  labels:
+    - "integration: awesome"
+- type: addLabels
+  labels:
+    - "Quality Scale: bronze"
+- type: statusSection
+  section:
+    id: new-integration-validation
+    title: New integration validation
+    status: pass
+    message: Validation passed.
+- type: statusSection
+  section:
+    id: docs-missing
+    title: Documentation
+    status: fail
+    message: Missing documentation PR
+- type: statusSection
+  section:
+    id: merge-conflict
+    title: Merge conflicts
+    status: pass
+    message: No merge conflicts.
+- type: statusSection
+  section:
+    id: merge-target
+    title: Merge target
+    status: pass
+    message: This PR targets `dev`.
+- type: statusSection
+  section:
+    id: review-comments
+    title: Review comments
+    status: skip
+    message: No inline review comments yet.
+- type: statusSection
+  section:
+    id: code-owner-approval
+    title: Code owner approval
+    status: skip
+    message: Not a platinum integration — no code-owner approval required.
+- type: addLabels
+  labels:
+    - new-integration
+- type: statusSection
+  section:
+    id: type-of-change
+    title: Type of change
+    status: pass
+    message: "Type of change: `new-integration`"
+- type: addLabels
+  labels:
+    - has-tests
+    - new-integration
