@@ -10,4 +10,4 @@ coverage/
 result
 
 # raw webhook captures from scripts/capture-webhooks.ts (curated ones live in fixtures/<repo>/)
-test/manifests/fixtures/_captured/
+tests/manifests/fixtures/_captured/

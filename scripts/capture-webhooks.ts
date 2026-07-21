@@ -1,10 +1,10 @@
 /**
- * Webhook capture server for seeding test/github/manifests fixtures from real
+ * Webhook capture server for seeding tests/github/manifests fixtures from real
  * GitHub deliveries. Point a tunnel (e.g. smee.io) at
  * http://localhost:8787/github/webhook, perform actions on a repo the bot
  * app is installed on, and every delivery lands in the capture directory as
  * `<event>.<action>-<delivery-id>.json`, already scrubbed and ready to be
- * renamed into test/github/manifests/fixtures/<repo>/ (the harness derives the
+ * renamed into tests/github/manifests/fixtures/<repo>/ (the harness derives the
  * event type from the `<event>.<action>` filename prefix).
  *
  * Scrubbing makes payloads independent of the account and fork they were
@@ -22,7 +22,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { serve } from "@hono/node-server";
 
-const FIXTURES_ROOT = "test/github/manifests/fixtures";
+const FIXTURES_ROOT = "tests/github/manifests/fixtures";
 const DEFAULT_REPO = "home-assistant/core";
 const DEFAULT_USER = "contributor";
 const [DEFAULT_OWNER, DEFAULT_NAME] = DEFAULT_REPO.split("/");

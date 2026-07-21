@@ -14,5 +14,5 @@ Dockerfile
 .dockerignore
 justfile
 *.md
-test
+tests
 vitest.config.ts

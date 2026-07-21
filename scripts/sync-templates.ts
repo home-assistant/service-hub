@@ -1,7 +1,7 @@
 /**
  * Vendor each manifest repo's live PR template into
- * test/github/manifests/templates/<name>.md, so scenario bodies render from
- * the real thing (test/github/manifests/pr-template.ts) and template changes
+ * tests/github/manifests/templates/<name>.md, so scenario bodies render from
+ * the real thing (tests/github/manifests/pr-template.ts) and template changes
  * upstream show up as a diff here.
  *
  * Usage: pnpm run sync-templates
@@ -9,7 +9,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const TEMPLATES_ROOT = "test/github/manifests/templates";
+const TEMPLATES_ROOT = "tests/github/manifests/templates";
 
 /** repo slug → template file name (without .md). */
 const TEMPLATES: Record<string, string> = {

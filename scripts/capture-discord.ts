@@ -1,9 +1,9 @@
 /**
  * Capture real Discord events as test fixtures: starts the real gateway
  * (commands register, the bot responds), and additionally writes every
- * normalized event to test/discord/fixtures/_captured/. Perform actions on
+ * normalized event to tests/discord/fixtures/_captured/. Perform actions on
  * a guild the bot is in, then copy the interesting captures into
- * test/discord/fixtures/<guild>/ named `<type>[.variant].json`.
+ * tests/discord/fixtures/<guild>/ named `<type>[.variant].json`.
  *
  * Usage: DISCORD_TOKEN=... pnpm run capture-discord
  */
@@ -14,7 +14,7 @@ import type { DiscordEvent } from "../src/discord/engine/event.js";
 import { startDiscordGateway } from "../src/discord/engine/gateway.js";
 import { discordRegistry } from "../src/discord/manifests/index.js";
 
-const CAPTURE_DIR = fileURLToPath(new URL("../test/discord/fixtures/_captured", import.meta.url));
+const CAPTURE_DIR = fileURLToPath(new URL("../tests/discord/fixtures/_captured", import.meta.url));
 
 try {
   process.loadEnvFile();
