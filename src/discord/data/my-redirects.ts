@@ -9,16 +9,19 @@ export interface MyRedirect {
   params?: Record<string, string>;
 }
 
-let cache: MyRedirect[] | undefined;
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000;
+
+let cache: { data: MyRedirect[]; fetchedAt: number } | undefined;
 
 export async function loadMyRedirects(force = false): Promise<MyRedirect[]> {
-  if (cache && !force) return cache;
+  if (cache && !force && Date.now() - cache.fetchedAt < CACHE_TTL_MS) return cache.data;
   const response = await fetchWithTimeout(
     "https://raw.githubusercontent.com/home-assistant/my.home-assistant.io/main/redirect.json",
   );
   if (!response.ok) throw new Error(`Failed to fetch redirect.json: ${response.status}`);
-  cache = (await response.json()) as MyRedirect[];
-  return cache;
+  const data = (await response.json()) as MyRedirect[];
+  cache = { data, fetchedAt: Date.now() };
+  return data;
 }
 
 export async function getMyRedirect(redirect: string): Promise<MyRedirect | undefined> {

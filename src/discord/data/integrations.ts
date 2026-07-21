@@ -12,19 +12,21 @@ export type ReleaseChannel = "stable" | "beta";
 
 type IntegrationIndex = Record<string, IntegrationInfo>;
 
-const cache = new Map<ReleaseChannel, IntegrationIndex>();
+const CACHE_TTL_MS = 4 * 60 * 60 * 1000;
+
+const cache = new Map<ReleaseChannel, { data: IntegrationIndex; fetchedAt: number }>();
 
 export async function loadIntegrations(
   channel: ReleaseChannel,
   force = false,
 ): Promise<IntegrationIndex> {
   const cached = cache.get(channel);
-  if (cached && !force) return cached;
+  if (cached && !force && Date.now() - cached.fetchedAt < CACHE_TTL_MS) return cached.data;
   const host = channel === "beta" ? "rc" : "www";
   const response = await fetchWithTimeout(`https://${host}.home-assistant.io/integrations.json`);
   if (!response.ok) throw new Error(`Failed to fetch integrations.json: ${response.status}`);
   const data = (await response.json()) as IntegrationIndex;
-  cache.set(channel, data);
+  cache.set(channel, { data, fetchedAt: Date.now() });
   return data;
 }
 
