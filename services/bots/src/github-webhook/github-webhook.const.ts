@@ -37,6 +37,7 @@ export enum HomeAssistantRepository {
   COMPANION_HOME_ASSISTANT = 'home-assistant/companion.home-assistant',
   CORE = 'home-assistant/core',
   DEVELOPERS_HOME_ASSISTANT = 'home-assistant/developers.home-assistant',
+  FEATURE_REQUESTS = 'home-assistant/feature-requests',
   FRONTEND = 'home-assistant/frontend',
   HOME_ASSISTANT_IO = 'home-assistant/home-assistant.io',
   INTENTS = 'home-assistant/intents',
@@ -48,6 +49,7 @@ export enum HomeAssistantRepository {
 }
 
 export enum EventType {
+  DISCUSSION_COMMENT_CREATED = 'discussion_comment.created',
   ISSUE_COMMENT_CREATED = 'issue_comment.created',
   ISSUES_LABELED = 'issues.labeled',
   ISSUES_OPENED = 'issues.opened',
