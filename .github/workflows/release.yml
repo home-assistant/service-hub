@@ -24,10 +24,8 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Populate version.json
-        run: |
-          hash=$(git rev-parse HEAD)
-          echo "{\"version\": {\"hash\": \"$hash\", \"version\": \"${{ github.ref_name }}\"}}" > ./version.json
+      - name: Stamp the version from the release tag
+        run: npm pkg set version="$GITHUB_REF_NAME"
 
       - name: Log in to the GitHub Container Registry
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
@@ -57,5 +55,5 @@ jobs:
             --header "Authorization: Bearer ${TFC_TOKEN}" \
             --header "Content-Type: application/vnd.api+json" \
             --request PATCH \
-            --data "{\"data\": {\"type\": \"vars\", \"attributes\": {\"value\": \"${{ github.ref_name }}\"}}}" \
+            --data "{\"data\": {\"type\": \"vars\", \"attributes\": {\"value\": \"${GITHUB_REF_NAME}\"}}}" \
             "https://app.terraform.io/api/v2/varsets/${TFC_VARSET_ID}/relationships/vars/${variable_id}"

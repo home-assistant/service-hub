@@ -21,7 +21,7 @@ export const info: SlashCommand = {
               {
                 name: "Messages",
                 value:
-                  "[Data for the /message command](https://github.com/home-assistant/service-hub/tree/main/data/discord/messages)",
+                  "[Data for the /message command](https://github.com/home-assistant/service-hub/tree/main/src/discord/messages)",
                 inline: true,
               },
             ],

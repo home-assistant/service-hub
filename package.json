@@ -1,6 +1,6 @@
 {
   "name": "ha-github-bot",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.13.0",

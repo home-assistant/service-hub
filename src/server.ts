@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server";
 import { createAppAuth } from "@octokit/auth-app";
 import { Octokit } from "@octokit/rest";
 import * as Sentry from "@sentry/node";
+import packageJson from "../package.json";
 import { claAuthorizeHandler, claSignatureHandler } from "./cla/sign.js";
 import { startDiscordGateway } from "./discord/engine/gateway.js";
 import { discordRegistry } from "./discord/manifests/index.js";
@@ -15,6 +16,7 @@ const env = loadEnv();
 Sentry.init({
   dsn: env.SENTRY_DSN,
   environment: env.ENVIRONMENT,
+  release: packageJson.version,
   // tracesSampleRate: 1.0,
   enableLogs: true,
 });
