@@ -1,0 +1,40 @@
+name-template: "$RESOLVED_VERSION"
+tag-template: "$RESOLVED_VERSION"
+change-template: "- #$NUMBER $TITLE @$AUTHOR"
+sort-direction: ascending
+
+# No major increments anywhere: a feature bumps minor, everything else patch.
+categories:
+  - title: "✨ New features"
+    semver-increment: minor
+    when:
+      labels: ["new-feature"]
+  - title: "🐛 Bug fixes"
+    when:
+      labels: ["bugfix"]
+  - title: "🚀 Enhancements"
+    when:
+      labels: ["enhancement"]
+  - title: "🧰 Maintenance"
+    when:
+      labels: ["maintenance", "ci"]
+  - title: "📚 Documentation"
+    when:
+      labels: ["documentation"]
+  - title: "⬆️ Dependency updates"
+    collapse-after: 5
+    when:
+      labels: ["dependencies"]
+  # Version-bump override: adjusts the resolved increment without rendering a
+  # changelog section of its own.
+  - type: version-resolver
+    semver-increment: minor
+    when:
+      labels: ["minor"]
+
+template: |
+  ## What's changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
