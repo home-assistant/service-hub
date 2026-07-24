@@ -1,16 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",
-    ":dependencyDashboard",
-    "group:allNonMajor",
-    "helpers:pinGitHubActionDigests"
+    "config:best-practices",
+    "group:allNonMajor"
   ],
   "labels": ["dependencies"],
   "schedule": ["before 6am on monday"],
-  "lockFileMaintenance": {
-    "enabled": true
-  },
   "customManagers": [
     {
       "customType": "regex",
