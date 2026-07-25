@@ -1,27 +1,22 @@
-FROM node:20 AS builder
+# tsx runs the TypeScript entrypoint directly — no build step.
+FROM node:26-alpine
+
 WORKDIR /app
-COPY . /app
-ENV NODE_ENV production
-RUN \
-    yarn install \
-    && yarn prebuild \
-    && yarn build:bots
 
+# corepack installs the pnpm version pinned in package.json's packageManager.
+# Node >=25 no longer bundles corepack, so install it first.
+RUN npm install -g corepack && corepack enable
 
-FROM node:20-slim
-WORKDIR /app
-COPY --from=builder /app/.yarn /app/.yarn
-COPY --from=builder /app/data /app/data
-COPY --from=builder /app/dist /app/dist
-COPY --from=builder /app/libs /app/libs
-COPY --from=builder /usr/bin/git /usr/bin/git
-COPY package.json ./
-COPY version.json ./
-COPY yarn.lock ./
-COPY .yarnrc.yml ./
+# Install dependencies first for layer caching. --frozen-lockfile fails the
+# build if pnpm-lock.yaml is out of sync with package.json. The workspace
+# file carries the esbuild build-script approval.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile --prod
 
-ENV NO_COLOR true
+COPY . .
 
-RUN yarn install --immutable --immutable-cache
+ENV ENVIRONMENT=production
+ENV PORT=8787
+EXPOSE 8787
 
-ENTRYPOINT ["yarn"]
+CMD ["./node_modules/.bin/tsx", "src/server.ts"]

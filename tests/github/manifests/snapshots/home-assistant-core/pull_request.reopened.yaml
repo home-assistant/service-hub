@@ -1,0 +1,33 @@
+- type: addLabels
+  labels:
+    - "Quality Scale: platinum"
+- type: statusSection
+  section:
+    id: new-integration-validation
+    title: New integration validation
+    status: skip
+    message: Not a new-integration PR.
+- type: statusSection
+  section:
+    id: docs-missing
+    title: Documentation
+    status: skip
+    message: Not a new integration or platform — no documentation PR required.
+- type: statusSection
+  section:
+    id: merge-conflict
+    title: Merge conflicts
+    status: pass
+    message: No merge conflicts.
+- type: statusSection
+  section:
+    id: review-comments
+    title: Review comments
+    status: skip
+    message: No inline review comments yet.
+- type: statusSection
+  section:
+    id: code-owner-approval
+    title: Code owner approval
+    status: pending
+    message: Platinum integration — needs approval from a code owner before merging.

@@ -1,0 +1,12 @@
+- type: statusSection
+  section:
+    id: review-comments
+    title: Review comments
+    status: skip
+    message: No inline review comments yet.
+- type: statusSection
+  section:
+    id: code-owner-approval
+    title: Code owner approval
+    status: pending
+    message: Platinum integration — needs approval from a code owner before merging.

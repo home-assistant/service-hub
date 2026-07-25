@@ -1,0 +1,12 @@
+{
+  "remote": {
+    "esphome.io/components.json": {
+      "gpio": {
+        "title": "GPIO Switch",
+        "url": "https://esphome.io/components/switch/gpio.html",
+        "path": "components/switch/gpio",
+        "image": "https://esphome.io/_images/gpio.svg"
+      }
+    }
+  }
+}

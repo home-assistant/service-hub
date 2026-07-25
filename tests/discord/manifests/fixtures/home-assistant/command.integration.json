@@ -1,0 +1,18 @@
+{
+  "type": "command",
+  "guildId": "330944238910963714",
+  "channel": {
+    "id": "330944238910963716",
+    "name": "general",
+    "kind": "guild_text",
+    "topic": "General Home Assistant discussion"
+  },
+  "user": {
+    "id": "662789330969723649",
+    "username": "contributor",
+    "isBot": false,
+    "roleNames": []
+  },
+  "command": "integration",
+  "options": { "integration": "hue" }
+}

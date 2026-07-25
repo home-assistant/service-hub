@@ -1,0 +1,6 @@
+- type: statusSection
+  section:
+    id: blocking-label-awaiting-frontend
+    title: "Blocking: awaiting-frontend"
+    status: skip
+    message: "`awaiting-frontend` label not set — nothing to block."

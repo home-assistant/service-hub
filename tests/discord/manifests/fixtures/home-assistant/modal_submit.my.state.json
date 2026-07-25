@@ -1,0 +1,18 @@
+{
+  "remote": {
+    "my.home-assistant.io/main/redirect.json": [
+      {
+        "redirect": "config_flow_start",
+        "name": "Add integration",
+        "description": "start setting up a new integration",
+        "params": { "domain": "string" }
+      }
+    ],
+    "www.home-assistant.io/integrations.json": {
+      "hue": {
+        "title": "Philips Hue",
+        "description": "Instructions on how to integrate Philips Hue bridge and paired lights within Home Assistant."
+      }
+    }
+  }
+}
