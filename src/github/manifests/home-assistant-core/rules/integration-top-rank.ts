@@ -7,7 +7,7 @@ import { on } from "../../../engine/rule.js";
 import type { Effect, Rule } from "../../../engine/types.js";
 import { MAX_INTEGRATION_LABELS } from "../../../helpers/integration-domains.js";
 import { domainsFromFiles } from "../helpers/integration-domains.js";
-import { ParsedPath } from "../helpers/parse-path.js";
+import { type ParsedPath, parseFiles } from "../helpers/parse-path.js";
 import { addsNewIntegration } from "./file-shape.js";
 
 const ANALYTICS_URL = "https://analytics.home-assistant.io/current_data.json";
@@ -64,7 +64,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   // Skip Top N for PRs that touch core or add a brand-new integration —
   // analytics rank is meaningless in both cases.
   const files = await ctx.target.files();
-  const parsed = files.map((f) => new ParsedPath(f));
+  const parsed = await parseFiles(ctx, files);
   if (parsed.some((f) => f.core) || addsNewIntegration(parsed)) {
     return undefined;
   }

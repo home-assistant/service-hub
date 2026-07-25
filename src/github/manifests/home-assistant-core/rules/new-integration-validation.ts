@@ -1,7 +1,7 @@
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { type CheckOutcome, check } from "../../../engine/rule.js";
-import { ParsedPath } from "../helpers/parse-path.js";
+import { parseFiles } from "../helpers/parse-path.js";
 import { NEW_INTEGRATION_LABEL, pickedTypeLabels } from "./change-type.js";
 import { addsNewIntegration } from "./file-shape.js";
 
@@ -18,7 +18,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome | 
   if ("label" in ctx.event && ctx.event.label !== NEW_INTEGRATION_LABEL) return;
 
   const files = await ctx.target.files();
-  const parsed = files.map((f) => new ParsedPath(f));
+  const parsed = await parseFiles(ctx, files);
 
   // Derived from the PR itself (body checkbox, file shape) plus human-applied
   // labels — never from labels other rules maintain.

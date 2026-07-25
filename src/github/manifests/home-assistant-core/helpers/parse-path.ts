@@ -1,6 +1,16 @@
 import { log } from "../../../../log.js";
+import type { EventType } from "../../../engine/event.js";
+import {
+  type CodeOwnersEntry,
+  matchCodeOwners,
+  parseCodeOwners,
+} from "../../../engine/model/codeowners.js";
+import { getEntityPlatforms } from "../../../engine/model/component-registry.js";
 import type { ListPullRequestFiles } from "../../../engine/model/pull-request.js";
-import { coreComponents, entityPlatforms } from "./components.js";
+import type { RuleContext } from "../../../engine/model/rule-context.js";
+
+/** An integration is "core" iff the core team is one of its code owners. */
+const CORE_CODEOWNER = "@home-assistant/core";
 
 const FILE_TYPES = [
   "core",
@@ -32,7 +42,11 @@ export class ParsedPath {
   platform: string | null = null;
   core = false;
 
-  constructor(file: ListPullRequestFiles[0]) {
+  constructor(
+    file: ListPullRequestFiles[0],
+    entityPlatforms: Set<string>,
+    codeownersEntries: CodeOwnersEntry[],
+  ) {
     this.file = file;
     const parts = file.filename.split("/");
     const rootFolder = parts.length > 1 ? parts.shift() : undefined;
@@ -84,7 +98,10 @@ export class ParsedPath {
       this.type = "component";
     }
 
-    this.core = coreComponents.has(this.component);
+    // An integration is core iff @home-assistant/core owns it in CODEOWNERS.
+    this.core =
+      matchCodeOwners(this.file.filename, codeownersEntries)?.owners.includes(CORE_CODEOWNER) ??
+      false;
   }
 
   get additions() {
@@ -102,4 +119,22 @@ export class ParsedPath {
   get filename() {
     return this.path.split("/").pop() ?? this.path;
   }
+}
+
+/**
+ * Parse a PR's changed files into ParsedPath[], resolving the entity-platform
+ * set (fetched from core, cached) and the repo's CODEOWNERS from the rule
+ * context. `.core` is derived per file from CODEOWNERS; no CODEOWNERS (null)
+ * means integrations classify as non-core.
+ */
+export async function parseFiles(
+  ctx: RuleContext<EventType>,
+  files: ListPullRequestFiles,
+): Promise<ParsedPath[]> {
+  const [entityPlatforms, codeownersContent] = await Promise.all([
+    getEntityPlatforms(),
+    ctx.codeownersContent(),
+  ]);
+  const codeownersEntries = parseCodeOwners(codeownersContent ?? "");
+  return files.map((file) => new ParsedPath(file, entityPlatforms, codeownersEntries));
 }

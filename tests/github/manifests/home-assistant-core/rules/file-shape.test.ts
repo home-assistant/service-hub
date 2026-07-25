@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { EventType } from "../../../../../src/github/engine/event.js";
 import { fileShape } from "../../../../../src/github/manifests/home-assistant-core/rules/file-shape.js";
-import { createMockContext, mockPRFiles, runRule } from "../../../helpers/mock-context.js";
+import {
+  createMockContext,
+  createMockGitHub,
+  mockPRFiles,
+  runRule,
+} from "../../../helpers/mock-context.js";
 
 function makeFile(filename: string, overrides: { status?: string; additions?: number } = {}) {
   return {
@@ -41,7 +46,11 @@ describe("file-shape", () => {
 
   describe("core label", () => {
     it("adds core label for core component files", async () => {
-      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED });
+      const github = createMockGitHub();
+      github.repos.getContent.mockResolvedValue({
+        data: { content: btoa("/homeassistant/components/mqtt/ @home-assistant/core\n") },
+      });
+      const context = createMockContext({ eventType: EventType.PULL_REQUEST_OPENED, github });
       mockPRFiles(context, [makeFile("homeassistant/components/mqtt/__init__.py")]);
 
       const result = await runRule(fileShape, context);

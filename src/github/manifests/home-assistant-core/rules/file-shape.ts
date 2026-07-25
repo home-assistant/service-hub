@@ -2,7 +2,7 @@ import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
 import type { Effect, Rule } from "../../../engine/types.js";
-import { ParsedPath } from "../helpers/parse-path.js";
+import { type ParsedPath, parseFiles } from "../helpers/parse-path.js";
 
 const SMALL_PR_THRESHOLD = 30;
 
@@ -89,7 +89,7 @@ type HandledEvent =
 
 async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
   const files = await ctx.target.files();
-  const parsed = files.map((f) => new ParsedPath(f));
+  const parsed = await parseFiles(ctx, files);
   const current = new Set(await ctx.target.labels());
 
   const toAdd: string[] = [];

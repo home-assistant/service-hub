@@ -3,7 +3,7 @@ import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { type CheckOutcome, check } from "../../../engine/rule.js";
 import type { Effect } from "../../../engine/types.js";
-import { ParsedPath } from "../helpers/parse-path.js";
+import { parseFiles } from "../helpers/parse-path.js";
 import { addsNewIntegration } from "./file-shape.js";
 
 export const NEW_INTEGRATION_LABEL = "new-integration";
@@ -116,7 +116,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome> {
     rowState = { kind: "none" };
   } else {
     const files = await ctx.target.files();
-    const parsed = files.map((f) => new ParsedPath(f));
+    const parsed = await parseFiles(ctx, files);
     const addsIntegration = addsNewIntegration(parsed);
     const newIntegrationPicked = picked.includes(NEW_INTEGRATION_LABEL);
     if (newIntegrationPicked && !addsIntegration) {

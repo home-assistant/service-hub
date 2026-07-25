@@ -2,6 +2,7 @@ import type { Octokit } from "@octokit/rest";
 import { type Mock, vi } from "vitest";
 import type { Env } from "../../../src/env.js";
 import { EventType } from "../../../src/github/engine/event.js";
+import { seedEntityPlatforms } from "../../../src/github/engine/model/component-registry.js";
 import type {
   RuleContext,
   WebhookEventPayload,
@@ -9,6 +10,26 @@ import type {
 import { ruleContextFromWebhook } from "../../../src/github/engine/model/rule-context.js";
 import type { StatusSection } from "../../../src/github/engine/status/types.js";
 import type { Effect, RegistryConfig, Rule } from "../../../src/github/engine/types.js";
+
+// Seed the component registry so rule tests never hit the network for the
+// entity-platform list (parseFiles reads it).
+seedEntityPlatforms([
+  "light",
+  "sensor",
+  "binary_sensor",
+  "switch",
+  "climate",
+  "cover",
+  "number",
+  "select",
+  "button",
+  "fan",
+  "lock",
+  "event",
+  "update",
+  "camera",
+  "media_player",
+]);
 
 /** The octokit mocks are loosely typed. */
 type MockFn = Mock<(...args: never[]) => unknown>;

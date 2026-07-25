@@ -1,22 +1,40 @@
 import { describe, expect, it } from "vitest";
+import { parseCodeOwners } from "../../../../../src/github/engine/model/codeowners.js";
 import { ParsedPath } from "../../../../../src/github/manifests/home-assistant-core/helpers/parse-path.js";
+
+const ENTITY_PLATFORMS = new Set([
+  "light",
+  "sensor",
+  "binary_sensor",
+  "switch",
+  "climate",
+  "cover",
+]);
+// mqtt is core-team owned; custom_thing/hue are not.
+const CODEOWNERS_ENTRIES = parseCodeOwners(
+  "/homeassistant/components/mqtt/ @home-assistant/core\n",
+);
 
 function makeParsed(
   filename: string,
   overrides: { status?: string; additions?: number } = {},
 ): ParsedPath {
-  return new ParsedPath({
-    filename,
-    status: overrides.status ?? "modified",
-    additions: overrides.additions ?? 10,
-    deletions: 0,
-    changes: overrides.additions ?? 10,
-    sha: "abc",
-    blob_url: "",
-    raw_url: "",
-    contents_url: "",
-    patch: "",
-  });
+  return new ParsedPath(
+    {
+      filename,
+      status: overrides.status ?? "modified",
+      additions: overrides.additions ?? 10,
+      deletions: 0,
+      changes: overrides.additions ?? 10,
+      sha: "abc",
+      blob_url: "",
+      raw_url: "",
+      contents_url: "",
+      patch: "",
+    },
+    ENTITY_PLATFORMS,
+    CODEOWNERS_ENTRIES,
+  );
 }
 
 describe("ParsedPath", () => {

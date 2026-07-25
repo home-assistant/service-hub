@@ -1,6 +1,6 @@
 import type { Octokit } from "@octokit/rest";
 
-interface CodeOwnersEntry {
+export interface CodeOwnersEntry {
   pattern: string;
   owners: string[];
   line: number;

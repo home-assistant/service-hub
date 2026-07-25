@@ -4,7 +4,7 @@ import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { type CheckOutcome, check } from "../../../engine/rule.js";
 import { HomeAssistantRepository } from "../../home-assistant-org.js";
-import { ParsedPath } from "../helpers/parse-path.js";
+import { parseFiles } from "../helpers/parse-path.js";
 import { NEW_INTEGRATION_LABEL, pickedTypeLabels } from "./change-type.js";
 import { addsNewIntegration } from "./file-shape.js";
 
@@ -31,7 +31,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<CheckOutcome | 
     currentLabels.has("new-integration") ||
     currentLabels.has("new-platform") ||
     pickedTypeLabels(await ctx.target.body()).includes(NEW_INTEGRATION_LABEL) ||
-    addsNewIntegration((await ctx.target.files()).map((f) => new ParsedPath(f)));
+    addsNewIntegration(await parseFiles(ctx, await ctx.target.files()));
   const hasDocsMissingLabel = currentLabels.has("docs-missing");
   const docsApplies = hasNewIntegrationOrPlatform || hasDocsMissingLabel;
 
