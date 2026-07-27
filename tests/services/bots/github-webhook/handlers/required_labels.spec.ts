@@ -25,10 +25,8 @@ describe('RequiredLabels', () => {
       eventType: EventType.PULL_REQUEST_LABELED,
       // @ts-ignore partial mock
       github: {
-        repos: {
-          // @ts-ignore partial mock
-          createCommitStatus: jest.fn(),
-        },
+        // @ts-ignore partial mock
+        createCommitStatusWithRetry: jest.fn(),
       },
     });
   });
@@ -42,7 +40,7 @@ describe('RequiredLabels', () => {
         mockContext.repository = repository as Repository;
         await handler.handle(mockContext);
 
-        expect(mockContext.github.repos.createCommitStatus).toHaveBeenCalledWith(
+        expect(mockContext.github.createCommitStatusWithRetry).toHaveBeenCalledWith(
           expect.objectContaining({
             context: 'required-labels',
             description: `Has at least one of the required labels (${lables.join(', ')})`,

@@ -25,10 +25,8 @@ describe('BlockingLabels', () => {
       eventType: EventType.PULL_REQUEST_LABELED,
       // @ts-ignore partial mock
       github: {
-        repos: {
-          // @ts-ignore partial mock
-          createCommitStatus: jest.fn(),
-        },
+        // @ts-ignore partial mock
+        createCommitStatusWithRetry: jest.fn(),
       },
     });
   });
@@ -45,7 +43,7 @@ describe('BlockingLabels', () => {
           mockContext.repository = repository as Repository;
           await handler.handle(mockContext);
 
-          expect(mockContext.github.repos.createCommitStatus).toHaveBeenCalledWith(
+          expect(mockContext.github.createCommitStatusWithRetry).toHaveBeenCalledWith(
             expect.objectContaining({
               context: `blocking-label-${label.toLowerCase().replace(' ', '-')}`,
               description,

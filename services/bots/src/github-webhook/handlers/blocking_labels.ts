@@ -27,7 +27,7 @@ export class BlockingLabels extends BaseWebhookHandler {
 
     for (const [label, description] of Object.entries(LabelsToCheck[context.repository] || {})) {
       const hasBlockingLabel = currentLabels.has(label);
-      await context.github.repos.createCommitStatus(
+      await context.github.createCommitStatusWithRetry(
         context.repo({
           sha: context.payload.pull_request.head.sha,
           context: `blocking-label-${label.toLowerCase().replace(' ', '-')}`,

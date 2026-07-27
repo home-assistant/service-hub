@@ -17,23 +17,21 @@ describe('DocsMissing', () => {
       eventType: 'pull_request.labeled',
       payload: loadJsonFixture('pull_request.opened', {}),
       github: {
-        repos: {
-          async createCommitStatus(params: any) {
-            createCommitStatusContents = params;
-          },
+        async createCommitStatusWithRetry(params: any) {
+          createCommitStatusContents = params;
         },
       },
     });
   });
 
   it('PR targeting master branch should auto-approve docs check', async () => {
-    mockContext.github.repos.createCommitStatus = jest.fn();
+    mockContext.github.createCommitStatusWithRetry = jest.fn();
     // Override the base ref to target master
     mockContext.payload.pull_request.base.ref = 'master';
 
     await handler.handle(mockContext);
 
-    expect(mockContext.github.repos.createCommitStatus).toHaveBeenCalledWith({
+    expect(mockContext.github.createCommitStatusWithRetry).toHaveBeenCalledWith({
       owner: 'Codertocat',
       repo: 'Hello-World',
       sha: 'ec26c3e57ca3a959ca5aad62de7213c562f8c821',
@@ -44,7 +42,7 @@ describe('DocsMissing', () => {
   });
 
   it('PR targeting dev branch should run docs check - no labels', async () => {
-    mockContext.github.repos.createCommitStatus = jest.fn();
+    mockContext.github.createCommitStatusWithRetry = jest.fn();
     // Override the base ref to target dev (non-master branch)
     mockContext.payload.pull_request.base.ref = 'dev';
     // Clear any existing labels
@@ -52,7 +50,7 @@ describe('DocsMissing', () => {
 
     await handler.handle(mockContext);
 
-    expect(mockContext.github.repos.createCommitStatus).toHaveBeenCalledWith({
+    expect(mockContext.github.createCommitStatusWithRetry).toHaveBeenCalledWith({
       owner: 'Codertocat',
       repo: 'Hello-World',
       sha: 'ec26c3e57ca3a959ca5aad62de7213c562f8c821',
@@ -63,7 +61,7 @@ describe('DocsMissing', () => {
   });
 
   it('PR targeting dev branch with docs-missing label should fail', async () => {
-    mockContext.github.repos.createCommitStatus = jest.fn();
+    mockContext.github.createCommitStatusWithRetry = jest.fn();
     // Override the base ref to target dev (non-master branch)
     mockContext.payload.pull_request.base.ref = 'dev';
     // Add docs-missing label
@@ -71,7 +69,7 @@ describe('DocsMissing', () => {
 
     await handler.handle(mockContext);
 
-    expect(mockContext.github.repos.createCommitStatus).toHaveBeenCalledWith({
+    expect(mockContext.github.createCommitStatusWithRetry).toHaveBeenCalledWith({
       owner: 'Codertocat',
       repo: 'Hello-World',
       sha: 'ec26c3e57ca3a959ca5aad62de7213c562f8c821',
@@ -82,7 +80,7 @@ describe('DocsMissing', () => {
   });
 
   it('PR targeting dev branch with new-integration label but no docs link should fail', async () => {
-    mockContext.github.repos.createCommitStatus = jest.fn();
+    mockContext.github.createCommitStatusWithRetry = jest.fn();
     // Override the base ref to target dev (non-master branch)
     mockContext.payload.pull_request.base.ref = 'dev';
     // Add new-integration label
@@ -92,7 +90,7 @@ describe('DocsMissing', () => {
 
     await handler.handle(mockContext);
 
-    expect(mockContext.github.repos.createCommitStatus).toHaveBeenCalledWith({
+    expect(mockContext.github.createCommitStatusWithRetry).toHaveBeenCalledWith({
       owner: 'Codertocat',
       repo: 'Hello-World',
       sha: 'ec26c3e57ca3a959ca5aad62de7213c562f8c821',

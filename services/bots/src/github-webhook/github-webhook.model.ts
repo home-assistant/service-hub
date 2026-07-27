@@ -1,5 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import {
+  CreateCommitStatusParams,
+  CreateCommitStatusResponse,
   EventType,
   GetIssueLabelParams,
   GetIssueLabelResponse,
@@ -23,6 +25,34 @@ export class GithubClient extends Octokit {
     } catch (_err) {
       // Sometimes Github responds with 404 directly,
       // sometimes it does not, and only changes the response.status to 404
+    }
+  }
+
+  async createCommitStatusWithRetry(
+    params: CreateCommitStatusParams,
+    options: { retries?: number; backoffMs?: number } = {},
+  ): Promise<CreateCommitStatusResponse | undefined> {
+    const { retries = 3, backoffMs = 1_000 } = options;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.repos.createCommitStatus(params);
+      } catch (err) {
+        // Right after a push to a fork, the pull_request webhook can fire before the new
+        // commit is reachable in the base repository, making GitHub reject the status
+        // with 422 "No commit found for SHA" even though the commit exists.
+        if (err?.status !== 422 || !err?.message?.includes('No commit found for SHA')) {
+          throw err;
+        }
+        if (attempt >= retries) {
+          this.log.warn(
+            `Skipping status "${params.context}", commit ${params.sha} still not found after ${
+              retries + 1
+            } attempts`,
+          );
+          return undefined;
+        }
+        await new Promise((resolve) => setTimeout(resolve, backoffMs * 2 ** attempt));
+      }
     }
   }
 }
