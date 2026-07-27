@@ -15,11 +15,9 @@ import {
 describe('BlockingLabels', () => {
   let handler: BlockingLabels;
   let mockContext: WebhookContext<any>;
-  let createCommitStatusCall: any;
 
   beforeEach(function () {
     handler = new BlockingLabels();
-    createCommitStatusCall = {};
     mockContext = mockWebhookContext({
       payload: loadJsonFixture('pull_request.opened'),
       eventType: EventType.PULL_REQUEST_LABELED,

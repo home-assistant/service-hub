@@ -8,18 +8,14 @@ import { loadJsonFixture } from '../../../../utils/fixture';
 describe('DocsMissing', () => {
   let handler: DocsMissing;
   let mockContext: WebhookContext<any>;
-  let createCommitStatusContents: any;
 
   beforeEach(function () {
     handler = new DocsMissing();
-    createCommitStatusContents = {};
     mockContext = mockWebhookContext({
       eventType: 'pull_request.labeled',
       payload: loadJsonFixture('pull_request.opened', {}),
       github: {
-        async createCommitStatusWithRetry(params: any) {
-          createCommitStatusContents = params;
-        },
+        createCommitStatusWithRetry: jest.fn(),
       },
     });
   });
