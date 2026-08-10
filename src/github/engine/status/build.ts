@@ -1,12 +1,12 @@
-import { BLOCK_IDS, type BlockStates } from "./blocks.js";
+import { BLOCK_IDS, type BlockStates, type BlockUpdates } from "./blocks.js";
 import type { CommandHelpEntry } from "./help.js";
-import { displaySection, parseState, renderStatus, type StatusTarget } from "./render.js";
-import type { SectionOverride, StatusSection } from "./types.js";
+import { displaySection, renderStatus, type StatusTarget } from "./render.js";
+import type { RuleState, SectionOverride, StatusSection } from "./types.js";
 
 /**
  * Everything one status computation needs, fetched by the caller. The status
- * comment is the database: `previousBody` carries the persisted section state
- * (including waivers), and the output body embeds the updated state.
+ * comment is the database: `previous` is the state parsed from the existing
+ * comment (including waivers), and the output body embeds the updated state.
  */
 export interface StatusInput {
   target: {
@@ -21,24 +21,27 @@ export interface StatusInput {
   /** Waiver changes from `ignore`/`unignore` commands, applied last. */
   overrides: readonly SectionOverride[];
   /** Block updates this dispatch: args replace the persisted state, `null` clears. */
-  blocks?: ReadonlyMap<string, unknown>;
-  /** Body of the existing status comment, or null when none exists yet. */
-  previousBody: string | null;
+  blocks?: BlockUpdates;
+  /**
+   * The rule-persisted data bag to embed, already merged by the dispatcher
+   * (persisted slices + this dispatch's state updates, stale keys swept).
+   */
+  data: Record<string, unknown>;
+  /** State parsed from the existing status comment; null when none exists yet. */
+  previous: RuleState | null;
   /** Section IDs some live rule claims; anything else is swept as stale. */
   knownSectionIds: ReadonlySet<string>;
   help: { commandSlug: string; commands: readonly CommandHelpEntry[] };
 }
 
 /**
- * `pending` sections fail the aggregate like `fail` ones — both block the
- * merge — but only `fail` drafts the PR: pending checks wait on someone other
- * than the author (e.g. a code-owner review), and a draft would hide the PR
- * from the very people who can resolve them.
+ * The merge-gate commit status. `pending` sections fail it like `fail` ones —
+ * both block the merge. Drafting is not decided here: the dispatcher
+ * reconciles it from the final sections via {@link hasFailingSections}.
  */
 export interface StatusAggregate {
   state: "success" | "failure";
   description: string;
-  shouldDraft: boolean;
 }
 
 export interface StatusOutput {
@@ -59,7 +62,7 @@ export interface StatusOutput {
  * resulting body and commit status back.
  */
 export function buildStatus(input: StatusInput): StatusOutput {
-  const prev = input.previousBody ? parseState(input.previousBody) : null;
+  const prev = input.previous;
 
   const byId = new Map<string, StatusSection>();
   if (prev) {
@@ -101,15 +104,16 @@ export function buildStatus(input: StatusInput): StatusOutput {
     else blocks[id] = args;
   }
 
-  // Reserved rule state: nothing writes it yet, so carry it through untouched.
-  const data = prev?.data ?? {};
+  const data = input.data;
 
   const sections = [...byId.values()];
   const blockStates = blocks as BlockStates;
   const aggregate = aggregateStatus(sections);
 
   // No comment exists and nothing survived to show: don't create one.
-  if (!input.previousBody && sections.length === 0 && Object.keys(blocks).length === 0) {
+  // (State-only updates don't either — data persists only alongside a
+  // visible dashboard.)
+  if (!input.previous && sections.length === 0 && Object.keys(blocks).length === 0) {
     return { body: null, sections, blocks: blockStates, aggregate };
   }
 
@@ -134,14 +138,12 @@ function aggregateStatus(sections: StatusSection[]): StatusAggregate {
     return {
       state: "failure",
       description: `${fails} check${fails === 1 ? "" : "s"} failing`,
-      shouldDraft: true,
     };
   }
   if (pending > 0) {
     return {
       state: "failure",
       description: `${pending} check${pending === 1 ? "" : "s"} pending`,
-      shouldDraft: false,
     };
   }
   const extras = [
@@ -152,19 +154,14 @@ function aggregateStatus(sections: StatusSection[]): StatusAggregate {
     state: "success",
     description:
       extras.length > 0 ? `All checks passed (${extras.join(", ")})` : "All checks passed",
-    shouldDraft: false,
   };
 }
 
 /**
- * Whether a status comment body carries a check that presents as failing —
- * waived failures don't count, and sections no live rule claims are ignored
- * (a removed/renamed rule's stale row must not re-draft a PR). Backs the
- * engine's re-draft-on-ready guard.
+ * Whether any section presents as failing — waived failures don't count.
+ * Callers pass sections already swept of stale IDs (a removed/renamed rule's
+ * row must not re-draft a PR). Backs the engine's re-draft-on-ready guard.
  */
-export function hasFailingSections(body: string, knownSectionIds: ReadonlySet<string>): boolean {
-  return parseState(body)
-    .sections.filter((s) => knownSectionIds.has(s.id))
-    .map(displaySection)
-    .some((s) => s.status === "fail");
+export function hasFailingSections(sections: readonly StatusSection[]): boolean {
+  return sections.map(displaySection).some((s) => s.status === "fail");
 }

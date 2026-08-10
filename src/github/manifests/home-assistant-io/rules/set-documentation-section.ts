@@ -1,12 +1,12 @@
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import type { Rule, RuleOutput } from "../../../engine/types.js";
 import { extractDocumentationSectionsLinks } from "../../../helpers/ha-links.js";
 
 type HandledEvent = EventType.ISSUES_OPENED | EventType.ISSUES_ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   const sections = extractDocumentationSectionsLinks(await ctx.target.body());
 
   // Integration feedback is handled by the integration rules, not sections.
@@ -26,7 +26,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   }
 
   if (labels.length === 0) return;
-  return [{ type: "addLabels", labels }];
+  return { effects: [{ type: "addLabels", labels }] };
 }
 
 export const setDocumentationSection: Rule = {

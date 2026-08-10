@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { dispatch, matchRules } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
-import { placeholderBody } from "../../../src/github/engine/status/render.js";
-import type { RegistryConfig, Rule } from "../../../src/github/engine/types.js";
+import {
+  parseState,
+  placeholderBody,
+  renderStatus,
+} from "../../../src/github/engine/status/render.js";
+import type { RegistryConfig, Rule, RuleOutput } from "../../../src/github/engine/types.js";
 import { log } from "../../../src/log.js";
 import { createMockContext, createMockGitHub } from "../helpers/mock-context.js";
 
@@ -103,9 +107,9 @@ describe("dispatch", () => {
       name: "labeler",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "addLabels", labels: ["bugfix", "has-tests"] },
-        ],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["bugfix", "has-tests"] }],
+        }),
       },
     };
 
@@ -131,9 +135,9 @@ describe("dispatch", () => {
       name: "remover",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "removeLabels", labels: ["needs-rebase"] },
-        ],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "removeLabels", labels: ["needs-rebase"] }],
+        }),
       },
     };
 
@@ -160,10 +164,12 @@ describe("dispatch", () => {
       name: "conflict",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "addLabels", labels: ["keep-me"] },
-          { type: "removeLabels", labels: ["keep-me"] },
-        ],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [
+            { type: "addLabels", labels: ["keep-me"] },
+            { type: "removeLabels", labels: ["keep-me"] },
+          ],
+        }),
       },
     };
 
@@ -188,9 +194,9 @@ describe("dispatch", () => {
       name: "commenter",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "comment", body: "Hello from the bot!" },
-        ],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "comment", body: "Hello from the bot!" }],
+        }),
       },
     };
 
@@ -216,9 +222,9 @@ describe("dispatch", () => {
       name: "assigner",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "addAssignees", assignees: ["balloob", "frenck"] },
-        ],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addAssignees", assignees: ["balloob", "frenck"] }],
+        }),
       },
     };
 
@@ -255,9 +261,9 @@ describe("dispatch", () => {
       name: "succeeding",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "addLabels", labels: ["still-works"] },
-        ],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["still-works"] }],
+        }),
       },
     };
 
@@ -306,14 +312,18 @@ describe("dispatch", () => {
       name: "rule1",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["label-a"] }],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["label-a"] }],
+        }),
       },
     };
     const rule2: Rule = {
       name: "rule2",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["label-b"] }],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["label-b"] }],
+        }),
       },
     };
 
@@ -352,12 +362,9 @@ describe("dispatch", () => {
         description: "",
         statusSections: [{ id: "x", title: "x" }],
         events: {
-          [EventType.PULL_REQUEST_OPENED]: async () => [
-            {
-              type: "statusSection",
-              section: { id: "x", title: "x", status: sectionStatus, message: "msg" },
-            },
-          ],
+          [EventType.PULL_REQUEST_OPENED]: async () => ({
+            statuses: [{ id: "x", title: "x", status: sectionStatus, message: "msg" }],
+          }),
         },
       };
       const config: RegistryConfig = {
@@ -492,6 +499,54 @@ describe("dispatch", () => {
 
       expect(github.graphql).not.toHaveBeenCalled();
     });
+
+    // Failing ⇒ draft is reconciled on every dispatch: a persisted failure
+    // whose draft never landed (missed webhook, failed mutation) is repaired
+    // by the next event of any kind, not only ready_for_review.
+    it("re-drafts from persisted failing state on an unrelated event", async () => {
+      const github = createMockGitHub();
+      github.paginate.mockImplementation(async () => [dashboardComment("fail")]);
+
+      const config: RegistryConfig = { repositories: { "home-assistant/core": [claimsX] } };
+      const context = createMockContext({
+        registry: config,
+        eventType: EventType.PULL_REQUEST_LABELED,
+        github,
+        payload: {
+          action: "labeled",
+          label: { name: "unrelated" },
+          pull_request: { draft: false, node_id: "PR_NODE_LABELED" },
+        },
+      });
+
+      await dispatch(context);
+
+      expect(github.graphql).toHaveBeenCalledWith(
+        expect.stringContaining("convertPullRequestToDraft"),
+        expect.objectContaining({ id: "PR_NODE_LABELED" }),
+      );
+    });
+
+    it("never drafts a closed PR, even with persisted failing state", async () => {
+      const github = createMockGitHub();
+      github.paginate.mockImplementation(async () => [dashboardComment("fail")]);
+
+      const config: RegistryConfig = { repositories: { "home-assistant/core": [claimsX] } };
+      const context = createMockContext({
+        registry: config,
+        eventType: EventType.PULL_REQUEST_LABELED,
+        github,
+        payload: {
+          action: "labeled",
+          label: { name: "unrelated" },
+          pull_request: { draft: false, node_id: "PR_NODE_CLOSED", state: "closed" },
+        },
+      });
+
+      await dispatch(context);
+
+      expect(github.graphql).not.toHaveBeenCalled();
+    });
   });
 
   describe("section waivers persisted in the status comment", () => {
@@ -509,6 +564,7 @@ describe("dispatch", () => {
       github.paginate.mockImplementation(async () => [
         {
           id: 555,
+          html_url: "https://github.com/ha/c/pull/1#issuecomment-555",
           body: [
             "<!-- ha-bot-dashboard -->",
             `<!-- section:merge-conflict:${JSON.stringify(waivedFailing)} -->`,
@@ -533,25 +589,21 @@ describe("dispatch", () => {
           { id: "other", title: "Other" },
         ],
         events: {
-          [EventType.PULL_REQUEST_SYNCHRONIZE]: async () => [
-            ...(reEmit
-              ? [
-                  {
-                    type: "statusSection" as const,
-                    section: {
+          [EventType.PULL_REQUEST_SYNCHRONIZE]: async () => ({
+            statuses: [
+              ...(reEmit
+                ? [
+                    {
                       id: "merge-conflict",
                       title: "Merge conflicts",
                       status: reEmit.status,
                       message: reEmit.message,
                     },
-                  },
-                ]
-              : []),
-            {
-              type: "statusSection" as const,
-              section: { id: "other", title: "Other", status: "pass", message: "ok" },
-            },
-          ],
+                  ]
+                : []),
+              { id: "other", title: "Other", status: "pass" as const, message: "ok" },
+            ],
+          }),
         },
       };
       const config: RegistryConfig = {
@@ -626,6 +678,7 @@ describe("dispatch", () => {
       github.paginate.mockImplementation(async () => [
         {
           id: 555,
+          html_url: "https://github.com/ha/c/pull/1#issuecomment-555",
           body: [
             "<!-- ha-bot-dashboard -->",
             "<!-- section:still-live:" +
@@ -656,12 +709,9 @@ describe("dispatch", () => {
         description: "",
         statusSections: [{ id: "still-live", title: "still-live" }],
         events: {
-          [EventType.PULL_REQUEST_OPENED]: async () => [
-            {
-              type: "statusSection",
-              section: { id: "still-live", title: "Live", status: "pass", message: "ok" },
-            },
-          ],
+          [EventType.PULL_REQUEST_OPENED]: async () => ({
+            statuses: [{ id: "still-live", title: "Live", status: "pass", message: "ok" }],
+          }),
         },
       };
       const config: RegistryConfig = {
@@ -709,12 +759,9 @@ describe("dispatch", () => {
         description: "",
         statusSections: [{ id: "live", title: "live" }],
         events: {
-          [EventType.PULL_REQUEST_OPENED]: async () => [
-            {
-              type: "statusSection",
-              section: { id: "live", title: "Live", status: "pass", message: "ok" },
-            },
-          ],
+          [EventType.PULL_REQUEST_OPENED]: async () => ({
+            statuses: [{ id: "live", title: "Live", status: "pass", message: "ok" }],
+          }),
         },
       };
       const config: RegistryConfig = {
@@ -781,12 +828,9 @@ describe("dispatch", () => {
         description: "",
         statusSections: [{ id: "live", title: "live" }],
         events: {
-          [EventType.PULL_REQUEST_OPENED]: async () => [
-            {
-              type: "statusSection",
-              section: { id: "live", title: "Live", status: "pass", message: "ok" },
-            },
-          ],
+          [EventType.PULL_REQUEST_OPENED]: async () => ({
+            statuses: [{ id: "live", title: "Live", status: "pass", message: "ok" }],
+          }),
         },
       };
       const config: RegistryConfig = {
@@ -829,12 +873,9 @@ describe("dispatch", () => {
         description: "",
         statusSections: [{ id: "live", title: "live" }],
         events: {
-          [EventType.PULL_REQUEST_OPENED]: async () => [
-            {
-              type: "statusSection",
-              section: { id: "live", title: "Live", status: "pass", message: "ok" },
-            },
-          ],
+          [EventType.PULL_REQUEST_OPENED]: async () => ({
+            statuses: [{ id: "live", title: "Live", status: "pass", message: "ok" }],
+          }),
         },
       };
       const config: RegistryConfig = {
@@ -880,7 +921,9 @@ describe("label independence", () => {
       name: "labeler",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["X"] }],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["X"] }],
+        }),
       },
     };
     const reactor: Rule = {
@@ -889,7 +932,7 @@ describe("label independence", () => {
       events: {
         [EventType.PULL_REQUEST_LABELED]: async () => {
           labelRuleRan();
-          return [{ type: "comment", body: "should never post" }];
+          return { effects: [{ type: "comment", body: "should never post" }] };
         },
       },
     };
@@ -919,9 +962,9 @@ describe("label independence", () => {
       name: "labeler",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "addLabels", labels: ["cla-signed"] },
-        ],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["cla-signed"] }],
+        }),
       },
     };
 
@@ -946,7 +989,9 @@ describe("label independence", () => {
       name: "remover",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "removeLabels", labels: ["stale"] }],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "removeLabels", labels: ["stale"] }],
+        }),
       },
     };
 
@@ -971,14 +1016,18 @@ describe("label independence", () => {
       name: "remover",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "removeLabels", labels: ["stale"] }],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "removeLabels", labels: ["stale"] }],
+        }),
       },
     };
     const reactor: Rule = {
       name: "reactor",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_UNLABELED]: async () => [{ type: "comment", body: "bye" }],
+        [EventType.PULL_REQUEST_UNLABELED]: async () => ({
+          effects: [{ type: "comment", body: "bye" }],
+        }),
       },
     };
 
@@ -1048,5 +1097,119 @@ describe("dashboard placeholder on opened", () => {
     const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
     expect(body).toContain("Thanks for contributing");
     expect(body).not.toContain("Evaluating rules");
+  });
+});
+
+describe("rule state persisted in the status comment", () => {
+  /** A dashboard comment whose state blob carries the given data bag. */
+  function commentWithData(data: Record<string, unknown>) {
+    return {
+      id: 555,
+      html_url: "https://github.com/ha/c/pull/1#issuecomment-555",
+      body: renderStatus(
+        [{ id: "x", title: "x", status: "pass", message: "ok" }],
+        "home-assistant/core",
+        "pull_request",
+        { data },
+      ),
+    };
+  }
+
+  function statefulRule(
+    handler: (state: unknown) => RuleOutput | undefined,
+    name = "stateful",
+  ): Rule {
+    return {
+      name,
+      description: "",
+      statusSections: [{ id: "x", title: "x" }],
+      events: {
+        [EventType.PULL_REQUEST_SYNCHRONIZE]: async (_ctx, state) => handler(state),
+      },
+    };
+  }
+
+  function makeContext(github: ReturnType<typeof createMockGitHub>, rules: Rule[]) {
+    return createMockContext({
+      registry: { repositories: { "home-assistant/core": rules } },
+      eventType: EventType.PULL_REQUEST_SYNCHRONIZE,
+      github,
+    });
+  }
+
+  /** The data bag embedded in the last-written comment body. */
+  function writtenData(github: ReturnType<typeof createMockGitHub>): Record<string, unknown> {
+    const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
+    return parseState(body).data;
+  }
+
+  it("hands each rule its own persisted slice", async () => {
+    const github = createMockGitHub();
+    github.paginate.mockImplementation(async () => [
+      commentWithData({ stateful: { count: 3 }, other: "not-yours" }),
+    ]);
+    const seen = vi.fn();
+    const rule = statefulRule((state) => {
+      seen(state);
+      return undefined;
+    });
+
+    await dispatch(makeContext(github, [rule, { name: "other", description: "", events: {} }]));
+
+    expect(seen).toHaveBeenCalledWith({ count: 3 });
+  });
+
+  it("persists a returned state slice under the rule's name", async () => {
+    const github = createMockGitHub();
+    github.paginate.mockImplementation(async () => [commentWithData({})]);
+    const rule = statefulRule(() => ({
+      statuses: [{ id: "x", title: "x", status: "pass", message: "ok" }],
+      state: { count: 4 },
+    }));
+
+    await dispatch(makeContext(github, [rule]));
+
+    expect(writtenData(github)).toEqual({ stateful: { count: 4 } });
+  });
+
+  it("a state-only update rewrites the comment, leaving other slices intact", async () => {
+    const github = createMockGitHub();
+    github.paginate.mockImplementation(async () => [
+      commentWithData({ stateful: { count: 1 }, keeper: true }),
+    ]);
+    const rule = statefulRule(() => ({ state: { count: 2 } }));
+    const keeper: Rule = { name: "keeper", description: "", events: {} };
+
+    await dispatch(makeContext(github, [rule, keeper]));
+
+    expect(writtenData(github)).toEqual({ stateful: { count: 2 }, keeper: true });
+  });
+
+  it("state: null clears the rule's slice; omitting state keeps it", async () => {
+    const github = createMockGitHub();
+    github.paginate.mockImplementation(async () => [
+      commentWithData({ stateful: { count: 1 }, quiet: "kept" }),
+    ]);
+    const clearing = statefulRule(() => ({ state: null }));
+    const quiet = statefulRule(
+      () => ({ statuses: [{ id: "x", title: "x", status: "pass", message: "ok" }] }),
+      "quiet",
+    );
+
+    await dispatch(makeContext(github, [clearing, quiet]));
+
+    expect(writtenData(github)).toEqual({ quiet: "kept" });
+  });
+
+  it("sweeps state slices owned by no live rule", async () => {
+    const github = createMockGitHub();
+    github.paginate.mockImplementation(async () => [
+      commentWithData({ "gone-rule": { stale: true }, stateful: "live" }),
+    ]);
+    const rule = statefulRule(() => undefined);
+
+    await dispatch(makeContext(github, [rule]));
+
+    expect(writtenData(github)).toEqual({ stateful: "live" });
   });
 });

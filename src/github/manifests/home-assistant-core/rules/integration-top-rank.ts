@@ -4,7 +4,7 @@ import { fetchWithTimeout } from "../../../../util/fetch.js";
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import type { Rule, RuleOutput } from "../../../engine/types.js";
 import { MAX_INTEGRATION_LABELS } from "../../../helpers/integration-domains.js";
 import { domainsFromFiles } from "../helpers/integration-domains.js";
 import { type ParsedPath, parseFiles } from "../helpers/parse-path.js";
@@ -55,7 +55,7 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   const domains = domainsFromFiles(await ctx.target.files());
   if (domains.length === 0 || domains.length > MAX_INTEGRATION_LABELS) {
     return undefined;
@@ -70,7 +70,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   }
 
   const labels = await getTopLabels(parsed);
-  return labels.length > 0 ? [{ type: "addLabels", labels }] : undefined;
+  return labels.length > 0 ? { effects: [{ type: "addLabels", labels }] } : undefined;
 }
 
 export const integrationTopRank: Rule = {

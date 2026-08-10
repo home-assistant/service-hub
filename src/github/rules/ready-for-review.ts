@@ -1,7 +1,7 @@
 import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { Effect, Rule, RuleOutput } from "../engine/types.js";
 import { isDraftExplainerComment } from "./draft-on-changes-requested.js";
 
 type HandledEvent = EventType.PULL_REQUEST_READY_FOR_REVIEW;
@@ -10,7 +10,7 @@ function isBotReview(review: { user: { type?: string } | null }): boolean {
   return (review.user?.type ?? "").toLowerCase() === "bot";
 }
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   // Only PRs draft-on-changes-requested drafted get the follow-up; a marker-less draft
   // was the author's own doing and carries no pending reviewers to poke.
   const comments = await ctx.target.issueComments();
@@ -45,7 +45,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
     }
   }
 
-  return effects.length > 0 ? effects : undefined;
+  return effects.length > 0 ? { effects } : undefined;
 }
 
 export const readyForReview: Rule = {

@@ -2,7 +2,7 @@ import { EventType } from "../engine/event.js";
 import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { Rule, RuleOutput } from "../engine/types.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
@@ -22,7 +22,7 @@ export function byCodeOwner(config: {
    */
   domains: (ctx: RuleContext<EventType>) => Promise<string[]>;
 }): Rule {
-  async function handle(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  async function handle(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
     const integrationNames = await config.domains(ctx);
     if (integrationNames.length === 0) return;
 
@@ -41,7 +41,7 @@ export function byCodeOwner(config: {
       if (!match) continue;
       const owners = match.owners.map((o) => o.substring(1).toLowerCase());
       if ((await ctx.expandTeams(owners)).includes(authorLogin)) {
-        return [{ type: "addLabels", labels: ["by-code-owner"] }];
+        return { effects: [{ type: "addLabels", labels: ["by-code-owner"] }] };
       }
     }
   }

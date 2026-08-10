@@ -4,7 +4,7 @@ import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
 import { commandsForTarget, commandViews } from "../engine/status/help.js";
 import { loadTemplate, renderTemplate } from "../engine/status/template.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { Effect, Rule, RuleOutput } from "../engine/types.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
@@ -88,7 +88,7 @@ export function mentionCodeOwners(config: {
   domains: (ctx: RuleContext<EventType>) => Promise<string[]>;
   itemLabel?: string;
 }): Rule {
-  async function handle(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  async function handle(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
     // Never mention or assign on closed items — label events and ON_DEMAND fire on them too.
     if ((await ctx.target.state()) !== "open") return;
 
@@ -127,7 +127,7 @@ export function mentionCodeOwners(config: {
       );
     }
 
-    return effects.length > 0 ? effects : undefined;
+    return effects.length > 0 ? { effects } : undefined;
   }
 
   return {

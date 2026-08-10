@@ -6,6 +6,6 @@ export const close: Command = {
   permission: "code_owner",
 
   async handle() {
-    return [{ type: "setState", state: "closed" }];
+    return { effects: [{ type: "setState", state: "closed" }] };
   },
 };

@@ -1,7 +1,7 @@
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import type { Rule, RuleOutput } from "../../../engine/types.js";
 import {
   domainsFromIssueBody,
   INTEGRATION_LABEL_PREFIX,
@@ -16,7 +16,7 @@ type HandledEvent = EventType.ISSUES_OPENED | EventType.ISSUES_LABELED | EventTy
  * fills the `reporting-guidance` template block.
  */
 export function issueContext(labels: Record<string, string>): Rule {
-  async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
     if ("label" in ctx.event && !(ctx.event.label in labels)) return;
     // Plain rule (blocks, not check()): guard closed issues itself.
     if ((await ctx.target.state()) !== "open") return;
@@ -29,13 +29,14 @@ export function issueContext(labels: Record<string, string>): Rule {
     const effective = new Set([...(await ctx.target.labels()), ...derived]);
     const paragraphs = [...effective].flatMap((label) => (labels[label] ? [labels[label]] : []));
 
-    return [
-      {
-        type: "updateBlock",
-        block: "reporting-guidance",
-        args: paragraphs.length === 0 ? null : { paragraphs },
-      },
-    ];
+    return {
+      blocks: [
+        {
+          block: "reporting-guidance",
+          args: paragraphs.length === 0 ? null : { paragraphs },
+        },
+      ],
+    };
   }
 
   return {

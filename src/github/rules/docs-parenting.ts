@@ -3,7 +3,7 @@ import { extractAllLinks } from "../../util/pr-body.js";
 import { EventType } from "../engine/event.js";
 import { PullRequest } from "../engine/model/pull-request.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { Effect, Rule, RuleOutput } from "../engine/types.js";
 import { HomeAssistantRepository } from "../manifests/home-assistant-org.js";
 
 function findDocsLinks(body: string | null) {
@@ -14,21 +14,23 @@ function findDocsLinks(body: string | null) {
 
 async function handleOpenedOrEdited(
   ctx: RuleContext<EventType.PULL_REQUEST_OPENED | EventType.PULL_REQUEST_EDITED>,
-): Promise<Effect[] | undefined> {
+): Promise<RuleOutput | undefined> {
   const linksToDocs = findDocsLinks(await ctx.target.body());
   if (linksToDocs.length === 0 || linksToDocs.length > 2) return;
-  return linksToDocs.map<Effect>((link) => ({
-    type: "addLabelsCrossRepo",
-    owner: link.owner,
-    repo: link.repo,
-    issue_number: link.number,
-    labels: ["has-parent"],
-  }));
+  return {
+    effects: linksToDocs.map<Effect>((link) => ({
+      type: "addLabelsCrossRepo",
+      owner: link.owner,
+      repo: link.repo,
+      issue_number: link.number,
+      labels: ["has-parent"],
+    })),
+  };
 }
 
 async function handleClosedOrReopened(
   ctx: RuleContext<EventType.PULL_REQUEST_CLOSED | EventType.PULL_REQUEST_REOPENED>,
-): Promise<Effect[] | undefined> {
+): Promise<RuleOutput | undefined> {
   const linksToDocs = findDocsLinks(await ctx.target.body());
   if (linksToDocs.length !== 1) return;
   const docLink = linksToDocs[0];
@@ -47,39 +49,45 @@ async function handleClosedOrReopened(
       (await docsPR.state()) === "open" ? "open" : (await docsPR.merged()) ? "merged" : "closed";
     if (docsState === "open" || docsState === "merged") return;
 
-    return [
-      {
-        type: "updatePullRequest",
-        owner: docLink.owner,
-        repo: docLink.repo,
-        pull_number: docLink.number,
-        state: "open",
-      },
-    ];
+    return {
+      effects: [
+        {
+          type: "updatePullRequest",
+          owner: docLink.owner,
+          repo: docLink.repo,
+          pull_number: docLink.number,
+          state: "open",
+        },
+      ],
+    };
   }
 
   if (parentState === "closed") {
-    return [
-      {
-        type: "updatePullRequest",
-        owner: docLink.owner,
-        repo: docLink.repo,
-        pull_number: docLink.number,
-        state: "closed",
-      },
-    ];
+    return {
+      effects: [
+        {
+          type: "updatePullRequest",
+          owner: docLink.owner,
+          repo: docLink.repo,
+          pull_number: docLink.number,
+          state: "closed",
+        },
+      ],
+    };
   }
 
   // merged
-  return [
-    {
-      type: "addLabelsCrossRepo",
-      owner: docLink.owner,
-      repo: docLink.repo,
-      issue_number: docLink.number,
-      labels: ["parent-merged"],
-    },
-  ];
+  return {
+    effects: [
+      {
+        type: "addLabelsCrossRepo",
+        owner: docLink.owner,
+        repo: docLink.repo,
+        issue_number: docLink.number,
+        labels: ["parent-merged"],
+      },
+    ],
+  };
 }
 
 /**
@@ -90,7 +98,7 @@ async function handleClosedOrReopened(
  */
 async function handleOnDemand(
   ctx: RuleContext<EventType.ON_DEMAND>,
-): Promise<Effect[] | undefined> {
+): Promise<RuleOutput | undefined> {
   const links = findDocsLinks(await ctx.target.body());
   if (links.length === 0 || links.length > 2) return;
 
@@ -113,7 +121,7 @@ async function handleOnDemand(
     });
   }
 
-  return effects;
+  return { effects };
 }
 
 export const docsParenting: Rule = {

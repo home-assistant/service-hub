@@ -2,13 +2,14 @@ import { describe, expect, it } from "vitest";
 import { dispatch } from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
 import { renderStatus } from "../../../src/github/engine/status/render.js";
-import type { Effect, RegistryConfig, Rule } from "../../../src/github/engine/types.js";
+import type { RegistryConfig, Rule, RuleOutput } from "../../../src/github/engine/types.js";
 import { createMockContext, createMockGitHub, type MockGitHub } from "../helpers/mock-context.js";
 
 /**
  * One test per Effect variant: the mapping from the effect a rule emits to
- * the GitHub API call the dispatcher makes. Batching/dedupe semantics live in
- * dispatch.test.ts; this file is only about which call each effect turns
+ * the GitHub API call the dispatcher makes — plus the status-domain output
+ * channels (statuses, blocks, overrides). Batching/dedupe semantics live in
+ * dispatch.test.ts; this file is only about which call each output turns
  * into. Context defaults (mock-context.ts): PR #1 on
  * home-assistant/core, head sha abc123, node_id PR_1, not a draft.
  */
@@ -16,7 +17,7 @@ import { createMockContext, createMockGitHub, type MockGitHub } from "../helpers
 const REPO = { owner: "home-assistant", repo: "core" };
 
 async function apply(
-  effects: Effect[],
+  output: RuleOutput,
   opts: {
     github?: MockGitHub;
     payload?: Record<string, unknown>;
@@ -30,7 +31,7 @@ async function apply(
     statusSections: opts.statusSections,
     // synchronize, not opened: opened dispatches post the dashboard
     // placeholder up front, which would show up in every mapping test here.
-    events: { [EventType.PULL_REQUEST_SYNCHRONIZE]: async () => effects },
+    events: { [EventType.PULL_REQUEST_SYNCHRONIZE]: async () => output },
   };
   const config: RegistryConfig = { repositories: { "home-assistant/core": [rule] } };
   await dispatch(
@@ -46,7 +47,9 @@ async function apply(
 
 describe("effect → GitHub API mapping", () => {
   it("addLabels → issues.addLabels on the target", async () => {
-    const github = await apply([{ type: "addLabels", labels: ["bugfix", "has-tests"] }]);
+    const github = await apply({
+      effects: [{ type: "addLabels", labels: ["bugfix", "has-tests"] }],
+    });
 
     expect(github.issues.addLabels).toHaveBeenCalledWith({
       ...REPO,
@@ -56,15 +59,17 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("addLabelsCrossRepo → issues.addLabels on the effect's own coordinates", async () => {
-    const github = await apply([
-      {
-        type: "addLabelsCrossRepo",
-        owner: "home-assistant",
-        repo: "home-assistant.io",
-        issue_number: 42,
-        labels: ["has-parent"],
-      },
-    ]);
+    const github = await apply({
+      effects: [
+        {
+          type: "addLabelsCrossRepo",
+          owner: "home-assistant",
+          repo: "home-assistant.io",
+          issue_number: 42,
+          labels: ["has-parent"],
+        },
+      ],
+    });
 
     expect(github.issues.addLabels).toHaveBeenCalledTimes(1);
     expect(github.issues.addLabels).toHaveBeenCalledWith({
@@ -76,9 +81,12 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("removeLabels → one issues.removeLabel per label the target has", async () => {
-    const github = await apply([{ type: "removeLabels", labels: ["stale", "needs-rebase"] }], {
-      payload: { pull_request: { labels: [{ name: "stale" }, { name: "needs-rebase" }] } },
-    });
+    const github = await apply(
+      { effects: [{ type: "removeLabels", labels: ["stale", "needs-rebase"] }] },
+      {
+        payload: { pull_request: { labels: [{ name: "stale" }, { name: "needs-rebase" }] } },
+      },
+    );
 
     expect(github.issues.removeLabel).toHaveBeenCalledTimes(2);
     expect(github.issues.removeLabel).toHaveBeenCalledWith({
@@ -94,7 +102,9 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("addAssignees → issues.addAssignees", async () => {
-    const github = await apply([{ type: "addAssignees", assignees: ["balloob", "frenck"] }]);
+    const github = await apply({
+      effects: [{ type: "addAssignees", assignees: ["balloob", "frenck"] }],
+    });
 
     expect(github.issues.addAssignees).toHaveBeenCalledWith({
       ...REPO,
@@ -104,7 +114,7 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("removeAssignees → issues.removeAssignees", async () => {
-    const github = await apply([{ type: "removeAssignees", assignees: ["balloob"] }]);
+    const github = await apply({ effects: [{ type: "removeAssignees", assignees: ["balloob"] }] });
 
     expect(github.issues.removeAssignees).toHaveBeenCalledWith({
       ...REPO,
@@ -114,7 +124,7 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("comment → issues.createComment", async () => {
-    const github = await apply([{ type: "comment", body: "Hello there!" }]);
+    const github = await apply({ effects: [{ type: "comment", body: "Hello there!" }] });
 
     expect(github.issues.createComment).toHaveBeenCalledWith({
       ...REPO,
@@ -124,7 +134,7 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("setTitle → issues.update", async () => {
-    const github = await apply([{ type: "setTitle", title: "Better title" }]);
+    const github = await apply({ effects: [{ type: "setTitle", title: "Better title" }] });
 
     expect(github.issues.update).toHaveBeenCalledWith({
       ...REPO,
@@ -134,7 +144,7 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("setState → issues.update", async () => {
-    const github = await apply([{ type: "setState", state: "closed" }]);
+    const github = await apply({ effects: [{ type: "setState", state: "closed" }] });
 
     expect(github.issues.update).toHaveBeenCalledWith({
       ...REPO,
@@ -144,15 +154,17 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("updatePullRequest → pulls.update on the effect's own coordinates", async () => {
-    const github = await apply([
-      {
-        type: "updatePullRequest",
-        owner: "home-assistant",
-        repo: "home-assistant.io",
-        pull_number: 9,
-        state: "closed",
-      },
-    ]);
+    const github = await apply({
+      effects: [
+        {
+          type: "updatePullRequest",
+          owner: "home-assistant",
+          repo: "home-assistant.io",
+          pull_number: 9,
+          state: "closed",
+        },
+      ],
+    });
 
     expect(github.pulls.update).toHaveBeenCalledWith({
       owner: "home-assistant",
@@ -163,7 +175,7 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("requestReviewers → pulls.requestReviewers", async () => {
-    const github = await apply([{ type: "requestReviewers", reviewers: ["frenck"] }]);
+    const github = await apply({ effects: [{ type: "requestReviewers", reviewers: ["frenck"] }] });
 
     expect(github.pulls.requestReviewers).toHaveBeenCalledWith({
       ...REPO,
@@ -173,13 +185,13 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("updateBranch → pulls.updateBranch", async () => {
-    const github = await apply([{ type: "updateBranch" }]);
+    const github = await apply({ effects: [{ type: "updateBranch" }] });
 
     expect(github.pulls.updateBranch).toHaveBeenCalledWith({ ...REPO, pull_number: 1 });
   });
 
   it("convertToDraft → convertPullRequestToDraft mutation with the PR's node id", async () => {
-    const github = await apply([{ type: "convertToDraft" }]);
+    const github = await apply({ effects: [{ type: "convertToDraft" }] });
 
     expect(github.graphql).toHaveBeenCalledWith(
       expect.stringContaining("convertPullRequestToDraft"),
@@ -190,29 +202,29 @@ describe("effect → GitHub API mapping", () => {
   });
 
   it("convertToDraft is a no-op when the PR is already a draft", async () => {
-    const github = await apply([{ type: "convertToDraft" }], {
-      payload: { pull_request: { draft: true } },
-    });
+    const github = await apply(
+      { effects: [{ type: "convertToDraft" }] },
+      {
+        payload: { pull_request: { draft: true } },
+      },
+    );
 
     expect(github.graphql).not.toHaveBeenCalled();
   });
 
-  it("statusSection → status comment plus ha-bot commit status on the head sha", async () => {
+  it("statuses → placeholder, dashboard body, and ha-bot commit status on the head sha", async () => {
     const github = createMockGitHub();
     github.issues.createComment.mockResolvedValue({
       data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
     });
     await apply(
-      [
-        {
-          type: "statusSection",
-          section: { id: "a", title: "Alpha check", status: "pass", message: "ok" },
-        },
-      ],
+      { statuses: [{ id: "a", title: "Alpha check", status: "pass", message: "ok" }] },
       { github },
     );
 
-    const statusBody = github.issues.createComment.mock.lastCall?.[0].body as string;
+    // The placeholder gets created first, then updated with the real body.
+    expect(github.issues.createComment).toHaveBeenCalledTimes(1);
+    const statusBody = github.issues.updateComment.mock.lastCall?.[0].body as string;
     expect(statusBody).toContain("Alpha check");
     expect(github.repos.createCommitStatus).toHaveBeenCalledWith({
       ...REPO,
@@ -224,12 +236,13 @@ describe("effect → GitHub API mapping", () => {
     });
   });
 
-  it("updateBlock with null args → issues.updateComment without the block", async () => {
+  it("a block cleared with null args → issues.updateComment without the block", async () => {
     const github = createMockGitHub();
     github.issues.listComments.mockResolvedValue({
       data: [
         {
           id: 7,
+          html_url: "https://github.com/ha/c/issues/1#issuecomment-7",
           body: renderStatus(
             [{ id: "a", title: "Alpha check", status: "pass", message: "ok" }],
             "home-assistant/core",
@@ -239,10 +252,13 @@ describe("effect → GitHub API mapping", () => {
         },
       ],
     });
-    await apply([{ type: "updateBlock", block: "reporting-guidance", args: null }], {
-      github,
-      statusSections: [{ id: "a", title: "Alpha check" }],
-    });
+    await apply(
+      { blocks: [{ block: "reporting-guidance", args: null }] },
+      {
+        github,
+        statusSections: [{ id: "a", title: "Alpha check" }],
+      },
+    );
 
     expect(github.issues.updateComment).toHaveBeenCalledTimes(1);
     const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
@@ -252,22 +268,26 @@ describe("effect → GitHub API mapping", () => {
     expect(body).not.toContain("reporting-guidance");
   });
 
-  it("a null-args updateBlock alone never creates a status comment", async () => {
-    const github = await apply([{ type: "updateBlock", block: "reporting-guidance", args: null }], {
-      statusSections: [],
-    });
+  it("a null-args block update alone never creates a status comment", async () => {
+    const github = await apply(
+      { blocks: [{ block: "reporting-guidance", args: null }] },
+      {
+        statusSections: [],
+      },
+    );
 
     expect(github.issues.createComment).not.toHaveBeenCalled();
     expect(github.issues.updateComment).not.toHaveBeenCalled();
     expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
   });
 
-  it("overrideSection → issues.updateComment waiving the section, status flips to success", async () => {
+  it("override → issues.updateComment waiving the section, status flips to success", async () => {
     const github = createMockGitHub();
     github.issues.listComments.mockResolvedValue({
       data: [
         {
           id: 7,
+          html_url: "https://github.com/ha/c/pull/1#issuecomment-7",
           body: renderStatus(
             [{ id: "a", title: "Alpha check", status: "fail", message: "broken" }],
             "home-assistant/core",
@@ -275,13 +295,13 @@ describe("effect → GitHub API mapping", () => {
         },
       ],
     });
-    github.issues.updateComment.mockResolvedValue({
-      data: { id: 7, html_url: "https://github.com/ha/c/pull/1#issuecomment-7" },
-    });
-    await apply([{ type: "overrideSection", id: "a", ignore: { reason: "by-design" } }], {
-      github,
-      statusSections: [{ id: "a", title: "Alpha check" }],
-    });
+    await apply(
+      { overrides: [{ id: "a", ignore: { reason: "by-design" } }] },
+      {
+        github,
+        statusSections: [{ id: "a", title: "Alpha check" }],
+      },
+    );
 
     const body = github.issues.updateComment.mock.lastCall?.[0].body as string;
     expect(body).toContain("Ignored: by-design");
@@ -294,10 +314,13 @@ describe("effect → GitHub API mapping", () => {
     );
   });
 
-  it("overrideSection alone never creates a status comment", async () => {
-    const github = await apply([{ type: "overrideSection", id: "a", ignore: { reason: "r" } }], {
-      statusSections: [{ id: "a", title: "Alpha check" }],
-    });
+  it("an override alone never creates a status comment", async () => {
+    const github = await apply(
+      { overrides: [{ id: "a", ignore: { reason: "r" } }] },
+      {
+        statusSections: [{ id: "a", title: "Alpha check" }],
+      },
+    );
 
     expect(github.issues.createComment).not.toHaveBeenCalled();
     expect(github.issues.updateComment).not.toHaveBeenCalled();
@@ -311,11 +334,13 @@ describe("aggregate ha-bot status check from status sections", () => {
     github.issues.createComment.mockResolvedValue({
       data: { id: 999, html_url: "https://github.com/ha/c/pull/1#issuecomment-999" },
     });
-    const effects = sections.map((s) => ({
-      type: "statusSection" as const,
-      section: { id: s.id, title: s.id, status: s.status, message: s.id },
+    const statuses = sections.map((s) => ({
+      id: s.id,
+      title: s.id,
+      status: s.status,
+      message: s.id,
     }));
-    return { github, run: () => apply(effects, { github }) };
+    return { github, run: () => apply({ statuses }, { github }) };
   }
 
   it("writes a success ha-bot status when all sections pass", async () => {
@@ -381,7 +406,7 @@ describe("aggregate ha-bot status check from status sections", () => {
   });
 
   it("does not write a ha-bot status if no rule emitted a status section", async () => {
-    const github = await apply([{ type: "addLabels", labels: ["x"] }]);
+    const github = await apply({ effects: [{ type: "addLabels", labels: ["x"] }] });
 
     expect(github.repos.createCommitStatus).not.toHaveBeenCalled();
   });

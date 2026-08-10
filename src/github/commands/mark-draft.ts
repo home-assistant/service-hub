@@ -7,6 +7,6 @@ export const markDraft: Command = {
   permission: "code_owner",
 
   async handle() {
-    return [{ type: "convertToDraft" }];
+    return { effects: [{ type: "convertToDraft" }] };
   },
 };

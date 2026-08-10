@@ -1,7 +1,7 @@
 import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { Effect, Rule, RuleOutput } from "../engine/types.js";
 
 export const DRAFT_ON_CHANGES_REQUESTED_MARKER = "<!-- ha-bot-draft-on-changes-requested -->";
 
@@ -36,7 +36,7 @@ Please take a look at the requested changes, and use the **Ready for review** bu
 
 type HandledEvent = EventType.PULL_REQUEST_REVIEW_SUBMITTED;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   if (ctx.event.reviewState !== "changes_requested") return;
   if ((await ctx.target.state()) !== "open") return;
   if (await ctx.target.isDraft()) return;
@@ -50,7 +50,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   if (!comments.some((c) => isDraftExplainerComment(c.body))) {
     effects.push({ type: "comment", body: reviewComment(ctx.org.name) });
   }
-  return effects;
+  return { effects };
 }
 
 export const draftOnChangesRequested: Rule = {

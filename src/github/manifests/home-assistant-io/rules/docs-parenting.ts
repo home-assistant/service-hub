@@ -3,7 +3,7 @@ import { extractAllLinks } from "../../../../util/pr-body.js";
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import type { Rule, RuleOutput } from "../../../engine/types.js";
 import { HomeAssistantRepository } from "../../home-assistant-org.js";
 import { Organization } from "../../types.js";
 
@@ -17,7 +17,7 @@ type HandledEvent =
  * docs PR cross-repo and syncs open/closed state onto it; this one only marks
  * the docs PR itself as having a parent when its own body names one.
  */
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   const linksToParents = extractAllLinks(await ctx.target.body()).filter(
     (link) =>
       link.owner === Organization.HOME_ASSISTANT &&
@@ -25,7 +25,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   );
   if (linksToParents.length === 0) return;
 
-  return [{ type: "addLabels", labels: ["has-parent"] }];
+  return { effects: [{ type: "addLabels", labels: ["has-parent"] }] };
 }
 
 export const docsParenting: Rule = {

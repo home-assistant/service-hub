@@ -1,5 +1,5 @@
 import type { CommandContext } from "../engine/model/command-context.js";
-import type { Command, Effect } from "../engine/types.js";
+import type { Command, RuleOutput } from "../engine/types.js";
 
 /**
  * Users see a check's title on the dashboard, not its section ID — resolve
@@ -15,9 +15,10 @@ function resolveSectionId(context: CommandContext, title: string): string {
 }
 
 /**
- * Waivers are `overrideSection` effects: the dispatcher's status sync merges
- * them into the section state persisted in the status comment, so they stick
- * across re-emissions of the section until an explicit `unignore`.
+ * Waivers travel on the `overrides` output channel: the dispatcher's status
+ * sync merges them into the section state persisted in the status comment,
+ * so they stick across re-emissions of the section until an explicit
+ * `unignore`.
  */
 export const ignore: Command = {
   name: "ignore",
@@ -27,10 +28,10 @@ export const ignore: Command = {
   scope: "pull_request",
   permission: "author",
 
-  async handle(context): Promise<Effect[]> {
+  async handle(context): Promise<RuleOutput> {
     if (context.args.length !== 2) throw new Error('usage: ignore "<check name>" "<reason>"');
     const [name, reason] = context.args;
-    return [{ type: "overrideSection", id: resolveSectionId(context, name), ignore: { reason } }];
+    return { overrides: [{ id: resolveSectionId(context, name), ignore: { reason } }] };
   },
 };
 
@@ -42,10 +43,8 @@ export const unignore: Command = {
   scope: "pull_request",
   permission: "author",
 
-  async handle(context): Promise<Effect[]> {
+  async handle(context): Promise<RuleOutput> {
     if (context.args.length !== 1) throw new Error('usage: unignore "<check name>"');
-    return [
-      { type: "overrideSection", id: resolveSectionId(context, context.args[0]), ignore: null },
-    ];
+    return { overrides: [{ id: resolveSectionId(context, context.args[0]), ignore: null }] };
   },
 };

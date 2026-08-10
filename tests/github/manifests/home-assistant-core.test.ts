@@ -287,8 +287,8 @@ describe("home-assistant/core dispatch snapshots", () => {
 
   for (const [name, scenario] of Object.entries(scenarios)) {
     it(name, async () => {
-      const effects = await runScenario(scenario);
-      await expect(stringify(effects, { lineWidth: 0 })).toMatchFileSnapshot(
+      const result = await runScenario(scenario);
+      await expect(stringify(result, { lineWidth: 0 })).toMatchFileSnapshot(
         `snapshots/home-assistant-core/${name}.yaml`,
       );
     });

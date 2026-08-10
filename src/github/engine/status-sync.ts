@@ -2,20 +2,32 @@ import type { Octokit } from "@octokit/rest";
 import { log } from "../../log.js";
 import type { GetIssueParams } from "./model/issue.js";
 import type { RuleContext } from "./model/rule-context.js";
-import { draftPRIfNotDraft } from "./pr-state.js";
-import { buildStatus } from "./status/build.js";
+import type { BlockUpdates } from "./status/blocks.js";
+import { buildStatus, type StatusAggregate } from "./status/build.js";
 import { isStatusComment, placeholderBody } from "./status/render.js";
-import type { SectionOverride, StatusSection } from "./status/types.js";
+import type { RuleState, SectionOverride, StatusSection } from "./status/types.js";
 
 /**
  * The impure half of the status subsystem: locate the status comment, feed
- * its body through the pure {@link buildStatus}, and write the results back —
- * comment, aggregate commit status, and the draft-on-failure follow-up.
+ * the dispatch's status changes through the pure {@link buildStatus}, and
+ * write the results back. Split in two so the dispatcher owns the decisions:
+ * {@link syncDashboard} writes the comment and reports the aggregate;
+ * {@link updateCommitStatus} writes the aggregate commit status. Drafting is
+ * the dispatcher's call.
  */
 
 export const STATUS_CHECK_CONTEXT = "ha-bot";
 
 type CommitStatuses = Awaited<ReturnType<Octokit["repos"]["listCommitStatusesForRef"]>>["data"];
+
+/** The located (or just-created) status comment. */
+export interface StatusCommentRef {
+  id: number;
+  body: string;
+  html_url: string;
+  /** True when this call created the placeholder — persisted state is empty. */
+  fresh: boolean;
+}
 
 export async function findStatusComment(
   github: Octokit,
@@ -36,43 +48,58 @@ export async function findStatusComment(
 }
 
 /**
- * Post a tiny placeholder status comment if none exists yet. Called at the
- * top of effect-application so the status comment sits above any other
- * comment (mention-code-owners, etc.) the same dispatch will create.
+ * The dispatch's single status-comment lookup. With `createIfMissing`, posts
+ * the tiny placeholder when none exists — done up front so the status comment
+ * sits above any other comment the same dispatch will create. A `fresh`
+ * result carries no persisted state, so callers skip parsing entirely.
  */
-export async function ensureStatusCommentExists(
+export async function locateStatusComment(
   github: Octokit,
   params: GetIssueParams,
-): Promise<void> {
+  options: { createIfMissing: boolean },
+): Promise<StatusCommentRef | null> {
   const existing = await findStatusComment(github, params);
-  if (existing) return;
-  await github.issues.createComment({ ...params, body: placeholderBody() });
+  if (existing) return { ...existing, fresh: false };
+  if (!options.createIfMissing) return null;
+
+  const body = placeholderBody();
+  const { data } = await github.issues.createComment({ ...params, body });
+  return { id: data.id, body, html_url: data.html_url, fresh: true };
 }
 
-/** The status-relevant effects of one dispatch, bucketed by the dispatcher. */
+/** The status-domain outputs of one dispatch, bucketed by the dispatcher. */
 export interface StatusChanges {
   sections: StatusSection[];
   overrides: SectionOverride[];
   /** Block updates: args replace the persisted state, `null` clears. */
-  blocks: ReadonlyMap<string, unknown>;
+  blocks: BlockUpdates;
+  /** The merged rule-persisted data bag to embed (stale keys already swept). */
+  data: Record<string, unknown>;
+}
+
+/** What one dashboard write concluded, for the dispatcher to act on. */
+export interface DashboardResult {
+  /** Post-merge, post-override section state (what the comment embeds). */
+  sections: StatusSection[];
+  aggregate: StatusAggregate;
+  /** Deep link to the status comment; null when nothing was written. */
+  commentUrl: string | null;
 }
 
 /**
- * Upsert the status comment, then write a single aggregate `ha-bot` commit
- * status whose target_url deep-links to the comment. Sequential — we need the
- * comment URL before posting the status. Rules emit `statusSection` effects;
- * the commit status is synthesized here so individual rules don't have to.
- *
- * Also sweeps stale commit statuses written by older deploys (any contexts
- * no live rule claims); stale comment sections are swept inside buildStatus.
+ * Upsert the status comment from this dispatch's status changes. Pure
+ * decision-making lives in {@link buildStatus}; this writes the body back and
+ * hands the aggregate to the caller — it does not touch commit statuses or
+ * the PR's draft state.
  */
-export async function syncStatus(
+export async function syncDashboard(
   context: RuleContext,
   changes: StatusChanges,
+  existing: StatusCommentRef | null,
+  previous: RuleState | null,
   knownSectionIds: ReadonlySet<string>,
-): Promise<void> {
+): Promise<DashboardResult> {
   const params = context.issueParams();
-  const existing = await findStatusComment(context.github, params);
 
   const result = buildStatus({
     target: {
@@ -83,28 +110,48 @@ export async function syncStatus(
     newSections: changes.sections,
     overrides: changes.overrides,
     blocks: changes.blocks,
-    previousBody: existing?.body ?? null,
+    data: changes.data,
+    previous,
     knownSectionIds,
     help: { commandSlug: context.env.COMMAND_SLUG, commands: context.commands },
   });
-  if (result.body === null) return;
+  if (result.body === null) {
+    return { sections: result.sections, aggregate: result.aggregate, commentUrl: null };
+  }
 
   // Re-evaluations (cron sweeps, `/… update`) usually rebuild the identical
   // body; rewriting it anyway would bump the comment's updated_at on every
-  // pass. Same below for the commit status, which is append-only on GitHub's
-  // side — every unconditional write stacks another status object.
-  const { data: comment } =
-    existing && existing.body === result.body
-      ? { data: existing }
-      : existing
-        ? await context.github.issues.updateComment({
-            owner: params.owner,
-            repo: params.repo,
-            comment_id: existing.id,
-            body: result.body,
-          })
-        : await context.github.issues.createComment({ ...params, body: result.body });
+  // pass.
+  let commentUrl: string;
+  if (existing) {
+    if (existing.body !== result.body) {
+      await context.github.issues.updateComment({
+        owner: params.owner,
+        repo: params.repo,
+        comment_id: existing.id,
+        body: result.body,
+      });
+    }
+    commentUrl = existing.html_url;
+  } else {
+    const { data } = await context.github.issues.createComment({ ...params, body: result.body });
+    commentUrl = data.html_url;
+  }
 
+  return { sections: result.sections, aggregate: result.aggregate, commentUrl };
+}
+
+/**
+ * Write the single aggregate `ha-bot` commit status on the PR head, deep-
+ * linking to the status comment. Also sweeps stale commit statuses written
+ * by older deploys (any contexts no live rule claims); stale comment
+ * sections are swept inside buildStatus.
+ */
+export async function updateCommitStatus(
+  context: RuleContext,
+  aggregate: StatusAggregate,
+  commentUrl: string,
+): Promise<void> {
   if (context.target.kind !== "pull_request") return;
   const headSha = await context.target.headSha();
   if (!headSha) return;
@@ -116,7 +163,7 @@ export async function syncStatus(
     .listCommitStatusesForRef(context.repoParams({ ref: headSha, per_page: 100 }))
     .then((res): CommitStatuses | null => res.data)
     .catch((err) => {
-      log.warn("syncStatus: listing commit statuses failed", { error: String(err) });
+      log.warn("updateCommitStatus: listing commit statuses failed", { error: String(err) });
       return null;
     });
 
@@ -135,22 +182,19 @@ export async function syncStatus(
   const latest = statuses?.find((s) => s.context === STATUS_CHECK_CONTEXT);
   const statusUnchanged =
     latest !== undefined &&
-    latest.state === result.aggregate.state &&
-    latest.description === result.aggregate.description &&
-    latest.target_url === comment.html_url;
+    latest.state === aggregate.state &&
+    latest.description === aggregate.description &&
+    latest.target_url === commentUrl;
   if (!statusUnchanged) {
     await context.github.repos.createCommitStatus(
       context.repoParams({
         sha: headSha,
         context: STATUS_CHECK_CONTEXT,
-        state: result.aggregate.state,
-        description: result.aggregate.description,
-        target_url: comment.html_url,
+        state: aggregate.state,
+        description: aggregate.description,
+        target_url: commentUrl,
       }),
     );
-  }
-  if (result.aggregate.shouldDraft) {
-    await draftPRIfNotDraft(context);
   }
   await sweep;
 }
@@ -161,9 +205,9 @@ export async function syncStatus(
  * `ha-bot` context, and neutralize them to `success` + "No longer in use".
  * GitHub has no "delete status" API; overwriting is the closest equivalent.
  *
- * Rules write only `statusSection` effects going forward; the single
- * `ha-bot` status is the bot's sole commit-status output. Any other context
- * we own on this commit is therefore from an older deploy.
+ * Rules emit `statuses` outputs going forward; the single `ha-bot` status is
+ * the bot's sole commit-status output. Any other context we own on this
+ * commit is therefore from an older deploy.
  */
 async function sweepStaleStatusChecks(
   context: RuleContext,

@@ -6,6 +6,6 @@ export const reopen: Command = {
   permission: "code_owner",
 
   async handle() {
-    return [{ type: "setState", state: "open" }];
+    return { effects: [{ type: "setState", state: "open" }] };
   },
 };

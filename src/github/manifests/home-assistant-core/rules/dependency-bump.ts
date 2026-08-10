@@ -1,7 +1,7 @@
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import type { Rule, RuleOutput } from "../../../engine/types.js";
 
 const DEPENDENCY_FILES = new Set([
   "package_constraints.txt",
@@ -13,11 +13,11 @@ const DEPENDENCY_FILES = new Set([
 
 type HandledEvent = EventType.PULL_REQUEST_OPENED | EventType.ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   const files = await ctx.target.files();
   const filenames = files.map((f) => f.filename.split("/").pop() ?? "");
   if (filenames.length > 0 && filenames.every((name) => DEPENDENCY_FILES.has(name))) {
-    return [{ type: "addLabels", labels: ["dependency-bump"] }];
+    return { effects: [{ type: "addLabels", labels: ["dependency-bump"] }] };
   }
 }
 

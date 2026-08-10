@@ -68,7 +68,7 @@ export function isStatusComment(body: string): boolean {
 
 /** Stub body posted early so the status comment sits above other comments. */
 export function placeholderBody(): string {
-  return `${SENTINEL}\n\n_Evaluating rules…_`;
+  return `${SENTINEL}\n\n_Initializing dashboard…_`;
 }
 
 /**
@@ -151,7 +151,8 @@ export function renderStatus(
   return renderTemplate(target === "issue" ? ISSUE_TEMPLATE : PR_TEMPLATE, view);
 }
 
-function emptyState(): RuleState {
+/** A blank persisted state — what a fresh placeholder comment carries. */
+export function emptyRuleState(): RuleState {
   return { version: RULE_STATE_VERSION, sections: [], blocks: {}, data: {} };
 }
 
@@ -182,7 +183,7 @@ export function parseState(body: string): RuleState {
         return normalizeState(JSON.parse(line.slice(STATE_PREFIX.length, -MARKER_SUFFIX.length)));
       } catch (err) {
         log.warn("parseState: malformed state blob", { error: String(err) });
-        return emptyState();
+        return emptyRuleState();
       }
     }
   }

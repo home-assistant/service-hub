@@ -1,7 +1,7 @@
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import type { Effect, Rule, RuleOutput } from "../../../engine/types.js";
 import { INTEGRATION_LABEL_PREFIX } from "../../../helpers/integration-domains.js";
 import { fetchIntegrationManifest, QualityScale } from "../../../helpers/integration-manifest.js";
 import { domainsFromFiles } from "../helpers/integration-domains.js";
@@ -31,7 +31,7 @@ function highestScale(scales: QualityScale[]): QualityScale {
   );
 }
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   // Only integration labels feed the scale; other labels are not our input.
   if ("label" in ctx.event && !ctx.event.label.startsWith(INTEGRATION_LABEL_PREFIX)) return;
 
@@ -74,7 +74,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
     }
   }
 
-  return effects.length > 0 ? effects : undefined;
+  return effects.length > 0 ? { effects } : undefined;
 }
 
 export const qualityScale: Rule = {

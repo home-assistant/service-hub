@@ -1,7 +1,7 @@
 import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { Rule, RuleOutput } from "../engine/types.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_OPENED
@@ -12,7 +12,7 @@ function inOctober(): boolean {
   return new Date().getMonth() === 9;
 }
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   const hasHacktoberfestLabel = (await ctx.target.labels()).includes("Hacktoberfest");
   const isClosed =
     ctx.eventType === EventType.PULL_REQUEST_CLOSED || (await ctx.target.state()) === "closed";
@@ -22,12 +22,12 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
 
   // On a closed-but-not-merged PR, strip the label if it's still there.
   if (isClosed && !isMerged && hasHacktoberfestLabel) {
-    return [{ type: "removeLabels", labels: ["Hacktoberfest"] }];
+    return { effects: [{ type: "removeLabels", labels: ["Hacktoberfest"] }] };
   }
 
   // On an open PR during October on a participating repo, label it.
   if (!isClosed && !ctx.senderIsBot && inOctober() && ctx.repo.topics.includes("hacktoberfest")) {
-    return [{ type: "addLabels", labels: ["Hacktoberfest"] }];
+    return { effects: [{ type: "addLabels", labels: ["Hacktoberfest"] }] };
   }
 }
 

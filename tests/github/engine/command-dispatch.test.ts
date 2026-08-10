@@ -85,7 +85,7 @@ describe("isBotCommand", () => {
 describe("dispatchCommand", () => {
   it("applies the command's effects and reacts +1", async () => {
     const command = noopCommand({
-      handle: vi.fn().mockResolvedValue([{ type: "setState", state: "closed" }]),
+      handle: vi.fn().mockResolvedValue({ effects: [{ type: "setState", state: "closed" }] }),
     });
     const { context, github } = makeContext("/ha-bot ping", {
       registry: registryWith(command),
@@ -200,11 +200,13 @@ describe("dispatchCommand", () => {
       description: "",
       events: {
         [EventType.PULL_REQUEST_LABELED]: async (ctx) =>
-          ctx.event.label === "foo" ? [{ type: "comment", body: "saw foo" }] : undefined,
+          ctx.event.label === "foo"
+            ? { effects: [{ type: "comment", body: "saw foo" }] }
+            : undefined,
       },
     };
     const command = noopCommand({
-      handle: vi.fn().mockResolvedValue([{ type: "addLabels", labels: ["foo"] }]),
+      handle: vi.fn().mockResolvedValue({ effects: [{ type: "addLabels", labels: ["foo"] }] }),
     });
     const { context, github } = makeContext("/ha-bot ping", {
       registry: registryWith(command, [onLabeled]),

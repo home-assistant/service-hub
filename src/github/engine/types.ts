@@ -3,14 +3,15 @@ import type { CommandContext } from "./model/command-context.js";
 import type { RuleContext } from "./model/rule-context.js";
 import type { BlockArgsMap, BlockId } from "./status/blocks.js";
 import type { CommandHelpEntry } from "./status/help.js";
-import type { StatusSection } from "./status/types.js";
+import type { SectionOverride, StatusSection } from "./status/types.js";
 
 export type { CommandHelpEntry, CommandPermission } from "./status/help.js";
 
 /**
- * Structured side-effects returned by a rule's event handler.
+ * Structured GitHub side-effects returned by a rule's event handler.
  * The dispatcher batches, deduplicates, and applies them. Rules never
- * call mutating GitHub or DB APIs directly.
+ * call mutating GitHub or DB APIs directly. Status/dashboard outputs are
+ * not effects — they travel on their own {@link RuleOutput} channels.
  */
 export type Effect =
   | { type: "addLabels"; labels: string[] }
@@ -24,13 +25,6 @@ export type Effect =
   | { type: "removeLabels"; labels: string[] }
   | { type: "addAssignees"; assignees: string[] }
   | { type: "comment"; body: string }
-  | { type: "statusSection"; section: StatusSection }
-  // Command-use only (`ignore`/`unignore`): set or clear the author waiver on
-  // one section. Rules re-emit sections instead; waivers stick across that.
-  | { type: "overrideSection"; id: string; ignore: { reason: string } | null }
-  // Template blocks: set a fixed dashboard block's typed args, or clear it
-  // with `args: null`. Separate from the checks table — see status/blocks.ts.
-  | { [B in BlockId]: { type: "updateBlock"; block: B; args: BlockArgsMap[B] | null } }[BlockId]
   | {
       type: "updatePullRequest";
       owner: string;
@@ -57,9 +51,48 @@ export type Effect =
 // Discord engine in applyEffects (dispatch.ts).
 //  | { type: "notify"; topic: string; data: Record<string, unknown> }
 
+/** A typed update to one dashboard template block; `args: null` clears it. */
+export type BlockUpdate = {
+  [B in BlockId]: { block: B; args: BlockArgsMap[B] | null };
+}[BlockId];
+
+/**
+ * Everything one rule (or command) concluded in one evaluation, split by
+ * domain. `effects` are GitHub mutations; the other channels feed the status
+ * subsystem — the dashboard comment, the aggregate merge gate, and the
+ * draft decision — which never sees effects.
+ */
+export interface RuleOutput {
+  /**
+   * Check outcomes: dashboard rows that also drive the aggregate commit
+   * status and the draft-on-failure decision.
+   */
+  statuses?: StatusSection[];
+  /** Template block updates outside the checks table — see status/blocks.ts. */
+  blocks?: BlockUpdate[];
+  /**
+   * Command-use only (`ignore`/`unignore`): set or clear the author waiver on
+   * one section. Rules re-emit sections instead; waivers stick across that.
+   */
+  overrides?: SectionOverride[];
+  /** GitHub side effects: labels, comments, assignees, API operations. */
+  effects?: Effect[];
+  /**
+   * Replaces this rule's slice of the per-rule state persisted in the status
+   * comment (keyed by rule name). `null` clears the slice; omitted/undefined
+   * leaves it untouched. Must be JSON-serializable, and — like everything in
+   * the comment blob — treated as untrusted on read (comments are editable).
+   * Rules only; ignored for commands. Persists only while a status comment
+   * exists (the comment is the database).
+   */
+  state?: unknown;
+}
+
 export type EventHandler<E extends EventType> = (
   context: RuleContext<E>,
-) => Promise<Effect[] | undefined>;
+  /** This rule's persisted state slice, parsed from the status comment; undefined when none. */
+  state: unknown,
+) => Promise<RuleOutput | undefined>;
 
 export type EventHandlers = {
   [E in EventType]?: EventHandler<E>;
@@ -92,7 +125,7 @@ export interface Rule {
 
 /**
  * A comment command (`/<slug> <name> [args]`). Like rules, commands return
- * Effects instead of mutating GitHub directly. The declared constraints
+ * a {@link RuleOutput} instead of mutating GitHub directly. The declared constraints
  * (args, scope, permission) are enforced by the dispatcher, which answers
  * with a 👍/👎 reaction on the comment.
  *
@@ -105,7 +138,7 @@ export interface Rule {
 export interface Command extends CommandHelpEntry {
   /** Whether at least one `"quoted"` argument after the name is required. */
   args?: "none" | "required";
-  handle(context: CommandContext): Promise<Effect[] | undefined>;
+  handle(context: CommandContext): Promise<RuleOutput | undefined>;
 }
 
 /**

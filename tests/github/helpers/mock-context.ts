@@ -9,7 +9,13 @@ import type {
 } from "../../../src/github/engine/model/rule-context.js";
 import { ruleContextFromWebhook } from "../../../src/github/engine/model/rule-context.js";
 import type { StatusSection } from "../../../src/github/engine/status/types.js";
-import type { Effect, RegistryConfig, Rule } from "../../../src/github/engine/types.js";
+import type {
+  BlockUpdate,
+  Effect,
+  RegistryConfig,
+  Rule,
+  RuleOutput,
+} from "../../../src/github/engine/types.js";
 
 // Seed the component registry so rule tests never hit the network for the
 // entity-platform list (parseFiles reads it).
@@ -253,11 +259,12 @@ export function lastSegment(path: string): string {
 }
 
 /**
- * Convenience views over a handler's effects so tests can assert against
- * fields like `labels` or `section` directly. The `effects` field exposes
- * the raw array for new-style assertions.
+ * Convenience views over a handler's output so tests can assert against
+ * fields like `labels` or `section` directly. `output` exposes the raw
+ * {@link RuleOutput}; `effects` the raw effect array.
  */
 export interface RuleSummary {
+  output: RuleOutput;
   effects: Effect[];
   labels?: string[];
   removeLabels?: string[];
@@ -266,16 +273,18 @@ export interface RuleSummary {
   assignees?: string[];
   section?: StatusSection;
   sections: StatusSection[];
+  blocks: BlockUpdate[];
+  state?: unknown;
 }
 
-export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | undefined {
-  if (!effects) return undefined;
+export function summarizeOutput(output: RuleOutput | undefined): RuleSummary | undefined {
+  if (!output) return undefined;
 
+  const effects = output.effects ?? [];
   const labels: string[] = [];
   const removeLabels: string[] = [];
   const comments: string[] = [];
   const assignees: string[] = [];
-  const sections: StatusSection[] = [];
 
   for (const e of effects) {
     switch (e.type) {
@@ -291,13 +300,12 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
       case "addAssignees":
         assignees.push(...e.assignees);
         break;
-      case "statusSection":
-        sections.push(e.section);
-        break;
     }
   }
 
+  const sections = output.statuses ?? [];
   return {
+    output,
     effects,
     labels: labels.length ? labels : undefined,
     removeLabels: removeLabels.length ? removeLabels : undefined,
@@ -306,17 +314,26 @@ export function summarizeEffects(effects: Effect[] | undefined): RuleSummary | u
     assignees: assignees.length ? assignees : undefined,
     section: sections[0],
     sections,
+    blocks: output.blocks ?? [],
+    state: output.state,
   };
 }
 
 /**
- * Invokes the rule's handler registered for `context.eventType` and
- * returns a `RuleSummary` view of the effects (or `undefined` if the
- * handler returned nothing or the rule does not handle this event).
+ * Invokes the rule's handler registered for `context.eventType` (with the
+ * given persisted state slice, if any) and returns a `RuleSummary` view of
+ * the output (or `undefined` if the handler returned nothing or the rule
+ * does not handle this event).
  */
-export async function runRule(rule: Rule, context: RuleContext): Promise<RuleSummary | undefined> {
+export async function runRule(
+  rule: Rule,
+  context: RuleContext,
+  state?: unknown,
+): Promise<RuleSummary | undefined> {
   const handler = rule.events[context.eventType];
   if (!handler) return undefined;
-  const effects = await (handler as (ctx: RuleContext) => Promise<Effect[] | undefined>)(context);
-  return summarizeEffects(effects);
+  const output = await (
+    handler as (ctx: RuleContext, state: unknown) => Promise<RuleOutput | undefined>
+  )(context, state);
+  return summarizeOutput(output);
 }

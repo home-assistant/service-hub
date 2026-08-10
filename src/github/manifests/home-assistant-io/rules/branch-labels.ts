@@ -1,7 +1,7 @@
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import type { Effect, Rule, RuleOutput } from "../../../engine/types.js";
 
 /** Branches a docs PR may target, each mirrored by a label of the same name. */
 export const DOCS_BRANCHES = new Set(["current", "rc", "next"]);
@@ -11,7 +11,7 @@ type HandledEvent =
   | EventType.PULL_REQUEST_EDITED
   | EventType.ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   const baseRef = await ctx.target.baseRef();
 
   const effects: Effect[] = [];
@@ -22,7 +22,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   const stale = [...DOCS_BRANCHES].filter((branch) => branch !== baseRef);
   effects.push({ type: "removeLabels", labels: stale });
 
-  return effects;
+  return { effects };
 }
 
 export const branchLabels: Rule = {

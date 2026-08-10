@@ -18,7 +18,7 @@ export function removeLabel(manageable: readonly string[]): Command {
       if (!(await context.target.labels()).includes(label)) {
         throw new Error(`Label "${label}" is not set`);
       }
-      return [{ type: "removeLabels", labels: [label] }];
+      return { effects: [{ type: "removeLabels", labels: [label] }] };
     },
   };
 }

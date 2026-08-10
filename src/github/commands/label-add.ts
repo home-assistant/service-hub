@@ -15,7 +15,7 @@ export function addLabel(manageable: readonly string[]): Command {
       if (!valid.has(label)) {
         throw new Error(`Label "${label}" is not manageable via commands`);
       }
-      return [{ type: "addLabels", labels: [label] }];
+      return { effects: [{ type: "addLabels", labels: [label] }] };
     },
   };
 }

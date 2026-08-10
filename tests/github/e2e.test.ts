@@ -30,7 +30,9 @@ describe("e2e: webhook delivery", () => {
       name: "label-on-open",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["e2e-test"] }],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["e2e-test"] }],
+        }),
       },
     };
 
@@ -58,9 +60,9 @@ describe("e2e: webhook delivery", () => {
       name: "label-on-open",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [
-          { type: "addLabels", labels: ["should-not-fire"] },
-        ],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["should-not-fire"] }],
+        }),
       },
     };
 
@@ -81,7 +83,9 @@ describe("e2e: webhook delivery", () => {
       name: "label-issue",
       description: "",
       events: {
-        [EventType.ISSUES_OPENED]: async () => [{ type: "addLabels", labels: ["triage"] }],
+        [EventType.ISSUES_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["triage"] }],
+        }),
       },
     };
 
@@ -119,7 +123,9 @@ describe("e2e: webhook delivery", () => {
       name: "should-not-fire",
       description: "",
       events: {
-        [EventType.PULL_REQUEST_OPENED]: async () => [{ type: "addLabels", labels: ["never"] }],
+        [EventType.PULL_REQUEST_OPENED]: async () => ({
+          effects: [{ type: "addLabels", labels: ["never"] }],
+        }),
       },
     };
     const harness = makeHarness({
@@ -148,7 +154,7 @@ describe("e2e: bot commands", () => {
   });
 
   it("runs a matched /ha-bot command, applies its effects, and posts a +1 reaction", async () => {
-    const handle = vi.fn().mockResolvedValue([{ type: "setTitle", title: "pinged" }]);
+    const handle = vi.fn().mockResolvedValue({ effects: [{ type: "setTitle", title: "pinged" }] });
 
     const harness = makeHarness({
       config: {

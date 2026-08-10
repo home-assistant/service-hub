@@ -7,6 +7,6 @@ export const updateBranch: Command = {
   permission: "code_owner",
 
   async handle() {
-    return [{ type: "updateBranch" }];
+    return { effects: [{ type: "updateBranch" }] };
   },
 };

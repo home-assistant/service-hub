@@ -1,6 +1,2 @@
-- type: updateBlock
-  block: integration-links
-  args: null
-- type: updateBlock
-  block: reporting-guidance
-  args: null
+statuses: []
+effects: []

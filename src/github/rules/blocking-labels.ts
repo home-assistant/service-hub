@@ -1,7 +1,8 @@
 import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { StatusSection } from "../engine/status/types.js";
+import type { Rule, RuleOutput } from "../engine/types.js";
 
 type HandledEvent =
   | EventType.PULL_REQUEST_LABELED
@@ -12,7 +13,7 @@ type HandledEvent =
 export function blockingLabels(
   config: Record<string, { message: string; success?: string }>,
 ): Rule {
-  async function buildEffects(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+  async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
     // Leave closed/merged PRs untouched — label events and ON_DEMAND fire on them too.
     if ((await ctx.target.state()) !== "open") return;
 
@@ -29,21 +30,19 @@ export function blockingLabels(
 
     if (labelsToEmit.length === 0) return;
 
-    return labelsToEmit.map<Effect>((label) => {
+    const statuses = labelsToEmit.map<StatusSection>((label) => {
       const description = config[label];
       const hasBlockingLabel = currentLabels.has(label);
       return {
-        type: "statusSection",
-        section: {
-          id: `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
-          title: `Blocking: ${label}`,
-          status: hasBlockingLabel ? "fail" : "skip",
-          message: hasBlockingLabel
-            ? description.message
-            : `\`${label}\` label not set — nothing to block.`,
-        },
+        id: `blocking-label-${label.toLowerCase().replaceAll(" ", "-")}`,
+        title: `Blocking: ${label}`,
+        status: hasBlockingLabel ? "fail" : "skip",
+        message: hasBlockingLabel
+          ? description.message
+          : `\`${label}\` label not set — nothing to block.`,
       };
     });
+    return { statuses };
   }
 
   const statusSections = Object.keys(config).map((label) => ({
@@ -62,7 +61,7 @@ export function blockingLabels(
         EventType.PULL_REQUEST_SYNCHRONIZE,
         EventType.ON_DEMAND,
       ],
-      buildEffects,
+      evaluate,
     ),
   };
 }

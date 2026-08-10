@@ -9,6 +9,6 @@ export const rename: Command = {
 
   async handle(context) {
     if (context.args.length !== 1) throw new Error('usage: rename "<new title>"');
-    return [{ type: "setTitle", title: context.args[0] }];
+    return { effects: [{ type: "setTitle", title: context.args[0] }] };
   },
 };

@@ -3,10 +3,12 @@ import { EventType } from "./event.js";
 import type { CommandContext } from "./model/command-context.js";
 import type { RuleContext } from "./model/rule-context.js";
 import { draftPRIfNotDraft } from "./pr-state.js";
+import type { BlockArgsMap, BlockId } from "./status/blocks.js";
 import { hasFailingSections } from "./status/build.js";
+import { emptyRuleState, parseState } from "./status/render.js";
 import type { SectionOverride, StatusSection } from "./status/types.js";
-import { ensureStatusCommentExists, findStatusComment, syncStatus } from "./status-sync.js";
-import type { Command, Effect, RegistryConfig, Rule } from "./types.js";
+import { locateStatusComment, syncDashboard, updateCommitStatus } from "./status-sync.js";
+import type { Command, Effect, RegistryConfig, Rule, RuleOutput } from "./types.js";
 
 export function matchRules(context: RuleContext): Rule[] {
   const repoRules = context.registry.repositories[context.repo.fullName] ?? [];
@@ -28,21 +30,70 @@ function collectKnownStatusSectionIds(context: RuleContext): Set<string> {
   return ids;
 }
 
-interface ApplyEffectsConfig {
-  knownSectionIds: ReadonlySet<string>;
+/**
+ * Everything the matched rules (or commands) produced in one dispatch,
+ * bucketed by domain. `data` starts as the persisted per-rule state bag and
+ * accumulates this dispatch's state updates.
+ */
+interface CollectedOutputs {
+  statuses: Map<string, StatusSection>;
+  overrides: SectionOverride[];
+  /** Block updates by id; null args = clear. Later updates win within a dispatch. */
+  blocks: Map<BlockId, BlockArgsMap[BlockId] | null>;
+  effects: Effect[];
+  data: Record<string, unknown>;
+  dataChanged: boolean;
 }
 
-async function applyEffects(
-  context: RuleContext,
-  effects: Effect[],
-  config: ApplyEffectsConfig,
-): Promise<void> {
+function newCollected(data: Record<string, unknown>): CollectedOutputs {
+  return {
+    statuses: new Map(),
+    overrides: [],
+    blocks: new Map(),
+    effects: [],
+    data,
+    dataChanged: false,
+  };
+}
+
+/**
+ * Fold one rule's output into the dispatch buckets. `stateKey` is the rule
+ * name owning the state slice; without one (commands) `state` is ignored.
+ */
+function collectOutput(collected: CollectedOutputs, output: RuleOutput, stateKey?: string): void {
+  for (const status of output.statuses ?? []) collected.statuses.set(status.id, status);
+  for (const block of output.blocks ?? []) collected.blocks.set(block.block, block.args);
+
+  collected.overrides.push(...(output.overrides ?? []));
+  collected.effects.push(...(output.effects ?? []));
+
+  if (stateKey && output.state !== undefined) {
+    if (output.state === null) delete collected.data[stateKey];
+    else collected.data[stateKey] = output.state;
+    collected.dataChanged = true;
+  }
+}
+
+/** Drop state slices owned by no live rule (removed/renamed rules). */
+function pruneData(
+  data: Record<string, unknown>,
+  ruleNames: ReadonlySet<string>,
+): { data: Record<string, unknown>; swept: boolean } {
+  const pruned: Record<string, unknown> = {};
+  let swept = false;
+  for (const [key, value] of Object.entries(data)) {
+    if (ruleNames.has(key)) pruned[key] = value;
+    else swept = true;
+  }
+  return { data: pruned, swept };
+}
+
+/**
+ * Apply the GitHub side effects.
+ */
+async function applyEffects(context: RuleContext, effects: Effect[]): Promise<void> {
   const labels = new Set<string>();
   const removeLabels = new Set<string>();
-  const statusSections = new Map<string, StatusSection>();
-  const overrides: SectionOverride[] = [];
-  // null args = clear the block; later updates win within a dispatch.
-  const blockUpdates = new Map<string, unknown>();
   const assignees = new Set<string>();
   const removeAssignees = new Set<string>();
   const comments = new Set<string>();
@@ -64,15 +115,6 @@ async function applyEffects(
         break;
       case "comment":
         comments.add(effect.body);
-        break;
-      case "statusSection":
-        statusSections.set(effect.section.id, effect.section);
-        break;
-      case "overrideSection":
-        overrides.push({ id: effect.id, ignore: effect.ignore });
-        break;
-      case "updateBlock":
-        blockUpdates.set(effect.block, effect.args);
         break;
       case "addLabelsCrossRepo":
         ops.push(() =>
@@ -149,36 +191,6 @@ async function applyEffects(
     }
   }
 
-  const showsAnything =
-    statusSections.size > 0 || [...blockUpdates.values()].some((args) => args !== null);
-
-  // `opened` dispatches sync unconditionally: dispatch() posted the
-  // placeholder before rule evaluation, and an empty sync turns it into the
-  // greeting dashboard instead of leaving the "Evaluating rules…" stub.
-  const openedDispatch = context.eventType === EventType.PULL_REQUEST_OPENED;
-
-  if (statusSections.size > 0 || overrides.length > 0 || blockUpdates.size > 0 || openedDispatch) {
-    // Post a placeholder status comment *before* the other effects race, so
-    // it is always the earliest comment on the PR. The real content gets
-    // rendered by syncStatus below (which updates this placeholder via
-    // findStatusComment). Clears or waiver changes alone never create a
-    // status comment — there'd be nothing to act on.
-    if (showsAnything) {
-      await ensureStatusCommentExists(context.github, context.issueParams());
-    }
-    ops.push(() =>
-      syncStatus(
-        context,
-        {
-          sections: [...statusSections.values()],
-          overrides,
-          blocks: blockUpdates,
-        },
-        config.knownSectionIds,
-      ),
-    );
-  }
-
   for (const body of comments) {
     ops.push(() => context.github.issues.createComment(context.issueParams({ body })));
   }
@@ -220,34 +232,30 @@ async function updateBranchOrExplain(context: RuleContext): Promise<void> {
   }
 }
 
-/** Re-draft if the PR's status comment still shows failing (not pending) checks. */
-async function maybeRedraftOnReady(
-  context: RuleContext,
-  knownSectionIds: ReadonlySet<string>,
-): Promise<void> {
-  if (context.target.kind !== "pull_request") return;
-  try {
-    const existing = await findStatusComment(context.github, context.issueParams());
-    if (!existing) return;
-    if (!hasFailingSections(existing.body, knownSectionIds)) return;
-    await draftPRIfNotDraft(context);
-  } catch (err) {
-    log.warn("maybeRedraftOnReady failed", { error: String(err) });
-  }
+/** What one dispatch concluded: the emitted check outcomes and side effects. */
+export interface DispatchResult {
+  statuses: StatusSection[];
+  effects: Effect[];
 }
 
-async function runMatchedRules(context: RuleContext): Promise<Effect[]> {
+async function runMatchedRules(
+  context: RuleContext,
+  data: Record<string, unknown>,
+): Promise<CollectedOutputs> {
   const matched = matchRules(context);
 
   const settled = await Promise.allSettled(
     matched.map((rule) => {
       const handler = rule.events[context.eventType];
       if (!handler) return Promise.resolve(undefined);
-      return (handler as (ctx: RuleContext) => Promise<Effect[] | undefined>)(context);
+      return (handler as (ctx: RuleContext, state: unknown) => Promise<RuleOutput | undefined>)(
+        context,
+        data[rule.name],
+      );
     }),
   );
 
-  const effects: Effect[] = [];
+  const collected = newCollected({ ...data });
   for (let i = 0; i < settled.length; i++) {
     const outcome = settled[i];
     if (outcome.status === "rejected") {
@@ -257,28 +265,112 @@ async function runMatchedRules(context: RuleContext): Promise<Effect[]> {
         number: context.number,
       });
     } else if (outcome.value) {
-      effects.push(...outcome.value);
+      collectOutput(collected, outcome.value, matched[i].name);
     }
   }
-  return effects;
+  return collected;
 }
 
-export async function dispatch(context: RuleContext): Promise<Effect[]> {
+export async function dispatch(context: RuleContext): Promise<DispatchResult> {
   const knownSectionIds = collectKnownStatusSectionIds(context);
+  const opened = context.eventType === EventType.PULL_REQUEST_OPENED;
 
-  if (context.eventType === EventType.PULL_REQUEST_OPENED) {
-    await ensureStatusCommentExists(context.github, context.issueParams());
+  // The dispatch's single status-comment read. Opened dispatches create the
+  // placeholder up front so it is the PR's earliest comment; a fresh
+  // placeholder starts from empty persisted state, skipping the parse.
+  let comment = await locateStatusComment(context.github, context.issueParams(), {
+    createIfMissing: opened,
+  });
+  let previous = comment ? (comment.fresh ? emptyRuleState() : parseState(comment.body)) : null;
+
+  const ruleNames = new Set(
+    (context.registry.repositories[context.repo.fullName] ?? []).map((rule) => rule.name),
+  );
+  const { data, swept } = pruneData(previous?.data ?? {}, ruleNames);
+
+  const output = await runMatchedRules(context, data);
+  output.dataChanged ||= swept;
+
+  // A dispatch that shows something for the first time creates the
+  // placeholder late — find-or-create, since a concurrent dispatch may have
+  // raced us — so the status comment still lands above any comment effects
+  // this dispatch applies below. Clears or waiver changes alone never create
+  // a status comment; there'd be nothing to act on.
+  const showsAnything =
+    output.statuses.size > 0 || [...output.blocks.values()].some((args) => args !== null);
+  if (!comment && showsAnything) {
+    comment = await locateStatusComment(context.github, context.issueParams(), {
+      createIfMissing: true,
+    });
+    if (comment && !comment.fresh) previous = parseState(comment.body);
   }
 
-  const effects = await runMatchedRules(context);
+  // Opened dispatches sync unconditionally: the placeholder must become the
+  // greeting dashboard even when no rule emitted anything.
+  const syncNeeded =
+    opened ||
+    comment?.fresh ||
+    output.statuses.size > 0 ||
+    output.overrides.length > 0 ||
+    output.blocks.size > 0 ||
+    output.dataChanged;
 
-  await applyEffects(context, effects, { knownSectionIds });
+  // The dashboard write and the side effects are independent — run them
+  // concurrently. Neither may sink the other: applyEffects logs per-op
+  // failures itself, dashboard failures are logged here.
+  const [dashboard] = await Promise.all([
+    syncNeeded
+      ? syncDashboard(
+          context,
+          {
+            sections: [...output.statuses.values()],
+            overrides: output.overrides,
+            blocks: output.blocks,
+            data: output.data,
+          },
+          comment,
+          previous,
+          knownSectionIds,
+        ).catch((err) => {
+          log.warn("syncDashboard failed", { error: String(err) });
+          return null;
+        })
+      : Promise.resolve(null),
+    applyEffects(context, output.effects),
+  ]);
 
-  if (context.eventType === EventType.PULL_REQUEST_READY_FOR_REVIEW) {
-    await maybeRedraftOnReady(context, knownSectionIds);
+  // The merge gate: one aggregate `ha-bot` commit status on the PR head,
+  // deep-linking to the dashboard comment.
+  if (dashboard?.commentUrl && context.target.kind === "pull_request") {
+    try {
+      await updateCommitStatus(context, dashboard.aggregate, dashboard.commentUrl);
+    } catch (err) {
+      log.warn("commit status update failed", { error: String(err) });
+    }
   }
 
-  return effects;
+  // Without a dashboard write, the section state is whatever the located
+  // comment already carried (minus rows no live rule claims).
+  const sections =
+    dashboard?.sections ?? (previous?.sections ?? []).filter((s) => knownSectionIds.has(s.id));
+
+  // Failing checks ⇒ draft is an invariant reconciled on every dispatch, not
+  // just when a rule re-reports the failure — so a missed webhook or a
+  // once-failed draft call gets repaired by the next event of any kind
+  // (going ready-for-review with failing checks is one more instance).
+  // Waived failures don't count (`ignore` is the sanctioned way to keep a PR
+  // ready over a failing row), and `pending` never drafts: pending checks
+  // wait on someone other than the author (e.g. a code-owner review), and a
+  // draft would hide the PR from the very people who can resolve them.
+  if (
+    context.target.kind === "pull_request" &&
+    hasFailingSections(sections) &&
+    (await context.target.state()) === "open"
+  ) {
+    await draftPRIfNotDraft(context);
+  }
+
+  return { statuses: [...output.statuses.values()], effects: output.effects };
 }
 
 export function findCommand(
@@ -346,12 +438,14 @@ async function react(context: CommandContext, content: "+1" | "-1"): Promise<voi
 /**
  * The command counterpart of dispatch(): validate each invocation in the
  * comment against its command's declared constraints, run the handlers in
- * order, and apply the collected effects. A comment can carry several
+ * order, and apply the collected outputs. A comment can carry several
  * commands (one per `/<slug>` line) mixed with prose. The invoking comment
  * gets a 👍 when every invocation ran and a 👎 when any was rejected or
- * failed. Returns the applied effects, undefined when nothing ran.
+ * failed. Returns the applied outputs, undefined when nothing ran.
  */
-export async function dispatchCommand(context: CommandContext): Promise<Effect[] | undefined> {
+export async function dispatchCommand(
+  context: CommandContext,
+): Promise<DispatchResult | undefined> {
   if (context.senderIsBot) return undefined;
   const registryConfig = context.registry;
 
@@ -366,7 +460,8 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
     return undefined;
   }
 
-  const collected: Effect[] = [];
+  const collected = newCollected({});
+  let anyOutputs = false;
   let anyRan = false;
   let anyFailed = false;
 
@@ -394,8 +489,11 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
     });
 
     try {
-      const effects = await command.handle(invocationContext);
-      if (effects?.length) collected.push(...effects);
+      const output = await command.handle(invocationContext);
+      if (output) {
+        collectOutput(collected, output);
+        anyOutputs = true;
+      }
       anyRan = true;
     } catch (err) {
       log.error("command failed", {
@@ -408,11 +506,64 @@ export async function dispatchCommand(context: CommandContext): Promise<Effect[]
     }
   }
 
-  if (collected.length) {
-    await applyEffects(context, collected, {
-      knownSectionIds: collectKnownStatusSectionIds(context),
+  if (anyOutputs) {
+    const knownSectionIds = collectKnownStatusSectionIds(context);
+
+    // Commands never create the status comment — waiver changes alone have
+    // nothing to act on. But the dashboard rewrite embeds the whole persisted
+    // blob, so locate and parse it so the rule state data rides along.
+    const comment = await locateStatusComment(context.github, context.issueParams(), {
+      createIfMissing: false,
     });
+    const previous = comment ? parseState(comment.body) : null;
+    collected.data = previous?.data ?? {};
+
+    const syncNeeded =
+      collected.statuses.size > 0 || collected.overrides.length > 0 || collected.blocks.size > 0;
+
+    const [dashboard] = await Promise.all([
+      syncNeeded
+        ? syncDashboard(
+            context,
+            {
+              sections: [...collected.statuses.values()],
+              overrides: collected.overrides,
+              blocks: collected.blocks,
+              data: collected.data,
+            },
+            comment,
+            previous,
+            knownSectionIds,
+          ).catch((err) => {
+            log.warn("syncDashboard failed", { error: String(err) });
+            return null;
+          })
+        : Promise.resolve(null),
+      applyEffects(context, collected.effects),
+    ]);
+
+    if (dashboard?.commentUrl && context.target.kind === "pull_request") {
+      try {
+        await updateCommitStatus(context, dashboard.aggregate, dashboard.commentUrl);
+      } catch (err) {
+        log.warn("commit status update failed", { error: String(err) });
+      }
+    }
+
+    // The same failing ⇒ draft reconciliation as dispatch(): a command
+    // dispatch repairs a missed draft too.
+    const sections =
+      dashboard?.sections ?? (previous?.sections ?? []).filter((s) => knownSectionIds.has(s.id));
+    if (
+      context.target.kind === "pull_request" &&
+      hasFailingSections(sections) &&
+      (await context.target.state()) === "open"
+    ) {
+      await draftPRIfNotDraft(context);
+    }
   }
   await react(context, anyFailed ? "-1" : "+1");
-  return anyRan ? collected : undefined;
+  return anyRan
+    ? { statuses: [...collected.statuses.values()], effects: collected.effects }
+    : undefined;
 }

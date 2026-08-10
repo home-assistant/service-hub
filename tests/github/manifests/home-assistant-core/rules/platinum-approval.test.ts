@@ -292,13 +292,10 @@ describe("platinum-approval", () => {
       { filename: "homeassistant/components/hue/light.py", status: "modified" },
     ]);
 
-    const effects = await dispatch(context);
+    const result = await dispatch(context);
 
-    expect(effects).toContainEqual(
-      expect.objectContaining({
-        type: "statusSection",
-        section: expect.objectContaining({ id: "code-owner-approval", status: "pending" }),
-      }),
+    expect(result.statuses).toContainEqual(
+      expect.objectContaining({ id: "code-owner-approval", status: "pending" }),
     );
     expect(github.issues.addLabels).toHaveBeenCalledWith(
       expect.objectContaining({

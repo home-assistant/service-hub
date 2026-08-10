@@ -25,4 +25,12 @@ export type BlockId = keyof BlockArgsMap;
 /** Which blocks are visible, with their args — the persisted/render state. */
 export type BlockStates = Partial<BlockArgsMap>;
 
+/**
+ * One dispatch's block updates by id: args replace the block's persisted
+ * state, `null` clears it. The value type is the union over all blocks —
+ * the per-block key↔args pairing is enforced where updates are authored
+ * (the `BlockUpdate` union in engine/types.ts), not in this map.
+ */
+export type BlockUpdates = ReadonlyMap<BlockId, BlockArgsMap[BlockId] | null>;
+
 export const BLOCK_IDS: readonly BlockId[] = ["integration-links", "reporting-guidance"];

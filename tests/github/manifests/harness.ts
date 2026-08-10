@@ -1,6 +1,11 @@
 import type { Octokit } from "@octokit/rest";
 import type { IssueCommentCreatedEvent } from "@octokit/webhooks-types";
-import { dispatch, dispatchCommand, matchRules } from "../../../src/github/engine/dispatch.js";
+import {
+  type DispatchResult,
+  dispatch,
+  dispatchCommand,
+  matchRules,
+} from "../../../src/github/engine/dispatch.js";
 import { EventType } from "../../../src/github/engine/event.js";
 import {
   commandContextFromWebhook,
@@ -11,7 +16,7 @@ import {
   ruleContextFromWebhook,
   type WebhookEventPayload,
 } from "../../../src/github/engine/model/rule-context.js";
-import type { Effect } from "../../../src/github/engine/types.js";
+import type { Effect, RuleOutput } from "../../../src/github/engine/types.js";
 import { registryConfig } from "../../../src/github/manifests/index.js";
 import { createMockGitHub, testEnv } from "../helpers/mock-context.js";
 import { loadPRTemplate, renderPRTemplate } from "./pr-template.js";
@@ -298,8 +303,8 @@ function mockGitHubFor(scenario: Scenario) {
  * Dispatch one webhook scenario through the real pipeline — the same routing
  * the webhook entrypoint does (command comments go through dispatchCommand,
  * everything else through rule dispatch), against the real manifest registry.
- * Effect application runs for real against the mocks; the returned effect
- * list is what tests snapshot.
+ * Effect application runs for real against the mocks; the returned dispatch
+ * result (statuses + effects) is what tests snapshot.
  *
  * Every run also verifies label independence: for each label the dispatch
  * added or removed, the synthetic labeled/unlabeled event is dispatched once
@@ -307,14 +312,14 @@ function mockGitHubFor(scenario: Scenario) {
  * depends on another rule, and its output would be lost in production (the
  * bot's own label writes come back as self-webhooks, which are dropped).
  */
-export async function runScenario(scenario: Scenario): Promise<Effect[]> {
+export async function runScenario(scenario: Scenario): Promise<DispatchResult> {
   const github = mockGitHubFor(scenario);
   const octokit = github as unknown as Octokit;
 
   const originalFetch = globalThis.fetch;
   globalThis.fetch = routeFetch(scenario.state?.remote ?? {});
   try {
-    let effects: Effect[];
+    let result: DispatchResult;
     const payload = scenario.payload;
     const commentBody = (payload as { comment?: { body?: string } }).comment?.body ?? "";
 
@@ -328,9 +333,9 @@ export async function runScenario(scenario: Scenario): Promise<Effect[]> {
         octokit,
         payload as unknown as IssueCommentCreatedEvent,
       );
-      effects = (await dispatchCommand(context)) ?? [];
+      result = (await dispatchCommand(context)) ?? { statuses: [], effects: [] };
     } else {
-      effects = await dispatch(
+      result = await dispatch(
         ruleContextFromWebhook(
           testEnv,
           registryConfig,
@@ -341,8 +346,8 @@ export async function runScenario(scenario: Scenario): Promise<Effect[]> {
       );
     }
 
-    await assertLabelIndependence(scenario, effects, octokit);
-    return effects;
+    await assertLabelIndependence(scenario, result, octokit);
+    return result;
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -365,6 +370,16 @@ function isRedundant(effect: Effect, labels: ReadonlySet<string>, firstRound: Ef
   if (effect.type === "removeLabels") return effect.labels.every((l) => !labels.has(l));
   const serialized = JSON.stringify(effect);
   return firstRound.some((e) => JSON.stringify(e) === serialized);
+}
+
+/** A synthetic-round output flattened into comparable pieces for the check. */
+function novelPieces(output: RuleOutput, labels: ReadonlySet<string>, first: DispatchResult) {
+  const firstStatuses = new Set(first.statuses.map((s) => JSON.stringify(s)));
+  const novel: unknown[] = (output.effects ?? []).filter(
+    (e) => !isRedundant(e, labels, first.effects),
+  );
+  novel.push(...(output.statuses ?? []).filter((s) => !firstStatuses.has(JSON.stringify(s))));
+  return novel;
 }
 
 /**
@@ -415,13 +430,13 @@ function syntheticLabelPayload(
 
 async function assertLabelIndependence(
   scenario: Scenario,
-  effects: Effect[],
+  result: DispatchResult,
   octokit: Octokit,
 ): Promise<void> {
   const current = new Set(currentLabelNames(scenario));
   const added = new Set<string>();
   const removed = new Set<string>();
-  for (const effect of effects) {
+  for (const effect of result.effects) {
     if (effect.type === "addLabels") for (const l of effect.labels) added.add(l);
     else if (effect.type === "removeLabels") for (const l of effect.labels) removed.add(l);
   }
@@ -454,20 +469,18 @@ async function assertLabelIndependence(
       const handler = rule.events[context.eventType];
       if (!handler) continue;
       // The dispatcher tolerates handler errors (allSettled + log); an error
-      // here produces no effects, so it cannot depend on labels.
-      const reaction =
-        (await (handler as (ctx: RuleContext) => Promise<Effect[] | undefined>)(context).catch(
-          () => undefined,
-        )) ?? [];
+      // here produces no output, so it cannot depend on labels.
+      const reaction = await (
+        handler as (ctx: RuleContext, state: unknown) => Promise<RuleOutput | undefined>
+      )(context, undefined).catch(() => undefined);
+      if (!reaction) continue;
 
-      for (const effect of reaction) {
-        if (!isRedundant(effect, simulated, effects)) {
-          throw new Error(
-            `rule "${rule.name}" depends on the bot-set label "${change.name}": ` +
-              `a synthetic ${change.action} event produced ${JSON.stringify(effect)}, ` +
-              `which the dispatch never applied — the rule must derive this itself`,
-          );
-        }
+      for (const piece of novelPieces(reaction, simulated, result)) {
+        throw new Error(
+          `rule "${rule.name}" depends on the bot-set label "${change.name}": ` +
+            `a synthetic ${change.action} event produced ${JSON.stringify(piece)}, ` +
+            `which the dispatch never applied — the rule must derive this itself`,
+        );
       }
     }
   }

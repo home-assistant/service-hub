@@ -1,7 +1,7 @@
 import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import type { Effect, Rule } from "../engine/types.js";
+import type { Rule, RuleOutput } from "../engine/types.js";
 import { HomeAssistantRepository, homeAssistantOrgRules } from "./home-assistant-org.js";
 import type { RepoManifest } from "./types.js";
 
@@ -12,7 +12,7 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   const labels = new Set<string>();
   for (const file of await ctx.target.files()) {
     const code = LANGUAGE_FILE_RE.exec(file.filename)?.groups?.code;
@@ -20,7 +20,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   }
 
   if (labels.size === 0) return;
-  return [{ type: "addLabels", labels: [...labels] }];
+  return { effects: [{ type: "addLabels", labels: [...labels] }] };
 }
 
 const intentsLanguage: Rule = {

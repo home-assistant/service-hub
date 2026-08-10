@@ -155,16 +155,13 @@ describe("new-integration-validation", () => {
       makeFile("homeassistant/components/mydevice/light.py"),
     ]);
 
-    const effects = await dispatch(context);
+    const result = await dispatch(context);
 
-    expect(effects).toContainEqual(
+    expect(result.statuses).toContainEqual(
       expect.objectContaining({
-        type: "statusSection",
-        section: expect.objectContaining({
-          id: "new-integration-validation",
-          status: "fail",
-          message: expect.stringContaining("single platform"),
-        }),
+        id: "new-integration-validation",
+        status: "fail",
+        message: expect.stringContaining("single platform"),
       }),
     );
   });

@@ -20,6 +20,6 @@ export const unassign: Command = {
     );
     const effects: Effect[] = [{ type: "removeLabels", labels: [`integration: ${domain}`] }];
     if (assignees.length) effects.push({ type: "removeAssignees", assignees });
-    return effects;
+    return { effects };
   },
 };

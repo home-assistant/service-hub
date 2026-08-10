@@ -4,8 +4,11 @@ import {
   hasFailingSections,
   type StatusInput,
 } from "../../../../src/github/engine/status/build.js";
-import { renderStatus } from "../../../../src/github/engine/status/render.js";
-import type { StatusSection } from "../../../../src/github/engine/status/types.js";
+import {
+  RULE_STATE_VERSION,
+  type RuleState,
+  type StatusSection,
+} from "../../../../src/github/engine/status/types.js";
 
 const REPO = "home-assistant/core";
 
@@ -14,7 +17,8 @@ function input(overrides: Partial<StatusInput> = {}): StatusInput {
     target: { kind: "pull_request", repoFullName: REPO },
     newSections: [],
     overrides: [],
-    previousBody: null,
+    data: {},
+    previous: null,
     knownSectionIds: new Set(["a", "b", "merge-conflict"]),
     help: { commandSlug: "ha-bot", commands: [] },
     ...overrides,
@@ -25,8 +29,8 @@ function section(partial: Partial<StatusSection> & { id: string }): StatusSectio
   return { title: partial.id, status: "pass", message: "ok", ...partial };
 }
 
-function previousBodyWith(sections: StatusSection[]): string {
-  return renderStatus(sections, REPO);
+function previousWith(sections: StatusSection[]): RuleState {
+  return { version: RULE_STATE_VERSION, sections, blocks: {}, data: {} };
 }
 
 describe("buildStatus", () => {
@@ -48,13 +52,13 @@ describe("buildStatus", () => {
   });
 
   it("merges new sections over persisted ones by id, new data winning", () => {
-    const previous = previousBodyWith([
+    const previous = previousWith([
       section({ id: "a", status: "fail", message: "old" }),
       section({ id: "b" }),
     ]);
     const result = buildStatus(
       input({
-        previousBody: previous,
+        previous,
         newSections: [section({ id: "a", status: "pass", message: "fixed" })],
       }),
     );
@@ -65,8 +69,8 @@ describe("buildStatus", () => {
   });
 
   it("sweeps persisted sections no live rule claims", () => {
-    const previous = previousBodyWith([section({ id: "gone-rule" }), section({ id: "b" })]);
-    const result = buildStatus(input({ previousBody: previous }));
+    const previous = previousWith([section({ id: "gone-rule" }), section({ id: "b" })]);
+    const result = buildStatus(input({ previous }));
     expect(result.sections).toEqual([section({ id: "b" })]);
     expect(result.body).not.toContain("gone-rule");
   });
@@ -82,7 +86,7 @@ describe("buildStatus", () => {
     it("an ignore override sets the waiver and flips the aggregate", () => {
       const result = buildStatus(
         input({
-          previousBody: previousBodyWith([failing]),
+          previous: previousWith([failing]),
           overrides: [{ id: "merge-conflict", ignore: { reason: "Will rebase" } }],
         }),
       );
@@ -90,26 +94,24 @@ describe("buildStatus", () => {
       expect(result.aggregate).toEqual({
         state: "success",
         description: "All checks passed (1 warning)",
-        shouldDraft: false,
       });
       expect(result.body).toContain("Ignored: Will rebase");
     });
 
     it("an unignore override clears the waiver", () => {
-      const previous = previousBodyWith([{ ...failing, ignored: { reason: "Will rebase" } }]);
+      const previous = previousWith([{ ...failing, ignored: { reason: "Will rebase" } }]);
       const result = buildStatus(
-        input({ previousBody: previous, overrides: [{ id: "merge-conflict", ignore: null }] }),
+        input({ previous, overrides: [{ id: "merge-conflict", ignore: null }] }),
       );
       expect(result.sections).toEqual([failing]);
       expect(result.aggregate.state).toBe("failure");
-      expect(result.aggregate.shouldDraft).toBe(true);
     });
 
     it("a waiver survives the owning rule re-emitting its section", () => {
-      const previous = previousBodyWith([{ ...failing, ignored: { reason: "Will rebase" } }]);
+      const previous = previousWith([{ ...failing, ignored: { reason: "Will rebase" } }]);
       const result = buildStatus(
         input({
-          previousBody: previous,
+          previous,
           newSections: [{ ...failing, message: "Still conflicting." }],
         }),
       );
@@ -122,7 +124,7 @@ describe("buildStatus", () => {
     it("overrides for unknown section ids are ignored", () => {
       const result = buildStatus(
         input({
-          previousBody: previousBodyWith([failing]),
+          previous: previousWith([failing]),
           overrides: [{ id: "typo-id", ignore: { reason: "nope" } }],
         }),
       );
@@ -134,21 +136,20 @@ describe("buildStatus", () => {
       const pending = section({ id: "a", status: "pending", message: "wait" });
       const result = buildStatus(
         input({
-          previousBody: previousBodyWith([pending]),
+          previous: previousWith([pending]),
           overrides: [{ id: "a", ignore: { reason: "known transient" } }],
         }),
       );
       expect(result.aggregate).toEqual({
         state: "success",
         description: "All checks passed (1 warning)",
-        shouldDraft: false,
       });
     });
 
     it("does not waive other failing sections", () => {
       const result = buildStatus(
         input({
-          previousBody: previousBodyWith([failing, section({ id: "b", status: "fail" })]),
+          previous: previousWith([failing, section({ id: "b", status: "fail" })]),
           overrides: [{ id: "merge-conflict", ignore: { reason: "ok" } }],
         }),
       );
@@ -167,7 +168,6 @@ describe("buildStatus", () => {
       expect(result.aggregate).toEqual({
         state: "failure",
         description: "1 check failing",
-        shouldDraft: true,
       });
     });
 
@@ -178,7 +178,6 @@ describe("buildStatus", () => {
       expect(result.aggregate).toEqual({
         state: "failure",
         description: "1 check pending",
-        shouldDraft: false,
       });
     });
 
@@ -195,7 +194,6 @@ describe("buildStatus", () => {
       expect(result.aggregate).toEqual({
         state: "success",
         description: "All checks passed (2 skipped)",
-        shouldDraft: false,
       });
     });
 
@@ -204,34 +202,27 @@ describe("buildStatus", () => {
       expect(result.aggregate).toEqual({
         state: "success",
         description: "All checks passed",
-        shouldDraft: false,
       });
     });
   });
 });
 
 describe("hasFailingSections", () => {
-  const known = new Set(["a"]);
+  // Callers pass sections already swept of stale IDs; the stale-id behavior
+  // is covered by dispatch.test.ts ("no live rule claims does not re-draft").
 
-  it("is true for a body carrying a failing section", () => {
-    const body = previousBodyWith([section({ id: "a", status: "fail" })]);
-    expect(hasFailingSections(body, known)).toBe(true);
+  it("is true for a failing section", () => {
+    expect(hasFailingSections([section({ id: "a", status: "fail" })])).toBe(true);
   });
 
-  it("is false for pending-only and passing bodies", () => {
-    expect(
-      hasFailingSections(previousBodyWith([section({ id: "a", status: "pending" })]), known),
-    ).toBe(false);
-    expect(hasFailingSections(previousBodyWith([section({ id: "a" })]), known)).toBe(false);
+  it("is false for pending-only and passing sections", () => {
+    expect(hasFailingSections([section({ id: "a", status: "pending" })])).toBe(false);
+    expect(hasFailingSections([section({ id: "a" })])).toBe(false);
   });
 
   it("is false when the only failing section is waived", () => {
-    const body = previousBodyWith([section({ id: "a", status: "fail", ignored: { reason: "r" } })]);
-    expect(hasFailingSections(body, known)).toBe(false);
-  });
-
-  it("ignores failing sections no live rule claims", () => {
-    const body = previousBodyWith([section({ id: "removed-rule", status: "fail" })]);
-    expect(hasFailingSections(body, known)).toBe(false);
+    expect(
+      hasFailingSections([section({ id: "a", status: "fail", ignored: { reason: "r" } })]),
+    ).toBe(false);
   });
 });

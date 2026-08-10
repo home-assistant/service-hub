@@ -1,7 +1,7 @@
 import { EventType } from "../../../engine/event.js";
 import type { RuleContext } from "../../../engine/model/rule-context.js";
 import { on } from "../../../engine/rule.js";
-import type { Effect, Rule } from "../../../engine/types.js";
+import type { Effect, Rule, RuleOutput } from "../../../engine/types.js";
 import { type ParsedPath, parseFiles } from "../helpers/parse-path.js";
 
 const SMALL_PR_THRESHOLD = 30;
@@ -87,7 +87,7 @@ type HandledEvent =
   | EventType.PULL_REQUEST_SYNCHRONIZE
   | EventType.ON_DEMAND;
 
-async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | undefined> {
+async function evaluate(ctx: RuleContext<HandledEvent>): Promise<RuleOutput | undefined> {
   const files = await ctx.target.files();
   const parsed = await parseFiles(ctx, files);
   const current = new Set(await ctx.target.labels());
@@ -105,7 +105,7 @@ async function evaluate(ctx: RuleContext<HandledEvent>): Promise<Effect[] | unde
   const effects: Effect[] = [];
   if (toAdd.length > 0) effects.push({ type: "addLabels", labels: toAdd });
   if (toRemove.length > 0) effects.push({ type: "removeLabels", labels: toRemove });
-  return effects.length > 0 ? effects : undefined;
+  return effects.length > 0 ? { effects } : undefined;
 }
 
 export const fileShape: Rule = {

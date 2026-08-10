@@ -131,13 +131,10 @@ describe("docs-missing handler", () => {
       { filename: "homeassistant/components/mydevice/__init__.py", status: "added" },
     ]);
 
-    const effects = await dispatch(context);
+    const result = await dispatch(context);
 
-    expect(effects).toContainEqual(
-      expect.objectContaining({
-        type: "statusSection",
-        section: expect.objectContaining({ id: "docs-missing", status: "fail" }),
-      }),
+    expect(result.statuses).toContainEqual(
+      expect.objectContaining({ id: "docs-missing", status: "fail" }),
     );
   });
 });

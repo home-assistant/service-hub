@@ -1,3 +1,5 @@
-- type: addLabels
-  labels:
-    - needs-more-information
+statuses: []
+effects:
+  - type: addLabels
+    labels:
+      - needs-more-information

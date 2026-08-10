@@ -1,6 +1,6 @@
 import type { EventType } from "./event.js";
 import type { RuleContext } from "./model/rule-context.js";
-import type { SectionStatus, StatusSection } from "./status/types.js";
+import type { SectionStatus } from "./status/types.js";
 import type { Effect, EventHandler, EventHandlers, Rule } from "./types.js";
 
 /**
@@ -19,20 +19,27 @@ export function on<E extends EventType>(
 /**
  * What one evaluation of a check concluded. `effects` carries anything the
  * check wants applied alongside its dashboard row (labels, comments, …).
+ * `state` replaces the rule's persisted state slice (`null` clears it,
+ * omitted keeps it) — see {@link RuleOutput.state}.
  */
-export interface CheckOutcome {
+export interface CheckOutcome<S = never> {
   status: SectionStatus;
   message: string;
   effects?: Effect[];
+  state?: S | null;
 }
 
-export interface CheckConfig<E extends EventType> {
+export interface CheckConfig<E extends EventType, S = never> {
   /** Status section ID; doubles as the rule name. */
   id: string;
   title: string;
   description: string;
   events: readonly E[];
-  evaluate: (ctx: RuleContext<E>) => Promise<CheckOutcome | undefined>;
+  /**
+   * `state` is the rule's persisted slice from the previous dispatch —
+   * parsed from the status comment, so validate its shape before trusting it.
+   */
+  evaluate: (ctx: RuleContext<E>, state: S | undefined) => Promise<CheckOutcome<S> | undefined>;
   allowBots?: boolean;
   /**
    * Target state this check runs in. Outside it, `evaluate` isn't called and
@@ -51,20 +58,20 @@ export interface CheckConfig<E extends EventType> {
  * while GitHub is still computing the state the check reads); a check whose
  * subject doesn't apply reports `skip`.
  */
-export function check<E extends EventType>(config: CheckConfig<E>): Rule {
+export function check<E extends EventType, S = never>(config: CheckConfig<E, S>): Rule {
   const runOn = config.runOn ?? "open";
-  const handler: EventHandler<E> = async (ctx) => {
+  const handler: EventHandler<E> = async (ctx, state) => {
     if (runOn !== "always" && (await ctx.target.state()) !== runOn) return undefined;
 
-    const outcome = await config.evaluate(ctx);
+    const outcome = await config.evaluate(ctx, state as S | undefined);
     if (!outcome) return undefined;
-    const section: StatusSection = {
-      id: config.id,
-      title: config.title,
-      status: outcome.status,
-      message: outcome.message,
+    return {
+      statuses: [
+        { id: config.id, title: config.title, status: outcome.status, message: outcome.message },
+      ],
+      effects: outcome.effects,
+      state: outcome.state,
     };
-    return [...(outcome.effects ?? []), { type: "statusSection", section }];
   };
 
   return {
