@@ -1,11 +1,11 @@
+import type { CommandHelpEntry } from "./command-render.js";
 import type { EventType } from "./event.js";
 import type { CommandContext } from "./model/command-context.js";
 import type { RuleContext } from "./model/rule-context.js";
 import type { BlockArgsMap, BlockId } from "./status/blocks.js";
-import type { CommandHelpEntry } from "./status/help.js";
 import type { SectionOverride, StatusSection } from "./status/types.js";
 
-export type { CommandHelpEntry, CommandPermission } from "./status/help.js";
+export type { CommandHelpEntry, CommandPermission } from "./command-render.js";
 
 /**
  * Structured GitHub side-effects returned by a rule's event handler.

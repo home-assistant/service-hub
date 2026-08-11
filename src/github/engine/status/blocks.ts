@@ -1,6 +1,6 @@
 /**
  * Template blocks: fixed places in the dashboard templates that rules manage
- * via the `updateBlock` effect — typed args make the block visible, `null`
+ * via the `blocks` output channel — typed args make the block visible, `null`
  * clears it. A separate system from the checks table — blocks have no
  * status, don't aggregate, and can't be waived. Like sections, their state
  * round-trips through the status comment (the comment is the database).

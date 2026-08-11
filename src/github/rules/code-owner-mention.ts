@@ -1,9 +1,10 @@
+import { readFileSync } from "node:fs";
+import Mustache from "mustache";
+import { commandsForTarget, commandViews } from "../engine/command-render.js";
 import { EventType } from "../engine/event.js";
 import { matchCodeOwners, parseCodeOwners } from "../engine/model/codeowners.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
-import { commandsForTarget, commandViews } from "../engine/status/help.js";
-import { loadTemplate, renderTemplate } from "../engine/status/template.js";
 import type { Effect, Rule, RuleOutput } from "../engine/types.js";
 
 type HandledEvent =
@@ -24,7 +25,7 @@ export const MENTION_MARKER = "<!-- ha-bot-mention -->";
 // Layout and prose live in the template; this rule only builds the view.
 // The marker is written literally there but grepped for here — fail at load
 // if a template edit breaks the pair (one-ping detection depends on it).
-const MENTION_TEMPLATE = loadTemplate("code-owner-mention");
+const MENTION_TEMPLATE = readFileSync(new URL("./code-owner-mention.md", import.meta.url), "utf-8");
 if (!MENTION_TEMPLATE.includes(MENTION_MARKER)) {
   throw new Error("code-owner-mention template lost its marker comment");
 }
@@ -63,15 +64,21 @@ function processIntegration(
     const applicable = commandsForTarget(ctx.commands, ctx.target.kind);
     effects.push({
       type: "comment",
-      body: renderTemplate(MENTION_TEMPLATE, {
-        mentions: mentions.join(", "),
-        itemLabel,
-        integrationName,
-        codeownersLine,
-        commandSlug: ctx.env.COMMAND_SLUG,
-        hasCommands: applicable.length > 0,
-        commands: commandViews(ctx.env.COMMAND_SLUG, applicable),
-      }),
+      // Escaping disabled: the output is markdown, not HTML.
+      body: Mustache.render(
+        MENTION_TEMPLATE,
+        {
+          mentions: mentions.join(", "),
+          itemLabel,
+          integrationName,
+          codeownersLine,
+          commandSlug: ctx.env.COMMAND_SLUG,
+          hasCommands: applicable.length > 0,
+          commands: commandViews(ctx.env.COMMAND_SLUG, applicable),
+        },
+        undefined,
+        { escape: String },
+      ),
     });
   }
 

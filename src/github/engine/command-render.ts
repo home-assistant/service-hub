@@ -1,13 +1,16 @@
 /**
- * Who may invoke a command; the engine's dispatcher enforces it. Defined here
- * (not in engine/types.ts) so the status module renders help without
- * depending on the engine.
+ * The presentation side of commands: the human-facing facts a command
+ * declares and the view models the templates render them with. Self-contained
+ * so both the dashboard and rule-authored comments can render command help
+ * without pulling in any engine behavior.
  */
+
+/** Who may invoke a command; the engine's dispatcher enforces it. */
 export type CommandPermission = "none" | "author" | "code_owner" | "author_or_code_owner";
 
 /**
- * The command facts the status comment renders — the engine's `Command`
- * minus its handler, so no behavior crosses into this module.
+ * The command facts rendered into comments — the engine's `Command` minus
+ * its handler, so no behavior crosses into rendering.
  */
 export interface CommandHelpEntry {
   name: string;

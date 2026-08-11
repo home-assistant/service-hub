@@ -1,5 +1,5 @@
+import type { CommandHelpEntry } from "../command-render.js";
 import { BLOCK_IDS, type BlockStates, type BlockUpdates } from "./blocks.js";
-import type { CommandHelpEntry } from "./help.js";
 import { displaySection, renderStatus, type StatusTarget } from "./render.js";
 import type { RuleState, SectionOverride, StatusSection } from "./types.js";
 

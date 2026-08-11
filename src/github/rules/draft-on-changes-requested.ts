@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import Mustache from "mustache";
 import { EventType } from "../engine/event.js";
 import type { RuleContext } from "../engine/model/rule-context.js";
 import { on } from "../engine/rule.js";
@@ -26,12 +28,25 @@ const MORE_INFO_URL: Record<string, string> = {
     "https://developers.home-assistant.io/docs/review-process#prs-are-being-drafted-when-changes-are-needed",
 };
 
-function reviewComment(org: string): string {
-  return `${DRAFT_ON_CHANGES_REQUESTED_MARKER}
-Please take a look at the requested changes, and use the **Ready for review** button when you are done, thanks :+1:
+// Layout and prose live in the template; this rule only builds the view.
+// The marker is written literally there but grepped for here — fail at load
+// if a template edit breaks the pair (once-per-PR detection depends on it).
+const EXPLAINER_TEMPLATE = readFileSync(
+  new URL("./draft-on-changes-requested.md", import.meta.url),
+  "utf-8",
+);
+if (!EXPLAINER_TEMPLATE.includes(DRAFT_ON_CHANGES_REQUESTED_MARKER)) {
+  throw new Error("draft-on-changes-requested template lost its marker comment");
+}
 
-[_Learn more about our pull request process._](${MORE_INFO_URL[org] ?? MORE_INFO_URL["home-assistant"]})
-`;
+function reviewComment(org: string): string {
+  // Escaping disabled: the output is markdown, not HTML.
+  return Mustache.render(
+    EXPLAINER_TEMPLATE,
+    { moreInfoUrl: MORE_INFO_URL[org] ?? MORE_INFO_URL["home-assistant"] },
+    undefined,
+    { escape: String },
+  );
 }
 
 type HandledEvent = EventType.PULL_REQUEST_REVIEW_SUBMITTED;

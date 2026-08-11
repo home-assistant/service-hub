@@ -1,7 +1,8 @@
+import { readFileSync } from "node:fs";
+import Mustache from "mustache";
 import { log } from "../../../log.js";
+import { type CommandHelpEntry, commandsForTarget, commandViews } from "../command-render.js";
 import type { BlockStates } from "./blocks.js";
-import { type CommandHelpEntry, commandsForTarget, commandViews } from "./help.js";
-import { loadTemplate, renderTemplate } from "./template.js";
 import {
   RULE_STATE_VERSION,
   type RuleState,
@@ -34,11 +35,15 @@ const STATUS_ICONS: Record<SectionStatus, string> = {
   skip: ":heavy_minus_sign:",
 };
 
-// Layout and prose live in the templates; this module only builds views.
-// The sentinel is written literally there but grepped for here — fail at
-// load if a template edit breaks the pair (comment detection depends on it).
-const PR_TEMPLATE = loadTemplate("pr-dashboard");
-const ISSUE_TEMPLATE = loadTemplate("issue-dashboard");
+// Layout and prose live in the mustache templates — the .md files are the
+// source of truth; this module only builds views. The sentinel is written
+// literally there but grepped for here — fail at load if a template edit
+// breaks the pair (comment detection depends on it).
+function loadTemplate(name: string): string {
+  return readFileSync(new URL(`./templates/${name}.md`, import.meta.url), "utf-8");
+}
+const PR_TEMPLATE = loadTemplate("dashboard-pr");
+const ISSUE_TEMPLATE = loadTemplate("dashboard-issue");
 for (const template of [PR_TEMPLATE, ISSUE_TEMPLATE]) {
   if (!template.includes(SENTINEL)) {
     throw new Error("dashboard template lost its sentinel comment");
@@ -57,7 +62,7 @@ export interface StatusExtras {
   commands?: readonly CommandHelpEntry[];
   /** Visible template blocks with their args (see blocks.ts). */
   blocks?: BlockStates;
-  /** Reserved rule-persisted state, round-tripped verbatim into the blob. */
+  /** Per-rule persisted state, keyed by rule name, embedded verbatim in the blob. */
   data?: Record<string, unknown>;
 }
 
@@ -148,7 +153,11 @@ export function renderStatus(
     persistenceTail,
   };
 
-  return renderTemplate(target === "issue" ? ISSUE_TEMPLATE : PR_TEMPLATE, view);
+  // Mustache's HTML escaping is disabled: the output is markdown, and
+  // table-cell escaping is the view builder's job, not the template engine's.
+  return Mustache.render(target === "issue" ? ISSUE_TEMPLATE : PR_TEMPLATE, view, undefined, {
+    escape: String,
+  });
 }
 
 /** A blank persisted state — what a fresh placeholder comment carries. */

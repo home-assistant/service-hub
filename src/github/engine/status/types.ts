@@ -36,9 +36,8 @@ export const RULE_STATE_VERSION = 1;
  *
  * `sections` carry their own inline `ignored` waiver, so a waiver round-trips
  * with its rule. `blocks` are the typed template blocks (see blocks.ts).
- * `data` is a reserved bag for arbitrary rule-persisted state — unused today,
- * but a rule that needs to remember something across dispatches writes it here
- * rather than inventing a new marker.
+ * `data` holds per-rule persisted state, keyed by rule name: written via
+ * `RuleOutput.state`, handed back to that rule's handler on the next dispatch.
  */
 export interface RuleState {
   version: number;
