@@ -7,6 +7,7 @@ import { EventType } from "./engine/event.js";
 import { commandContextFromWebhook, isBotCommand } from "./engine/model/command-context.js";
 import { ruleContextFromWebhook, type WebhookEventPayload } from "./engine/model/rule-context.js";
 import { registryConfig } from "./manifests/index.js";
+import { logRace } from "./race-monitor.js";
 
 const KNOWN_EVENT_TYPES = new Set<string>(Object.values(EventType));
 
@@ -52,14 +53,18 @@ export async function ghWebhookHandler(
   if (eventType === EventType.ISSUE_COMMENT_CREATED) {
     const commentPayload = payload as IssueCommentCreatedEvent;
     if (isBotCommand(commentPayload.comment.body ?? "", env.COMMAND_SLUG)) {
-      await dispatchCommand(
-        commandContextFromWebhook(env, registryConfig, octokit, commentPayload),
+      const context = commandContextFromWebhook(env, registryConfig, octokit, commentPayload);
+      await logRace(`${context.repo.fullName}#${context.number}`, eventType, () =>
+        dispatchCommand(context),
       );
     }
     return new Response("OK");
   }
 
-  await dispatch(ruleContextFromWebhook(env, registryConfig, octokit, payload, eventType));
+  const context = ruleContextFromWebhook(env, registryConfig, octokit, payload, eventType);
+  await logRace(`${context.repo.fullName}#${context.number}`, eventType, () =>
+    dispatch(context),
+  );
 
   return new Response("OK");
 }
