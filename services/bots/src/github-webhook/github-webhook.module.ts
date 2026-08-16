@@ -10,6 +10,7 @@ import { BlockingLabels } from './handlers/blocking_labels';
 import { BranchLabels } from './handlers/branch_labels';
 import { CodeOwnersMention } from './handlers/code_owners_mention';
 import { DependencyBump } from './handlers/dependency_bump';
+import { DiscussionCommentCommands } from './handlers/discussion_comment_commands/handler';
 import { DocsMissing } from './handlers/docs_missing';
 import { DocsParenting } from './handlers/docs_parenting';
 import { DocsTargetBranch } from './handlers/docs_target_branch';
@@ -38,6 +39,7 @@ import { ValidateCla } from './handlers/validate-cla';
     BranchLabels,
     CodeOwnersMention,
     DependencyBump,
+    DiscussionCommentCommands,
     DocsMissing,
     DocsParenting,
     DocsTargetBranch,
