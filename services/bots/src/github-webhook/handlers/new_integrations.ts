@@ -38,11 +38,6 @@ export const BRONZE_QUALITY_SCALE_RULES = [
   'unique-config-entry',
 ];
 
-// Gold-tier rules that are easy to over-build into an initial submission; flagged
-// (not blocked) so the author can justify keeping one if the integration needs it,
-// see https://developers.home-assistant.io/docs/core/pr_review_guide#21-scope
-const PREMATURE_GOLD_RULES = ['dynamic-devices', 'stale-devices'];
-
 type RuleStatus = 'done' | 'exempt' | 'todo' | undefined;
 
 const getRuleStatus = (value: unknown): RuleStatus => {
@@ -147,35 +142,19 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
       return 'Could not read or parse `quality_scale.yaml` for this PR. Please make sure it is valid YAML.';
     }
 
-    const messages: string[] = [];
-
     const incompleteRules = BRONZE_QUALITY_SCALE_RULES.filter(
       (rule) => !['done', 'exempt'].includes(getRuleStatus(rules[rule])),
     );
-    if (incompleteRules.length > 0) {
-      messages.push(
-        `\`quality_scale.yaml\` has bronze-tier rule(s) not marked \`done\` or \`exempt\`: ${incompleteRules
-          .map((rule) => `\`${rule}\``)
-          .join(
-            ', ',
-          )}. Per the [PR review guide](https://developers.home-assistant.io/docs/core/pr_review_guide#23-quality-scale-quality_scaleyaml), every bronze rule must be addressed before an initial PR is ready for review.`,
-      );
+
+    if (incompleteRules.length === 0) {
+      return undefined;
     }
 
-    const prematureGoldRules = PREMATURE_GOLD_RULES.filter(
-      (rule) => getRuleStatus(rules[rule]) === 'done',
-    );
-    if (prematureGoldRules.length > 0) {
-      messages.push(
-        `\`quality_scale.yaml\` marks gold-tier rule(s) ${prematureGoldRules
-          .map((rule) => `\`${rule}\``)
-          .join(
-            ', ',
-          )} as \`done\`. These are usually out of scope for an initial new-integration PR — if the integration doesn't genuinely need this from day one, please defer it to a follow-up PR. If it does (e.g. entities only appear after a delayed device announcement), just say so in the PR description.`,
-      );
-    }
-
-    return messages.length > 0 ? messages.join('\n\n') : undefined;
+    return `\`quality_scale.yaml\` has bronze-tier rule(s) not marked \`done\` or \`exempt\`: ${incompleteRules
+      .map((rule) => `\`${rule}\``)
+      .join(
+        ', ',
+      )}. Per the [PR review guide](https://developers.home-assistant.io/docs/core/pr_review_guide#23-quality-scale-quality_scaleyaml), every bronze rule must be addressed before an initial PR is ready for review.`;
   }
 
   private getDiagnosticsIssue(parsed: ParsedPath[]): string | undefined {

@@ -487,50 +487,6 @@ describe('NewIntegrationsHandler', () => {
     expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
   });
 
-  it('requests changes when dynamic-devices or stale-devices is marked done', async () => {
-    const yamlText = `${VALID_QUALITY_SCALE_YAML}  dynamic-devices: done\n  stale-devices: done\n`;
-    mockContext.github.repos.getContent = jest.fn((params: { path: string }) =>
-      params.path === QUALITY_SCALE_PATH
-        ? Promise.resolve(yamlContentResponse(yamlText))
-        : Promise.resolve(manifestContentResponse(VALID_MANIFEST)),
-    );
-    mockContext._prFilesCache = [
-      { filename: 'homeassistant/components/my_integration/__init__.py' },
-      { filename: 'homeassistant/components/my_integration/sensor.py' },
-      { filename: MANIFEST_PATH },
-      { filename: QUALITY_SCALE_PATH },
-      TEST_FILE,
-    ];
-
-    await handler.handle(mockContext);
-
-    expect(mockContext.github.pulls.createReview).toHaveBeenCalledTimes(1);
-    const call = mockContext.github.pulls.createReview.mock.calls[0][0];
-    assert.strictEqual(call.event, 'REQUEST_CHANGES');
-    assert.ok(call.body.includes('`dynamic-devices`'));
-    assert.ok(call.body.includes('`stale-devices`'));
-  });
-
-  it('does nothing when dynamic-devices is marked todo (not yet built)', async () => {
-    const yamlText = `${VALID_QUALITY_SCALE_YAML}  dynamic-devices: todo\n`;
-    mockContext.github.repos.getContent = jest.fn((params: { path: string }) =>
-      params.path === QUALITY_SCALE_PATH
-        ? Promise.resolve(yamlContentResponse(yamlText))
-        : Promise.resolve(manifestContentResponse(VALID_MANIFEST)),
-    );
-    mockContext._prFilesCache = [
-      { filename: 'homeassistant/components/my_integration/__init__.py' },
-      { filename: 'homeassistant/components/my_integration/sensor.py' },
-      { filename: MANIFEST_PATH },
-      { filename: QUALITY_SCALE_PATH },
-      TEST_FILE,
-    ];
-
-    await handler.handle(mockContext);
-
-    expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
-  });
-
   it('requests changes when quality_scale.yaml is not valid YAML', async () => {
     mockContext.github.repos.getContent = jest.fn((params: { path: string }) =>
       params.path === QUALITY_SCALE_PATH
