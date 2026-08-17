@@ -10,9 +10,13 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { startDiscordGateway } from "../dist/discord/engine/gateway.js";
+import { discordRegistry } from "../dist/discord/manifests/index.js";
+// Node's type stripping can't follow the src graph's `.js` specifiers into
+// `.ts` files, so the gateway comes from the build output — the package
+// script runs `pnpm build` first. The type-only import is erased before
+// module resolution, so it may point at src.
 import type { DiscordEvent } from "../src/discord/engine/event.js";
-import { startDiscordGateway } from "../src/discord/engine/gateway.js";
-import { discordRegistry } from "../src/discord/manifests/index.js";
 
 const CAPTURE_DIR = fileURLToPath(new URL("../tests/discord/fixtures/_captured", import.meta.url));
 

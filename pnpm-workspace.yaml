@@ -1,4 +1,15 @@
-# esbuild's postinstall fetches/validates its platform binary; pnpm blocks
-# dependency build scripts unless approved here.
+# esbuild's and @swc/core's postinstalls fetch/validate their platform
+# binaries; pnpm blocks dependency build scripts unless approved here.
 allowBuilds:
+  '@swc/core': true
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@biomejs/biome@2.5.8'
+  - '@biomejs/cli-darwin-arm64@2.5.8'
+  - '@biomejs/cli-darwin-x64@2.5.8'
+  - '@biomejs/cli-linux-arm64-musl@2.5.8'
+  - '@biomejs/cli-linux-arm64@2.5.8'
+  - '@biomejs/cli-linux-x64-musl@2.5.8'
+  - '@biomejs/cli-linux-x64@2.5.8'
+  - '@biomejs/cli-win32-arm64@2.5.8'
+  - '@biomejs/cli-win32-x64@2.5.8'

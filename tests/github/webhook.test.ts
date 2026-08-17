@@ -1,19 +1,17 @@
+import type { ExecutionContext } from "@nestjs/common";
+import { BadRequestException, UnauthorizedException } from "@nestjs/common";
 import type { Octokit } from "@octokit/rest";
+import { sign } from "@octokit/webhooks-methods";
 import { describe, expect, it, vi } from "vitest";
 import type { Env } from "../../src/env.js";
-import { ghWebhookHandler } from "../../src/github/app.js";
+import { GithubWebhookGuard } from "../../src/github/github-webhook.guard.js";
+import { WebhookService } from "../../src/github/webhook.service.js";
 
 // vi.mock is hoisted above the imports and scoped to this file, so the mocked
-// verify/dispatch only exist here — helpers/e2e.ts and engine/dispatch.test.ts
-// keep the real modules.
-const { verify, dispatch } = vi.hoisted(() => ({
-  verify: vi.fn(async () => true),
+// dispatch only exists here — helpers/e2e.ts and engine/dispatch.test.ts keep
+// the real module.
+const { dispatch } = vi.hoisted(() => ({
   dispatch: vi.fn(async () => undefined),
-}));
-
-vi.mock("@octokit/webhooks-methods", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@octokit/webhooks-methods")>()),
-  verify,
 }));
 
 vi.mock("../../src/github/engine/dispatch.js", async (importOriginal) => ({
@@ -24,23 +22,6 @@ vi.mock("../../src/github/engine/dispatch.js", async (importOriginal) => ({
 // Routing tests never reach the API; an inert Octokit suffices.
 const octokit = {} as unknown as Octokit;
 
-async function fetchApp(req: Request): Promise<Response> {
-  return ghWebhookHandler(env, octokit, req);
-}
-
-function makeRequest(body: string, headers: Record<string, string> = {}): Request {
-  return new Request("http://localhost/github/webhook", {
-    method: "POST",
-    body,
-    headers: {
-      "content-type": "application/json",
-      "x-hub-signature-256": "sha256=valid",
-      "x-github-event": "pull_request",
-      ...headers,
-    },
-  });
-}
-
 const env: Env = {
   GITHUB_APP_ID: "123",
   GITHUB_PRIVATE_KEY: "key",
@@ -50,42 +31,65 @@ const env: Env = {
   ENVIRONMENT: "test",
   BOT_SLUG: "ha-bot",
   COMMAND_SLUG: "ha-bot",
+  PORT: 0,
 };
 
+const service = new WebhookService(env, octokit);
+
+function guardContext(body: string, signature: string): ExecutionContext {
+  return {
+    switchToHttp: () => ({
+      getRequest: () => ({
+        headers: { "x-hub-signature-256": signature },
+        rawBody: Buffer.from(body),
+      }),
+    }),
+  } as unknown as ExecutionContext;
+}
+
+describe("webhook signature guard", () => {
+  it("throws 401 for an invalid signature", async () => {
+    const guard = new GithubWebhookGuard(env);
+
+    await expect(guard.canActivate(guardContext("{}", "sha256=deadbeef"))).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it("throws 401 when the signature header is missing", async () => {
+    const guard = new GithubWebhookGuard(env);
+
+    await expect(guard.canActivate(guardContext("{}", ""))).rejects.toThrow(UnauthorizedException);
+  });
+
+  it("passes a valid signature through", async () => {
+    const guard = new GithubWebhookGuard(env);
+    const body = JSON.stringify({ action: "opened" });
+
+    await expect(guard.canActivate(guardContext(body, await sign("secret", body)))).resolves.toBe(
+      true,
+    );
+  });
+});
+
 describe("webhook handler", () => {
-  it("returns 401 for invalid signature", async () => {
-    verify.mockResolvedValue(false);
-
-    const req = makeRequest(JSON.stringify({ action: "opened" }));
-    const res = await fetchApp(req);
-
-    expect(res.status).toBe(401);
-    expect(await res.text()).toBe("Invalid signature");
+  it("rejects invalid JSON with a 400", async () => {
+    await expect(service.handle("not-json", "pull_request")).rejects.toThrow(BadRequestException);
   });
 
-  it("returns 400 for invalid JSON", async () => {
-    verify.mockResolvedValue(true);
-
-    const req = makeRequest("not-json");
-    const res = await fetchApp(req);
-
-    expect(res.status).toBe(400);
-    expect(await res.text()).toBe("Invalid JSON");
-  });
-
-  it("returns 200 and skips new_permissions_accepted", async () => {
-    verify.mockResolvedValue(true);
+  it("returns OK and skips new_permissions_accepted", async () => {
     dispatch.mockClear();
 
-    const req = makeRequest(JSON.stringify({ action: "new_permissions_accepted" }));
-    const res = await fetchApp(req);
+    const result = await service.handle(
+      JSON.stringify({ action: "new_permissions_accepted" }),
+      "pull_request",
+    );
 
-    expect(res.status).toBe(200);
+    expect(result).toBe("OK");
     expect(dispatch).not.toHaveBeenCalled();
   });
 
   it("dispatches pull request events", async () => {
-    verify.mockResolvedValue(true);
     dispatch.mockClear();
 
     const payload = {
@@ -100,15 +104,13 @@ describe("webhook handler", () => {
       pull_request: { number: 1, head: { sha: "abc" } },
     };
 
-    const req = makeRequest(JSON.stringify(payload));
-    const res = await fetchApp(req);
+    const result = await service.handle(JSON.stringify(payload), "pull_request");
 
-    expect(res.status).toBe(200);
+    expect(result).toBe("OK");
     expect(dispatch).toHaveBeenCalled();
   });
 
   it("short-circuits self-webhooks without dispatching", async () => {
-    verify.mockResolvedValue(true);
     dispatch.mockClear();
 
     const payload = {
@@ -124,15 +126,13 @@ describe("webhook handler", () => {
       pull_request: { number: 1, head: { sha: "abc" } },
     };
 
-    const req = makeRequest(JSON.stringify(payload));
-    const res = await fetchApp(req);
+    const result = await service.handle(JSON.stringify(payload), "pull_request");
 
-    expect(res.status).toBe(200);
+    expect(result).toBe("OK");
     expect(dispatch).not.toHaveBeenCalled();
   });
 
   it("matches self-webhook login case-insensitively", async () => {
-    verify.mockResolvedValue(true);
     dispatch.mockClear();
 
     const payload = {
@@ -146,15 +146,13 @@ describe("webhook handler", () => {
       pull_request: { number: 1, head: { sha: "abc" } },
     };
 
-    const req = makeRequest(JSON.stringify(payload));
-    const res = await fetchApp(req);
+    const result = await service.handle(JSON.stringify(payload), "pull_request");
 
-    expect(res.status).toBe(200);
+    expect(result).toBe("OK");
     expect(dispatch).not.toHaveBeenCalled();
   });
 
   it("still dispatches for other bot senders", async () => {
-    verify.mockResolvedValue(true);
     dispatch.mockClear();
 
     const payload = {
@@ -169,10 +167,9 @@ describe("webhook handler", () => {
       pull_request: { number: 1, head: { sha: "abc" } },
     };
 
-    const req = makeRequest(JSON.stringify(payload));
-    const res = await fetchApp(req);
+    const result = await service.handle(JSON.stringify(payload), "pull_request");
 
-    expect(res.status).toBe(200);
+    expect(result).toBe("OK");
     expect(dispatch).toHaveBeenCalled();
   });
 });

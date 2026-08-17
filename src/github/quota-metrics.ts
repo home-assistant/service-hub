@@ -1,5 +1,5 @@
 import type { Octokit } from "@octokit/rest";
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/nestjs";
 
 type Headers = Record<string, string | number | undefined>;
 

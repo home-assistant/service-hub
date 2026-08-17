@@ -1,22 +1,40 @@
-# tsx runs the TypeScript entrypoint directly — no build step.
-FROM node:26-alpine
+# Build stage: nest build
+FROM node:26-alpine AS build
 
 WORKDIR /app
 
 # corepack installs the pnpm version pinned in package.json's packageManager.
-# Node >=25 no longer bundles corepack, so install it first.
 RUN npm install -g corepack && corepack enable
 
-# Install dependencies first for layer caching. --frozen-lockfile fails the
-# build if pnpm-lock.yaml is out of sync with package.json. The workspace
-# file carries the esbuild build-script approval.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile
 
 COPY . .
+RUN pnpm build
 
+
+# Runtime stage
+FROM node:26-alpine
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+RUN npm install -g corepack && corepack enable \
+    && pnpm install --frozen-lockfile --prod \
+    && rm -rf /root/.npm /root/.cache /root/.local/share/pnpm
+
+COPY --from=build /app/dist ./dist
+
+# Sentry deployment label
 ENV ENVIRONMENT=production
+ENV NODE_ENV=production
 ENV PORT=8787
-EXPOSE 8787
+EXPOSE ${PORT}
 
-CMD ["./node_modules/.bin/tsx", "src/server.ts"]
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD node -e "require('http').get('http://localhost:'+process.env.PORT+'/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+
+USER node
+
+CMD ["node", "dist/main.js"]

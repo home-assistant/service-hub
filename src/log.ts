@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/node";
+import * as Sentry from "@sentry/nestjs";
 
 type Attributes = Record<string, unknown>;
 
@@ -28,6 +28,11 @@ export const log = {
   exception(err: unknown, attributes?: Attributes): void {
     if (attributes) console.error(err, attributes);
     else console.error(err);
-    Sentry.captureException(err, attributes ? { extra: attributes } : undefined);
+    // handled: false — every caller is a last-resort catch (exception filter,
+    // gateway .catch); these are unhandled failures, not expected captures.
+    Sentry.captureException(err, {
+      mechanism: { handled: false },
+      ...(attributes ? { captureContext: { extra: attributes } } : {}),
+    });
   },
 };

@@ -1,8 +1,10 @@
+import { type ExecutionContext, HttpException } from "@nestjs/common";
 import type { Octokit } from "@octokit/rest";
 import { sign } from "@octokit/webhooks-methods";
 import type { Env } from "../../../src/env.js";
-import { ghWebhookHandler } from "../../../src/github/app.js";
 import type { RegistryConfig } from "../../../src/github/engine/types.js";
+import { GithubWebhookGuard } from "../../../src/github/github-webhook.guard.js";
+import { WebhookService } from "../../../src/github/webhook.service.js";
 import { createMockGitHub, type MockGitHub } from "./mock-context.js";
 
 const TEST_SECRET = "test-webhook-secret";
@@ -10,10 +12,10 @@ const TEST_SECRET = "test-webhook-secret";
 const EMPTY_REGISTRY: RegistryConfig = { repositories: {} };
 
 /**
- * app.ts imports its registry itself, so the test file must install a module
- * mock over manifests/index.js that reads from this mutable wiring object
- * (see e2e.test.ts); each harness points it at the test's registry. The
- * Octokit is an ordinary parameter and needs no mock plumbing.
+ * webhook.service.ts imports its registry itself, so the test file must
+ * install a module mock over manifests/index.js that reads from this mutable
+ * wiring object (see e2e.test.ts); each harness points it at the test's
+ * registry. The Octokit is an ordinary parameter and needs no mock plumbing.
  */
 export interface E2EWiring {
   config: RegistryConfig;
@@ -54,34 +56,39 @@ export function createE2EHarness(wiring: E2EWiring, options: E2EHarnessOptions =
     ENVIRONMENT: "test",
   } as unknown as Env;
 
+  const guard = new GithubWebhookGuard(env);
+  const service = new WebhookService(env, octokit);
+
+  // Runs the same guard → service pipeline the controller does, folding
+  // HttpExceptions back into a Response so status assertions read naturally.
+  const receive = async (event: string, body: string, signature: string): Promise<Response> => {
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: { "x-hub-signature-256": signature },
+          rawBody: Buffer.from(body),
+        }),
+      }),
+    } as unknown as ExecutionContext;
+    try {
+      await guard.canActivate(context);
+      return new Response(await service.handle(body, event));
+    } catch (err) {
+      if (err instanceof HttpException) {
+        return new Response(JSON.stringify(err.getResponse()), { status: err.getStatus() });
+      }
+      throw err;
+    }
+  };
+
   return {
     github,
     deliver: async (event, payload) => {
       const body = JSON.stringify(payload);
-      const signature = await sign(TEST_SECRET, body);
-      const req = new Request("http://localhost/github/webhook", {
-        method: "POST",
-        body,
-        headers: {
-          "content-type": "application/json",
-          "x-hub-signature-256": signature,
-          "x-github-event": event,
-        },
-      });
-      return ghWebhookHandler(env, octokit, req);
+      return receive(event, body, await sign(TEST_SECRET, body));
     },
-    deliverUnsigned: async (event, payload) => {
-      const req = new Request("http://localhost/github/webhook", {
-        method: "POST",
-        body: JSON.stringify(payload),
-        headers: {
-          "content-type": "application/json",
-          "x-hub-signature-256": "sha256=deadbeef",
-          "x-github-event": event,
-        },
-      });
-      return ghWebhookHandler(env, octokit, req);
-    },
+    deliverUnsigned: async (event, payload) =>
+      receive(event, JSON.stringify(payload), "sha256=deadbeef"),
   };
 }
 

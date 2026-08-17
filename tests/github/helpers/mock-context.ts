@@ -50,6 +50,7 @@ export const testEnv: Env = {
   COMMAND_SLUG: "ha-bot",
   SENTRY_DSN: "",
   ENVIRONMENT: "test",
+  PORT: 0,
 };
 
 export interface MockGitHub {

@@ -19,8 +19,8 @@
  *   pnpm run scrub                  # re-scrub existing fixtures
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { createServer } from "node:http";
 import { join } from "node:path";
-import { serve } from "@hono/node-server";
 
 const FIXTURES_ROOT = "tests/github/manifests/fixtures";
 const DEFAULT_REPO = "home-assistant/core";
@@ -103,17 +103,21 @@ function startCaptureServer(outDir: string) {
   const port = Number(process.env.PORT ?? 8787);
   mkdirSync(outDir, { recursive: true });
 
-  serve({
-    port,
-    async fetch(request) {
-      const url = new URL(request.url);
-      if (request.method !== "POST" || url.pathname !== "/github/webhook") {
-        return new Response("Not Found", { status: 404 });
-      }
+  createServer((request, response) => {
+    const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+    if (request.method !== "POST" || pathname !== "/github/webhook") {
+      response.writeHead(404).end("Not Found");
+      return;
+    }
 
-      const event = request.headers.get("x-github-event") ?? "unknown";
-      const delivery = request.headers.get("x-github-delivery") ?? String(Date.now());
-      const body = await request.text();
+    const first = (h: string | string[] | undefined) => (Array.isArray(h) ? h[0] : h);
+    const event = first(request.headers["x-github-event"]) ?? "unknown";
+    const delivery = first(request.headers["x-github-delivery"]) ?? String(Date.now());
+
+    const chunks: Buffer[] = [];
+    request.on("data", (chunk: Buffer) => chunks.push(chunk));
+    request.on("end", () => {
+      const body = Buffer.concat(chunks).toString("utf8");
 
       let action = "none";
       let content = body;
@@ -128,9 +132,9 @@ function startCaptureServer(outDir: string) {
       const file = join(outDir, `${event}.${action}-${delivery}.json`);
       writeFileSync(file, content);
       console.log(`captured ${event}.${action} -> ${file}`);
-      return new Response("OK");
-    },
-  });
+      response.end("OK");
+    });
+  }).listen(port);
 
   console.log(`capturing webhooks on http://localhost:${port}/github/webhook -> ${outDir}/`);
 }

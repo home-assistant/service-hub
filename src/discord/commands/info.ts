@@ -1,4 +1,4 @@
-import packageJson from "../../../package.json";
+import { packageJson } from "../../util/package-info.js";
 import type { SlashCommand } from "../engine/types.js";
 
 export const info: SlashCommand = {
