@@ -1,4 +1,4 @@
-import { PullRequestLabeledEvent, PullRequestReadyForReviewEvent } from '@octokit/webhooks-types';
+import { PullRequestLabeledEvent, PullRequestReviewRequestedEvent } from '@octokit/webhooks-types';
 import yaml from 'js-yaml';
 import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
@@ -7,7 +7,13 @@ import { BaseWebhookHandler } from './base';
 import { fetchPullRequestFilesFromContext } from '../utils/pull_request';
 import { ParsedPath } from '../utils/parse_path';
 
-type NewIntegrationEvent = PullRequestLabeledEvent | PullRequestReadyForReviewEvent;
+type NewIntegrationEvent = PullRequestLabeledEvent | PullRequestReviewRequestedEvent;
+
+// Matches the check already used by WebhookContext.senderIsBot.
+const BOT_LOGIN = 'homeassistant';
+
+const REQUEST_RECHECK_NOTE =
+  "Once you believe you've addressed everything above, re-request a review from this bot (the ↻ icon next to its review in the Reviewers panel) to re-run these checks.";
 
 const REQUIRED_MANIFEST_FIELDS = ['domain', 'name', 'codeowners'];
 
@@ -58,7 +64,7 @@ const getRuleStatus = (value: unknown): RuleStatus => {
 export class NewIntegrationsHandler extends BaseWebhookHandler {
   public allowedEventTypes = [
     EventType.PULL_REQUEST_LABELED,
-    EventType.PULL_REQUEST_READY_FOR_REVIEW,
+    EventType.PULL_REQUEST_REVIEW_REQUESTED,
   ];
   public allowedRepositories = [HomeAssistantRepository.CORE];
 
@@ -225,20 +231,29 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
   }
 
   /**
-   * When a new-integration label is added, or an author marks a new-integration PR
-   * ready for review, check it against the initial-PR scope rules. If any fail,
-   * request changes and (if the PR isn't already a draft) convert it back to draft --
-   * the author can't get it out of draft again until every check passes.
+   * Runs the full new-integration scope check suite when the `new-integration` label
+   * is added (i.e. at PR creation), and again whenever the author explicitly
+   * re-requests a review from this bot. It deliberately does NOT re-check on every
+   * push or on ready-for-review -- re-requesting review is an explicit, human-timed
+   * signal ("I think I've addressed everything"), so a later regression (e.g. a
+   * second platform added after the PR passed once) doesn't get silently missed by
+   * an automatic draft/undraft cycle nobody asked for.
    */
   async handle(context: WebhookContext<NewIntegrationEvent>) {
     if (context.eventType === EventType.PULL_REQUEST_LABELED) {
       if ((context.payload as PullRequestLabeledEvent).label?.name !== 'new-integration') {
         return;
       }
-    } else if (
-      !context.payload.pull_request.labels?.some((label) => label.name === 'new-integration')
-    ) {
-      return;
+    } else {
+      const requestedReviewer = (
+        context.payload as { requested_reviewer?: { login: string; type: string } }
+      ).requested_reviewer;
+      if (requestedReviewer?.login !== BOT_LOGIN && requestedReviewer?.type !== 'Bot') {
+        return;
+      }
+      if (!context.payload.pull_request.labels?.some((label) => label.name === 'new-integration')) {
+        return;
+      }
     }
 
     const pullRequestFiles = await fetchPullRequestFilesFromContext(context);
@@ -260,7 +275,7 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
 
     await context.github.pulls.createReview(
       context.pullRequest({
-        body: issues.join('\n\n'),
+        body: `${issues.join('\n\n')}\n\n---\n${REQUEST_RECHECK_NOTE}`,
         event: 'REQUEST_CHANGES',
       }),
     );

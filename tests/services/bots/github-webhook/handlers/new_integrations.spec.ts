@@ -558,12 +558,13 @@ describe('NewIntegrationsHandler', () => {
     expect(mockContext.github.graphql).not.toHaveBeenCalled();
   });
 
-  describe('ready_for_review', () => {
+  describe('review_requested', () => {
     beforeEach(function () {
       mockContext = mockWebhookContext({
-        eventType: 'pull_request.ready_for_review',
+        eventType: 'pull_request.review_requested',
         payload: loadJsonFixture('pull_request.opened', {
-          pull_request: { labels: [{ name: 'new-integration' }], draft: false },
+          requested_reviewer: { login: 'homeassistant', type: 'Bot' },
+          pull_request: { labels: [{ name: 'new-integration' }] },
         }),
         github: {
           pulls: {
@@ -574,6 +575,20 @@ describe('NewIntegrationsHandler', () => {
           },
         },
       });
+    });
+
+    it('does nothing when the requested reviewer is not this bot', async () => {
+      mockContext.payload.requested_reviewer = { login: 'some-human', type: 'User' };
+      mockContext._prFilesCache = [
+        { filename: 'homeassistant/components/my_integration/__init__.py' },
+        { filename: 'homeassistant/components/my_integration/sensor.py' },
+        TEST_FILE,
+      ];
+
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
 
     it('does nothing when the PR lacks the new-integration label', async () => {
@@ -590,7 +605,7 @@ describe('NewIntegrationsHandler', () => {
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
 
-    it('re-drafts a new-integration PR marked ready for review while checks still fail', async () => {
+    it('re-checks and re-drafts when the bot is re-requested for review and checks still fail', async () => {
       mockContext._prFilesCache = [
         { filename: 'homeassistant/components/my_integration/__init__.py' },
         { filename: 'homeassistant/components/my_integration/sensor.py' },
@@ -600,6 +615,8 @@ describe('NewIntegrationsHandler', () => {
       await handler.handle(mockContext);
 
       expect(mockContext.github.pulls.createReview).toHaveBeenCalledTimes(1);
+      const call = mockContext.github.pulls.createReview.mock.calls[0][0];
+      assert.ok(call.body.includes('re-request a review'));
       expect(mockContext.github.graphql).toHaveBeenCalledWith(
         expect.objectContaining({
           query: expect.stringContaining('convertPullRequestToDraft'),
@@ -607,7 +624,7 @@ describe('NewIntegrationsHandler', () => {
       );
     });
 
-    it('leaves a new-integration PR ready for review when all checks pass', async () => {
+    it('does nothing when the bot is re-requested for review and all checks pass', async () => {
       mockContext._prFilesCache = [
         { filename: 'homeassistant/components/my_integration/__init__.py' },
         { filename: 'homeassistant/components/my_integration/sensor.py' },
