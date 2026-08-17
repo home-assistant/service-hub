@@ -508,4 +508,118 @@ describe('NewIntegrationsHandler', () => {
     assert.strictEqual(call.event, 'REQUEST_CHANGES');
     assert.ok(call.body.includes('Could not read or parse `quality_scale.yaml`'));
   });
+
+  it('converts the PR to draft when checks fail and it is not already a draft', async () => {
+    mockContext._prFilesCache = [
+      { filename: 'homeassistant/components/my_integration/__init__.py' },
+      { filename: 'homeassistant/components/my_integration/sensor.py' },
+      TEST_FILE,
+    ];
+
+    await handler.handle(mockContext);
+
+    expect(mockContext.github.pulls.createReview).toHaveBeenCalledTimes(1);
+    expect(mockContext.github.graphql).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.stringContaining('convertPullRequestToDraft'),
+      }),
+    );
+    expect(mockContext.github.graphql.mock.calls[0][0].query).toContain(
+      mockContext.payload.pull_request.node_id,
+    );
+  });
+
+  it('does not try to draft a PR that is already a draft', async () => {
+    mockContext.payload.pull_request.draft = true;
+    mockContext._prFilesCache = [
+      { filename: 'homeassistant/components/my_integration/__init__.py' },
+      { filename: 'homeassistant/components/my_integration/sensor.py' },
+      TEST_FILE,
+    ];
+
+    await handler.handle(mockContext);
+
+    expect(mockContext.github.pulls.createReview).toHaveBeenCalledTimes(1);
+    expect(mockContext.github.graphql).not.toHaveBeenCalled();
+  });
+
+  it('does not draft a PR whose checks all pass', async () => {
+    mockContext._prFilesCache = [
+      { filename: 'homeassistant/components/my_integration/__init__.py' },
+      { filename: 'homeassistant/components/my_integration/sensor.py' },
+      { filename: MANIFEST_PATH },
+      { filename: QUALITY_SCALE_PATH },
+      TEST_FILE,
+    ];
+
+    await handler.handle(mockContext);
+
+    expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
+    expect(mockContext.github.graphql).not.toHaveBeenCalled();
+  });
+
+  describe('ready_for_review', () => {
+    beforeEach(function () {
+      mockContext = mockWebhookContext({
+        eventType: 'pull_request.ready_for_review',
+        payload: loadJsonFixture('pull_request.opened', {
+          pull_request: { labels: [{ name: 'new-integration' }], draft: false },
+        }),
+        github: {
+          pulls: {
+            createReview: jest.fn(),
+          },
+          repos: {
+            getContent: jest.fn(defaultGetContent),
+          },
+        },
+      });
+    });
+
+    it('does nothing when the PR lacks the new-integration label', async () => {
+      mockContext.payload.pull_request.labels = [];
+      mockContext._prFilesCache = [
+        { filename: 'homeassistant/components/my_integration/__init__.py' },
+        { filename: 'homeassistant/components/my_integration/sensor.py' },
+        TEST_FILE,
+      ];
+
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
+    });
+
+    it('re-drafts a new-integration PR marked ready for review while checks still fail', async () => {
+      mockContext._prFilesCache = [
+        { filename: 'homeassistant/components/my_integration/__init__.py' },
+        { filename: 'homeassistant/components/my_integration/sensor.py' },
+        TEST_FILE,
+      ];
+
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.pulls.createReview).toHaveBeenCalledTimes(1);
+      expect(mockContext.github.graphql).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: expect.stringContaining('convertPullRequestToDraft'),
+        }),
+      );
+    });
+
+    it('leaves a new-integration PR ready for review when all checks pass', async () => {
+      mockContext._prFilesCache = [
+        { filename: 'homeassistant/components/my_integration/__init__.py' },
+        { filename: 'homeassistant/components/my_integration/sensor.py' },
+        { filename: MANIFEST_PATH },
+        { filename: QUALITY_SCALE_PATH },
+        TEST_FILE,
+      ];
+
+      await handler.handle(mockContext);
+
+      expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
+      expect(mockContext.github.graphql).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { PullRequestLabeledEvent } from '@octokit/webhooks-types';
+import { PullRequestLabeledEvent, PullRequestReadyForReviewEvent } from '@octokit/webhooks-types';
 import yaml from 'js-yaml';
 import { EventType, HomeAssistantRepository } from '../github-webhook.const';
 import { WebhookContext } from '../github-webhook.model';
@@ -6,6 +6,8 @@ import { BaseWebhookHandler } from './base';
 
 import { fetchPullRequestFilesFromContext } from '../utils/pull_request';
 import { ParsedPath } from '../utils/parse_path';
+
+type NewIntegrationEvent = PullRequestLabeledEvent | PullRequestReadyForReviewEvent;
 
 const REQUIRED_MANIFEST_FIELDS = ['domain', 'name', 'codeowners'];
 
@@ -54,7 +56,10 @@ const getRuleStatus = (value: unknown): RuleStatus => {
 };
 
 export class NewIntegrationsHandler extends BaseWebhookHandler {
-  public allowedEventTypes = [EventType.PULL_REQUEST_LABELED];
+  public allowedEventTypes = [
+    EventType.PULL_REQUEST_LABELED,
+    EventType.PULL_REQUEST_READY_FOR_REVIEW,
+  ];
   public allowedRepositories = [HomeAssistantRepository.CORE];
 
   private getTestsIssue(parsed: ParsedPath[]): string | undefined {
@@ -66,7 +71,7 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
   }
 
   private async getManifestIssue(
-    context: WebhookContext<PullRequestLabeledEvent>,
+    context: WebhookContext<NewIntegrationEvent>,
     parsed: ParsedPath[],
   ): Promise<string | undefined> {
     const manifestFile = parsed.find(
@@ -118,7 +123,7 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
   }
 
   private async getQualityScaleIssue(
-    context: WebhookContext<PullRequestLabeledEvent>,
+    context: WebhookContext<NewIntegrationEvent>,
     parsed: ParsedPath[],
   ): Promise<string | undefined> {
     const qualityScaleFile = parsed.find(
@@ -168,7 +173,7 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
   }
 
   private async getReconfigureFlowIssue(
-    context: WebhookContext<PullRequestLabeledEvent>,
+    context: WebhookContext<NewIntegrationEvent>,
     parsed: ParsedPath[],
   ): Promise<string | undefined> {
     const configFlowFile = parsed.find(
@@ -220,12 +225,19 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
   }
 
   /**
-   * When a new-integration label is added, check if the PR contains multiple platforms
-   * (entity or non-entity platforms such as diagnostics) or a brand sub-folder.
-   * If so, request changes with a combined message.
+   * When a new-integration label is added, or an author marks a new-integration PR
+   * ready for review, check it against the initial-PR scope rules. If any fail,
+   * request changes and (if the PR isn't already a draft) convert it back to draft --
+   * the author can't get it out of draft again until every check passes.
    */
-  async handle(context: WebhookContext<PullRequestLabeledEvent>) {
-    if (context.payload.label?.name !== 'new-integration') {
+  async handle(context: WebhookContext<NewIntegrationEvent>) {
+    if (context.eventType === EventType.PULL_REQUEST_LABELED) {
+      if ((context.payload as PullRequestLabeledEvent).label?.name !== 'new-integration') {
+        return;
+      }
+    } else if (
+      !context.payload.pull_request.labels?.some((label) => label.name === 'new-integration')
+    ) {
       return;
     }
 
@@ -252,5 +264,9 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
         event: 'REQUEST_CHANGES',
       }),
     );
+
+    if (!context.payload.pull_request.draft) {
+      await context.convertPullRequestToDraft(context.payload.pull_request.node_id);
+    }
   }
 }
