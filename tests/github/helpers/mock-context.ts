@@ -68,7 +68,6 @@ export interface MockGitHub {
   };
   pulls: {
     get: MockFn;
-    list: MockFn;
     listFiles: MockFn;
     createReview: MockFn;
     listReviews: MockFn;
@@ -169,7 +168,6 @@ export function createMockGitHub(): MockGitHub {
     },
     pulls: {
       get: vi.fn().mockResolvedValue({ data: {} }),
-      list: vi.fn().mockResolvedValue({ data: [] }),
       listFiles: vi.fn().mockResolvedValue({ data: [] }),
       createReview: vi.fn().mockResolvedValue({ data: {} }),
       listReviews: vi.fn().mockResolvedValue({ data: [] }),

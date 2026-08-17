@@ -1,6 +1,5 @@
 import type { Octokit } from "@octokit/rest";
 import type { Env } from "../../env.js";
-import { log } from "../../log.js";
 import type { ItemRef } from "../../util/item-ref.js";
 import { type DispatchResult, dispatch } from "./dispatch.js";
 import { ruleContextFromIssue, ruleContextFromPullRequest } from "./model/rule-context.js";
@@ -42,36 +41,4 @@ export async function evaluateIssue(
   return dispatch(
     ruleContextFromIssue(env, registry, github, issue, { owner: ref.owner, repo: ref.repo }),
   );
-}
-
-export async function evaluateRecentPRs(
-  env: Env,
-  registry: RegistryConfig,
-  github: Octokit,
-  repoFullName: string,
-  since: Date,
-): Promise<void> {
-  const [owner, repo] = repoFullName.split("/");
-  const prs = await github.pulls.list({
-    owner,
-    repo,
-    state: "open",
-    sort: "updated",
-    direction: "desc",
-    per_page: 100,
-  });
-
-  const recentPRs = prs.data.filter((pr) => new Date(pr.updated_at) >= since);
-
-  for (const pr of recentPRs) {
-    try {
-      await evaluatePR(env, registry, github, { owner, repo, number: pr.number });
-    } catch (err) {
-      log.error("evaluateRecentPRs: PR evaluation failed", {
-        repository: repoFullName,
-        number: pr.number,
-        error: String(err),
-      });
-    }
-  }
 }
