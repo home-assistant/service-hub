@@ -8,6 +8,7 @@
     "node": ">=26"
   },
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "start": "node dist/main.js",
     "dev": "nest start -b swc --watch",
     "build": "nest build -b swc",
