@@ -466,6 +466,24 @@ describe('NewIntegrationsHandler', () => {
     assert.ok(call.body.includes('missing a `quality_scale.yaml`'));
   });
 
+  it('does nothing for a missing quality_scale.yaml when the integration is internal', async () => {
+    // Real-world case: home-assistant/core's backup/http/auth integrations all
+    // declare "quality_scale": "internal" and have no quality_scale.yaml at all.
+    mockContext.github.repos.getContent = jest
+      .fn()
+      .mockResolvedValue(manifestContentResponse({ ...VALID_MANIFEST, quality_scale: 'internal' }));
+    mockContext._prFilesCache = [
+      { filename: 'homeassistant/components/my_integration/__init__.py' },
+      { filename: 'homeassistant/components/my_integration/sensor.py' },
+      { filename: MANIFEST_PATH },
+      TEST_FILE,
+    ];
+
+    await handler.handle(mockContext);
+
+    expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
+  });
+
   it('requests changes when a bronze rule is marked todo', async () => {
     mockContext.github.repos.getContent = jest.fn((params: { path: string }) =>
       params.path === QUALITY_SCALE_PATH

@@ -137,6 +137,31 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
     context: WebhookContext<NewIntegrationEvent>,
     parsed: ParsedPath[],
   ): Promise<string | undefined> {
+    // Integrations declaring a special (non-scaled) tier -- "internal" being the one
+    // that actually shows up on new-integration PRs -- are exempt from the whole
+    // bronze/silver/gold/platinum system, so they legitimately have no quality_scale.yaml.
+    // Verified against real examples: backup/http/auth in home-assistant/core all
+    // declare `"quality_scale": "internal"` and none of them has this file.
+    const manifestFile = parsed.find(
+      (path) => path.type === 'component' && path.filename === 'manifest.json',
+    );
+    if (manifestFile) {
+      try {
+        const { data } = await context.github.repos.getContent(
+          context.repo({ path: manifestFile.path, ref: context.payload.pull_request.head.sha }),
+        );
+        const manifest = JSON.parse(
+          Buffer.from((data as { content: string }).content, 'base64').toString(),
+        );
+        if (manifest['quality_scale'] === 'internal') {
+          return undefined;
+        }
+      } catch (_) {
+        // If we can't read manifest.json here, fall through -- getManifestIssue
+        // already reports manifest read/parse failures separately.
+      }
+    }
+
     const qualityScaleFile = parsed.find(
       (path) => path.type === 'component' && path.filename === 'quality_scale.yaml',
     );
