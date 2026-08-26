@@ -272,6 +272,35 @@ describe('NewIntegrationsHandler', () => {
     assert.ok(call.body.includes('no `requirements`'));
   });
 
+  it('does nothing when a service integration has no requirements but iot_class is calculated', async () => {
+    // Real-world case: home-assistant/core's collection_image integration is
+    // integration_type "service" with no requirements at all, exempted from
+    // dependency-transparency in its own quality_scale.yaml because it derives
+    // state from data HA already has rather than talking to anything external.
+    mockContext.github.repos.getContent = jest.fn((params: { path: string }) =>
+      params.path === QUALITY_SCALE_PATH
+        ? Promise.resolve(yamlContentResponse(VALID_QUALITY_SCALE_YAML))
+        : Promise.resolve(
+            manifestContentResponse({
+              ...VALID_MANIFEST,
+              integration_type: 'service',
+              iot_class: 'calculated',
+            }),
+          ),
+    );
+    mockContext._prFilesCache = [
+      { filename: 'homeassistant/components/my_integration/__init__.py' },
+      { filename: 'homeassistant/components/my_integration/sensor.py' },
+      { filename: MANIFEST_PATH },
+      { filename: QUALITY_SCALE_PATH },
+      TEST_FILE,
+    ];
+
+    await handler.handle(mockContext);
+
+    expect(mockContext.github.pulls.createReview).not.toHaveBeenCalled();
+  });
+
   it('does nothing when a device integration has requirements set', async () => {
     mockContext.github.repos.getContent = jest.fn((params: { path: string }) =>
       params.path === QUALITY_SCALE_PATH

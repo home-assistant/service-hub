@@ -116,11 +116,16 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
     const integrationType = manifest['integration_type'];
     const requirements = manifest['requirements'];
     const hasRequirements = Array.isArray(requirements) && requirements.length > 0;
+    // `calculated` is the one hassfest-supported iot_class that doesn't imply any
+    // external communication (it derives state from data HA already has), see
+    // https://github.com/home-assistant/core/blob/dev/script/hassfest/manifest.py
+    const isCalculated = manifest['iot_class'] === 'calculated';
 
     if (
       typeof integrationType === 'string' &&
       EXTERNAL_DEPENDENCY_INTEGRATION_TYPES.has(integrationType) &&
-      !hasRequirements
+      !hasRequirements &&
+      !isCalculated
     ) {
       return `This integration communicates with a device or service (\`integration_type: "${integrationType}"\`) but \`manifest.json\` has no \`requirements\`. Per the [PR review guide](https://developers.home-assistant.io/docs/core/pr_review_guide#22-manifest-manifestjson), communication code must be published as a separate PyPI library and listed under \`requirements\`, not embedded directly in the integration.`;
     }
