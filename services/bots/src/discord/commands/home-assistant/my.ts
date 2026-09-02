@@ -108,7 +108,7 @@ export class CommandHomeAssistantMy {
       await interaction.respond(
         focusedValue.length !== 0
           ? this.serviceHomeassistantMyRedirectData.data
-              .filter((redirect) => !redirect.deprecated)
+              .filter((redirect) => !redirect.hidden)
               .map((redirect) => ({
                 name: redirect.name,
                 value: redirect.redirect,
