@@ -10,6 +10,10 @@ export const LabelsToCheck: {
     'awaiting-frontend': { message: 'This PR is awaiting changes to the frontend' },
   },
   [HomeAssistantRepository.FRONTEND]: {
+    Blocked: { message: 'This PR has a blocker that must be resolved before merging' },
+    'Do Not Review': { message: 'Review is on hold for this PR' },
+    'has-parent': { message: 'This PR is waiting for its parent PR to merge' },
+    'Needs UX': { message: 'This PR is awaiting UX review' },
     'wait for backend': { message: 'This PR is awaiting changes to the backend' },
   },
 };
