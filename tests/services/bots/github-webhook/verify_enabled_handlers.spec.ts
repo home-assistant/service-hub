@@ -72,6 +72,13 @@ describe('GithubWebhookModule', () => {
       },
     },
     {
+      eventType: EventType.PULL_REQUEST_REVIEW_REQUESTED,
+      handlers: ['NewIntegrationsHandler'],
+      payload: {
+        repository: { full_name: 'home-assistant/core', owner: { login: 'home-assistant' } },
+      },
+    },
+    {
       eventType: EventType.PULL_REQUEST_OPENED,
       handlers: [
         'DependencyBump',
