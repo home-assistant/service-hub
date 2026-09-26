@@ -566,14 +566,26 @@ describe('IssueCommentCommands', () => {
       expectRejectedSilently();
     });
 
-    it('rejected silently for non-author with invalid input', async () => {
+    it('rejected silently for non-author with unknown integration', async () => {
       mockContext.payload.comment.body = '@home-assistant set-integration nonexistent';
       mockContext.payload.comment.user.login = 'other';
-      (mockContext.github.issuesGetLabel as unknown as jest.Mock).mockResolvedValue(undefined);
       await handler.handle(mockContext);
 
       expectRejectedSilently();
       expect(mockContext.github.issuesGetLabel).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['unparseable input', '!!!invalid!!!'],
+      ['path input', '../../x'],
+      ['missing input', ''],
+    ])('rejected silently for non-author with %s', async (_, input) => {
+      mockContext.payload.comment.body = `@home-assistant set-integration ${input}`.trim();
+      mockContext.payload.comment.user.login = 'other';
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+      expect(mockedFetch).not.toHaveBeenCalled();
     });
 
     it('rejected silently on pull request', async () => {
@@ -603,13 +615,10 @@ describe('IssueCommentCommands', () => {
       await handler.handle(mockContext);
 
       expectReaction('-1');
-      expect(mockContext.github.issues.createComment).toHaveBeenCalledWith(
-        expect.objectContaining({
-          body: expect.stringMatching(
-            new RegExp(`^${message.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*\nExample:`),
-          ),
-        }),
-      );
+      const createComment = mockContext.github.issues.createComment as unknown as jest.Mock;
+      expect(createComment).toHaveBeenCalledTimes(1);
+      expect(createComment.mock.calls[0][0].body).toContain(message);
+      expect(createComment.mock.calls[0][0].body).toContain('\nExample:');
       expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
     });
 
