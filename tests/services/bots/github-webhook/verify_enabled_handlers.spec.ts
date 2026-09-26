@@ -81,6 +81,7 @@ describe('GithubWebhookModule', () => {
         'MergeConflictChecker',
         'MonthOfWTH',
         'PlatinumReview',
+        'PrTemplate',
         'ValidateCla',
       ],
       payload: {
