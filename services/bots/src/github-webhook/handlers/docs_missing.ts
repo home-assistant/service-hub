@@ -44,7 +44,7 @@ export class DocsMissing extends BaseWebhookHandler {
       needsDocumentation = linksToDocs.length === 0;
     }
 
-    await context.github.repos.createCommitStatus(
+    await context.github.createCommitStatusWithRetry(
       context.repo({
         sha: context.payload.pull_request.head.sha,
         context: 'docs-missing',

@@ -17,6 +17,10 @@ export type GetIssueLabelResponse =
   RestEndpointMethodTypes['issues']['getLabel']['response']['data'];
 export type PullRequestCreateReviewParams =
   RestEndpointMethodTypes['pulls']['createReview']['parameters'];
+export type CreateCommitStatusParams =
+  RestEndpointMethodTypes['repos']['createCommitStatus']['parameters'];
+export type CreateCommitStatusResponse =
+  RestEndpointMethodTypes['repos']['createCommitStatus']['response'];
 
 export type Repository = HomeAssistantRepository | ESPHomeRepository;
 
@@ -110,6 +114,8 @@ export const entityComponents = new Set([
   'water_heater',
   'weather',
 ]);
+
+export const nonEntityPlatforms = new Set(['diagnostics', 'intent', 'llm']);
 
 export const coreComponents = new Set([
   ...entityComponents,

@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 import { ServiceError } from '../../common/src/error';
 import { ExecutionContext } from '@nestjs/common';
-import { GqlContextType, GqlExecutionContext } from '@nestjs/graphql';
 import * as Sentry from '@sentry/node';
 import { Request } from 'express';
 import { IncomingMessage } from 'http';
@@ -193,23 +192,11 @@ export function reportRequestException(
 
 export function processException(context: ExecutionContext, exception: any): void {
   let request: Request | undefined;
-  let gqlExec: GqlExecutionContext | undefined;
   if (context.getType() === 'http') {
     request = context.switchToHttp().getRequest();
-  } else if (context.getType<GqlContextType>() === 'graphql') {
-    gqlExec = GqlExecutionContext.create(context);
-    request = gqlExec.getContext().req;
   } else if (context.getType() === 'ws') {
     request = context.switchToWs().getClient().request;
   }
-  const excContexts: ExtraContext[] = [];
-  if (gqlExec) {
-    const info = gqlExec.getInfo();
-    excContexts.push({
-      name: 'graphql',
-      fieldData: { fieldName: info.fieldName, path: info.path },
-    });
-  }
 
-  reportRequestException(exception, excContexts, request);
+  reportRequestException(exception, [], request);
 }

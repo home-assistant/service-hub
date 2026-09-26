@@ -1,22 +1,13 @@
 {
   "collection": "@nestjs/schematics",
-  "sourceRoot": "services/example/src",
+  "sourceRoot": "services/bots/src",
   "monorepo": true,
-  "root": "services/example",
+  "root": "services/bots",
   "compilerOptions": {
     "webpack": true,
-    "tsConfigPath": "services/example/tsconfig.app.json"
+    "tsConfigPath": "services/bots/tsconfig.app.json"
   },
   "projects": {
-    "example": {
-      "type": "application",
-      "root": "services/example",
-      "entryFile": "main",
-      "sourceRoot": "services/example/src",
-      "compilerOptions": {
-        "tsConfigPath": "services/example/tsconfig.app.json"
-      }
-    },
     "bots": {
       "type": "application",
       "root": "services/bots",

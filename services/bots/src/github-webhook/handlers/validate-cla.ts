@@ -132,16 +132,12 @@ export class ValidateCla extends BaseWebhookHandler {
 
       context.scheduleIssueLabel(ClaIssueLabel.CLA_ERROR);
 
-      commitsWithoutLogins.forEach((commit) => {
-        context.github.repos.createCommitStatus(
-          context.repo({
-            sha: commit.sha,
-            state: 'failure',
-            description: 'Commit(s) are missing a linked GitHub user.',
-            context: botContextName,
-          }),
-        );
-      });
+      await this.setCommitStatuses(
+        context,
+        commitsWithoutLogins.map((commit) => commit.sha),
+        'failure',
+        'Commit(s) are missing a linked GitHub user.',
+      );
       return;
     }
 
@@ -157,15 +153,11 @@ export class ValidateCla extends BaseWebhookHandler {
       );
       context.scheduleIssueLabel(ClaIssueLabel.CLA_NEEDED);
 
-      authorsNeedingCLA.forEach((entry) =>
-        context.github.repos.createCommitStatus(
-          context.repo({
-            sha: entry.sha,
-            state: 'failure',
-            description: 'At least one contributor needs to sign the CLA',
-            context: botContextName,
-          }),
-        ),
+      await this.setCommitStatuses(
+        context,
+        authorsNeedingCLA.map((entry) => entry.sha),
+        'failure',
+        'At least one contributor needs to sign the CLA',
       );
 
       const missingSign: { [key: string]: string[] } = {};
@@ -221,17 +213,38 @@ export class ValidateCla extends BaseWebhookHandler {
       // ignroe missing label
     }
 
-    commits.forEach((commit) => {
-      context.github.repos.createCommitStatus(
-        context.repo({
-          sha: commit.sha,
-          state: 'success',
-          description: `Everyone involved ${
-            allCommitsIgnored ? 'are ignored' : 'has signed the CLA'
-          }`,
-          context: botContextName,
-        }),
-      );
+    await this.setCommitStatuses(
+      context,
+      commits.map((commit) => commit.sha),
+      'success',
+      `Everyone involved ${allCommitsIgnored ? 'are ignored' : 'has signed the CLA'}`,
+    );
+  }
+
+  private async setCommitStatuses(
+    context: WebhookContext<PullRequestEventData>,
+    shas: string[],
+    state: 'success' | 'failure',
+    description: string,
+  ): Promise<void> {
+    const results = await Promise.allSettled(
+      shas.map((sha) =>
+        context.github.createCommitStatusWithRetry(
+          context.repo({
+            sha,
+            state,
+            description,
+            context: botContextName,
+          }),
+        ),
+      ),
+    );
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        context.github.log.warn(
+          `Could not set CLA commit status on ${shas[index]}: ${result.reason?.message}`,
+        );
+      }
     });
   }
 }

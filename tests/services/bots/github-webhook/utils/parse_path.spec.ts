@@ -12,6 +12,18 @@ describe('ParsedPath', () => {
       'homeassistant/components/demo/switch.py',
       { core: true, platform: 'switch', component: 'demo', type: 'platform' },
     ],
+    [
+      'homeassistant/components/demo/diagnostics.py',
+      { core: true, platform: null, component: 'demo', type: 'non-entity-platform' },
+    ],
+    [
+      'homeassistant/components/demo/intent.py',
+      { core: true, platform: null, component: 'demo', type: 'non-entity-platform' },
+    ],
+    [
+      'homeassistant/components/demo/llm.py',
+      { core: true, platform: null, component: 'demo', type: 'non-entity-platform' },
+    ],
   ])('%s', (filename: string, results: Record<string, any>) => {
     for (const [key, value] of Object.entries(results)) {
       const parsedPath = new ParsedPath({ filename } as ListPullRequestFiles[0]);

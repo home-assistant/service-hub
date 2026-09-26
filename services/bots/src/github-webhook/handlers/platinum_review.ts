@@ -67,7 +67,7 @@ export class PlatinumReview extends BaseWebhookHandler {
       }
     }
 
-    await context.github.repos.createCommitStatus(
+    await context.github.createCommitStatusWithRetry(
       context.repo({
         sha: context.payload.pull_request.head.sha,
         context: 'code-owner-approval',

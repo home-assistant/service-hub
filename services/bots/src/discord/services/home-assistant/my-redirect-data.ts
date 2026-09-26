@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 
 interface Redirect {
   redirect: string;
-  deprecated?: boolean;
+  hidden?: boolean;
   custom?: boolean;
   name: string;
   badge?: string;
