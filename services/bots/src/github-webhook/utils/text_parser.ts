@@ -15,6 +15,27 @@ interface IssuePullInfo {
   number: number;
 }
 
+export const extractIntegrationFromBody = (body: string): string | undefined => {
+  const match = /###\s*Integration causing the issue\s*\n\s*\n\s*(?<integration>[^\n#]+)/i.exec(
+    body,
+  );
+  const raw = match?.groups?.integration?.trim();
+  if (!raw || raw === '_No response_') {
+    return undefined;
+  }
+  return raw;
+};
+
+export const normalizeIntegrationName = (name: string): string[] => {
+  const lower = name.toLowerCase();
+  return [
+    ...new Set([
+      lower.replace(/[\s-]+/g, ''), // Remove all spaces and hyphens
+      lower.replace(/\s+/g, '_'), // Replace spaces with underscores
+    ]),
+  ];
+};
+
 export const extractIntegrationDocumentationLinks = (
   body: string,
 ): IntegrationDocumentationLink[] =>
