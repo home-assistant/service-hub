@@ -1,0 +1,77 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "enabledManagers": ["dockerfile", "github-actions", "npm", "nvm"],
+  "minimumReleaseAge": "3 days",
+  "schedule": ["before 8am on monday"],
+  "prConcurrentLimit": 10,
+  "semanticCommits": "disabled",
+  "labels": ["dependencies"],
+  "lockFileMaintenance": {
+    "description": "Refresh the lock file weekly, so indirect dependencies come in one PR instead of one PR each",
+    "enabled": true,
+    "schedule": ["before 8am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Label npm updates like Dependabot did",
+      "matchManagers": ["npm", "nvm", "dockerfile"],
+      "addLabels": ["javascript"]
+    },
+    {
+      "description": "Label GitHub Actions updates like Dependabot did",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["github_actions"]
+    },
+    {
+      "description": "NestJS packages share a release line",
+      "matchPackageNames": ["@nestjs/**"],
+      "groupName": "NestJS",
+      "groupSlug": "nestjs"
+    },
+    {
+      "description": "Discord NestJS packages",
+      "matchPackageNames": ["@discord-nestjs/**"],
+      "groupName": "discord-nestjs",
+      "groupSlug": "discord-nestjs"
+    },
+    {
+      "description": "Octokit packages",
+      "matchPackageNames": ["@octokit/**"],
+      "groupName": "Octokit",
+      "groupSlug": "octokit"
+    },
+    {
+      "description": "Sentry packages share a version",
+      "matchPackageNames": ["@sentry/**"],
+      "groupName": "Sentry",
+      "groupSlug": "sentry"
+    },
+    {
+      "description": "All non-major npm updates in one PR. This repository has a large backlog, so major updates come in separately and at most 10 PRs are open at a time.",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm dependencies (non-major)",
+      "groupSlug": "npm-non-major"
+    },
+    {
+      "description": "Docker Hub returns no release timestamps for the node image, so the minimum release age would keep it pending forever",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["node"],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Leave runner labels and action version inputs alone, Dependabot never updated those",
+      "matchManagers": ["github-actions"],
+      "matchDepTypes": ["github-runner", "uses-with"],
+      "enabled": false
+    },
+    {
+      "description": "Our own actions that follow a branch (like home-assistant/actions@master) float on purpose. Pinning them would open a digest PR in every repository for each change to them. Our own actions on a version tag are pinned like any other.",
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["home-assistant/**"],
+      "matchCurrentValue": "/^(dev|main|master)$/",
+      "pinDigests": false
+    }
+  ]
+}
