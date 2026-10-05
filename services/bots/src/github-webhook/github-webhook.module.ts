@@ -13,7 +13,6 @@ import { DependencyBump } from './handlers/dependency_bump';
 import { DocsMissing } from './handlers/docs_missing';
 import { DocsParenting } from './handlers/docs_parenting';
 import { DocsTargetBranch } from './handlers/docs_target_branch';
-import { Hacktoberfest } from './handlers/hacktoberfest';
 import { SetIntentsLanguage } from './handlers/intents_language';
 import { IssueCommentCommands } from './handlers/issue_comment_commands/handler';
 import { IssueContext } from './handlers/issue_context';
@@ -42,7 +41,6 @@ import { ValidateCla } from './handlers/validate-cla';
     DocsParenting,
     DocsTargetBranch,
     GithubWebhookService,
-    Hacktoberfest,
     IssueCommentCommands,
     IssueContext,
     IssueLinks,

@@ -76,7 +76,6 @@ describe('GithubWebhookModule', () => {
       handlers: [
         'DependencyBump',
         'DocsParenting',
-        'Hacktoberfest',
         'LabelBot',
         'MergeConflictChecker',
         'MonthOfWTH',
