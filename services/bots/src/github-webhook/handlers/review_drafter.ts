@@ -41,11 +41,7 @@ export class ReviewDrafter extends BaseWebhookHandler {
   }
 
   async handleReviewCommentSubmitted(context: WebhookContext<PullRequestReviewSubmittedEvent>) {
-    if (
-      context.payload.pull_request.draft ||
-      context.payload.review.state !== 'changes_requested'
-    ) {
-      // If the PR is already a draft, we don't need to do anything
+    if (context.payload.review.state !== 'changes_requested') {
       // If the review is not a changes requested, we don't need to do anything
       return;
     }
@@ -68,9 +64,12 @@ export class ReviewDrafter extends BaseWebhookHandler {
       }
     }
 
-    // Mark PR as draft, this is not available in the REST API, so we use our helper
-    await context.convertPullRequestToDraft(context.payload.pull_request.node_id);
+    if (!context.payload.pull_request.draft) {
+      // Mark PR as draft, this is not available in the REST API, so we use our helper
+      await context.convertPullRequestToDraft(context.payload.pull_request.node_id);
+    }
 
+    // Comment even if the PR was already a draft, handleReadyForReview only re-requests reviewers when it finds it
     const currentComments = await context.github.issues.listComments(
       context.issue({ per_page: 100 }),
     );
@@ -88,10 +87,9 @@ export class ReviewDrafter extends BaseWebhookHandler {
     const currentComments = await context.github.issues.listComments(
       context.issue({ per_page: 100 }),
     );
-    if (!currentComments.data.find((comment) => comment.body.startsWith(MESSAGE_ID))) {
-      // We did not add the comment, so we should not request a review
-      return;
-    }
+    // Only re-request reviewers if we drafted the PR, but always dismiss bot reviews so authors
+    // have a way out for PRs that never got our comment
+    const hasComment = currentComments.data.some((comment) => comment.body.startsWith(MESSAGE_ID));
 
     const { data: reviews } = await context.github.pulls.listReviews(
       context.pullRequest({ per_page: 100 }),
@@ -107,7 +105,7 @@ export class ReviewDrafter extends BaseWebhookHandler {
         .map((review) => review.user.login),
     );
 
-    if (reviewers.size) {
+    if (hasComment && reviewers.size) {
       // Request review from all reviewers that have requested changes.
       for (const reviewer of reviewers) {
         /*
