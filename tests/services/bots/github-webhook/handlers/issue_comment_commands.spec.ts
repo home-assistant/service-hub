@@ -469,4 +469,194 @@ describe('IssueCommentCommands', () => {
       expect(mockContext.github.graphql).not.toHaveBeenCalled();
     });
   });
+
+  describe('command: set-integration', () => {
+    const expectReaction = (content: string) =>
+      expect(mockContext.github.reactions.createForIssueComment).toHaveBeenCalledWith(
+        expect.objectContaining({ content }),
+      );
+
+    const expectRejectedSilently = () => {
+      expectReaction('-1');
+      expect(mockContext.github.issues.createComment).not.toHaveBeenCalled();
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+      expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalled();
+    };
+
+    const mockCodeOwners = (codeowners: { [domain: string]: string[] }) =>
+      mockedFetch.mockImplementation((url: string) =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve({
+              codeowners: codeowners[url.split('/components/')[1].split('/')[0]] ?? [],
+            }),
+        } as unknown as Response),
+      );
+
+    beforeEach(function () {
+      mockContext.payload.comment.body = '@home-assistant set-integration zha';
+      mockContext.payload.comment.user.login = 'Codertocat';
+      mockContext.payload.issue.labels = [];
+      (mockContext.github.issuesGetLabel as unknown as jest.Mock).mockImplementation(({ name }) =>
+        Promise.resolve({ name }),
+      );
+    });
+
+    it.each([
+      ['domain name', 'zha', 'zha'],
+      ['uppercase domain name', 'ZHA', 'zha'],
+      ['documentation link', 'https://www.home-assistant.io/integrations/zha', 'zha'],
+      ['mixed-case documentation link', 'https://www.home-assistant.io/integrations/ZHA', 'zha'],
+      [
+        'platform documentation link',
+        'https://www.home-assistant.io/integrations/sensor.awesome',
+        'awesome',
+      ],
+      ['entity platform', 'sensor.awesome', 'awesome'],
+      ['uppercase entity platform', 'Sensor.Awesome', 'awesome'],
+      ['reversed entity platform', 'awesome.sensor', 'awesome'],
+    ])('by issue author with %s', async (_, input, domain) => {
+      mockContext.payload.comment.body = `@home-assistant set-integration ${input}`;
+      await handler.handle(mockContext);
+
+      expectReaction('+1');
+      expect(mockContext.github.issuesGetLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ name: `integration: ${domain}`, repo: 'core' }),
+      );
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: [`integration: ${domain}`] }),
+      );
+      expect(mockContext.github.issues.removeLabel).not.toHaveBeenCalled();
+    });
+
+    it('by issue author with different login case', async () => {
+      mockContext.payload.comment.user.login = 'codertocat';
+      await handler.handle(mockContext);
+
+      expectReaction('+1');
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+    });
+
+    it('by code owner of target integration', async () => {
+      mockContext.payload.comment.user.login = 'zha_owner';
+      mockCodeOwners({ zha: ['@zha_owner'] });
+      await handler.handle(mockContext);
+
+      expectReaction('+1');
+      expect(mockContext.github.issues.addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+    });
+
+    it('rejected silently for non-author non-codeowner', async () => {
+      mockContext.payload.comment.user.login = 'other';
+      mockCodeOwners({ zha: ['@zha_owner'] });
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+    });
+
+    it('rejected silently for non-author when manifest fetch fails', async () => {
+      mockContext.payload.comment.user.login = 'other';
+      mockedFetch.mockImplementation(() => Promise.reject(new Error('Network error')));
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+    });
+
+    it('rejected silently for non-author with unknown integration', async () => {
+      mockContext.payload.comment.body = '@home-assistant set-integration nonexistent';
+      mockContext.payload.comment.user.login = 'other';
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+      expect(mockContext.github.issuesGetLabel).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['unparseable input', '!!!invalid!!!'],
+      ['path input', '../../x'],
+      ['missing input', ''],
+    ])('rejected silently for non-author with %s', async (_, input) => {
+      mockContext.payload.comment.body = `@home-assistant set-integration ${input}`.trim();
+      mockContext.payload.comment.user.login = 'other';
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+      expect(mockedFetch).not.toHaveBeenCalled();
+    });
+
+    it('rejected silently on pull request', async () => {
+      //@ts-ignore
+      mockContext.payload.issue.pull_request = { url: 'https://api.github.com/...' };
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+    });
+
+    it('rejected silently when label already set', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.payload.issue.labels = [mockedLabel('integration: zha')];
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+      expect(mockContext.github.issuesGetLabel).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['unknown integration', 'nonexistent', 'The integration `nonexistent` was not found.'],
+      ['unparseable input', '!!!invalid!!!', 'Could not determine the integration'],
+      ['missing input', '', 'Please provide an integration domain or documentation link.'],
+    ])('rejected with a hint for %s', async (_, input, message) => {
+      mockContext.payload.comment.body = `@home-assistant set-integration ${input}`.trim();
+      (mockContext.github.issuesGetLabel as unknown as jest.Mock).mockResolvedValue(undefined);
+      await handler.handle(mockContext);
+
+      expectReaction('-1');
+      const createComment = mockContext.github.issues.createComment as unknown as jest.Mock;
+      expect(createComment).toHaveBeenCalledTimes(1);
+      expect(createComment.mock.calls[0][0].body).toContain(message);
+      expect(createComment.mock.calls[0][0].body).toContain('\nExample:');
+      expect(mockContext.github.issues.addLabels).not.toHaveBeenCalled();
+    });
+
+    it('code owner of existing integration can change it', async () => {
+      mockContext.payload.comment.user.login = 'test';
+      mockContext.payload.issue.labels = [mockedLabel('integration: awesome')];
+      await handler.handle(mockContext);
+
+      expectReaction('+1');
+      const addLabels = mockContext.github.issues.addLabels as unknown as jest.Mock;
+      const removeLabel = mockContext.github.issues.removeLabel as unknown as jest.Mock;
+      expect(addLabels).toHaveBeenCalledWith(
+        expect.objectContaining({ labels: ['integration: zha'] }),
+      );
+      expect(removeLabel).toHaveBeenCalledTimes(1);
+      expect(removeLabel).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'integration: awesome' }),
+      );
+      expect(addLabels.mock.invocationCallOrder[0]).toBeLessThan(
+        removeLabel.mock.invocationCallOrder[0],
+      );
+    });
+
+    it('author cannot change existing integration', async () => {
+      mockContext.payload.issue.labels = [mockedLabel('integration: other')];
+      mockCodeOwners({ other: ['@other_owner'] });
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+    });
+
+    it('code owner of target integration cannot change existing integration', async () => {
+      mockContext.payload.comment.user.login = 'zha_owner';
+      mockContext.payload.issue.labels = [mockedLabel('integration: other')];
+      mockCodeOwners({ other: ['@other_owner'], zha: ['@zha_owner'] });
+      await handler.handle(mockContext);
+
+      expectRejectedSilently();
+    });
+  });
 });
