@@ -12,7 +12,7 @@ const MORE_INFO_URL = {
   [Organization.ESPHOME]:
     'https://esphome.io/guides/contributing#prs-are-being-drafted-when-changes-are-needed',
   [Organization.HOME_ASSISTANT]:
-    'https://developers.home-assistant.io/docs/review-process#prs-are-being-drafted-when-changes-are-needed',
+    'https://contributors.home-assistant.io/start/pull-requests/#review-comments',
 };
 
 const REVIEW_COMMENT = (organization: Organization) => `${MESSAGE_ID}

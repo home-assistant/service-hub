@@ -20,7 +20,7 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
       return undefined;
     }
 
-    return 'When adding new integrations, limit included platforms to a single platform. While we appreciate the effort, reviewing larger than necessary PRs slows down the review process. Please reduce this PR to a single platform. See the [review process](https://developers.home-assistant.io/docs/review-process/#home-assistant-core) for more details.';
+    return 'When adding new integrations, limit included platforms to a single platform. While we appreciate the effort, reviewing larger than necessary PRs slows down the review process. Please reduce this PR to a single platform. See [keep the first pull request small](https://contributors.home-assistant.io/core/integrations/create/#keep-the-first-pull-request-small) for more details.';
   }
 
   private getBrandIssue(parsed: ParsedPath[]): string | undefined {
@@ -30,7 +30,7 @@ export class NewIntegrationsHandler extends BaseWebhookHandler {
       return undefined;
     }
 
-    return 'This PR includes a `brand` folder inside the component. Brand assets should not be part of the core repository. Please refer to the [brand images documentation](https://developers.home-assistant.io/docs/core/integration/brand_images) for the correct approach.';
+    return 'This PR includes a `brand` folder inside the component. Brand assets should not be part of the core repository. Please refer to the [brand images documentation](https://contributors.home-assistant.io/core/integrations/brands/) for the correct approach.';
   }
 
   /**

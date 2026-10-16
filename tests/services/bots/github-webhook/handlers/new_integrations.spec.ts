@@ -106,7 +106,7 @@ describe('NewIntegrationsHandler', () => {
     assert.strictEqual(call.event, 'REQUEST_CHANGES');
     assert.ok(call.body.includes('brand'));
     assert.ok(
-      call.body.includes('https://developers.home-assistant.io/docs/core/integration/brand_images'),
+      call.body.includes('https://contributors.home-assistant.io/core/integrations/brands/'),
     );
     assert.ok(!call.body.includes('single platform'));
   });
@@ -127,7 +127,7 @@ describe('NewIntegrationsHandler', () => {
     assert.ok(call.body.includes('single platform'));
     assert.ok(call.body.includes('brand'));
     assert.ok(
-      call.body.includes('https://developers.home-assistant.io/docs/core/integration/brand_images'),
+      call.body.includes('https://contributors.home-assistant.io/core/integrations/brands/'),
     );
   });
 });

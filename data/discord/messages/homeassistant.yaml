@@ -165,7 +165,7 @@ mosquitto:
 checkconfigui:
   content: 'Check your config: <https://my.home-assistant.io/redirect/server_controls>'
 rest_api:
-  content: <https://developers.home-assistant.io/docs/external_api_rest>
+  content: <https://contributors.home-assistant.io/core/internals/rest-api/>
 config:
   content: >-
     Enable the "Configuration" section of the UI by adding `config:` to your
@@ -293,7 +293,7 @@ floorplan:
 quotes:
   content: >-
     check out the [best
-    practices](https://developers.home-assistant.io/docs/documenting/yaml-style-guide#strings)
+    practices](https://contributors.home-assistant.io/writing/reference/yaml/#strings)
     around using quotes in templates.
 discovery:
   description: "MQTT discovery"
@@ -798,7 +798,7 @@ llat:
     can be found in your [user
     profile](https://my.home-assistant.io/redirect/profile/). For examples of
     using it for the API see the [API
-    docs](https://developers.home-assistant.io/docs/en/external_api_rest.html)
+    docs](https://contributors.home-assistant.io/core/internals/rest-api/)
 
 websocket:
   content: >-
