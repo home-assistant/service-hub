@@ -93,12 +93,12 @@ export class CommandHomeassistantIntegration {
               name: 'IoT Class',
               value: `[${
                 integrationData.iot_class || 'Unknown'
-              }](https://developers.home-assistant.io/docs/creating_integration_manifest#iot-class)`,
+              }](https://contributors.home-assistant.io/core/integrations/manifest/#iot_class)`,
               inline: true,
             },
             {
               name: 'Integration type',
-              value: `[${integrationData.integration_type}](https://developers.home-assistant.io/docs/creating_integration_manifest#integration-type)`,
+              value: `[${integrationData.integration_type}](https://contributors.home-assistant.io/core/integrations/manifest/#integration_type)`,
               inline: true,
             },
             {

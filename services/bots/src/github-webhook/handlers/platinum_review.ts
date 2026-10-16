@@ -76,7 +76,7 @@ export class PlatinumReview extends BaseWebhookHandler {
           ? `Code owner approval required for Platinum integrations before merging`
           : `Code owner approval ok.`,
         target_url:
-          'https://developers.home-assistant.io/docs/core/integration-quality-scale/#-platinum',
+          'https://contributors.home-assistant.io/core/quality-scale/#platinum',
       }),
     );
   }
