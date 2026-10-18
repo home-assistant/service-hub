@@ -10,6 +10,11 @@ export const mockWebhookContext = <T>(params: Partial<WebhookContext<T>>): Webho
     github: deepmerge(
       {
         graphql: jest.fn(),
+        // Delegate to the wrapped method so callers can keep mocking listX with `{ data: [...] }`.
+        paginate: jest.fn().mockImplementation(async (method: any, params: any) => {
+          const result = await method(params);
+          return result?.data ?? [];
+        }),
         pulls: {
           get: jest.fn(),
           updateBranch: jest.fn(),
