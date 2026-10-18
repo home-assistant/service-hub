@@ -14,6 +14,7 @@ import { UnassignIssueCommentCommand } from './commands/unassign';
 import { UpdateBranchCommentCommand } from './commands/update-branch';
 import { LabelAddCommentCommand } from './commands/label-add';
 import { LabelRemoveCommentCommand } from './commands/label-remove';
+import { SetIntegrationCommentCommand } from './commands/set-integration';
 
 const COMMAND_REGEX: RegExp =
   /^(?<tagged>@home-assistant)\s(?<command>[\w|-]*)(\s(?<additional>.*))?$/;
@@ -28,6 +29,7 @@ export const ISSUE_COMMENT_COMMANDS: IssueCommentCommandBase[] = [
   new UpdateBranchCommentCommand(),
   new LabelAddCommentCommand(),
   new LabelRemoveCommentCommand(),
+  new SetIntegrationCommentCommand(),
 ];
 
 export class IssueCommentCommands extends BaseWebhookHandler {
