@@ -50,6 +50,11 @@ describe('PlatinumReview', () => {
     handler = new PlatinumReview();
     createCommitStatusWithRetry = jest.fn();
     listReviews = jest.fn();
+    const github = new GithubClient();
+    jest
+      .spyOn(github, 'createCommitStatusWithRetry')
+      .mockImplementation(createCommitStatusWithRetry);
+    jest.spyOn(github.pulls, 'listReviews').mockImplementation(listReviews);
 
     const platinumLabel = label('Quality Scale: platinum');
     const payload = loadJsonFixture<PullRequestLabeledEvent>('pull_request.opened', {
@@ -60,7 +65,7 @@ describe('PlatinumReview', () => {
     context = mockWebhookContext<PullRequestLabeledEvent>({
       eventType: EventType.PULL_REQUEST_LABELED,
       payload,
-      github: { createCommitStatusWithRetry, pulls: { listReviews } } as unknown as GithubClient,
+      github,
     });
     mockedFetchIntegrationManifest.mockResolvedValue(MANIFEST);
   });
