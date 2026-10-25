@@ -1,7 +1,14 @@
-// @ts-nocheck
-import { WebhookContext } from '../../../../../services/bots/src/github-webhook/github-webhook.model';
+import { Label, PullRequestLabeledEvent } from '@octokit/webhooks-types';
+import { EventType } from '../../../../../services/bots/src/github-webhook/github-webhook.const';
+import {
+  GithubClient,
+  WebhookContext,
+} from '../../../../../services/bots/src/github-webhook/github-webhook.model';
 import { PlatinumReview } from '../../../../../services/bots/src/github-webhook/handlers/platinum_review';
-import { fetchIntegrationManifest } from '../../../../../services/bots/src/github-webhook/utils/integration';
+import {
+  fetchIntegrationManifest,
+  IntegrationManifest,
+} from '../../../../../services/bots/src/github-webhook/utils/integration';
 import { mockWebhookContext } from '../../../../utils/test_context';
 import { loadJsonFixture } from '../../../../utils/fixture';
 
@@ -10,34 +17,62 @@ jest.mock('../../../../../services/bots/src/github-webhook/utils/integration', (
   fetchIntegrationManifest: jest.fn(),
 }));
 
-const PLATINUM_LABELS = [{ name: 'Quality Scale: platinum' }, { name: 'integration: awesome' }];
+const mockedFetchIntegrationManifest = jest.mocked(fetchIntegrationManifest);
+
+const MANIFEST: IntegrationManifest = {
+  codeowners: ['@owner'],
+  domain: 'awesome',
+  name: 'Awesome',
+  config_flow: true,
+  dependencies: [],
+  documentation: 'https://www.home-assistant.io/integrations/awesome',
+  requirements: [],
+  iot_class: 'cloud_polling',
+};
+
+const label = (name: string): Label => ({
+  id: 1,
+  node_id: 'label',
+  url: 'https://api.github.com/labels/1',
+  name,
+  description: null,
+  color: 'ffffff',
+  default: false,
+});
 
 describe('PlatinumReview', () => {
   let handler: PlatinumReview;
-  let mockContext: WebhookContext<any>;
+  let context: WebhookContext<PullRequestLabeledEvent>;
+  let createCommitStatusWithRetry: jest.Mock;
+  let listReviews: jest.Mock;
 
-  beforeEach(function () {
+  beforeEach(() => {
     handler = new PlatinumReview();
-    mockContext = mockWebhookContext({
-      eventType: 'pull_request.opened',
-      payload: loadJsonFixture('pull_request.opened', {}),
-      github: {
-        createCommitStatusWithRetry: jest.fn(),
-        pulls: { listReviews: jest.fn() },
-      },
+    createCommitStatusWithRetry = jest.fn();
+    listReviews = jest.fn();
+
+    const platinumLabel = label('Quality Scale: platinum');
+    const payload = loadJsonFixture<PullRequestLabeledEvent>('pull_request.opened', {
+      action: 'labeled',
+      label: platinumLabel,
     });
-    mockContext.payload.pull_request.labels = PLATINUM_LABELS;
-    fetchIntegrationManifest.mockResolvedValue({ codeowners: ['@owner'] });
+    payload.pull_request.labels = [platinumLabel, label('integration: awesome')];
+    context = mockWebhookContext<PullRequestLabeledEvent>({
+      eventType: EventType.PULL_REQUEST_LABELED,
+      payload,
+      github: { createCommitStatusWithRetry, pulls: { listReviews } } as unknown as GithubClient,
+    });
+    mockedFetchIntegrationManifest.mockResolvedValue(MANIFEST);
   });
 
   it('sets pending while waiting for code owner approval', async () => {
-    mockContext.github.pulls.listReviews.mockResolvedValue({
+    listReviews.mockResolvedValue({
       data: [{ state: 'APPROVED', user: { login: 'someone-else' } }],
     });
 
-    await handler.handle(mockContext);
+    await handler.handle(context);
 
-    expect(mockContext.github.createCommitStatusWithRetry).toHaveBeenCalledWith(
+    expect(createCommitStatusWithRetry).toHaveBeenCalledWith(
       expect.objectContaining({
         context: 'code-owner-approval',
         state: 'pending',
@@ -47,13 +82,13 @@ describe('PlatinumReview', () => {
   });
 
   it('sets success after a code owner approves', async () => {
-    mockContext.github.pulls.listReviews.mockResolvedValue({
+    listReviews.mockResolvedValue({
       data: [{ state: 'APPROVED', user: { login: 'Owner' } }],
     });
 
-    await handler.handle(mockContext);
+    await handler.handle(context);
 
-    expect(mockContext.github.createCommitStatusWithRetry).toHaveBeenCalledWith(
+    expect(createCommitStatusWithRetry).toHaveBeenCalledWith(
       expect.objectContaining({
         context: 'code-owner-approval',
         state: 'success',
