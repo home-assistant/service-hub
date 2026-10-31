@@ -71,7 +71,7 @@ export class PlatinumReview extends BaseWebhookHandler {
       context.repo({
         sha: context.payload.pull_request.head.sha,
         context: 'code-owner-approval',
-        state: requiresCodeownerApproval ? 'failure' : 'success',
+        state: requiresCodeownerApproval ? 'pending' : 'success',
         description: requiresCodeownerApproval
           ? `Code owner approval required for Platinum integrations before merging`
           : `Code owner approval ok.`,
