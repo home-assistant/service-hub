@@ -1,0 +1,25 @@
+{
+  "action": "created",
+  "discussion": {
+    "number": 972,
+    "node_id": "D_discussion_972",
+    "title": "Feature request",
+    "category": {
+      "is_answerable": true
+    },
+    "labels": [{ "name": "integration: awesome" }]
+  },
+  "comment": {
+    "id": 555,
+    "node_id": "DC_comment_555",
+    "body": "",
+    "parent_id": null,
+    "user": { "login": "test" }
+  },
+  "repository": {
+    "name": "feature-requests",
+    "full_name": "home-assistant/feature-requests",
+    "owner": { "login": "home-assistant" }
+  },
+  "sender": { "type": "User", "login": "test" }
+}
