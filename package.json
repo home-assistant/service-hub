@@ -37,7 +37,7 @@
     "@octokit/webhooks": "^10.1.5",
     "@octokit/webhooks-types": "^6.4.0",
     "@sentry/integrations": "^7.14.1",
-    "@sentry/node": "^7.14.1",
+    "@sentry/node": "^11.0.0",
     "aws-sdk": "^2.1211.0",
     "codeowners-utils": "^1.0.2",
     "convict": "^6.2.3",
