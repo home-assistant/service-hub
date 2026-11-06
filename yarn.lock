@@ -6381,13 +6381,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nestjs-pino@npm:^3.1.1":
-  version: 3.1.1
-  resolution: "nestjs-pino@npm:3.1.1"
+"nestjs-pino@npm:^5.0.0":
+  version: 5.3.1
+  resolution: "nestjs-pino@npm:5.3.1"
   peerDependencies:
-    "@nestjs/common": ^8.0.0 || ^9.0.0
-    pino-http: ^6.4.0 || ^7.0.0 || ^8.0.0
-  checksum: a200b356bfcf6f29ed21316291d545ff3caa2018a6d6fdbecfc73912fb5fb9d70b08d44af7144f0154ddd9e68dd98bba05feaa2e17d824482f0dbd52223dfe31
+    "@nestjs/common": ^11.0.8 || ^12.0.2
+    "@nestjs/core": ^11.0.8 || ^12.0.2
+    pino: ^10.0.0
+    pino-http: ^11.0.0
+    rxjs: ^7.1.0
+  checksum: ba1b7b819430afe4eb7d25d60d8f83100a82d61cacd088e6cb3f08911deb30db9814a47932ea38cbbdaa83dd4175ac99a61ba4d60546577d6ff23e74d71bb9c1
   languageName: node
   linkType: hard
 
@@ -7532,7 +7535,7 @@ __metadata:
     find-up: ^4.0.0
     jest: ^29.2.1
     js-yaml: ^4.1.0
-    nestjs-pino: ^3.1.1
+    nestjs-pino: ^5.0.0
     pino: ^8.4.2
     pino-http: ^7.0.0
     pino-pretty: ^9.1.0
