@@ -1,5 +1,15 @@
 # service-hub
 
+> [!IMPORTANT]
+> **The Home Assistant bots moved to [OpenHomeFoundation/bots](https://github.com/OpenHomeFoundation/bots).**
+>
+> The Home Assistant GitHub webhooks, the CLA sign flow and the bot on the Home Assistant Discord
+> server are now built from that repository, and the Home Assistant deployment of this code was
+> shut down. All CLA signatures were carried over, so nobody needs to sign again.
+>
+> Report issues and send changes to
+> [OpenHomeFoundation/bots](https://github.com/OpenHomeFoundation/bots).
+
 This is an all-purpose monorepo to handle our service needs.
 
 ## Services
